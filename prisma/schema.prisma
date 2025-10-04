@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  email      String?  @unique
+  password   String
+  role       UserRole @default(USER)
+  first_name String?
+  last_name  String?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  created_debtors  Debtor[]  @relation("CreatedBy")
+  created_debts    Debt[]    @relation("DebtCreatedBy")
+  created_payments Payment[] @relation("PaymentCreatedBy")
+
+  @@map("users")
+}
+
+model Debtor {
+  id           Int      @id @default(autoincrement())
+  first_name   String
+  last_name    String
+  phone_number String?
+  address      String?
+  total_debt   Decimal  @default(0) @db.Decimal(10, 2)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  created_by   Int
+  
+  // Relations
+  creator  User      @relation("CreatedBy", fields: [created_by], references: [id])
+  debts    Debt[]
+  payments Payment[]
+
+  @@map("debtors")
+}
+
+model Debt {
+  id          Int      @id @default(autoincrement())
+  debtor_id   Int
+  amount      Decimal  @db.Decimal(10, 2)
+  description String?
+  items       Json?    // Store array of items with prices
+  created_at  DateTime @default(now())
+  created_by  Int
+
+  // Relations
+  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  creator User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
+
+  @@map("debts")
+}
+
+model Payment {
+  id           Int         @id @default(autoincrement())
+  debtor_id    Int
+  amount       Decimal     @db.Decimal(10, 2)
+  payment_type PaymentType @default(CASH)
+  note         String?
+  created_at   DateTime    @default(now())
+  created_by   Int
+
+  // Relations
+  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  creator User   @relation("PaymentCreatedBy", fields: [created_by], references: [id])
+
+  @@map("payments")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum PaymentType {
+  CASH
+  CLICK
+  CARD
+}
