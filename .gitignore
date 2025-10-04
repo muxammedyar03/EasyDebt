@@ -28,6 +28,12 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
+AUTH_SETUP.md
+CONTRIBUTING.md
+LICENSE
+README.md
+QUICK_START.md
 
 # vercel
 .vercel
