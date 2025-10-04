@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { DebtorDetailClient } from "./_components/debtor-detail-client";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function DebtorDetailPage({ params }: PageProps) {
-  const debtorId = parseInt(params.id);
+  const { id } = await params;
+  const debtorId = parseInt(id);
 
   if (isNaN(debtorId)) {
     notFound();
