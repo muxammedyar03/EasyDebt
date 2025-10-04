@@ -13,7 +13,7 @@ const updateDebtorSchema = z.object({
 // GET single debtor
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -24,7 +24,8 @@ export async function GET(
       );
     }
 
-    const debtorId = parseInt(params.id);
+    const { id } = await params;
+    const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
       return NextResponse.json(
         { error: "Noto'g'ri ID" },
@@ -78,7 +79,7 @@ export async function GET(
 // UPDATE debtor
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -89,7 +90,8 @@ export async function PATCH(
       );
     }
 
-    const debtorId = parseInt(params.id);
+    const { id } = await params;
+    const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
       return NextResponse.json(
         { error: "Noto'g'ri ID" },
@@ -128,7 +130,7 @@ export async function PATCH(
 // DELETE debtor
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -139,7 +141,8 @@ export async function DELETE(
       );
     }
 
-    const debtorId = parseInt(params.id);
+    const { id } = await params;
+    const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
       return NextResponse.json(
         { error: "Noto'g'ri ID" },
