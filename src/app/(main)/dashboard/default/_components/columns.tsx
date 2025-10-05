@@ -26,6 +26,7 @@ import { toast } from "sonner";
 interface ColumnsContext {
   onDataChange?: () => void;
   onRowClick?: (debtorId: number) => void;
+  debtLimit?: number;
 }
 
 export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debtor>[] => [
@@ -105,6 +106,28 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       </div>
     ),
     enableSorting: true,
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    cell: ({ row }) => {
+      const debtLimit = context?.debtLimit || 2000000;
+      const totalDebt = row.original.total_debt;
+      
+      let variant: "default" | "destructive" | "secondary" = "secondary";
+      let label = "Qarzdor";
+      
+      if (totalDebt <= 0) {
+        variant = "default";
+        label = "To'langan";
+      } else if (totalDebt > debtLimit) {
+        variant = "destructive";
+        label = "Limitdan oshgan";
+      }
+      
+      return <Badge variant={variant}>{label}</Badge>;
+    },
+    enableSorting: false,
   },
   {
     id: "actions-buttons",

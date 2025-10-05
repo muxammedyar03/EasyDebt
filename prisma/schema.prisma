@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
 }
 
 model User {
@@ -43,6 +43,10 @@ model Debtor {
   debts    Debt[]
   payments Payment[]
 
+  // Indexes for performance
+  @@index([total_debt])
+  @@index([created_by])
+  @@index([created_at])
   @@map("debtors")
 }
 
@@ -59,6 +63,9 @@ model Debt {
   debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
 
+  // Indexes for performance
+  @@index([debtor_id])
+  @@index([created_at])
   @@map("debts")
 }
 
@@ -75,6 +82,9 @@ model Payment {
   debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("PaymentCreatedBy", fields: [created_by], references: [id])
 
+  // Indexes for performance
+  @@index([debtor_id])
+  @@index([created_at])
   @@map("payments")
 }
 
@@ -88,4 +98,14 @@ enum PaymentType {
   CASH
   CLICK
   CARD
+}
+
+model Settings {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("settings")
 }

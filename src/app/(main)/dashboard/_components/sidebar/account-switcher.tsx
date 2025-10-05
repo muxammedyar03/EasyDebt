@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { BadgeCheck, Bell, CreditCard, LogOut } from "lucide-react";
+import { BadgeCheck, Bell, CreditCard, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,68 +14,101 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { cn, getInitials } from "@/lib/utils";
+import { SettingsDialog } from "@/app/(main)/dashboard/_components/settings-dialog";
+import { useRouter } from "next/navigation";
 
 export function AccountSwitcher({
   users,
+  debtLimit,
+  activeUser
 }: {
   readonly users: ReadonlyArray<{
     readonly id: string;
     readonly name: string;
+    readonly username?: string;
     readonly email: string;
     readonly avatar: string;
     readonly role: string;
   }>;
+  readonly debtLimit: number;
+  readonly activeUser: {
+    readonly id: string;
+    readonly name: string;
+    readonly username?: string;
+    readonly email: string;
+    readonly avatar: string;
+    readonly role: string;
+  };
 }) {
-  const [activeUser, setActiveUser] = useState(users[0]);
+  const router = useRouter();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const handleLogout = async () => {
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    if (response.ok) {
+      window.location.reload();
+    }
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="size-9 rounded-lg">
-          <AvatarImage src={activeUser.avatar || undefined} alt={activeUser.name} />
+          <AvatarImage src={'/avatars/user.png'} alt={activeUser.name} />
           <AvatarFallback className="rounded-lg">{getInitials(activeUser.name)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-56 space-y-1 rounded-lg" side="bottom" align="end" sideOffset={4}>
-        {users.map((user) => (
-          <DropdownMenuItem
-            key={user.email}
-            className={cn("p-0", user.id === activeUser.id && "bg-accent/50 border-l-primary border-l-2")}
-            onClick={() => setActiveUser(user)}
-          >
-            <div className="flex w-full items-center justify-between gap-2 px-1 py-1.5">
-              <Avatar className="size-9 rounded-lg">
-                <AvatarImage src={user.avatar || undefined} alt={user.name} />
-                <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs capitalize">{user.role}</span>
-              </div>
+        <DropdownMenuItem
+          className={cn("p-0", activeUser.id === activeUser.id && "bg-accent/50 border-l-primary border-l-2")}
+          // onClick={() => setActiveUser(user)}
+        >
+          <div className="flex w-full items-center justify-between gap-2 px-1 py-1.5">
+            <Avatar className="size-9 rounded-lg">
+              <AvatarImage src={'/avatars/user.png'} alt={activeUser.name} />
+              <AvatarFallback className="rounded-lg">{getInitials(activeUser.name)}</AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">{activeUser.name}</span>
+              <span className="truncate text-xs capitalize">{activeUser.role}</span>
             </div>
-          </DropdownMenuItem>
-        ))}
+          </div>
+        </DropdownMenuItem>
+        {/* {users.map((user) => (
+        ))} */}
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/profile/me")}>
             <BadgeCheck />
-            Account
+            Profile
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          {/* <DropdownMenuItem>
             <CreditCard />
             Billing
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           <DropdownMenuItem>
             <Bell />
             Notifications
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+            <Settings />
+            Sozlamalar
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => {handleLogout()}}>
           <LogOut />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
+      <SettingsDialog 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen}
+        initialDebtLimit={debtLimit}
+      />
     </DropdownMenu>
   );
 }

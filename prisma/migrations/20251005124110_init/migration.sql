@@ -61,11 +61,46 @@ CREATE TABLE "payments" (
     CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "settings" (
+    "id" SERIAL NOT NULL,
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "settings_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE INDEX "debtors_total_debt_idx" ON "debtors"("total_debt");
+
+-- CreateIndex
+CREATE INDEX "debtors_created_by_idx" ON "debtors"("created_by");
+
+-- CreateIndex
+CREATE INDEX "debtors_created_at_idx" ON "debtors"("created_at");
+
+-- CreateIndex
+CREATE INDEX "debts_debtor_id_idx" ON "debts"("debtor_id");
+
+-- CreateIndex
+CREATE INDEX "debts_created_at_idx" ON "debts"("created_at");
+
+-- CreateIndex
+CREATE INDEX "payments_debtor_id_idx" ON "payments"("debtor_id");
+
+-- CreateIndex
+CREATE INDEX "payments_created_at_idx" ON "payments"("created_at");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "settings_key_key" ON "settings"("key");
 
 -- AddForeignKey
 ALTER TABLE "debtors" ADD CONSTRAINT "debtors_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

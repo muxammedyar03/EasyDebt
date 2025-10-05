@@ -18,7 +18,7 @@ import { AddDebtorDialog } from "./add-debtor-dialog";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 
-export function DataTable({ data: initialData }: { data: z.infer<typeof debtorSchema>[] }) {
+export function DataTable({ data: initialData, debtLimit }: { data: z.infer<typeof debtorSchema>[]; debtLimit: number }) {
   const router = useRouter();
   const [data, setData] = React.useState(() => initialData);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -47,9 +47,10 @@ export function DataTable({ data: initialData }: { data: z.infer<typeof debtorSc
   const columns = React.useMemo(
     () => withDndColumn(createDashboardColumns({ 
       onDataChange: handleDebtorAdded,
-      onRowClick: handleRowClick 
+      onRowClick: handleRowClick,
+      debtLimit 
     })),
-    [handleDebtorAdded, handleRowClick]
+    [handleDebtorAdded, handleRowClick, debtLimit]
   );
   
   const table = useDataTableInstance({ data, columns, getRowId: (row) => row.id.toString() });
