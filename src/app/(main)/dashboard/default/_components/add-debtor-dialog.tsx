@@ -74,16 +74,16 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       }
 
       const newDebtor = await response.json();
-      
+
       toast.success("Qarzdor muvaffaqiyatli qo'shildi");
       reset();
       onOpenChange(false);
-      
+
       // Call onSuccess callback if provided
       if (onSuccess) {
         onSuccess();
       }
-      
+
       router.refresh();
     } catch (error) {
       console.error("Error adding debtor:", error);
@@ -98,9 +98,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Yangi qarzdor qo'shish</DialogTitle>
-          <DialogDescription>
-            Yangi qarzdor ma'lumotlarini kiriting
-          </DialogDescription>
+          <DialogDescription>Yangi qarzdor ma'lumotlarini kiriting</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -108,30 +106,16 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
               <Label htmlFor="first_name">
                 Ism <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="first_name"
-                placeholder="Ism"
-                {...register("first_name")}
-                disabled={isLoading}
-              />
-              {errors.first_name && (
-                <p className="text-sm text-destructive">{errors.first_name.message}</p>
-              )}
+              <Input id="first_name" placeholder="Ism" {...register("first_name")} disabled={isLoading} />
+              {errors.first_name && <p className="text-destructive text-sm">{errors.first_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="last_name">
                 Familiya <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="last_name"
-                placeholder="Familiya"
-                {...register("last_name")}
-                disabled={isLoading}
-              />
-              {errors.last_name && (
-                <p className="text-sm text-destructive">{errors.last_name.message}</p>
-              )}
+              <Input id="last_name" placeholder="Familiya" {...register("last_name")} disabled={isLoading} />
+              {errors.last_name && <p className="text-destructive text-sm">{errors.last_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -146,12 +130,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
 
             <div className="grid gap-2">
               <Label htmlFor="address">Manzil</Label>
-              <Input
-                id="address"
-                placeholder="Manzil"
-                {...register("address")}
-                disabled={isLoading}
-              />
+              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
             </div>
 
             <div className="grid gap-2">
@@ -178,12 +157,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>
             <Button type="submit" disabled={isLoading}>

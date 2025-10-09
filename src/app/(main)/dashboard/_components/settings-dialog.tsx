@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface SettingsDialogProps {
@@ -68,13 +62,11 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit }: Setting
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sozlamalar</DialogTitle>
-          <DialogDescription>
-            Qarzdorlar uchun maksimal qarz limitini belgilang
-          </DialogDescription>
+          <DialogDescription>Qarzdorlar uchun maksimal qarz limitini belgilang</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="debt_limit">Qarz limiti (so'm)</Label>
+            <Label htmlFor="debt_limit">{"Qarz limiti (so'm)"}</Label>
             <Input
               id="debt_limit"
               type="text"
@@ -86,8 +78,8 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit }: Setting
               placeholder="2000000"
               required
             />
-            <p className="text-sm text-muted-foreground">
-              Joriy limit: {formatNumber(debtLimit)} so'm
+            <p className="text-muted-foreground text-sm">
+              Joriy limit: {formatNumber(debtLimit)} {"so'm"}
             </p>
           </div>
 

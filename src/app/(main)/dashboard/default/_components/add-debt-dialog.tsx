@@ -36,13 +36,7 @@ interface AddDebtDialogProps {
   onSuccess?: () => void;
 }
 
-export function AddDebtDialog({ 
-  open, 
-  onOpenChange, 
-  debtorId, 
-  debtorName,
-  onSuccess 
-}: AddDebtDialogProps) {
+export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -78,11 +72,11 @@ export function AddDebtDialog({
       toast.success("Qarz muvaffaqiyatli qo'shildi");
       reset();
       onOpenChange(false);
-      
+
       if (onSuccess) {
         onSuccess();
       }
-      
+
       router.refresh();
     } catch (error) {
       console.error("Error adding debt:", error);
@@ -97,9 +91,7 @@ export function AddDebtDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Qarz qo'shish</DialogTitle>
-          <DialogDescription>
-            {debtorName} uchun yangi qarz qo'shish
-          </DialogDescription>
+          <DialogDescription>{debtorName} uchun yangi qarz qo'shish</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -115,9 +107,7 @@ export function AddDebtDialog({
                 {...register("amount")}
                 disabled={isLoading}
               />
-              {errors.amount && (
-                <p className="text-sm text-destructive">{errors.amount.message}</p>
-              )}
+              {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -133,12 +123,7 @@ export function AddDebtDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>
             <Button type="submit" disabled={isLoading}>

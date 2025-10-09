@@ -11,26 +11,17 @@ const updateDebtorSchema = z.object({
 });
 
 // GET single debtor
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
     const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
-      return NextResponse.json(
-        { error: "Noto'g'ri ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
     const debtor = await prisma.debtor.findUnique({
@@ -46,10 +37,7 @@ export async function GET(
     });
 
     if (!debtor) {
-      return NextResponse.json(
-        { error: "Qarzdor topilmadi" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
     // Convert Decimal to number
@@ -69,34 +57,22 @@ export async function GET(
     return NextResponse.json(debtorData);
   } catch (error) {
     console.error("Error fetching debtor:", error);
-    return NextResponse.json(
-      { error: "Serverda xatolik yuz berdi" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }
 
 // UPDATE debtor
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
     const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
-      return NextResponse.json(
-        { error: "Noto'g'ri ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -113,41 +89,26 @@ export async function PATCH(
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }
 
     console.error("Error updating debtor:", error);
-    return NextResponse.json(
-      { error: "Serverda xatolik yuz berdi" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }
 
 // DELETE debtor
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
     const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
-      return NextResponse.json(
-        { error: "Noto'g'ri ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
     // Delete debtor (cascade will delete related debts and payments)
@@ -158,9 +119,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {
     console.error("Error deleting debtor:", error);
-    return NextResponse.json(
-      { error: "Serverda xatolik yuz berdi" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }

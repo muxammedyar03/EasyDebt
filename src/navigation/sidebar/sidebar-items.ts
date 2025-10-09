@@ -59,13 +59,13 @@ export const sidebarItems: NavGroup[] = [
         title: "CRM",
         url: "/dashboard/crm",
         icon: ChartBar,
-        comingSoon: true
+        comingSoon: true,
       },
       {
         title: "Finance",
         url: "/dashboard/finance",
         icon: Banknote,
-        comingSoon: true
+        comingSoon: true,
       },
       {
         title: "Qarzdorlar",

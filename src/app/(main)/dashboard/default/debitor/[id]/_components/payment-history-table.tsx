@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,9 +34,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Hozircha to'lovlar yo'q
-          </p>
+          <p className="text-muted-foreground text-center">Hozircha to'lovlar yo'q</p>
         </CardContent>
       </Card>
     );
@@ -82,13 +73,9 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">
-                    {paymentTypeLabels[payment.payment_type] || payment.payment_type}
-                  </Badge>
+                  <Badge variant="outline">{paymentTypeLabels[payment.payment_type] || payment.payment_type}</Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {payment.note || "—"}
-                </TableCell>
+                <TableCell className="text-muted-foreground">{payment.note || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -96,22 +83,22 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">
               {startIndex + 1}-{Math.min(endIndex, payments.length)} / {payments.length}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Oldingi
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Keyingi
               </button>

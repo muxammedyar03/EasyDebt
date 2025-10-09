@@ -43,12 +43,7 @@ export function LogoutButton({
   };
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      className={className}
-      onClick={handleLogout}
-    >
+    <Button variant={variant} size={size} className={className} onClick={handleLogout}>
       {showIcon && <LogOut className="mr-2 h-4 w-4" />}
       {children || "Logout"}
     </Button>

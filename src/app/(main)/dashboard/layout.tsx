@@ -73,7 +73,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     },
     take: 10, // Limit to 10 notifications for performance
     orderBy: {
-      total_debt: 'desc',
+      total_debt: "desc",
     },
   });
 
@@ -96,16 +96,17 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const formattedActiveUser = activeUser
     ? {
         id: activeUser.id.toString(),
-        name: activeUser.first_name && activeUser.last_name 
-          ? `${activeUser.first_name} ${activeUser.last_name}`
-          : activeUser.username,
+        name:
+          activeUser.first_name && activeUser.last_name
+            ? `${activeUser.first_name} ${activeUser.last_name}`
+            : activeUser.username,
         username: activeUser.username,
         email: activeUser.email || "",
         avatar: `/avatars/${activeUser.username}.png`,
         role: activeUser.role,
       }
     : users[0]; // Fallback to first user if no session
-  
+
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />

@@ -11,7 +11,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
@@ -42,10 +42,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       </div>
     ),
     cell: ({ row }) => (
-      <div 
-        className="flex items-center justify-center" 
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -62,7 +59,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     cell: ({ row }) => {
       const router = useRouter();
       return (
-        <div 
+        <div
           onClick={(e) => {
             e.stopPropagation();
             router.push(`/dashboard/default/debitor/${row.original.id}`);
@@ -99,12 +96,10 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   },
   {
     accessorKey: "total_debt",
-    header: ({ column }) => <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />,
-    cell: ({ row }) => (
-      <div>
-        {row.original.total_debt.toLocaleString()} so'm
-      </div>
+    header: ({ column }) => (
+      <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />
     ),
+    cell: ({ row }) => <div>{row.original.total_debt.toLocaleString()} so'm</div>,
     enableSorting: true,
   },
   {
@@ -113,10 +108,10 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     cell: ({ row }) => {
       const debtLimit = context?.debtLimit || 2000000;
       const totalDebt = row.original.total_debt;
-      
+
       let variant: "default" | "destructive" | "secondary" = "secondary";
       let label = "Qarzdor";
-      
+
       if (totalDebt <= 0) {
         variant = "default";
         label = "To'langan";
@@ -124,7 +119,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
         variant = "destructive";
         label = "Limitdan oshgan";
       }
-      
+
       return <Badge variant={variant}>{label}</Badge>;
     },
     enableSorting: false,
@@ -135,26 +130,18 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     cell: ({ row }) => {
       const [debtDialogOpen, setDebtDialogOpen] = React.useState(false);
       const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
-      
+
       return (
         <>
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setDebtDialogOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setDebtDialogOpen(true)}>
               <Plus className="h-4 w-4" /> Qarz
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setPaymentDialogOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setPaymentDialogOpen(true)}>
               <Minus className="h-4 w-4" /> To'lov
             </Button>
           </div>
-          
+
           <AddDebtDialog
             open={debtDialogOpen}
             onOpenChange={setDebtDialogOpen}
@@ -162,7 +149,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
             debtorName={`${row.original.first_name} ${row.original.last_name}`}
             onSuccess={context?.onDataChange}
           />
-          
+
           <AddPaymentDialog
             open={paymentDialogOpen}
             onOpenChange={setPaymentDialogOpen}
@@ -199,11 +186,11 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
           }
 
           toast.success("Qarzdor muvaffaqiyatli o'chirildi");
-          
+
           if (context?.onDataChange) {
             context.onDataChange();
           }
-          
+
           router.refresh();
         } catch (error) {
           console.error("Error deleting debtor:", error);
@@ -218,9 +205,9 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div onClick={(e) => e.stopPropagation()}>
-                <Button 
-                  variant="ghost" 
-                  className="data-[state=open]:bg-muted text-muted-foreground flex size-8" 
+                <Button
+                  variant="ghost"
+                  className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
                   size="icon"
                   disabled={isDeleting}
                 >
@@ -230,14 +217,8 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-32">
-              <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                O'zgartirish
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={handleDelete}
-                className="text-destructive"
-                disabled={isDeleting}
-              >
+              <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>O'zgartirish</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDelete} className="text-destructive" disabled={isDeleting}>
                 {isDeleting ? "O'chirilmoqda..." : "O'chirish"}
               </DropdownMenuItem>
             </DropdownMenuContent>

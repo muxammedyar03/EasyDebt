@@ -22,7 +22,7 @@ export function cachedQuery<T>(
   options?: {
     revalidate?: number;
     tags?: string[];
-  }
+  },
 ) {
   return unstable_cache(fn, keys, {
     revalidate: options?.revalidate ?? CACHE_REVALIDATE.medium,

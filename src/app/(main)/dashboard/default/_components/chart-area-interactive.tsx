@@ -59,7 +59,7 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
     }
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() - daysToSubtract);
-    
+
     return chartData.filter((item) => {
       const date = new Date(item.date);
       return date >= startDate;

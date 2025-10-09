@@ -6,9 +6,5 @@ import { ReactNode } from "react";
 import { queryClient } from "@/lib/react-query";
 
 export function Providers({ children }: { children: ReactNode }) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

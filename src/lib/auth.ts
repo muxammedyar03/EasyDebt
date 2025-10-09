@@ -1,9 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key-change-this-in-production"
-);
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
 
 export interface JWTPayload {
   userId: number;
@@ -23,7 +21,7 @@ export async function signToken(payload: JWTPayload): Promise<string> {
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    
+
     // Validate that the payload has the required properties
     if (
       typeof payload.userId === "number" &&
@@ -32,7 +30,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     ) {
       return payload as unknown as JWTPayload;
     }
-    
+
     console.error("Invalid token payload structure");
     return null;
   } catch (error) {

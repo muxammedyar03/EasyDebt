@@ -10,7 +10,7 @@ export default async function Page() {
       payments: true,
     },
   });
-  
+
   // Convert Decimal to number for type compatibility
   const debtors = debtorsRaw.map((debtor) => ({
     ...debtor,
@@ -28,35 +28,38 @@ export default async function Page() {
   // Calculate statistics
   const totalDebtors = debtors.length;
   const totalDebt = debtors.reduce((sum, debtor) => sum + debtor.total_debt, 0);
-  
+
   const totalDebtsCount = debtorsRaw.reduce((sum, debtor) => sum + debtor.debts.length, 0);
   const totalDebtsAmount = debtorsRaw.reduce(
     (sum, debtor) => sum + debtor.debts.reduce((s, debt) => s + debt.amount.toNumber(), 0),
-    0
+    0,
   );
-  
+
   const totalPaymentsCount = debtorsRaw.reduce((sum, debtor) => sum + debtor.payments.length, 0);
   const totalPaymentsAmount = debtorsRaw.reduce(
     (sum, debtor) => sum + debtor.payments.reduce((s, payment) => s + payment.amount.toNumber(), 0),
-    0
+    0,
   );
 
   // Calculate today's debts
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  const todayDebts = debtorsRaw.reduce((acc, debtor) => {
-    const todayDebtsList = debtor.debts.filter(debt => {
-      const debtDate = new Date(debt.created_at);
-      debtDate.setHours(0, 0, 0, 0);
-      return debtDate.getTime() === today.getTime();
-    });
-    
-    return {
-      count: acc.count + todayDebtsList.length,
-      amount: acc.amount + todayDebtsList.reduce((sum, debt) => sum + debt.amount.toNumber(), 0),
-    };
-  }, { count: 0, amount: 0 });
+
+  const todayDebts = debtorsRaw.reduce(
+    (acc, debtor) => {
+      const todayDebtsList = debtor.debts.filter((debt) => {
+        const debtDate = new Date(debt.created_at);
+        debtDate.setHours(0, 0, 0, 0);
+        return debtDate.getTime() === today.getTime();
+      });
+
+      return {
+        count: acc.count + todayDebtsList.length,
+        amount: acc.amount + todayDebtsList.reduce((sum, debt) => sum + debt.amount.toNumber(), 0),
+      };
+    },
+    { count: 0, amount: 0 },
+  );
 
   const stats = {
     totalDebtors,
@@ -72,26 +75,26 @@ export default async function Page() {
   // Prepare chart data - group payments by date and payment type
   const allPayments = await prisma.payment.findMany({
     orderBy: {
-      created_at: 'asc',
+      created_at: "asc",
     },
   });
 
   // Group payments by date
   const paymentsByDate = new Map<string, { cash: number; card: number; click: number }>();
-  
+
   allPayments.forEach((payment) => {
-    const dateStr = payment.created_at.toISOString().split('T')[0];
+    const dateStr = payment.created_at.toISOString().split("T")[0];
     const existing = paymentsByDate.get(dateStr) || { cash: 0, card: 0, click: 0 };
-    
+
     const amount = payment.amount.toNumber();
-    if (payment.payment_type === 'CASH') {
+    if (payment.payment_type === "CASH") {
       existing.cash += amount;
-    } else if (payment.payment_type === 'CARD') {
+    } else if (payment.payment_type === "CARD") {
       existing.card += amount;
-    } else if (payment.payment_type === 'CLICK') {
+    } else if (payment.payment_type === "CLICK") {
       existing.click += amount;
     }
-    
+
     paymentsByDate.set(dateStr, existing);
   });
 
@@ -113,7 +116,7 @@ export default async function Page() {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       sampleData.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split("T")[0],
         cash: 0,
         card: 0,
         click: 0,

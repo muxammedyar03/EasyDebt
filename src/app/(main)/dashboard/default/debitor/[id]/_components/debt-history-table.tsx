@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -34,9 +27,7 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Hozircha qarzlar yo'q
-          </p>
+          <p className="text-muted-foreground text-center">Hozircha qarzlar yo'q</p>
         </CardContent>
       </Card>
     );
@@ -69,13 +60,9 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
                   })}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="destructive">
-                    +{debt.amount.toLocaleString()} so'm
-                  </Badge>
+                  <Badge variant="destructive">+{debt.amount.toLocaleString()} so'm</Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {debt.description || "—"}
-                </TableCell>
+                <TableCell className="text-muted-foreground">{debt.description || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -83,22 +70,22 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">
               {startIndex + 1}-{Math.min(endIndex, debts.length)} / {debts.length}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Oldingi
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Keyingi
               </button>

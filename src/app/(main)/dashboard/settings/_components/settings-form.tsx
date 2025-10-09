@@ -55,7 +55,8 @@ export function SettingsForm({ initialDebtLimit }: SettingsFormProps) {
       <CardHeader>
         <CardTitle>Qarz limiti</CardTitle>
         <CardDescription>
-          Qarzdorlar uchun maksimal qarz limitini belgilang. Agar qarzdorning qarzi bu limitdan oshsa, u "Limitdan oshgan" statusida ko'rinadi.
+          Qarzdorlar uchun maksimal qarz limitini belgilang. Agar qarzdorning qarzi bu limitdan oshsa, u "Limitdan
+          oshgan" statusida ko'rinadi.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,9 +74,7 @@ export function SettingsForm({ initialDebtLimit }: SettingsFormProps) {
               placeholder="2000000"
               required
             />
-            <p className="text-sm text-muted-foreground">
-              Joriy limit: {formatNumber(debtLimit)} so'm
-            </p>
+            <p className="text-muted-foreground text-sm">Joriy limit: {formatNumber(debtLimit)} so'm</p>
           </div>
 
           <Button type="submit" disabled={isLoading}>

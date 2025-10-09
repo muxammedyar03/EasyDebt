@@ -16,17 +16,11 @@ export async function PUT(request: NextRequest) {
     const { current_password, new_password } = body;
 
     if (!current_password || !new_password) {
-      return NextResponse.json(
-        { error: "Barcha maydonlarni to'ldiring" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Barcha maydonlarni to'ldiring" }, { status: 400 });
     }
 
     if (new_password.length < 6) {
-      return NextResponse.json(
-        { error: "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak" }, { status: 400 });
     }
 
     // Get user with password
@@ -42,10 +36,7 @@ export async function PUT(request: NextRequest) {
     const isPasswordValid = await bcrypt.compare(current_password, user.password);
 
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: "Joriy parol noto'g'ri" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Joriy parol noto'g'ri" }, { status: 400 });
     }
 
     // Hash new password
@@ -62,9 +53,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error("Password change error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

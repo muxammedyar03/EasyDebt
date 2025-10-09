@@ -22,10 +22,7 @@ export async function PUT(request: NextRequest) {
       });
 
       if (existingUser && existingUser.id !== session.userId) {
-        return NextResponse.json(
-          { error: "Bu username allaqachon band" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Bu username allaqachon band" }, { status: 400 });
       }
     }
 
@@ -36,10 +33,7 @@ export async function PUT(request: NextRequest) {
       });
 
       if (existingEmail && existingEmail.id !== session.userId) {
-        return NextResponse.json(
-          { error: "Bu email allaqachon band" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Bu email allaqachon band" }, { status: 400 });
       }
     }
 
@@ -68,9 +62,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error("Profile update error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

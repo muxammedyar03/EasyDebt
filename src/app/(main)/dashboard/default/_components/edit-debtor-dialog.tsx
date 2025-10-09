@@ -42,12 +42,7 @@ interface EditDebtorDialogProps {
   onSuccess?: () => void;
 }
 
-export function EditDebtorDialog({ 
-  open, 
-  onOpenChange, 
-  debtor,
-  onSuccess 
-}: EditDebtorDialogProps) {
+export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: EditDebtorDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -100,11 +95,11 @@ export function EditDebtorDialog({
 
       toast.success("Qarzdor ma'lumotlari muvaffaqiyatli o'zgartirildi");
       onOpenChange(false);
-      
+
       if (onSuccess) {
         onSuccess();
       }
-      
+
       router.refresh();
     } catch (error) {
       console.error("Error updating debtor:", error);
@@ -119,9 +114,7 @@ export function EditDebtorDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Qarzdor ma'lumotlarini o'zgartirish</DialogTitle>
-          <DialogDescription>
-            Qarzdor ma'lumotlarini tahrirlang
-          </DialogDescription>
+          <DialogDescription>Qarzdor ma'lumotlarini tahrirlang</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -129,30 +122,16 @@ export function EditDebtorDialog({
               <Label htmlFor="first_name">
                 Ism <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="first_name"
-                placeholder="Ism"
-                {...register("first_name")}
-                disabled={isLoading}
-              />
-              {errors.first_name && (
-                <p className="text-sm text-destructive">{errors.first_name.message}</p>
-              )}
+              <Input id="first_name" placeholder="Ism" {...register("first_name")} disabled={isLoading} />
+              {errors.first_name && <p className="text-destructive text-sm">{errors.first_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="last_name">
                 Familiya <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="last_name"
-                placeholder="Familiya"
-                {...register("last_name")}
-                disabled={isLoading}
-              />
-              {errors.last_name && (
-                <p className="text-sm text-destructive">{errors.last_name.message}</p>
-              )}
+              <Input id="last_name" placeholder="Familiya" {...register("last_name")} disabled={isLoading} />
+              {errors.last_name && <p className="text-destructive text-sm">{errors.last_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -167,22 +146,12 @@ export function EditDebtorDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="address">Manzil</Label>
-              <Input
-                id="address"
-                placeholder="Manzil"
-                {...register("address")}
-                disabled={isLoading}
-              />
+              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
             </div>
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>
             <Button type="submit" disabled={isLoading}>

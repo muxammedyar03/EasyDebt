@@ -64,31 +64,25 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex w-full flex-col md:flex-row md:items-center justify-between">
+      <div className="flex w-full flex-col justify-between md:flex-row md:items-center">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/dashboard/default")}
-          >
+          <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/default")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold">
               {debtor.first_name} {debtor.last_name}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {debtor.phone_number || "Telefon raqami yo'q"}
-            </p>
+            <p className="text-muted-foreground text-sm">{debtor.phone_number || "Telefon raqami yo'q"}</p>
           </div>
         </div>
-        <div className="flex mt-5 md:mt-0 gap-2 justify-end">
+        <div className="mt-5 flex justify-end gap-2 md:mt-0">
           <Button variant="outline" onClick={() => setDebtDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Qarz qo'shish
           </Button>
           <Button variant="outline" onClick={() => setPaymentDialogOpen(true)}>
-            <Minus className="h-4 w-4 mr-2" />
+            <Minus className="mr-2 h-4 w-4" />
             To'lov qo'shish
           </Button>
         </div>
@@ -96,35 +90,31 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
-        <Card className="py-4 gap-1 xl:gap-2">
-          <CardHeader className="md:pb-3 !py-0 xl:!pb-4">
+        <Card className="gap-1 py-4 xl:gap-2">
+          <CardHeader className="!py-0 md:pb-3 xl:!pb-4">
             <CardTitle className="text-sm font-medium">Umumiy qarz</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDebt.toLocaleString()} so'm</div>
           </CardContent>
         </Card>
-        <Card className="py-4 gap-1 xl:gap-2">
-          <CardHeader className="md:pb-3 !py-0 xl:!pb-4">
+        <Card className="gap-1 py-4 xl:gap-2">
+          <CardHeader className="!py-0 md:pb-3 xl:!pb-4">
             <CardTitle className="text-sm font-medium">Umumiy to'lov</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {totalPayment.toLocaleString()} so'm
-            </div>
+            <div className="text-2xl font-bold text-green-600">{totalPayment.toLocaleString()} so'm</div>
           </CardContent>
         </Card>
-        <Card className="py-4 gap-1 xl:gap-2">
-          <CardHeader className="md:pb-3 !py-0 xl:!pb-4">
+        <Card className="gap-1 py-4 xl:gap-2">
+          <CardHeader className="!py-0 md:pb-3 xl:!pb-4">
             <CardTitle className="text-sm font-medium">Qolgan qarz</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {debtor.total_debt.toLocaleString()} so'm
-            </div>
+            <div className="text-2xl font-bold text-red-600">{debtor.total_debt.toLocaleString()} so'm</div>
           </CardContent>
         </Card>
-        <Card className="py-4 gap-1 col-span-full xl:col-span-1">
+        <Card className="col-span-full gap-1 py-4 xl:col-span-1">
           <CardHeader>
             <CardTitle>Ma'lumotlar</CardTitle>
           </CardHeader>
@@ -145,7 +135,7 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
 
       {/* History Tabs */}
       <Tabs defaultValue="debts" className="w-full">
-        <TabsList className="grid w-full md:w-1/2 lg:w-1/3 grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 md:w-1/2 lg:w-1/3">
           <TabsTrigger value="debts">
             Qarzlar tarixi
             <Badge variant="secondary" className="ml-2">

@@ -24,10 +24,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Username already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Username already exists" }, { status: 400 });
     }
 
     // Check if email already exists (if provided)
@@ -37,10 +34,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (existingEmail) {
-        return NextResponse.json(
-          { error: "Email already exists" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Email already exists" }, { status: 400 });
       }
     }
 
@@ -73,20 +67,14 @@ export async function POST(req: NextRequest) {
         message: "User created successfully",
         user,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Validation error", details: error.errors }, { status: 400 });
     }
 
     console.error("Registration error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

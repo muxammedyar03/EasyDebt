@@ -16,10 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const debtorsRaw = await prisma.debtor.findMany({
@@ -35,10 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(debtors);
   } catch (error) {
     console.error("Error fetching debtors:", error);
-    return NextResponse.json(
-      { error: "Serverda xatolik yuz berdi" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }
 
@@ -47,10 +41,7 @@ export async function POST(request: NextRequest) {
     // Get user session
     const session = await getSession();
     if (!session) {
-      return NextResponse.json(
-        { error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
 
     const body = await request.json();
@@ -90,29 +81,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }
 
     console.error("Error creating debtor:", error);
-    
+
     // Check for Prisma errors
-    if (error && typeof error === 'object' && 'code' in error) {
+    if (error && typeof error === "object" && "code" in error) {
       const prismaError = error as { code: string; meta?: any };
-      
-      if (prismaError.code === 'P2003') {
-        return NextResponse.json(
-          { error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." },
-          { status: 401 }
-        );
+
+      if (prismaError.code === "P2003") {
+        return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
       }
     }
-    
-    return NextResponse.json(
-      { error: "Serverda xatolik yuz berdi" },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }

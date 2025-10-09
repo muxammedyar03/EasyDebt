@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { BadgeCheck, Bell, CreditCard, LogOut, Settings } from "lucide-react";
+import { BadgeCheck, Bell, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,18 +18,9 @@ import { SettingsDialog } from "@/app/(main)/dashboard/_components/settings-dial
 import { useRouter } from "next/navigation";
 
 export function AccountSwitcher({
-  users,
   debtLimit,
-  activeUser
+  activeUser,
 }: {
-  readonly users: ReadonlyArray<{
-    readonly id: string;
-    readonly name: string;
-    readonly username?: string;
-    readonly email: string;
-    readonly avatar: string;
-    readonly role: string;
-  }>;
   readonly debtLimit: number;
   readonly activeUser: {
     readonly id: string;
@@ -57,18 +48,17 @@ export function AccountSwitcher({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="size-9 rounded-lg">
-          <AvatarImage src={'/avatars/user.png'} alt={activeUser.name} />
+          <AvatarImage src={"/avatars/user.png"} alt={activeUser.name} />
           <AvatarFallback className="rounded-lg">{getInitials(activeUser.name)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-56 space-y-1 rounded-lg" side="bottom" align="end" sideOffset={4}>
         <DropdownMenuItem
           className={cn("p-0", activeUser.id === activeUser.id && "bg-accent/50 border-l-primary border-l-2")}
-          // onClick={() => setActiveUser(user)}
         >
           <div className="flex w-full items-center justify-between gap-2 px-1 py-1.5">
             <Avatar className="size-9 rounded-lg">
-              <AvatarImage src={'/avatars/user.png'} alt={activeUser.name} />
+              <AvatarImage src={"/avatars/user.png"} alt={activeUser.name} />
               <AvatarFallback className="rounded-lg">{getInitials(activeUser.name)}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
@@ -77,18 +67,12 @@ export function AccountSwitcher({
             </div>
           </div>
         </DropdownMenuItem>
-        {/* {users.map((user) => (
-        ))} */}
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => router.push("/dashboard/profile/me")}>
             <BadgeCheck />
             Profile
           </DropdownMenuItem>
-          {/* <DropdownMenuItem>
-            <CreditCard />
-            Billing
-          </DropdownMenuItem> */}
           <DropdownMenuItem>
             <Bell />
             Notifications
@@ -99,16 +83,16 @@ export function AccountSwitcher({
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => {handleLogout()}}>
+        <DropdownMenuItem
+          onClick={() => {
+            handleLogout();
+          }}
+        >
           <LogOut />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
-      <SettingsDialog 
-        open={settingsOpen} 
-        onOpenChange={setSettingsOpen}
-        initialDebtLimit={debtLimit}
-      />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} initialDebtLimit={debtLimit} />
     </DropdownMenu>
   );
 }

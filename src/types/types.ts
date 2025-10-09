@@ -40,7 +40,7 @@ export type Debtor = {
   created_at: Date;
   updated_at: Date;
   created_by: number;
-  
+
   // Relations (optional)
   creator?: User;
   debts?: Debt[];

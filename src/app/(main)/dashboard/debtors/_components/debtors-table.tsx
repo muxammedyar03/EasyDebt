@@ -10,21 +10,8 @@ import { exportToExcel, formatDateForExcel, formatNumberForExcel } from "@/lib/e
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,18 +41,11 @@ interface DebtorsTableProps {
   debtLimit: number;
 }
 
-export function DebtorsTable({
-  debtors,
-  totalPages,
-  currentPage,
-  debtLimit,
-}: DebtorsTableProps) {
+export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: DebtorsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
-  const [searchValue, setSearchValue] = React.useState(
-    searchParams.get("search") || ""
-  );
+  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
 
   // Debounce search
   React.useEffect(() => {
@@ -101,14 +81,14 @@ export function DebtorsTable({
     const params = new URLSearchParams(searchParams.toString());
     const currentSortBy = params.get("sortBy");
     const currentSortOrder = params.get("sortOrder") || "desc";
-    
+
     if (currentSortBy === sortBy) {
       params.set("sortOrder", currentSortOrder === "asc" ? "desc" : "asc");
     } else {
       params.set("sortBy", sortBy);
       params.set("sortOrder", "asc");
     }
-    
+
     router.push(`?${params.toString()}`);
   };
 
@@ -147,7 +127,7 @@ export function DebtorsTable({
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    
+
     if (confirm(`${selectedIds.length} ta qarzdorni o'chirmoqchimisiz?`)) {
       try {
         const response = await fetch("/api/debtors/bulk-delete", {
@@ -189,16 +169,14 @@ export function DebtorsTable({
   const handleExport = async () => {
     try {
       toast.loading("Excel fayl tayyorlanmoqda...");
-      
+
       // Get current filters
       const params = new URLSearchParams(searchParams.toString());
       const search = params.get("search") || "";
       const status = params.get("status") || "all";
 
       // Fetch all data for export
-      const response = await fetch(
-        `/api/debtors/export?search=${encodeURIComponent(search)}&status=${status}`
-      );
+      const response = await fetch(`/api/debtors/export?search=${encodeURIComponent(search)}&status=${status}`);
 
       if (!response.ok) {
         throw new Error("Export failed");
@@ -252,7 +230,7 @@ export function DebtorsTable({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 items-center gap-2">
           <div className="relative flex-1 md:max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
             <Input
               placeholder="Ism, familiya yoki telefon..."
               value={searchValue}
@@ -263,20 +241,12 @@ export function DebtorsTable({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            className="gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
             <FileDown className="h-4 w-4" />
             Excel
           </Button>
-          
-          <Select
-            value={searchParams.get("status") || "all"}
-            onValueChange={handleStatusFilter}
-          >
+
+          <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -308,24 +278,15 @@ export function DebtorsTable({
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead
-                className="cursor-pointer"
-                onClick={() => handleSort("name")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                 Ism Familiya
               </TableHead>
               <TableHead>Telefon</TableHead>
-              <TableHead
-                className="cursor-pointer"
-                onClick={() => handleSort("amount")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => handleSort("amount")}>
                 Qarz summasi
               </TableHead>
               <TableHead>Status</TableHead>
-              <TableHead
-                className="cursor-pointer"
-                onClick={() => handleSort("created_at")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => handleSort("created_at")}>
                 Sana
               </TableHead>
               <TableHead className="w-12"></TableHead>
@@ -353,15 +314,11 @@ export function DebtorsTable({
                       {debtor.first_name} {debtor.last_name}
                     </TableCell>
                     <TableCell>{debtor.phone_number || "-"}</TableCell>
-                    <TableCell className={status.color}>
-                      {formatCurrency(debtor.total_debt)}
-                    </TableCell>
+                    <TableCell className={status.color}>{formatCurrency(debtor.total_debt)}</TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </TableCell>
-                    <TableCell>
-                      {new Date(debtor.created_at).toLocaleDateString("uz-UZ")}
-                    </TableCell>
+                    <TableCell>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -370,18 +327,11 @@ export function DebtorsTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              router.push(`/dashboard/default/debitor/${debtor.id}`)
-                            }
-                          >
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Tahrirlash
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(debtor.id)}
-                            className="text-red-600"
-                          >
+                          <DropdownMenuItem onClick={() => handleDelete(debtor.id)} className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
                             O'chirish
                           </DropdownMenuItem>
@@ -398,7 +348,7 @@ export function DebtorsTable({
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-muted-foreground text-sm">
           {currentPage} / {totalPages} sahifa
         </div>
         <div className="flex items-center gap-2">

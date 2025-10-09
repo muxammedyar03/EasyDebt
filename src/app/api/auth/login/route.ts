@@ -21,31 +21,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     // Check if user is active
     if (!user.is_active) {
-      return NextResponse.json(
-        { error: "Account is disabled" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Account is disabled" }, { status: 403 });
     }
 
     // Verify password
-    const isValidPassword = await verifyPassword(
-      validatedData.password,
-      user.password
-    );
+    const isValidPassword = await verifyPassword(validatedData.password, user.password);
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     // Generate JWT token
@@ -72,16 +60,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Validation error", details: error.errors }, { status: 400 });
     }
 
     console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

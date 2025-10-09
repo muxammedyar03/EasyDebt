@@ -20,13 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const addPaymentSchema = z.object({
   amount: z.string().min(1, "To'lov miqdorini kiriting"),
@@ -44,13 +38,7 @@ interface AddPaymentDialogProps {
   onSuccess?: () => void;
 }
 
-export function AddPaymentDialog({ 
-  open, 
-  onOpenChange, 
-  debtorId, 
-  debtorName,
-  onSuccess 
-}: AddPaymentDialogProps) {
+export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddPaymentDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -94,11 +82,11 @@ export function AddPaymentDialog({
       toast.success("To'lov muvaffaqiyatli qo'shildi");
       reset();
       onOpenChange(false);
-      
+
       if (onSuccess) {
         onSuccess();
       }
-      
+
       router.refresh();
     } catch (error) {
       console.error("Error adding payment:", error);
@@ -113,9 +101,7 @@ export function AddPaymentDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>To'lov qo'shish</DialogTitle>
-          <DialogDescription>
-            {debtorName} uchun yangi to'lov qo'shish
-          </DialogDescription>
+          <DialogDescription>{debtorName} uchun yangi to'lov qo'shish</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -131,9 +117,7 @@ export function AddPaymentDialog({
                 {...register("amount")}
                 disabled={isLoading}
               />
-              {errors.amount && (
-                <p className="text-sm text-destructive">{errors.amount.message}</p>
-              )}
+              {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -169,12 +153,7 @@ export function AddPaymentDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>
             <Button type="submit" disabled={isLoading}>

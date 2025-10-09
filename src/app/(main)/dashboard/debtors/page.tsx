@@ -22,7 +22,7 @@ export default async function DebtorsPage({
 
   // Build where clause
   const where: any = {};
-  
+
   if (search) {
     where.OR = [
       { first_name: { contains: search, mode: "insensitive" } },
@@ -86,18 +86,11 @@ export default async function DebtorsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Qarzdorlar</h1>
-          <p className="text-muted-foreground">
-            Jami {totalCount} ta qarzdor
-          </p>
+          <p className="text-muted-foreground">Jami {totalCount} ta qarzdor</p>
         </div>
       </div>
-      
-      <DebtorsTable
-        debtors={debtors}
-        totalPages={totalPages}
-        currentPage={page}
-        debtLimit={debtLimit}
-      />
+
+      <DebtorsTable debtors={debtors} totalPages={totalPages} currentPage={page} debtLimit={debtLimit} />
     </div>
   );
 }

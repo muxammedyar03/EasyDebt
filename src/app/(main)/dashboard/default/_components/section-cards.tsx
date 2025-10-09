@@ -17,7 +17,6 @@ interface SectionCardsProps {
 }
 
 export function SectionCards({ stats }: SectionCardsProps) {
-
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
@@ -33,9 +32,7 @@ export function SectionCards({ stats }: SectionCardsProps) {
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Umumiy qarzdorlar soni
-          </div>
+          <div className="line-clamp-1 flex gap-2 font-medium">Umumiy qarzdorlar soni</div>
           <div className="text-muted-foreground">Tizimda ro'yxatdan o'tgan</div>
         </CardFooter>
       </Card>
@@ -44,7 +41,9 @@ export function SectionCards({ stats }: SectionCardsProps) {
         <CardHeader>
           <CardDescription>Umumiy qarz</CardDescription>
           <CardTitle className="flex items-end gap-1">
-            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">{stats.totalDebt.toLocaleString()}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+              {stats.totalDebt.toLocaleString()}
+            </p>
             <span className="text-md leading-5">so'm</span>
           </CardTitle>
           <CardAction>
@@ -62,7 +61,9 @@ export function SectionCards({ stats }: SectionCardsProps) {
         <CardHeader>
           <CardDescription>Umumiy to'lovlar</CardDescription>
           <CardTitle className="flex items-end gap-1">
-            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">{stats.totalPaymentsAmount.toLocaleString()}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+              {stats.totalPaymentsAmount.toLocaleString()}
+            </p>
             <span className="text-md leading-5">so'm</span>
           </CardTitle>
           <CardAction>
@@ -72,9 +73,7 @@ export function SectionCards({ stats }: SectionCardsProps) {
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium text-green-600">
-            To'langan qarzlar
-          </div>
+          <div className="line-clamp-1 flex gap-2 font-medium text-green-600">To'langan qarzlar</div>
           <div className="text-muted-foreground">{stats.totalPaymentsCount} ta to'lov</div>
         </CardFooter>
       </Card>
@@ -83,7 +82,9 @@ export function SectionCards({ stats }: SectionCardsProps) {
         <CardHeader>
           <CardDescription>Bugungi qarzlar</CardDescription>
           <CardTitle className="flex items-end gap-1">
-            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">{stats.todayDebtsAmount.toLocaleString()}</p>
+            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+              {stats.todayDebtsAmount.toLocaleString()}
+            </p>
             <span className="text-md leading-5">so'm</span>
           </CardTitle>
           <CardAction>

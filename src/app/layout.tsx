@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       data-theme-preset={themePreset}
       suppressHydrationWarning
     >
-      <body className="min-h-screen antialiased font-sans" suppressHydrationWarning>
+      <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
         <PreferencesStoreProvider themeMode={themeMode} themePreset={themePreset}>
           {children}
           <Toaster />

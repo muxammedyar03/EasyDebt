@@ -42,7 +42,7 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
           {notifications.length > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+              className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
             >
               {notifications.length}
             </Badge>
@@ -53,9 +53,7 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
         <DropdownMenuLabel>Bildirishnomalar</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            Bildirishnomalar yo'q
-          </div>
+          <div className="text-muted-foreground p-4 text-center text-sm">{"Bildirishnomalar yo'q"}</div>
         ) : (
           <>
             {notifications.map((notification) => (
@@ -73,12 +71,8 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
                     Limitdan oshgan
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Qarz: {formatCurrency(notification.total_debt)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Limit: {formatCurrency(notification.debt_limit)}
-                </div>
+                <div className="text-muted-foreground text-xs">Qarz: {formatCurrency(notification.total_debt)}</div>
+                <div className="text-muted-foreground text-xs">Limit: {formatCurrency(notification.debt_limit)}</div>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
@@ -89,7 +83,7 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
                 setIsOpen(false);
               }}
             >
-              Barchasini ko'rish
+              {"Barchasini ko'rish"}
             </DropdownMenuItem>
           </>
         )}
