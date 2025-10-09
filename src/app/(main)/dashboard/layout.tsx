@@ -134,7 +134,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <NotificationsDropdown notifications={notifications} />
               <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
-              <AccountSwitcher users={users} activeUser={formattedActiveUser} debtLimit={debtLimit} />
+              <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} />
             </div>
           </div>
         </header>
