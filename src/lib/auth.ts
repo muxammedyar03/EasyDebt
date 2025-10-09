@@ -23,7 +23,18 @@ export async function signToken(payload: JWTPayload): Promise<string> {
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as JWTPayload;
+    
+    // Validate that the payload has the required properties
+    if (
+      typeof payload.userId === "number" &&
+      typeof payload.username === "string" &&
+      typeof payload.role === "string"
+    ) {
+      return payload as unknown as JWTPayload;
+    }
+    
+    console.error("Invalid token payload structure");
+    return null;
   } catch (error) {
     console.error("Token verification failed:", error);
     return null;

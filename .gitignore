@@ -29,6 +29,9 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.production
+.env.development
+DEPLOYMENT.md
 AUTH_SETUP.md
 CONTRIBUTING.md
 LICENSE
