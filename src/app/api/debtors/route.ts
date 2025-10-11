@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 const createDebtorSchema = z.object({
   first_name: z.string().min(1),
@@ -12,7 +13,7 @@ const createDebtorSchema = z.object({
   debt_description: z.string().nullable().optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
     if (!session) {
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Check for Prisma errors
     if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string; meta?: any };
+      const prismaError = error as { code: string; meta?: Prisma.PrismaClientKnownRequestError };
 
       if (prismaError.code === "P2003") {
         return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });

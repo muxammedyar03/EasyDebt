@@ -73,8 +73,6 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
         throw new Error(errorData.error || "Qarzdor qo'shishda xatolik yuz berdi");
       }
 
-      const newDebtor = await response.json();
-
       toast.success("Qarzdor muvaffaqiyatli qo'shildi");
       reset();
       onOpenChange(false);
@@ -97,8 +95,8 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Yangi qarzdor qo'shish</DialogTitle>
-          <DialogDescription>Yangi qarzdor ma'lumotlarini kiriting</DialogDescription>
+          <DialogTitle>Yangi qarzdor qo&apos;shish</DialogTitle>
+          <DialogDescription>Yangi qarzdor ma&apos;lumotlarini kiriting</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -162,7 +160,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo'shish
+              Qo&apos;shish
             </Button>
           </DialogFooter>
         </form>

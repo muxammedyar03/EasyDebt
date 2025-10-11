@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { DebtorsTable } from "./_components/debtors-table";
+import { Prisma } from "@prisma/client";
+import { DebtItem } from "@/types/types";
 
 export default async function DebtorsPage({
   searchParams,
@@ -11,7 +13,7 @@ export default async function DebtorsPage({
   const limit = Number(params.limit) || 10;
   const search = (params.search as string) || "";
   const sortBy = (params.sortBy as string) || "created_at";
-  const sortOrder = (params.sortOrder as string) || "desc";
+  const sortOrder = (params.sortOrder === "asc" ? "asc" : "desc") as Prisma.SortOrder;
   const status = (params.status as string) || "all";
 
   // Get debt limit from settings
@@ -21,13 +23,13 @@ export default async function DebtorsPage({
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 
   // Build where clause
-  const where: any = {};
+  const where: Prisma.DebtorWhereInput = {};
 
   if (search) {
     where.OR = [
       { first_name: { contains: search, mode: "insensitive" } },
       { last_name: { contains: search, mode: "insensitive" } },
-      { phone_number: { contains: search } },
+      { phone_number: { contains: search, mode: "insensitive" } },
     ];
   }
 
@@ -44,13 +46,13 @@ export default async function DebtorsPage({
   const totalCount = await prisma.debtor.count({ where });
 
   // Build orderBy
-  const orderBy: any = {};
+  const orderBy: Prisma.DebtorOrderByWithRelationInput = {};
   if (sortBy === "name") {
     orderBy.first_name = sortOrder;
   } else if (sortBy === "amount") {
     orderBy.total_debt = sortOrder;
   } else {
-    orderBy[sortBy] = sortOrder;
+    orderBy[sortBy as keyof Prisma.DebtorOrderByWithRelationInput] = sortOrder;
   }
 
   // Fetch debtors
@@ -65,13 +67,14 @@ export default async function DebtorsPage({
     },
   });
 
-  // Convert Decimal to number
+  // Convert Decimal to number and cast JSON types
   const debtors = debtorsRaw.map((debtor) => ({
     ...debtor,
     total_debt: debtor.total_debt.toNumber(),
     debts: debtor.debts.map((debt) => ({
       ...debt,
       amount: debt.amount.toNumber(),
+      items: debt.items as DebtItem[] | null,
     })),
     payments: debtor.payments.map((payment) => ({
       ...payment,

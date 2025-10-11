@@ -1,3 +1,10 @@
+// JSON types
+export type DebtItem = {
+  name: string;
+  price: number;
+  quantity?: number;
+};
+
 // Enums
 export enum UserRole {
   SUPER_ADMIN = "SUPER_ADMIN",
@@ -52,7 +59,7 @@ export type Debt = {
   debtor_id: number;
   amount: number;
   description: string | null;
-  items: any | null; // JSON type - can be more specific if needed
+  items: DebtItem[] | null;
   created_at: Date;
   created_by: number;
 

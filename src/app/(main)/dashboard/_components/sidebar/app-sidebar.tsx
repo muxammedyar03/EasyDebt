@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Settings, CircleHelp, Search, Database, ClipboardList, File, Command } from "lucide-react";
+import { Command } from "lucide-react";
 
 import {
   Sidebar,

@@ -90,8 +90,8 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Qarz qo'shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi qarz qo'shish</DialogDescription>
+          <DialogTitle>Qarz qo&apos;shish</DialogTitle>
+          <DialogDescription>{debtorName} uchun yangi qarz qo&apos;shish</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -128,7 +128,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo'shish
+              Qo&apos;shish
             </Button>
           </DialogFooter>
         </form>

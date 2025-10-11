@@ -14,7 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-type UseDataTableInstanceProps<TData, TValue> = {
+type UseDataTableInstanceProps<TData extends { id: number | string }, TValue> = {
   data: TData[];
   columns: ColumnDef<TData, TValue>[];
   enableRowSelection?: boolean;
@@ -23,7 +23,7 @@ type UseDataTableInstanceProps<TData, TValue> = {
   getRowId?: (row: TData, index: number) => string;
 };
 
-export function useDataTableInstance<TData, TValue>({
+export function useDataTableInstance<TData extends { id: number | string }, TValue>({
   data,
   columns,
   enableRowSelection = true,
@@ -51,7 +51,7 @@ export function useDataTableInstance<TData, TValue>({
       pagination,
     },
     enableRowSelection,
-    getRowId: getRowId ?? ((row) => (row as any).id.toString()),
+    getRowId: getRowId ?? ((row) => row.id.toString()),
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Trash2, Edit, MoreHorizontal, Search, FileDown } from "lucide-react";
 import { toast } from "sonner";
 
-import { exportToExcel, formatDateForExcel, formatNumberForExcel } from "@/lib/excel-export";
+import { exportToExcel, formatNumberForExcel } from "@/lib/excel-export";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { DebtItem } from "@/types/types";
+
+// Custom interfaces for transformed data (Decimal -> number)
+interface DebtTransformed {
+  id: number;
+  debtor_id: number;
+  amount: number;
+  description: string | null;
+  items: DebtItem[] | null;
+  created_at: Date;
+  created_by: number;
+}
+
+interface PaymentTransformed {
+  id: number;
+  debtor_id: number;
+  amount: number;
+  payment_type: string;
+  note: string | null;
+  created_at: Date;
+  created_by: number;
+}
 
 interface Debtor {
   id: number;
@@ -30,8 +52,8 @@ interface Debtor {
   created_at: Date;
   updated_at: Date;
   created_by: number;
-  debts: any[];
-  payments: any[];
+  debts: DebtTransformed[];
+  payments: PaymentTransformed[];
 }
 
 interface DebtorsTableProps {
@@ -47,15 +69,6 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
 
-  // Debounce search
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      handleSearch(searchValue);
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(timer);
-  }, [searchValue]);
-
   const getDebtorStatus = (totalDebt: number) => {
     if (totalDebt <= 0) {
       return { label: "To'langan", variant: "default" as const, color: "text-green-600" };
@@ -66,16 +79,28 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     }
   };
 
-  const handleSearch = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set("search", value);
-    } else {
-      params.delete("search");
-    }
-    params.set("page", "1");
-    router.push(`?${params.toString()}`);
-  };
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) {
+        params.set("search", value);
+      } else {
+        params.delete("search");
+      }
+      params.set("page", "1");
+      router.push(`?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
+
+  // Debounce search
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch(searchValue);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchValue, handleSearch]);
 
   const handleSort = (sortBy: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -199,15 +224,15 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
           "Status",
           "Yaratilgan sana",
         ],
-        rows: debtors.map((debtor: any) => [
+        rows: debtors.map((debtor: Debtor & { total_payment: number; status: string }) => [
           debtor.id,
           debtor.first_name,
           debtor.last_name,
           debtor.phone_number || "-",
           debtor.address || "-",
           formatNumberForExcel(debtor.total_debt),
-          formatNumberForExcel(debtor.total_debts),
-          formatNumberForExcel(debtor.total_payments),
+          formatNumberForExcel(debtor.total_debt),
+          formatNumberForExcel(debtor.total_payment),
           debtor.status,
           debtor.created_at,
         ]),
@@ -254,14 +279,14 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
               <SelectItem value="all">Barchasi</SelectItem>
               <SelectItem value="qarzdor">Qarzdor</SelectItem>
               <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
-              <SelectItem value="tolangan">To'langan</SelectItem>
+              <SelectItem value="tolangan">To&apos;langan</SelectItem>
             </SelectContent>
           </Select>
 
           {selectedIds.length > 0 && (
             <Button variant="destructive" onClick={handleBulkDelete}>
               <Trash2 className="mr-2 h-4 w-4" />
-              O'chirish ({selectedIds.length})
+              O&apos;chirish ({selectedIds.length})
             </Button>
           )}
         </div>
@@ -296,7 +321,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
             {debtors.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center">
-                  Ma'lumot topilmadi
+                  Ma&apos;lumot topilmadi
                 </TableCell>
               </TableRow>
             ) : (
@@ -333,7 +358,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDelete(debtor.id)} className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
-                            O'chirish
+                            O&apos;chirish
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

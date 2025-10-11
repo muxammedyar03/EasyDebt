@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -79,11 +79,11 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
         <div className="mt-5 flex justify-end gap-2 md:mt-0">
           <Button variant="outline" onClick={() => setDebtDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Qarz qo'shish
+            Qarz qo&apos;shish
           </Button>
           <Button variant="outline" onClick={() => setPaymentDialogOpen(true)}>
             <Minus className="mr-2 h-4 w-4" />
-            To'lov qo'shish
+            To&apos;lov qo&apos;shish
           </Button>
         </div>
       </div>
@@ -95,15 +95,15 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
             <CardTitle className="text-sm font-medium">Umumiy qarz</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalDebt.toLocaleString()} so'm</div>
+            <div className="text-2xl font-bold">{totalDebt.toLocaleString()} so&apos;m</div>
           </CardContent>
         </Card>
         <Card className="gap-1 py-4 xl:gap-2">
           <CardHeader className="!py-0 md:pb-3 xl:!pb-4">
-            <CardTitle className="text-sm font-medium">Umumiy to'lov</CardTitle>
+            <CardTitle className="text-sm font-medium">Umumiy to&apos;lov</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{totalPayment.toLocaleString()} so'm</div>
+            <div className="text-2xl font-bold text-green-600">{totalPayment.toLocaleString()} so&apos;m</div>
           </CardContent>
         </Card>
         <Card className="gap-1 py-4 xl:gap-2">
@@ -111,12 +111,12 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
             <CardTitle className="text-sm font-medium">Qolgan qarz</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{debtor.total_debt.toLocaleString()} so'm</div>
+            <div className="text-2xl font-bold text-red-600">{debtor.total_debt.toLocaleString()} so&apos;m</div>
           </CardContent>
         </Card>
         <Card className="col-span-full gap-1 py-4 xl:col-span-1">
           <CardHeader>
-            <CardTitle>Ma'lumotlar</CardTitle>
+            <CardTitle>Ma&apos;lumotlar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
@@ -124,7 +124,7 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
               <span>{debtor.address || "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Qo'shilgan sana:</span>
+              <span className="text-muted-foreground">Qo&apos;shilgan sana:</span>
               <span>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</span>
             </div>
           </CardContent>
@@ -143,7 +143,7 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
-            To'lovlar tarixi
+            To&apos;lovlar tarixi
             <Badge variant="secondary" className="ml-2">
               {debtor.payments.length}
             </Badge>

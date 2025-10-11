@@ -69,9 +69,9 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>To'lov Usullari</CardTitle>
+        <CardTitle>To&apos;lov Usullari</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">Oxirgi 3 oylik to'lovlar statistikasi</span>
+          <span className="hidden @[540px]/card:block">Oxirgi 3 oylik to&apos;lovlar statistikasi</span>
           <span className="@[540px]/card:hidden">Oxirgi 3 oy</span>
         </CardDescription>
         <CardAction>

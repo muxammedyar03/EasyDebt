@@ -113,8 +113,8 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Qarzdor ma'lumotlarini o'zgartirish</DialogTitle>
-          <DialogDescription>Qarzdor ma'lumotlarini tahrirlang</DialogDescription>
+          <DialogTitle>Qarzdor ma&apos;lumotlarini o&apos;zgartirish</DialogTitle>
+          <DialogDescription>Qarzdor ma&apos;lumotlarini tahrirlang</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">

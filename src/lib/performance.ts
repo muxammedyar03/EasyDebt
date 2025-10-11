@@ -1,4 +1,5 @@
 // Performance monitoring utilities
+import { NextWebVitalsMetric } from "next/app";
 
 export function measurePerformance(name: string) {
   if (typeof window === "undefined") return;
@@ -21,11 +22,8 @@ export function logSlowQuery(queryName: string, duration: number, threshold = 10
 }
 
 // Web Vitals reporting
-export function reportWebVitals(metric: any) {
+export function reportWebVitals(metric: NextWebVitalsMetric) {
   if (process.env.NODE_ENV === "development") {
     console.log(metric);
   }
-
-  // Send to analytics service in production
-  // Example: analytics.track('web-vital', metric)
 }

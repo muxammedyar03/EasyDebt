@@ -36,7 +36,6 @@ if (files.length === 0) {
 
 const presets = files.map((file) => {
   const filePath = path.join(presetDir, file);
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
   const content = fs.readFileSync(filePath, "utf8");
 
   const labelMatch = content.match(/label:\s*(.+)/);

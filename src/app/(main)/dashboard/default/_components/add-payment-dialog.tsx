@@ -100,14 +100,14 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>To'lov qo'shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi to'lov qo'shish</DialogDescription>
+          <DialogTitle>To&apos;lov qo&apos;shish</DialogTitle>
+          <DialogDescription>{debtorName} uchun yangi to&apos;lov qo&apos;shish</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                To'lov miqdori <span className="text-destructive">*</span>
+                To&apos;lov miqdori <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -122,7 +122,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
 
             <div className="grid gap-2">
               <Label htmlFor="payment_type">
-                To'lov turi <span className="text-destructive">*</span>
+                To&apos;lov turi <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={paymentType}
@@ -158,7 +158,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo'shish
+              Qo&apos;shish
             </Button>
           </DialogFooter>
         </form>

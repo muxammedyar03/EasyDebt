@@ -34,7 +34,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-muted-foreground text-center">Hozircha to'lovlar yo'q</p>
+          <p className="text-muted-foreground text-center">Hozircha to&apos;lovlar yo&apos;q</p>
         </CardContent>
       </Card>
     );
@@ -43,7 +43,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>To'lovlar tarixi</CardTitle>
+        <CardTitle>To&apos;lovlar tarixi</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
@@ -51,7 +51,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
             <TableRow>
               <TableHead>Sana</TableHead>
               <TableHead>Miqdor</TableHead>
-              <TableHead>To'lov turi</TableHead>
+              <TableHead>To&apos;lov turi</TableHead>
               <TableHead>Izoh</TableHead>
             </TableRow>
           </TableHeader>
@@ -69,7 +69,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
                 </TableCell>
                 <TableCell>
                   <Badge variant="default" className="bg-green-600">
-                    -{payment.amount.toLocaleString()} so'm
+                    -{payment.amount.toLocaleString()} so&apos;m
                   </Badge>
                 </TableCell>
                 <TableCell>

@@ -27,7 +27,7 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-muted-foreground text-center">Hozircha qarzlar yo'q</p>
+          <p className="text-muted-foreground text-center">Hozircha qarzlar yo&apos;q</p>
         </CardContent>
       </Card>
     );
@@ -60,7 +60,7 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
                   })}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="destructive">+{debt.amount.toLocaleString()} so'm</Badge>
+                  <Badge variant="destructive">+{debt.amount.toLocaleString()} so&apos;m</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{debt.description || "—"}</TableCell>
               </TableRow>

@@ -158,7 +158,7 @@ export default function ProfilePage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">Profil sozlamalari</h1>
-          <p className="text-muted-foreground">Shaxsiy ma'lumotlaringizni boshqaring</p>
+          <p className="text-muted-foreground">Shaxsiy ma&apos;lumotlaringizni boshqaring</p>
         </div>
       </div>
 
@@ -167,7 +167,7 @@ export default function ProfilePage() {
       {/* Profile Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Shaxsiy ma'lumotlar</CardTitle>
+          <CardTitle>Shaxsiy ma&apos;lumotlar</CardTitle>
           <CardDescription>Ism, familiya, username va email manzilni tahrirlash</CardDescription>
         </CardHeader>
         <CardContent>
@@ -241,7 +241,7 @@ export default function ProfilePage() {
       {/* Password Change */}
       <Card>
         <CardHeader>
-          <CardTitle>Parolni o'zgartirish</CardTitle>
+          <CardTitle>Parolni o&apos;zgartirish</CardTitle>
           <CardDescription>Xavfsizlik uchun parolingizni yangilang</CardDescription>
         </CardHeader>
         <CardContent>
@@ -287,12 +287,12 @@ export default function ProfilePage() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    O'zgartirilmoqda...
+                    O&apos;zgartirilmoqda...
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Parolni o'zgartirish
+                    Parolni o&apos;zgartirish
                   </>
                 )}
               </Button>
@@ -304,7 +304,7 @@ export default function ProfilePage() {
       {/* Account Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Hisob ma'lumotlari</CardTitle>
+          <CardTitle>Hisob ma&apos;lumotlari</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">

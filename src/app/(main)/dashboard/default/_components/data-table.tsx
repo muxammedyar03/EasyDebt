@@ -28,10 +28,8 @@ export function DataTable({
   const router = useRouter();
   const [data, setData] = React.useState(() => initialData);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const handleDebtorAdded = React.useCallback(async () => {
-    setIsRefreshing(true);
     try {
       // Fetch updated debtors list
       const response = await fetch("/api/debtors");
@@ -41,8 +39,6 @@ export function DataTable({
       }
     } catch (error) {
       console.error("Error refreshing debtors:", error);
-    } finally {
-      setIsRefreshing(false);
     }
   }, []);
 
@@ -79,7 +75,7 @@ export function DataTable({
         <DataTableViewOptions table={table} />
         <Button variant="outline" size="sm" className="h-12 w-12 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
           <Plus />
-          <span className="hidden lg:inline">Qarzdor qo'shish</span>
+          <span className="hidden lg:inline">Qarzdor qo&apos;shish</span>
         </Button>
       </div>
       <DataTableNew

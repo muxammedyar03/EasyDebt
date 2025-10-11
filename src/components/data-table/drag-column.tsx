@@ -23,7 +23,10 @@ function DragHandle({ id }: { id: number }) {
   );
 }
 
-export const dragColumn: ColumnDef<any> = {
+// Type for any object with an id property
+type WithId = { id: number };
+
+export const dragColumn: ColumnDef<WithId> = {
   id: "drag",
   header: () => null,
   cell: ({ row }) => <DragHandle id={row.original.id} />,

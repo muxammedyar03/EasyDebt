@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 const createPaymentSchema = z.object({
   debtor_id: z.number(),
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating payment:", error);
 
     if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string; meta?: any };
+      const prismaError = error as { code: string; meta?: Prisma.PrismaClientKnownRequestError };
 
       if (prismaError.code === "P2003") {
         return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
