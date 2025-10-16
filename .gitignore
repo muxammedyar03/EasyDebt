@@ -33,6 +33,9 @@ yarn-error.log*
 .env.development
 DEPLOYMENT.md
 AUTH_SETUP.md
+DEPLOY_GUIDE.md
+SERVER_SETUP.md
+SUMMARY.md
 CONTRIBUTING.md
 LICENSE
 README.md
