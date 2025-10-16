@@ -60,6 +60,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
+      - name: 🔑 Setup SSH for deployment
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Deploy to production server via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -84,3 +89,5 @@ jobs:
             
             # Clean up old images
             docker image prune -af --filter "until=24h"
+
+            echo "✅ Deployment complete!"
