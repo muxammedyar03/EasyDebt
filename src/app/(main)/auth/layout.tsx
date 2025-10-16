@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 
 import { Command } from "lucide-react";
 
-import { Separator } from "@/components/ui/separator";
 import { APP_CONFIG } from "@/config/app-config";
 
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -16,7 +15,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
             <p className="text-sm">Design. Build. Launch. Repeat.</p>
           </div>
 
-          <div className="absolute bottom-10 flex w-full justify-between px-10">
+          {/* <div className="absolute bottom-10 flex w-full justify-between px-10">
             <div className="text-primary-foreground flex-1 space-y-1">
               <h2 className="font-medium">Ready to launch?</h2>
               <p className="text-sm">Clone the repo, install dependencies, and your dashboard is live in minutes.</p>
@@ -28,7 +27,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
                 Check out the docs or open an issue on GitHub, community support is just a click away.
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
         <div className="relative order-1 flex h-full">{children}</div>
       </div>

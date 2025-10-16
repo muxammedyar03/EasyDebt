@@ -58,12 +58,22 @@ export function RegisterForm() {
       if (!response.ok) {
         toast.error("Registration Failed", {
           description: result.error || "Unable to create account",
+          style: {
+            background: "white",
+            color: "black",
+          },
+          descriptionClassName: "!text-gray-600",
         });
         return;
       }
 
       toast.success("Registration Successful", {
         description: "Your account has been created. Redirecting to login...",
+        style: {
+          background: "white",
+          color: "black",
+        },
+        descriptionClassName: "!text-gray-600",
       });
 
       // Redirect to login after 2 seconds
@@ -74,6 +84,11 @@ export function RegisterForm() {
       console.error("Registration error:", error);
       toast.error("Error", {
         description: "An unexpected error occurred",
+        style: {
+          background: "white",
+          color: "black",
+        },
+        descriptionClassName: "!text-gray-600",
       });
     } finally {
       setIsLoading(false);

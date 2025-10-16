@@ -44,6 +44,7 @@ export type Debtor = {
   phone_number: string | null;
   address: string | null;
   total_debt: number;
+  is_overdue: boolean;
   created_at: Date;
   updated_at: Date;
   created_by: number;
@@ -81,3 +82,19 @@ export type Payment = {
   debtor?: Debtor;
   creator?: User;
 };
+
+export interface CustomerTableProps {
+  debtorId: number;
+  debtor: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    phone_number: string | null;
+    total_debt: number;
+  };
+  payments: Payment[];
+  validPayments: number;
+  avgDaysBetweenPayments: number;
+  avgDaysBetweenDebtAndPayment: number;
+  rating: "good" | "average" | "bad";
+}

@@ -1,4 +1,13 @@
-import { LayoutDashboard, ChartBar, Banknote, UserCog, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  ChartBar,
+  Banknote,
+  UserCog,
+  FileText,
+  Users,
+  BarChart3,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -17,6 +26,7 @@ export interface NavMainItem {
   comingSoon?: boolean;
   newTab?: boolean;
   isNew?: boolean;
+  roles?: string[]; // optional role restriction, e.g., ["SUPER_ADMIN"]
 }
 
 export interface NavGroup {
@@ -52,6 +62,31 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/debtors",
         icon: UserCog,
         isNew: true,
+      },
+      {
+        title: "Mijozlar Reytingi",
+        url: "/dashboard/customers",
+        icon: Users,
+        isNew: true,
+      },
+      {
+        title: "Hisobotlar",
+        url: "/dashboard/reports",
+        icon: BarChart3,
+        isNew: true,
+      },
+      {
+        title: "Audit Log",
+        url: "/dashboard/audit-logs",
+        icon: FileText,
+        isNew: true,
+      },
+      {
+        title: "Users",
+        url: "/dashboard/users",
+        icon: Users,
+        isNew: true,
+        roles: ["SUPER_ADMIN"],
       },
       // {
       //   title: "Sozlamalar",

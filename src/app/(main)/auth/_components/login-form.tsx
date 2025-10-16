@@ -51,12 +51,22 @@ export function LoginForm() {
       if (!response.ok) {
         toast.error("Login Failed", {
           description: result.error || "Invalid credentials",
+          style: {
+            background: "white",
+            color: "black",
+          },
+          descriptionClassName: "!text-gray-600",
         });
         return;
       }
 
       toast.success("Login Successful", {
         description: `Welcome back, ${result.user.username}!`,
+        style: {
+          background: "white",
+          color: "black",
+        },
+        descriptionClassName: "!text-gray-600",
       });
 
       // Redirect to dashboard
@@ -66,6 +76,11 @@ export function LoginForm() {
       console.error("Login error:", error);
       toast.error("Error", {
         description: "An unexpected error occurred",
+        style: {
+          background: "white",
+          color: "black",
+        },
+        descriptionClassName: "!text-gray-600",
       });
     } finally {
       setIsLoading(false);

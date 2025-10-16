@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
-import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
+
+import { getSession } from "@/lib/auth";
+import { createAuditLog } from "@/lib/audit";
+import { createNotification } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
 
 const createDebtSchema = z.object({
   debtor_id: z.number(),
@@ -24,6 +27,15 @@ export async function POST(request: NextRequest) {
 
     // Use transaction to create debt and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
+      // Get debtor info
+      const debtor = await tx.debtor.findUnique({
+        where: { id: validatedData.debtor_id },
+      });
+
+      if (!debtor) {
+        throw new Error("Qarzdor topilmadi");
+      }
+
       // Create debt record
       const debt = await tx.debt.create({
         data: {
@@ -34,8 +46,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Get debt limit from settings
+      const debtLimitSetting = await tx.settings.findUnique({
+        where: { key: "debt_limit" },
+      });
+      const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
+
       // Update debtor's total_debt
-      await tx.debtor.update({
+      const updatedDebtor = await tx.debtor.update({
         where: { id: validatedData.debtor_id },
         data: {
           total_debt: {
@@ -44,10 +62,44 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return debt;
+      return { debt, debtor, updatedDebtor, debtLimit };
     });
 
-    return NextResponse.json(result, { status: 201 });
+    // Create audit log
+    await createAuditLog({
+      userId,
+      action: "DEBT_ADDED",
+      entityType: "DEBT",
+      entityId: result.debt.id,
+      newValue: {
+        debtor_id: validatedData.debtor_id,
+        amount: validatedData.amount,
+        description: validatedData.description,
+      },
+    });
+
+    // Create notification for debt added
+    await createNotification({
+      userId,
+      debtorId: validatedData.debtor_id,
+      type: "DEBT_ADDED",
+      title: "Yangi qarz qo'shildi",
+      message: `${result.debtor.first_name} ${result.debtor.last_name} - ${validatedData.amount.toLocaleString()} so'm qarz qo'shildi`,
+    });
+
+    // Check if debt limit exceeded
+    const newTotalDebt = result.updatedDebtor.total_debt.toNumber();
+    if (newTotalDebt > result.debtLimit) {
+      await createNotification({
+        userId,
+        debtorId: validatedData.debtor_id,
+        type: "DEBT_LIMIT_EXCEEDED",
+        title: "Qarz limiti oshdi",
+        message: `${result.debtor.first_name} ${result.debtor.last_name} qarz limiti oshdi: ${newTotalDebt.toLocaleString()} so'm`,
+      });
+    }
+
+    return NextResponse.json(result.debt, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });

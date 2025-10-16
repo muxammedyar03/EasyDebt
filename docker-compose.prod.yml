@@ -11,7 +11,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d debt_management"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,6 +26,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public
       JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
+      OPENSSL_CONF: /dev/null
       VIRTUAL_HOST: ${DOMAIN}
       VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: ${DOMAIN}

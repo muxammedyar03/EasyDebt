@@ -14,15 +14,7 @@ const compat = new FlatCompat({
 export default [
   {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
-    ignores: [
-      ".github/",
-      ".husky/",
-      "node_modules/",
-      ".next/",
-      "src/components/ui",
-      "*.config.ts",
-      "*.mjs",
-    ],
+    ignores: [".github/", ".husky/", "node_modules/", ".next/", "src/components/ui", "*.config.ts", "*.mjs"],
     languageOptions: {
       globals: globals.browser,
       parser: "@typescript-eslint/parser",

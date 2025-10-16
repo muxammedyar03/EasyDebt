@@ -69,7 +69,7 @@ These serve as the fallback; there is no separate default.css file. */
   --chart-1: oklch(0.3211 0 0);
   --chart-2: oklch(0.4495 0 0);
   --chart-3: oklch(0.5693 0 0);
-  --chart-4: oklch(0.6830 0 0);
+  --chart-4: oklch(0.683 0 0);
   --chart-5: oklch(0.7921 0 0);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -163,4 +163,32 @@ These serve as the fallback; there is no separate default.css file. */
 
 .disable-transitions * {
   transition: none !important;
+}
+
+/* Toast styling */
+[data-sonner-toast] {
+  background: white !important;
+  border: 1px solid rgb(229 231 235) !important; /* gray-200 */
+}
+
+[data-sonner-toast] [data-title] {
+  color: rgb(17 24 39) !important; /* gray-900 */
+}
+
+[data-sonner-toast] [data-description] {
+  color: rgb(75 85 99) !important; /* gray-600 */
+}
+
+/* Dark mode */
+.dark [data-sonner-toast] {
+  background: rgb(31 41 55) !important; /* gray-800 */
+  border: 1px solid rgb(55 65 81) !important; /* gray-700 */
+}
+
+.dark [data-sonner-toast] [data-title] {
+  color: rgb(243 244 246) !important; /* gray-100 */
+}
+
+.dark [data-sonner-toast] [data-description] {
+  color: rgb(209 213 219) !important; /* gray-300 */
 }

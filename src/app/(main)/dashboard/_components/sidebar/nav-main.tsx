@@ -1,9 +1,10 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { PlusCircleIcon, MailIcon, ChevronRight } from "lucide-react";
+import { PlusCircleIcon, MailIcon, ChevronRight, UserPlus, Banknote, CreditCard } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -12,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   SidebarGroup,
@@ -26,6 +28,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { type NavGroup, type NavMainItem } from "@/navigation/sidebar/sidebar-items";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface NavMainProps {
   readonly items: readonly NavGroup[];
@@ -142,19 +145,33 @@ const NavItemCollapsed = ({
 };
 
 export function NavMain({ items }: NavMainProps) {
-  const path = usePathname();
+  const pathname = usePathname();
   const { state, isMobile } = useSidebar();
+  const [quickCreateOpen, setQuickCreateOpen] = React.useState(false);
+  const { user } = useCurrentUser();
 
   const isItemActive = (url: string, subItems?: NavMainItem["subItems"]) => {
     if (subItems?.length) {
-      return subItems.some((sub) => path.startsWith(sub.url));
+      return subItems.some((sub) => pathname.startsWith(sub.url));
     }
-    return path === url;
+    return pathname === url;
   };
 
   const isSubmenuOpen = (subItems?: NavMainItem["subItems"]) => {
-    return subItems?.some((sub) => path.startsWith(sub.url)) ?? false;
+    return subItems?.some((sub) => pathname.startsWith(sub.url)) ?? false;
   };
+
+  // Filter items by roles if specified
+  const filteredItems: NavGroup[] = React.useMemo(() => {
+    return items.map((group: NavGroup) => ({
+      ...group,
+      items: group.items.filter((it: NavMainItem) => {
+        if (!it.roles || it.roles.length === 0) return true;
+        if (!user) return false; // hide role-restricted items until user is known
+        return it.roles.includes(user.role);
+      }),
+    }));
+  }, [items, user]);
 
   return (
     <>
@@ -162,13 +179,38 @@ export function NavMain({ items }: NavMainProps) {
         <SidebarGroupContent className="flex flex-col gap-2">
           <SidebarMenu>
             <SidebarMenuItem className="flex items-center gap-2">
-              <SidebarMenuButton
-                tooltip="Quick Create"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-              >
-                <PlusCircleIcon />
-                <span>Quick Create</span>
-              </SidebarMenuButton>
+              <DropdownMenu open={quickCreateOpen} onOpenChange={setQuickCreateOpen}>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip="Quick Create"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+                  >
+                    <PlusCircleIcon />
+                    <span>Quick Create</span>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/default" className="flex cursor-pointer items-center gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      <span>Qarzdor qo&apos;shish</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/debtors" className="flex cursor-pointer items-center gap-2">
+                      <Banknote className="h-4 w-4" />
+                      <span>Qarz qo&apos;shish</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/debtors" className="flex cursor-pointer items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      <span>To&apos;lov qo&apos;shish</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 size="icon"
                 className="h-9 w-9 shrink-0 group-data-[collapsible=icon]:opacity-0"
@@ -181,7 +223,7 @@ export function NavMain({ items }: NavMainProps) {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      {items.map((group) => (
+      {filteredItems.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
           <SidebarGroupContent className="flex flex-col gap-2">

@@ -7,6 +7,7 @@ export const debtorSchema = z.object({
   phone_number: z.string().nullable(),
   address: z.string().nullable(),
   total_debt: z.number(),
+  is_overdue: z.boolean(),
   created_at: z.date(),
   updated_at: z.date(),
   created_by: z.number(),

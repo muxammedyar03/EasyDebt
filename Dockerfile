@@ -1,13 +1,14 @@
 # ---- Base image ----
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # ---- Dependencies ----
 FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci --omit=dev
+COPY scripts ./scripts
+RUN npm ci
 
 # ---- Builder ----
 FROM base AS builder
@@ -25,6 +26,7 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
+RUN apk add --no-cache openssl
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
 
 COPY --from=builder /app/public ./public

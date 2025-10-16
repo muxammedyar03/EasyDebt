@@ -1,7 +1,12 @@
+import { prisma } from "@/lib/prisma";
+import { OverdueDebtorsCard } from "@/components/dashboard/overdue-debtors-card";
+import { CustomerRatingCard } from "@/components/dashboard/customer-rating-card";
+import { ReportsCard } from "./_components/reports-card";
+
 import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
-import { prisma } from "@/lib/prisma";
+import { Payment } from "@prisma/client";
 
 export default async function Page() {
   const debtorsRaw = await prisma.debtor.findMany({
@@ -9,6 +14,16 @@ export default async function Page() {
       debts: true,
       payments: true,
     },
+  });
+
+  // Get overdue debtors
+  const overdueDebtorsRaw = await prisma.debtor.findMany({
+    where: {
+      is_overdue: true,
+      total_debt: { gt: 0 },
+    },
+    orderBy: { last_payment_date: "asc" },
+    take: 10,
   });
 
   // Convert Decimal to number for type compatibility
@@ -130,42 +145,90 @@ export default async function Page() {
     where: { key: "debt_limit" },
   });
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
-  //   { date: "2025-09-09", cash: 1050, card: 830,  click: 41 },
-  //   { date: "2025-09-10", cash: 1130, card: 900,  click: 46 },
-  //   { date: "2025-09-11", cash: 1210, card: 970,  click: 48 },
-  //   { date: "2025-09-12", cash: 980,  card: 840,  click: 39 },
-  //   { date: "2025-09-13", cash: 1030, card: 860,  click: 42 },
-  //   { date: "2025-09-14", cash: 1090, card: 880,  click: 43 },
-  //   { date: "2025-09-15", cash: 1150, card: 940,  click: 47 },
-  //   { date: "2025-09-16", cash: 980,  card: 800,  click: 38 },
-  //   { date: "2025-09-17", cash: 1010, card: 860,  click: 40 },
-  //   { date: "2025-09-18", cash: 1120, card: 890,  click: 44 },
-  //   { date: "2025-09-19", cash: 1180, card: 940,  click: 46 },
-  //   { date: "2025-09-20", cash: 990,  card: 820,  click: 39 },
-  //   { date: "2025-09-21", cash: 1020, card: 860,  click: 41 },
-  //   { date: "2025-09-22", cash: 1070, card: 880,  click: 42 },
-  //   { date: "2025-09-23", cash: 1130, card: 910,  click: 45 },
-  //   { date: "2025-09-24", cash: 1200, card: 970,  click: 49 },
-  //   { date: "2025-09-25", cash: 990,  card: 830,  click: 40 },
-  //   { date: "2025-09-26", cash: 1040, card: 860,  click: 41 },
-  //   { date: "2025-09-27", cash: 1090, card: 900,  click: 43 },
-  //   { date: "2025-09-28", cash: 1170, card: 950,  click: 46 },
-  //   { date: "2025-09-29", cash: 1000, card: 820,  click: 39 },
-  //   { date: "2025-09-30", cash: 1120, card: 880,  click: 44 },
-  //   { date: "2025-10-01", cash: 1130, card: 910,  click: 45 },
-  //   { date: "2025-10-02", cash: 1200, card: 970,  click: 49 },
-  //   { date: "2025-10-03", cash: 990,  card: 830,  click: 40 },
-  //   { date: "2025-10-04", cash: 1040, card: 860,  click: 41 },
-  //   { date: "2025-10-05", cash: 1090, card: 900,  click: 43 },
-  //   { date: "2025-10-06", cash: 1170, card: 950,  click: 46 },
-  //   { date: "2025-10-07", cash: 1000, card: 820,  click: 39 },
-  //   { date: "2025-10-08", cash: 1120, card: 880,  click: 44 },
-  // ];
+
+  // Calculate customer ratings (last 3 months)
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+  const recentPayments = await prisma.payment.findMany({
+    where: {
+      created_at: {
+        gte: threeMonthsAgo,
+      },
+    },
+    include: {
+      debtor: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  // Group payments by debtor and calculate ratings
+  const paymentsByDebtor = new Map<number, Payment[]>();
+  recentPayments.forEach((payment) => {
+    const existing = paymentsByDebtor.get(payment.debtor_id) || [];
+    existing.push(payment);
+    paymentsByDebtor.set(payment.debtor_id, existing);
+  });
+
+  let goodCount = 0;
+  let averageCount = 0;
+  let badCount = 0;
+
+  paymentsByDebtor.forEach((debtorPayments) => {
+    if (debtorPayments.length < 2) return;
+
+    const sorted = debtorPayments.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+    let totalDays = 0;
+    let count = 0;
+
+    for (let i = 1; i < sorted.length; i++) {
+      const days = Math.floor(
+        (sorted[i].created_at.getTime() - sorted[i - 1].created_at.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      totalDays += days;
+      count++;
+    }
+
+    const avgDays = count > 0 ? totalDays / count : 0;
+
+    if (avgDays <= 45) {
+      goodCount++;
+    } else if (avgDays <= 55) {
+      averageCount++;
+    } else {
+      badCount++;
+    }
+  });
+
+  const overdueDebtors = overdueDebtorsRaw.map((debtor) => ({
+    ...debtor,
+    total_debt: debtor.total_debt.toNumber(),
+  }));
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
       <DataTable data={debtors} debtLimit={debtLimit} />
+
+      {/* Overdue Debtors Alert */}
+      {overdueDebtors.length > 0 && <OverdueDebtorsCard debtors={overdueDebtors} />}
+
+      {/* Statistics Cards */}
       <SectionCards stats={stats} />
+
+      {/* New Cards Grid */}
+      <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+        <CustomerRatingCard
+          goodCount={goodCount}
+          averageCount={averageCount}
+          badCount={badCount}
+          totalCount={goodCount + averageCount + badCount}
+        />
+        <ReportsCard />
+      </div>
+
+      {/* Chart */}
       <ChartAreaInteractive chartData={chartData} />
     </div>
   );

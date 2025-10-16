@@ -28,16 +28,18 @@ model User {
 }
 
 model Debtor {
-  id           Int      @id @default(autoincrement())
-  first_name   String
-  last_name    String
-  phone_number String?
-  address      String?
-  total_debt   Decimal  @default(0) @db.Decimal(10, 2)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  created_by   Int
-  
+  id                Int       @id @default(autoincrement())
+  first_name        String
+  last_name         String
+  phone_number      String?
+  address           String?
+  total_debt        Decimal   @default(0) @db.Decimal(10, 2)
+  last_payment_date DateTime?
+  is_overdue        Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  created_by        Int
+
   // Relations
   creator  User      @relation("CreatedBy", fields: [created_by], references: [id])
   debts    Debt[]
@@ -47,6 +49,8 @@ model Debtor {
   @@index([total_debt])
   @@index([created_by])
   @@index([created_at])
+  @@index([is_overdue])
+  @@index([last_payment_date])
   @@map("debtors")
 }
 
@@ -108,4 +112,46 @@ model Settings {
   updated_at DateTime @updatedAt
 
   @@map("settings")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  user_id     Int?
+  action      String
+  entity_type String
+  entity_id   Int?
+  old_value   Json?
+  new_value   Json?
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime @default(now())
+
+  @@index([user_id])
+  @@index([entity_type, entity_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id         Int              @id @default(autoincrement())
+  user_id    Int?
+  debtor_id  Int?
+  type       NotificationType
+  title      String
+  message    String
+  is_read    Boolean          @default(false)
+  created_at DateTime         @default(now())
+
+  @@index([user_id])
+  @@index([debtor_id])
+  @@index([is_read])
+  @@index([created_at])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  OVERDUE_PAYMENT
+  PAYMENT_RECEIVED
+  DEBT_ADDED
+  DEBT_LIMIT_EXCEEDED
 }

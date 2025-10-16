@@ -6,20 +6,22 @@ import { Trash2, Edit, MoreHorizontal, Search, FileDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { exportToExcel, formatNumberForExcel } from "@/lib/excel-export";
-
+import { DebtItem } from "@/types/types";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { DebtItem } from "@/types/types";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DebtorCard } from "@/components/mobile/debtor-card";
+import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
+import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -49,6 +51,8 @@ interface Debtor {
   phone_number: string | null;
   address: string | null;
   total_debt: number;
+  last_payment_date: Date | null;
+  is_overdue: boolean;
   created_at: Date;
   updated_at: Date;
   created_by: number;
@@ -68,10 +72,30 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
+    {
+      open: false,
+      debtorId: 0,
+      debtorName: "",
+    },
+  );
+  const [quickPaymentDialog, setQuickPaymentDialog] = React.useState<{
+    open: boolean;
+    debtorId: number;
+    debtorName: string;
+    totalDebt: number;
+  }>({
+    open: false,
+    debtorId: 0,
+    debtorName: "",
+    totalDebt: 0,
+  });
 
-  const getDebtorStatus = (totalDebt: number) => {
+  const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
     if (totalDebt <= 0) {
       return { label: "To'langan", variant: "default" as const, color: "text-green-600" };
+    } else if (isOverdue) {
+      return { label: "Muddati o'tgan", variant: "destructive" as const, color: "text-red-600" };
     } else if (totalDebt > debtLimit) {
       return { label: "Limitdan oshgan", variant: "destructive" as const, color: "text-red-600" };
     } else {
@@ -90,7 +114,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       params.set("page", "1");
       router.push(`?${params.toString()}`);
     },
-    [router, searchParams]
+    [router, searchParams],
   );
 
   // Debounce search
@@ -224,15 +248,15 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
           "Status",
           "Yaratilgan sana",
         ],
-        rows: debtors.map((debtor: Debtor & { total_payment: number; status: string }) => [
+        rows: debtors.map((debtor: Debtor & { total_debts?: number; total_payments?: number; status: string }) => [
           debtor.id,
           debtor.first_name,
           debtor.last_name,
           debtor.phone_number || "-",
           debtor.address || "-",
           formatNumberForExcel(debtor.total_debt),
-          formatNumberForExcel(debtor.total_debt),
-          formatNumberForExcel(debtor.total_payment),
+          formatNumberForExcel(debtor.total_debts || 0),
+          formatNumberForExcel(debtor.total_payments || 0),
           debtor.status,
           debtor.created_at,
         ]),
@@ -249,152 +273,211 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     }
   };
 
+  const handleAddDebt = (debtorId: number) => {
+    const debtor = debtors.find((d) => d.id === debtorId);
+    if (debtor) {
+      setQuickDebtDialog({
+        open: true,
+        debtorId,
+        debtorName: `${debtor.first_name} ${debtor.last_name}`,
+      });
+    }
+  };
+
+  const handleAddPayment = (debtorId: number) => {
+    const debtor = debtors.find((d) => d.id === debtorId);
+    if (debtor) {
+      setQuickPaymentDialog({
+        open: true,
+        debtorId,
+        debtorName: `${debtor.first_name} ${debtor.last_name}`,
+        totalDebt: debtor.total_debt,
+      });
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1 md:max-w-sm">
-            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-            <Input
-              placeholder="Ism, familiya yoki telefon..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="pl-8"
-            />
+    <>
+      <div className="space-y-4">
+        {/* Filters */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-1 items-center gap-2">
+            <div className="relative flex-1 md:max-w-sm">
+              <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+              <Input
+                placeholder="Ism, familiya yoki telefon..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+              <FileDown className="h-4 w-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </Button>
+
+            <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+              <SelectTrigger className="w-[140px] sm:w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Barchasi</SelectItem>
+                <SelectItem value="qarzdor">Qarzdor</SelectItem>
+                <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
+                <SelectItem value="tolangan">To&apos;langan</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {selectedIds.length > 0 && (
+              <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="hidden md:flex">
+                <Trash2 className="mr-2 h-4 w-4" />
+                O&apos;chirish ({selectedIds.length})
+              </Button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-            <FileDown className="h-4 w-4" />
-            Excel
-          </Button>
-
-          <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Barchasi</SelectItem>
-              <SelectItem value="qarzdor">Qarzdor</SelectItem>
-              <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
-              <SelectItem value="tolangan">To&apos;langan</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {selectedIds.length > 0 && (
-            <Button variant="destructive" onClick={handleBulkDelete}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              O&apos;chirish ({selectedIds.length})
-            </Button>
+        {/* Mobile Card View */}
+        <div className="grid gap-4 md:hidden">
+          {debtors.length === 0 ? (
+            <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+          ) : (
+            debtors.map((debtor) => (
+              <DebtorCard
+                key={debtor.id}
+                debtor={debtor}
+                debtLimit={debtLimit}
+                onAddDebt={handleAddDebt}
+                onAddPayment={handleAddPayment}
+                onDelete={handleDelete}
+              />
+            ))
           )}
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedIds.length === debtors.length && debtors.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
-                Ism Familiya
-              </TableHead>
-              <TableHead>Telefon</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("amount")}>
-                Qarz summasi
-              </TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort("created_at")}>
-                Sana
-              </TableHead>
-              <TableHead className="w-12"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {debtors.length === 0 ? (
+        {/* Desktop Table View */}
+        <div className="hidden rounded-md border md:block">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  Ma&apos;lumot topilmadi
-                </TableCell>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedIds.length === debtors.length && debtors.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
+                  Ism Familiya
+                </TableHead>
+                <TableHead>Telefon</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("amount")}>
+                  Qarz summasi
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("created_at")}>
+                  Sana
+                </TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
-            ) : (
-              debtors.map((debtor) => {
-                const status = getDebtorStatus(debtor.total_debt);
-                return (
-                  <TableRow key={debtor.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.includes(debtor.id)}
-                        onCheckedChange={() => handleSelectOne(debtor.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {debtor.first_name} {debtor.last_name}
-                    </TableCell>
-                    <TableCell>{debtor.phone_number || "-"}</TableCell>
-                    <TableCell className={status.color}>{formatCurrency(debtor.total_debt)}</TableCell>
-                    <TableCell>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                    </TableCell>
-                    <TableCell>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Tahrirlash
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(debtor.id)} className="text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            O&apos;chirish
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {debtors.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">
+                    Ma&apos;lumot topilmadi
+                  </TableCell>
+                </TableRow>
+              ) : (
+                debtors.map((debtor) => {
+                  const status = getDebtorStatus(debtor.total_debt, debtor.is_overdue);
+                  return (
+                    <TableRow key={debtor.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(debtor.id)}
+                          onCheckedChange={() => handleSelectOne(debtor.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {debtor.first_name} {debtor.last_name}
+                      </TableCell>
+                      <TableCell>{debtor.phone_number || "-"}</TableCell>
+                      <TableCell className={status.color}>{formatCurrency(debtor.total_debt)}</TableCell>
+                      <TableCell>
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                      </TableCell>
+                      <TableCell>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Tahrirlash
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(debtor.id)} className="text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              O&apos;chirish
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between">
+          <div className="text-muted-foreground text-sm">
+            {currentPage} / {totalPages} sahifa
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Oldingi
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Keyingi
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-muted-foreground text-sm">
-          {currentPage} / {totalPages} sahifa
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Oldingi
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Keyingi
-          </Button>
-        </div>
-      </div>
-    </div>
+      {/* Quick Add Dialogs */}
+      <QuickAddDebt
+        open={quickDebtDialog.open}
+        onOpenChange={(open) => setQuickDebtDialog({ ...quickDebtDialog, open })}
+        debtorId={quickDebtDialog.debtorId}
+        debtorName={quickDebtDialog.debtorName}
+      />
+
+      <QuickAddPayment
+        open={quickPaymentDialog.open}
+        onOpenChange={(open) => setQuickPaymentDialog({ ...quickPaymentDialog, open })}
+        debtorId={quickPaymentDialog.debtorId}
+        debtorName={quickPaymentDialog.debtorName}
+        totalDebt={quickPaymentDialog.totalDebt}
+      />
+    </>
   );
 }

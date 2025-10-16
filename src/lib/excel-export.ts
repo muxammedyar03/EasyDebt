@@ -45,7 +45,10 @@ export function formatDateForExcel(date: Date | string): string {
 }
 
 // Format number for Excel
-export function formatNumberForExcel(num: number): string {
+export function formatNumberForExcel(num: number | undefined | null): string {
+  if (num === undefined || num === null || isNaN(num)) {
+    return "0.00";
+  }
   return num.toLocaleString("uz-UZ", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
