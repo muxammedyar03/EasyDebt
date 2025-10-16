@@ -4,29 +4,10 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-interface AuditLog {
-  id: number;
-  user_id: number | null;
-  action: string;
-  entity_type: string;
-  entity_id: number | null;
-  old_value: string;
-  new_value: string;
-  ip_address: string | null;
-  user_agent: string | null;
-  created_at: Date;
-  user: {
-    id: number;
-    username: string;
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-  } | null;
-}
+import { AuditLogTableProps } from "@/types/types";
 
 interface AuditLogsTableProps {
-  logs: AuditLog[];
+  logs: AuditLogTableProps[];
 }
 
 export function AuditLogsTable({ logs }: AuditLogsTableProps) {

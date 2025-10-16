@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { AuditLogsTable } from "./_components/audit-logs-table";
+import { AuditLog } from "@prisma/client";
+import { AuditLogTableProps } from "@/types/types";
 
 export default async function AuditLogsPage() {
   const auditLogs = await prisma.auditLog.findMany({
@@ -10,7 +12,7 @@ export default async function AuditLogsPage() {
   });
 
   // Get user names
-  const userIds = [...new Set(auditLogs.map((log) => log.user_id).filter((id): id is number => id !== null))];
+  const userIds = [...new Set(auditLogs.map((log: AuditLog) => log.user_id).filter((id): id is number => id !== null))];
   const users = await prisma.user.findMany({
     where: {
       id: {
@@ -40,7 +42,7 @@ export default async function AuditLogsPage() {
         <p className="text-muted-foreground">Barcha harakatlar tarixi</p>
       </div>
 
-      <AuditLogsTable logs={logsWithUsers} />
+      <AuditLogsTable logs={logsWithUsers as AuditLogTableProps[]} />
     </div>
   );
 }

@@ -3,11 +3,18 @@ import { CustomersTable } from "./_components/customers-table";
 import { Debtor, Payment } from "@prisma/client";
 import { Debt, PaymentType as LocalPaymentType } from "@/types/types";
 
+interface SearchParams {
+  page?: string;
+  search?: string;
+  rating?: string;
+}
+
 export default async function CustomersPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { page?: string; search?: string; rating?: string };
+  searchParams: Promise<SearchParams>;
 }) {
+  const searchParams = await searchParamsPromise;
   const page = parseInt(searchParams.page || "1");
   const search = searchParams.search || "";
   const rating = searchParams.rating || "all";
@@ -72,26 +79,30 @@ export default async function CustomersPage({
   };
 
   // Convert Decimal -> number and ensure items is parsed
-  const debts = debtsRaw.map((debt): DebtDTO => ({
-    ...debt,
-    amount: debt.amount.toNumber(),
-    items: parseItems(debt.items),
-    debtor: {
-      ...debt.debtor,
-      total_debt: debt.debtor.total_debt.toNumber(),
-    },
-  }));
+  const debts = debtsRaw.map(
+    (debt): DebtDTO => ({
+      ...debt,
+      amount: debt.amount.toNumber(),
+      items: parseItems(debt.items),
+      debtor: {
+        ...debt.debtor,
+        total_debt: debt.debtor.total_debt.toNumber(),
+      },
+    }),
+  );
 
-  const payments = paymentsRaw.map((payment): PaymentDTO => ({
-    ...payment,
-    amount: payment.amount.toNumber(),
-    // Map Prisma enum -> local PaymentType (both are string enums, so cast is safe)
-    payment_type: payment.payment_type as unknown as LocalPaymentType,
-    debtor: {
-      ...payment.debtor,
-      total_debt: payment.debtor.total_debt.toNumber(),
-    },
-  }));
+  const payments = paymentsRaw.map(
+    (payment): PaymentDTO => ({
+      ...payment,
+      amount: payment.amount.toNumber(),
+      // Map Prisma enum -> local PaymentType (both are string enums, so cast is safe)
+      payment_type: payment.payment_type as unknown as LocalPaymentType,
+      debtor: {
+        ...payment.debtor,
+        total_debt: payment.debtor.total_debt.toNumber(),
+      },
+    }),
+  );
 
   // Calculate customer ratings based on debt → payment time
   const customerRatings = new Map<
@@ -215,6 +226,17 @@ export default async function CustomersPage({
   const averageCount = allCustomers.filter((c) => c.rating === "average").length;
   const badCount = allCustomers.filter((c) => c.rating === "bad").length;
 
+  const transformedCustomers = paginatedCustomers.map((customer) => ({
+    ...customer,
+    payments: customer.payments.map((payment) => ({
+      ...payment,
+      debtor: {
+        ...payment.debtor,
+        is_overdue: false,
+      },
+    })),
+  }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -223,7 +245,7 @@ export default async function CustomersPage({
       </div>
 
       <CustomersTable
-        customers={paginatedCustomers}
+        customers={transformedCustomers}
         currentPage={page}
         totalPages={totalPages}
         goodCount={goodCount}

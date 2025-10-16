@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT" | "PAYMENT_ADDED" | "DEBT_ADDED";
 
@@ -23,8 +24,8 @@ export async function createAuditLog(data: AuditLogData) {
         action: data.action,
         entity_type: data.entityType,
         entity_id: data.entityId,
-        old_value: data.oldValue ? (data.oldValue as object) : null,
-        new_value: data.newValue ? (data.newValue as object) : null,
+        old_value: data.oldValue ? (data.oldValue as Prisma.InputJsonValue) : Prisma.JsonNull,
+        new_value: data.newValue ? (data.newValue as Prisma.InputJsonValue) : Prisma.JsonNull,
         ip_address: data.ipAddress,
         user_agent: data.userAgent,
       },

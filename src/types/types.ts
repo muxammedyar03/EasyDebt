@@ -98,3 +98,23 @@ export interface CustomerTableProps {
   avgDaysBetweenDebtAndPayment: number;
   rating: "good" | "average" | "bad";
 }
+
+export interface AuditLogTableProps {
+  id: number;
+  user_id: number | null;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  old_value: string;
+  new_value: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: Date;
+  user: {
+    id: number;
+    username: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  } | null;
+}
