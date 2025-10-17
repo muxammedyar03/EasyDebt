@@ -75,6 +75,9 @@ jobs:
           script: |
             cd /var/www/easy-debt
             
+            # Pull latest code changes
+            git pull origin main
+            
             # Pull latest images
             docker compose -f docker-compose.prod.yml pull
             
