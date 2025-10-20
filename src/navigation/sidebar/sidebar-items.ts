@@ -45,18 +45,18 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
-      {
-        title: "CRM",
-        url: "/dashboard/crm",
-        icon: ChartBar,
-        comingSoon: true,
-      },
-      {
-        title: "Finance",
-        url: "/dashboard/finance",
-        icon: Banknote,
-        comingSoon: true,
-      },
+      // {
+      //   title: "CRM",
+      //   url: "/dashboard/crm",
+      //   icon: ChartBar,
+      //   comingSoon: true,
+      // },
+      // {
+      //   title: "Finance",
+      //   url: "/dashboard/finance",
+      //   icon: Banknote,
+      //   comingSoon: true,
+      // },
       {
         title: "Qarzdorlar",
         url: "/dashboard/debtors",

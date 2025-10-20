@@ -40,19 +40,36 @@ interface AddDebtorDialogProps {
 export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [debtAmount, setDebtAmount] = React.useState("");
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<AddDebtorFormData>({
     resolver: zodResolver(addDebtorSchema),
   });
 
+  const formatNumber = (value: string) => {
+    // Remove all non-digit characters
+    const numbers = value.replace(/\D/g, "");
+    // Format with thousand separators
+    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
+  };
+
+  const handleDebtAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatNumber(e.target.value);
+    setDebtAmount(formatted);
+    setValue("debt_amount", formatted);
+  };
+
   const onSubmit = async (data: AddDebtorFormData) => {
     setIsLoading(true);
     try {
+      // Remove spaces before parsing
+      const cleanAmount = data.debt_amount ? data.debt_amount.replace(/\s/g, "") : null;
       const response = await fetch("/api/debtors", {
         method: "POST",
         headers: {
@@ -63,7 +80,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
           last_name: data.last_name,
           phone_number: data.phone_number || null,
           address: data.address || null,
-          debt_amount: data.debt_amount ? parseFloat(data.debt_amount) : null,
+          debt_amount: cleanAmount ? parseFloat(cleanAmount) : null,
           debt_description: data.debt_description || null,
         }),
       });
@@ -75,6 +92,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
 
       toast.success("Qarzdor muvaffaqiyatli qo'shildi");
       reset();
+      setDebtAmount("");
       onOpenChange(false);
 
       // Call onSuccess callback if provided
@@ -135,11 +153,12 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
               <Label htmlFor="debt_amount">Qarz miqdori</Label>
               <Input
                 id="debt_amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                {...register("debt_amount")}
+                type="text"
+                placeholder="0"
+                value={debtAmount}
+                onChange={handleDebtAmountChange}
                 disabled={isLoading}
+                inputMode="numeric"
               />
             </div>
 

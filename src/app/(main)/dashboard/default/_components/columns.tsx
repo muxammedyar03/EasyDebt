@@ -123,8 +123,8 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
         <DropdownMenuTrigger asChild>
           <div onClick={(e) => e.stopPropagation()}>
             <Button
-              variant="ghost"
-              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+              variant="outline"
+              className="hover:border-input hover:bg-input data-[state=open]:bg-muted text-muted-foreground flex size-8 hover:border"
               size="icon"
               disabled={isDeleting}
             >
@@ -136,7 +136,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
         <DropdownMenuContent align="end" className="w-32">
           <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>O&apos;zgartirish</DropdownMenuItem>
           <DropdownMenuItem onClick={handleDelete} className="text-destructive" disabled={isDeleting}>
-            {isDeleting ? "O&apos;chirilmoqda..." : "O&apos;chirish"}
+            {isDeleting ? "O'chirilmoqda..." : "O'chirish"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -176,10 +176,16 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     enableHiding: false,
   },
   {
+    accessorKey: "index",
+    header: ({ column }) => <DataTableColumnHeader className="w-5" column={column} title="№" />,
+    cell: ({ row }) => <div>{row.index + 1}</div>,
+    enableSorting: true,
+  },
+  {
     accessorKey: "first_name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Qarzdor" />,
     cell: ({ row }) => <FirstNameCell row={row} />,
-    enableSorting: false,
+    enableSorting: true,
   },
   {
     accessorKey: "phone_number",
@@ -208,7 +214,9 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     header: ({ column }) => (
       <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />
     ),
-    cell: ({ row }) => <div>{row.original.total_debt.toLocaleString()} so&apos;m</div>,
+    cell: ({ row }) => (
+      <div className="text-base font-semibold">{row.original.total_debt.toLocaleString()} so&apos;m</div>
+    ),
     enableSorting: true,
   },
   {

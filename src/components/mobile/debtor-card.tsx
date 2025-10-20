@@ -54,7 +54,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-4">
+      <CardContent className="px-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="outline" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -107,11 +107,11 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
         </div>
 
         <div className="mt-4 flex gap-2">
-          <Button size="sm" variant="outline" className="flex-1 gap-1.5" onClick={() => onAddDebt(debtor.id)}>
+          <Button size="sm" variant="outline" className="h-12 flex-1 gap-1.5" onClick={() => onAddDebt(debtor.id)}>
             <Plus className="h-4 w-4" />
             Qarz
           </Button>
-          <Button size="sm" className="flex-1 gap-1.5" onClick={() => onAddPayment(debtor.id)}>
+          <Button size="sm" className="h-12 flex-1 gap-1.5" onClick={() => onAddPayment(debtor.id)}>
             <DollarSign className="h-4 w-4" />
             To&apos;lov
           </Button>

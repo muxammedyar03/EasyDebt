@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
 import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function DataTable({
   data: initialData,
@@ -31,6 +32,7 @@ export function DataTable({
   const router = useRouter();
   const [data, setData] = React.useState(() => initialData);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const isMobile = useIsMobile();
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
     {
@@ -138,11 +140,11 @@ export function DataTable({
   }, [data, globalFilter]);
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex items-center gap-2">
+    <div className={`flex flex-col gap-y-4 ${isMobile ? "rounded-xl border bg-neutral-100 px-2 pb-4" : ""}`}>
+      <div className="mt-6 mb-3 flex items-center gap-2 md:m-0">
         <Input
           type="text"
-          className="h-12 w-full xl:w-1/2"
+          className="h-14 w-full text-base font-medium xl:w-1/2"
           placeholder="Ism telefon va address boyicha qidirish"
           value={globalFilter}
           onChange={(e) => {
@@ -151,7 +153,7 @@ export function DataTable({
           }}
         />
         <DataTableViewOptions table={table} />
-        <Button variant="outline" size="sm" className="h-12 w-12 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
+        <Button variant="outline" size="sm" className="h-14 w-14 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
           <Plus />
           <span className="hidden lg:inline">Qarzdor qo&apos;shish</span>
         </Button>
@@ -159,7 +161,9 @@ export function DataTable({
 
       {/* Mobile Card View */}
       <div className="grid gap-4 md:hidden">
-        {filteredData.length === 0 ? (
+        {!globalFilter ? (
+          <div className="text-muted-foreground py-5 text-center"></div>
+        ) : filteredData.length === 0 ? (
           <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
         ) : (
           filteredData.map((debtor) => (

@@ -51,15 +51,24 @@ export function QuickAddPayment({
     },
   });
 
+  const formatNumber = (value: string) => {
+    // Remove all non-digit characters
+    const numbers = value.replace(/\D/g, "");
+    // Format with thousand separators
+    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
+  };
+
   const onSubmit = async (data: PaymentFormValues) => {
     setIsLoading(true);
     try {
+      // Remove spaces before parsing
+      const cleanAmount = data.amount.replace(/\s/g, "");
       const response = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           debtor_id: debtorId,
-          amount: parseFloat(data.amount),
+          amount: parseFloat(cleanAmount),
           payment_type: data.payment_type,
           note: data.note || null,
         }),
@@ -108,7 +117,17 @@ export function QuickAddPayment({
                 <FormItem>
                   <FormLabel>Summa *</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0" {...field} autoFocus inputMode="numeric" />
+                    <Input
+                      type="text"
+                      placeholder="0"
+                      {...field}
+                      onChange={(e) => {
+                        const formatted = formatNumber(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                      autoFocus
+                      inputMode="numeric"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

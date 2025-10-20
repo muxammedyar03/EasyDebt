@@ -39,19 +39,36 @@ interface AddDebtDialogProps {
 export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [amount, setAmount] = React.useState("");
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<AddDebtFormData>({
     resolver: zodResolver(addDebtSchema),
   });
 
+  const formatNumber = (value: string) => {
+    // Remove all non-digit characters
+    const numbers = value.replace(/\D/g, "");
+    // Format with thousand separators
+    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatNumber(e.target.value);
+    setAmount(formatted);
+    setValue("amount", formatted);
+  };
+
   const onSubmit = async (data: AddDebtFormData) => {
     setIsLoading(true);
     try {
+      // Remove spaces before parsing
+      const cleanAmount = data.amount.replace(/\s/g, "");
       const response = await fetch("/api/debts", {
         method: "POST",
         headers: {
@@ -59,7 +76,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
         },
         body: JSON.stringify({
           debtor_id: debtorId,
-          amount: parseFloat(data.amount),
+          amount: parseFloat(cleanAmount),
           description: data.description || null,
         }),
       });
@@ -71,6 +88,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
 
       toast.success("Qarz muvaffaqiyatli qo'shildi");
       reset();
+      setAmount("");
       onOpenChange(false);
 
       if (onSuccess) {
@@ -101,11 +119,12 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
               </Label>
               <Input
                 id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                {...register("amount")}
+                type="text"
+                placeholder="0"
+                value={amount}
+                onChange={handleAmountChange}
                 disabled={isLoading}
+                inputMode="numeric"
               />
               {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
