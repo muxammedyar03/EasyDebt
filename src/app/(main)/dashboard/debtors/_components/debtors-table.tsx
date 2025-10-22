@@ -91,6 +91,9 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     totalDebt: 0,
   });
 
+  // Avoid triggering search on initial mount (which was resetting page to 1 after navigation)
+  const isFirstRender = React.useRef(true);
+
   const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
     if (totalDebt <= 0) {
       return { label: "To'langan", variant: "default" as const, color: "text-green-600" };
@@ -106,25 +109,42 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const handleSearch = React.useCallback(
     (value: string) => {
       const params = new URLSearchParams(searchParams.toString());
+      const currentSearch = params.get("search") || "";
       if (value) {
         params.set("search", value);
       } else {
         params.delete("search");
       }
-      params.set("page", "1");
+      // Only reset to page 1 if search value actually changed
+      if (value !== currentSearch) {
+        params.set("page", "1");
+      }
       router.push(`?${params.toString()}`);
     },
     [router, searchParams],
   );
 
-  // Debounce search
+  // Debounce search (skip on first render to prevent resetting page on navigation)
   React.useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // If URL already contains the same search value, do nothing
+    const urlSearch = searchParams.get("search") || "";
+    if (urlSearch === searchValue) return;
     const timer = setTimeout(() => {
       handleSearch(searchValue);
-    }, 500); // 500ms delay
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchValue, handleSearch]);
+  }, [searchValue, handleSearch, searchParams]);
+
+  // Keep input in sync with URL search param without forcing page reset
+  React.useEffect(() => {
+    const urlSearch = searchParams.get("search") || "";
+    setSearchValue((prev) => (prev === urlSearch ? prev : urlSearch));
+  }, [searchParams]);
 
   const handleSort = (sortBy: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -143,6 +163,9 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const handleStatusFilter = (status: string) => {
     const params = new URLSearchParams(searchParams.toString());
+    const current = params.get("status") || "all";
+    // If status is the same, do nothing to avoid resetting page
+    if (status === current) return;
     if (status === "all") {
       params.delete("status");
     } else {
@@ -337,6 +360,31 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 O&apos;chirish ({selectedIds.length})
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* Pagination (Top - Mobile) */}
+        <div className="flex items-center justify-between md:hidden">
+          <div className="text-muted-foreground text-sm">
+            {currentPage} / {totalPages} sahifa
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Oldingi
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Keyingi
+            </Button>
           </div>
         </div>
 

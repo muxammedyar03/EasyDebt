@@ -35,16 +35,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     // Prepare update data
     const updateData: Prisma.UserUpdateInput = {};
 
-    // Update fields if they exist in the request
-    const updateFields: Array<keyof UpdateUserData> = [
-      "username",
-      "email",
-      "role",
-      "first_name",
-      "last_name",
-      "is_active",
-    ];
-
     // Update only the fields that are provided
     if ("username" in body) {
       updateData.username = body.username;

@@ -74,22 +74,22 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT || 22 }}
           script: |
             cd /var/www/EasyDebt
-            
+
             # Pull latest code changes
             git pull origin main
-            
+
             # Pull latest images
             docker compose -f docker-compose.prod.yml pull
-            
+
             # Stop and remove old containers
             docker compose -f docker-compose.prod.yml down
-            
+
             # Start new containers
             docker compose -f docker-compose.prod.yml up -d
-            
+
             # Run database migrations
             docker compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
-            
+
             # Clean up old images
             docker image prune -af --filter "until=24h"
 

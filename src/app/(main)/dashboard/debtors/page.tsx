@@ -3,6 +3,10 @@ import { DebtorsTable } from "./_components/debtors-table";
 import { Prisma } from "@prisma/client";
 import { DebtItem } from "@/types/types";
 
+// Ensure this page is always dynamic and not cached
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function DebtorsPage({
   searchParams,
 }: {

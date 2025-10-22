@@ -66,7 +66,10 @@ export function TrendAnalysis({ trends }: TrendAnalysisProps) {
             const { percentage, direction } = getTrend(trend.current, trend.previous);
 
             return (
-              <div key={trend.label} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+              <div
+                key={trend.label}
+                className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+              >
                 <div className="space-y-1">
                   <p className="text-sm font-medium">{trend.label}</p>
                   <div className="flex items-center gap-2">

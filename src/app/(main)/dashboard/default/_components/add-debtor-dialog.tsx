@@ -3,10 +3,11 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { formatNumber, formatUzPhone } from "@/lib/format";
 
 import {
   Dialog,
@@ -41,6 +42,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [debtAmount, setDebtAmount] = React.useState("");
+  const [phone, setPhone] = React.useState("");
 
   const {
     register,
@@ -48,16 +50,11 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
     formState: { errors },
     reset,
     setValue,
+    control,
   } = useForm<AddDebtorFormData>({
     resolver: zodResolver(addDebtorSchema),
+    defaultValues: { phone_number: "" },
   });
-
-  const formatNumber = (value: string) => {
-    // Remove all non-digit characters
-    const numbers = value.replace(/\D/g, "");
-    // Format with thousand separators
-    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
-  };
 
   const handleDebtAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatNumber(e.target.value);
@@ -93,6 +90,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       toast.success("Qarzdor muvaffaqiyatli qo'shildi");
       reset();
       setDebtAmount("");
+      setPhone("");
       onOpenChange(false);
 
       // Call onSuccess callback if provided
@@ -136,11 +134,24 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
 
             <div className="grid gap-2">
               <Label htmlFor="phone_number">Telefon raqami</Label>
-              <Input
-                id="phone_number"
-                placeholder="+998 90 123 45 67"
-                {...register("phone_number")}
-                disabled={isLoading}
+              <Controller
+                name="phone_number"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="phone_number"
+                    placeholder="+998 90 123 45 67"
+                    value={phone}
+                    onChange={(e) => {
+                      const formatted = formatUzPhone(e.target.value);
+                      setPhone(formatted);
+                      field.onChange(formatted);
+                    }}
+                    inputMode="tel"
+                    maxLength={18}
+                    disabled={isLoading}
+                  />
+                )}
               />
             </div>
 

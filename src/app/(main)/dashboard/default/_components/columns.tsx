@@ -38,7 +38,7 @@ const FirstNameCell = ({ row }: { row: Row<Debtor> }) => {
         e.stopPropagation();
         router.push(`/dashboard/default/debitor/${row.original.id}`);
       }}
-      className="cursor-pointer"
+      className="cursor-pointer text-base font-semibold"
     >
       {row.original.first_name}
     </div>

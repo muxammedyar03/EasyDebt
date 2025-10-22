@@ -1,13 +1,4 @@
-import {
-  LayoutDashboard,
-  ChartBar,
-  Banknote,
-  UserCog,
-  FileText,
-  Users,
-  BarChart3,
-  type LucideIcon,
-} from "lucide-react";
+import { LayoutDashboard, UserCog, FileText, Users, BarChart3, type LucideIcon } from "lucide-react";
 
 export interface NavSubItem {
   title: string;

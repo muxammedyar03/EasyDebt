@@ -77,7 +77,7 @@ export function UsersList({ users }: UsersListProps) {
       router.refresh();
     } catch (error) {
       toast.error("Xatolik", {
-        description: `${"Status o'zgartirishda xatolik: "+ error}`,
+        description: `${"Status o'zgartirishda xatolik: " + error}`,
       });
     } finally {
       setIsLoading(false);

@@ -3,10 +3,11 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { formatUzPhone } from "@/lib/format";
 
 import {
   Dialog,
@@ -45,12 +46,14 @@ interface EditDebtorDialogProps {
 export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: EditDebtorDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [phone, setPhone] = React.useState("");
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    control,
   } = useForm<EditDebtorFormData>({
     resolver: zodResolver(editDebtorSchema),
     defaultValues: {
@@ -69,6 +72,7 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
         phone_number: debtor.phone_number || "",
         address: debtor.address || "",
       });
+      setPhone(formatUzPhone(debtor.phone_number || ""));
     }
   }, [open, debtor, reset]);
 
@@ -136,11 +140,24 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
 
             <div className="grid gap-2">
               <Label htmlFor="phone_number">Telefon raqami</Label>
-              <Input
-                id="phone_number"
-                placeholder="+998 90 123 45 67"
-                {...register("phone_number")}
-                disabled={isLoading}
+              <Controller
+                name="phone_number"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="phone_number"
+                    placeholder="+998 90 123 45 67"
+                    value={phone}
+                    onChange={(e) => {
+                      const formatted = formatUzPhone(e.target.value);
+                      setPhone(formatted);
+                      field.onChange(formatted);
+                    }}
+                    inputMode="tel"
+                    maxLength={18}
+                    disabled={isLoading}
+                  />
+                )}
               />
             </div>
 

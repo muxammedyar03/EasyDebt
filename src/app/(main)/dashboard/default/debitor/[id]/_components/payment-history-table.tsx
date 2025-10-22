@@ -49,6 +49,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>N</TableHead>
               <TableHead>Sana</TableHead>
               <TableHead>Miqdor</TableHead>
               <TableHead>To&apos;lov turi</TableHead>
@@ -56,8 +57,9 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentPayments.map((payment) => (
+            {currentPayments.map((payment, index: number) => (
               <TableRow key={payment.id}>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>
                   {new Date(payment.created_at).toLocaleDateString("uz-UZ", {
                     year: "numeric",

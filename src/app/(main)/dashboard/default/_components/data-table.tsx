@@ -14,6 +14,7 @@ import { withDndColumn } from "../../../../../components/data-table/table-utils"
 import { createDashboardColumns } from "./columns";
 import { debtorSchema } from "./schema";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { AddDebtorDialog } from "./add-debtor-dialog";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
@@ -85,7 +86,12 @@ export function DataTable({
     [handleDebtorAdded, handleRowClick, debtLimit],
   );
 
-  const table = useDataTableInstance({ data, columns, getRowId: (row) => row.id.toString() });
+  const table = useDataTableInstance({
+    data,
+    columns,
+    getRowId: (row) => row.id.toString(),
+    defaultPageSize: 10,
+  });
 
   const handleAddDebt = (debtorId: number) => {
     const debtor = data.find((d) => d.id === debtorId);
@@ -140,11 +146,13 @@ export function DataTable({
   }, [data, globalFilter]);
 
   return (
-    <div className={`flex flex-col gap-y-4 ${isMobile ? "rounded-xl border bg-neutral-100 px-2 pb-4" : ""}`}>
+    <div
+      className={`bg-card flex flex-col gap-y-4 rounded-xl p-4 shadow-sm ${isMobile ? "bg-card dark:bg-card rounded-xl border px-2 pb-4" : ""}`}
+    >
       <div className="mt-6 mb-3 flex items-center gap-2 md:m-0">
         <Input
           type="text"
-          className="h-14 w-full text-base font-medium xl:w-1/2"
+          className="border-border h-14 w-full text-base font-medium xl:w-1/2"
           placeholder="Ism telefon va address boyicha qidirish"
           value={globalFilter}
           onChange={(e) => {
@@ -182,12 +190,15 @@ export function DataTable({
       {/* Desktop Table View */}
       <div className="hidden md:block">
         <DataTableNew
-          dndEnabled
+          dndEnabled={false}
           table={table}
           columns={columns}
           onReorder={setData}
           onRowClick={(row) => router.push(`/dashboard/default/debitor/${row.id}`)}
         />
+        <div className="mt-2">
+          <DataTablePagination table={table} />
+        </div>
       </div>
 
       <AddDebtorDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} onSuccess={handleDebtorAdded} />
