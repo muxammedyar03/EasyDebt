@@ -231,7 +231,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
 
       if (totalDebt <= 0) {
         variant = "default";
-        label = "To&apos;langan";
+        label = "To'langan";
       } else if (totalDebt > debtLimit) {
         variant = "destructive";
         label = "Limitdan oshgan";
