@@ -22,6 +22,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
 import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { EditDebtorDialog } from "../../default/_components/edit-debtor-dialog";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -69,9 +72,11 @@ interface DebtorsTableProps {
 
 export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: DebtorsTableProps) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
     {
       open: false,
@@ -259,18 +264,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
       // Prepare export data
       const exportData = {
-        headers: [
-          "ID",
-          "Ism",
-          "Familiya",
-          "Telefon",
-          "Manzil",
-          "Jami qarz",
-          "Jami berilgan qarz",
-          "Jami to'lovlar",
-          "Status",
-          "Yaratilgan sana",
-        ],
+        headers: ["ID", "Ism", "Familiya", "Telefon", "Manzil", "Jami qarz", "Jami to'lovlar"],
         rows: debtors.map((debtor: Debtor & { total_debts?: number; total_payments?: number; status: string }) => [
           debtor.id,
           debtor.first_name,
@@ -278,10 +272,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
           debtor.phone_number || "-",
           debtor.address || "-",
           formatNumberForExcel(debtor.total_debt),
-          formatNumberForExcel(debtor.total_debts || 0),
           formatNumberForExcel(debtor.total_payments || 0),
-          debtor.status,
-          debtor.created_at,
         ]),
         filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}`,
       };
@@ -323,43 +314,59 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     <>
       <div className="space-y-4">
         {/* Filters */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1 md:max-w-sm">
+            <div className="relative flex-1 lg:max-w-sm">
               <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
               <Input
                 placeholder="Ism, familiya yoki telefon..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="pl-8"
+                className="h-12 w-full pl-8"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-              <FileDown className="h-4 w-4" />
-              <span className="hidden sm:inline">Excel</span>
-            </Button>
-
-            <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-              <SelectTrigger className="w-[140px] sm:w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Barchasi</SelectItem>
-                <SelectItem value="qarzdor">Qarzdor</SelectItem>
-                <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
-                <SelectItem value="tolangan">To&apos;langan</SelectItem>
-              </SelectContent>
-            </Select>
-
+            {isMobile ? (
+              <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+                <SelectTrigger className="w-[140px] sm:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Barchasi</SelectItem>
+                  <SelectItem value="qarzdor">Qarzdor</SelectItem>
+                  <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
+                  <SelectItem value="tolangan">To&apos;langan</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+                <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-4">
+                  <TabsTrigger value="all">Barchasi</TabsTrigger>
+                  <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
+                  <TabsTrigger value="limitdan_oshgan" className="text-xs sm:text-sm">
+                    Limitdan oshgan
+                  </TabsTrigger>
+                  <TabsTrigger value="tolangan">To&apos;langan</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
             {selectedIds.length > 0 && (
               <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="hidden md:flex">
                 <Trash2 className="mr-2 h-4 w-4" />
                 O&apos;chirish ({selectedIds.length})
               </Button>
             )}
+            <Button
+              variant="outline"
+              className="h-12 gap-2 bg-blue-500 text-white dark:bg-blue-600"
+              size="sm"
+              onClick={handleExport}
+            >
+              <FileDown className="h-4 w-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </Button>
           </div>
         </div>
 
@@ -449,7 +456,10 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                           onCheckedChange={() => handleSelectOne(debtor.id)}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell
+                        className="font-medium"
+                        onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
+                      >
                         {debtor.first_name} {debtor.last_name}
                       </TableCell>
                       <TableCell>{debtor.phone_number || "-"}</TableCell>
@@ -466,7 +476,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}>
+                            <DropdownMenuItem onClick={() => setOpenEditDebtDialog(true)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Tahrirlash
                             </DropdownMenuItem>
@@ -475,6 +485,11 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                               O&apos;chirish
                             </DropdownMenuItem>
                           </DropdownMenuContent>
+                          <EditDebtorDialog
+                            debtor={debtor}
+                            open={openEditDebtDialog}
+                            onOpenChange={setOpenEditDebtDialog}
+                          />
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>

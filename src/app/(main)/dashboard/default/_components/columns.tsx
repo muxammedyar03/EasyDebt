@@ -6,7 +6,6 @@ import { EllipsisVertical, Minus, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,11 +24,9 @@ import { toast } from "sonner";
 
 interface ColumnsContext {
   onDataChange?: () => void;
-  onRowClick?: (debtorId: number) => void;
   debtLimit?: number;
 }
 
-// Cell component for first name with router
 const FirstNameCell = ({ row }: { row: Row<Debtor> }) => {
   const router = useRouter();
   return (
@@ -52,7 +49,13 @@ const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: Colum
 
   return (
     <>
-      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="flex gap-2"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDownCapture={(e) => e.stopPropagation()}
+        onMouseDownCapture={(e) => e.stopPropagation()}
+        onMouseUpCapture={(e) => e.stopPropagation()}
+      >
         <Button variant="outline" size="sm" onClick={() => setDebtDialogOpen(true)}>
           <Plus className="h-4 w-4" /> Qarz
         </Button>
@@ -84,11 +87,10 @@ const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: Colum
 const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: ColumnsContext }) => {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  const router = useRouter();
 
   const handleDelete = async () => {
-    if (!confirm(`${row.original.first_name} ${row.original.last_name} ni o&apos;chirishni xohlaysizmi?`)) {
-      return;
+    if (!confirm(`${row.original.first_name} ${row.original.last_name} ni o'chirishni xohlaysizmi?`)) {
+      return toast.error("Qarzdorni o'chirishni bekor qilindi");
     }
 
     setIsDeleting(true);
@@ -107,11 +109,9 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
       if (context?.onDataChange) {
         context.onDataChange();
       }
-
-      router.refresh();
     } catch (error) {
       console.error("Error deleting debtor:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzdorni o&apos;chirishda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : "Qarzdorni o'chirishda xatolik yuz berdi");
     } finally {
       setIsDeleting(false);
     }
@@ -121,21 +121,36 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="outline"
-              className="hover:border-input hover:bg-input data-[state=open]:bg-muted text-muted-foreground flex size-8 hover:border"
-              size="icon"
-              disabled={isDeleting}
-            >
-              <EllipsisVertical />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="hover:border-input hover:bg-input data-[state=open]:bg-muted text-muted-foreground flex size-8 hover:border"
+            size="icon"
+            disabled={isDeleting}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <EllipsisVertical />
+            <span className="sr-only">Open menu</span>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>O&apos;zgartirish</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDelete} className="text-destructive" disabled={isDeleting}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setEditDialogOpen(true);
+            }}
+          >
+            O&apos;zgartirish
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              await handleDelete();
+            }}
+            className="text-destructive"
+            disabled={isDeleting}
+          >
             {isDeleting ? "O'chirilmoqda..." : "O'chirish"}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -152,29 +167,6 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
 };
 
 export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debtor>[] => [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   {
     accessorKey: "index",
     header: ({ column }) => <DataTableColumnHeader className="w-5" column={column} title="№" />,

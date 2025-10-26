@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
-export type NotificationType = "OVERDUE_PAYMENT" | "PAYMENT_RECEIVED" | "DEBT_ADDED" | "DEBT_LIMIT_EXCEEDED";
+export type NotificationType =
+  | "OVERDUE_PAYMENT"
+  | "PAYMENT_RECEIVED"
+  | "DEBT_ADDED"
+  | "DEBT_LIMIT_EXCEEDED"
+  | "HOSTING_REMINDER";
 
 interface CreateNotificationData {
   userId?: number;

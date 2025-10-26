@@ -19,6 +19,9 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  // Add PIN (hashed) - nullable
+  pin        String? 
+
   // Relations
   created_debtors  Debtor[]  @relation("CreatedBy")
   created_debts    Debt[]    @relation("DebtCreatedBy")
@@ -154,4 +157,5 @@ enum NotificationType {
   PAYMENT_RECEIVED
   DEBT_ADDED
   DEBT_LIMIT_EXCEEDED
+  HOSTING_REMINDER
 }

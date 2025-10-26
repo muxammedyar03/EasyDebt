@@ -17,7 +17,6 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { AddDebtorDialog } from "./add-debtor-dialog";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
 import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
 import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
@@ -30,7 +29,6 @@ export function DataTable({
   data: z.infer<typeof debtorSchema>[];
   debtLimit: number;
 }) {
-  const router = useRouter();
   const [data, setData] = React.useState(() => initialData);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const isMobile = useIsMobile();
@@ -67,23 +65,15 @@ export function DataTable({
     }
   }, []);
 
-  const handleRowClick = React.useCallback(
-    (debtorId: number) => {
-      router.push(`/dashboard/default/debitor/${debtorId}`);
-    },
-    [router],
-  );
-
   const columns = React.useMemo(
     () =>
       withDndColumn(
         createDashboardColumns({
           onDataChange: handleDebtorAdded,
-          onRowClick: handleRowClick,
           debtLimit,
         }),
       ),
-    [handleDebtorAdded, handleRowClick, debtLimit],
+    [handleDebtorAdded, debtLimit],
   );
 
   const table = useDataTableInstance({
@@ -189,13 +179,7 @@ export function DataTable({
 
       {/* Desktop Table View */}
       <div className="hidden md:block">
-        <DataTableNew
-          dndEnabled={false}
-          table={table}
-          columns={columns}
-          onReorder={setData}
-          onRowClick={(row) => router.push(`/dashboard/default/debitor/${row.id}`)}
-        />
+        <DataTableNew dndEnabled={false} table={table} columns={columns} onReorder={setData} />
         <div className="mt-2">
           <DataTablePagination table={table} />
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { BadgeCheck, Bell, LogOut, Settings } from "lucide-react";
+import { BadgeCheck, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -72,10 +72,6 @@ export function AccountSwitcher({
           <DropdownMenuItem onClick={() => router.push("/dashboard/profile/me")}>
             <BadgeCheck />
             Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Bell />
-            Notifications
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
             <Settings />

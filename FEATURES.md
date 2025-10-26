@@ -274,7 +274,7 @@ npm run dev
 5. **QR Kod To'lovlari**
 6. **PWA (Progressive Web App)**
 
----
+   ***
 
 ## 📞 Support
 
@@ -282,3 +282,63 @@ Savollar yoki muammolar bo'lsa:
 
 - GitHub Issues
 - Email: support@easydebt.uz
+
+---
+
+## 💸 Смета (Mijoz uchun tijoriy taklif)
+
+### 1) Ish hajmi (Scope)
+
+- **Core modul**: `Qarzdorlar`, `Qarzlar`, `To'lovlar`, `Foydalanuvchilar`, `Auth`
+- **Mobile optimizatsiya**: Card view, quick actions, responsive filterlar
+- **Dashboard**: Risk tahlili, trend tahlili, statistik kartalar
+- **Audit Log**: Harakatlar tarixi (IP, User Agent, vaqt, kim-nima)
+- **Overdue tizimi**: 45 kun qoidasi, cron tekshirish, bildirishnomalar
+- **Export/Import**: (Export mavjud), import minimal (CSV) — ixtiyoriy
+- **Role/Permissions**: Admin, User
+- **Security & Performance**: Validatsiya, rate-limit, caching strategiyasi
+
+### 2) Muddat (Timeline)
+
+- **1-hafta**: Arxitektura, autentifikatsiya, asosiy CRUD (Debtors/Debts/Payments)
+- **2-hafta**: Mobile UI, dashboard metrikalar, optimizatsiya
+- **3-hafta**: Audit Log, Overdue cron, Notifications, testlar
+- **4-hafta**: Yakuniy polishing, deploy, hujjatlar, trening
+
+Umumiy: **3–4 hafta** (mijozdan feedback sikllariga qarab)
+
+### 3) Narx (Cost breakdown)
+
+- **Backend (API + Prisma + Cron + Audit)**: 40 soat
+- **Frontend (UI/UX + Mobile + Dashboard)**: 36 soat
+- **QA/Test & Fix**: 12 soat
+- **PM/Analitika/Hujjat**: 8 soat
+- **Deploy & CI/CD sozlamalari**: 6 soat
+
+Jami: **102 soat**
+
+- **Soatlik stavka (namuna)**: $20/soat
+- **Jami qiymat (taxminiy)**: 102 × $20 = **$2,040**
+
+Eslatma: Bu dastlabki baho. Yakuniy narx mijozning qo'shimcha talablariga (masalan, import avtomatsiyalari, ko'p-valyuta, PWA, SMS/Telegram integratsiya) qarab o'zgarishi mumkin.
+
+### 4) Ekspluatatsiya va Hosting
+
+- **VPS/Hosting**: $8–20/oy (DigitalOcean/Hetzner)
+
+### 5) Ixtiyoriy qo'shimchalar (Add-ons)
+
+- **SMS/Telegram bildirishnomalar**: $200–400 (bir martalik dev) + trafik narxi
+- **PDF hisobotlar**: $150–300
+- **Excel import** (murakkab mapping bilan): $250–500
+- **Multi-currency**: $200–400
+- **PWA/Offline**: $200–400
+
+### 6) Kafolat va Qo'llab-quvvatlash
+
+- **Bug-fix kafolat**: 30 kun (prod relizdan keyin)
+- **Qo'llab-quvvatlash**: 10 soat/oy — $200 (ixtiyoriy, SLA bilan)
+
+---
+
+Agar ushbu Смета Sizga ma'qul bo'lsa, keyingi qadamlar: texnik topshiriqni (TТ) yakunlash, calendar rejasi, va shartnoma.

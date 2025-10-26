@@ -3,21 +3,21 @@ import { CustomersTable } from "./_components/customers-table";
 import { Debtor, Payment } from "@prisma/client";
 import { Debt, PaymentType as LocalPaymentType } from "@/types/types";
 
-interface SearchParams {
-  page?: string;
-  search?: string;
-  rating?: string;
-}
-
-export default async function CustomersPage({
-  searchParams: searchParamsPromise,
-}: {
-  searchParams: Promise<SearchParams>;
+export default async function CustomersPage(props: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const searchParams = await searchParamsPromise;
-  const page = parseInt(searchParams.page || "1");
-  const search = searchParams.search || "";
-  const rating = searchParams.rating || "all";
+  const searchParams = (props.searchParams ? await props.searchParams : {}) as Record<
+    string,
+    string | string[] | undefined
+  >;
+
+  const rawPage = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
+  const rawSearch = Array.isArray(searchParams.search) ? searchParams.search[0] : searchParams.search;
+  const rawRating = Array.isArray(searchParams.rating) ? searchParams.rating[0] : searchParams.rating;
+
+  const page = parseInt(rawPage || "1");
+  const search = rawSearch || "";
+  const rating = rawRating || "all";
   const pageSize = 20;
 
   // Get all debts and payments from last 3 months

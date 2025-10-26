@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -44,7 +43,6 @@ interface EditDebtorDialogProps {
 }
 
 export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: EditDebtorDialogProps) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [phone, setPhone] = React.useState("");
 
@@ -103,8 +101,6 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
       if (onSuccess) {
         onSuccess();
       }
-
-      router.refresh();
     } catch (error) {
       console.error("Error updating debtor:", error);
       toast.error(error instanceof Error ? error.message : "Qarzdor ma'lumotlarini o'zgartirishda xatolik yuz berdi");
@@ -115,12 +111,20 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Qarzdor ma&apos;lumotlarini o&apos;zgartirish</DialogTitle>
           <DialogDescription>Qarzdor ma&apos;lumotlarini tahrirlang</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          onClickCapture={(e) => e.stopPropagation()}
+          onKeyDownCapture={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+            }
+          }}
+        >
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="first_name">

@@ -78,15 +78,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create notification for debt added
-    await createNotification({
-      userId,
-      debtorId: validatedData.debtor_id,
-      type: "DEBT_ADDED",
-      title: "Yangi qarz qo'shildi",
-      message: `${result.debtor.first_name} ${result.debtor.last_name} - ${validatedData.amount.toLocaleString()} so'm qarz qo'shildi`,
-    });
-
     // Check if debt limit exceeded
     const newTotalDebt = result.updatedDebtor.total_debt.toNumber();
     if (newTotalDebt > result.debtLimit) {

@@ -40,7 +40,7 @@ export function DebtorHeader({ onAddDebt, onAddPayment }: { onAddDebt: () => voi
   return (
     <div className="flex w-full flex-col justify-between md:flex-row md:items-center">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/default")}>
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>

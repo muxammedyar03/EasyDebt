@@ -5,7 +5,6 @@ import { cookies } from "next/headers";
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { users } from "@/data/users";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -25,6 +24,8 @@ import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
 import { getSession } from "@/lib/auth";
+import HeaderLockButton from "../_components/HeaderLockButton.client";
+import PinGate from "../_components/PinGate.client";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -60,30 +61,11 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 
-  // Fetch debtors over limit with optimized query
-  const debtorsOverLimit = await prisma.debtor.findMany({
-    where: {
-      total_debt: { gt: debtLimit },
-    },
-    select: {
-      id: true,
-      first_name: true,
-      last_name: true,
-      total_debt: true,
-    },
-    take: 10, // Limit to 10 notifications for performance
-    orderBy: {
-      total_debt: "desc",
-    },
+  const notifications = await prisma.notification.findMany({
+    where: { is_read: false },
+    orderBy: { created_at: "desc" },
+    take: 3,
   });
-
-  const notifications = debtorsOverLimit.map((debtor) => ({
-    id: debtor.id,
-    debtor_id: debtor.id,
-    debtor_name: `${debtor.first_name} ${debtor.last_name}`,
-    total_debt: debtor.total_debt.toNumber(),
-    debt_limit: debtLimit,
-  }));
 
   const layoutPreferences = {
     contentLayout,
@@ -105,7 +87,14 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         avatar: `/avatars/${activeUser.username}.png`,
         role: activeUser.role,
       }
-    : users[0]; // Fallback to first user if no session
+    : {
+        id: "1",
+        name: "",
+        username: "",
+        email: "",
+        avatar: "/avatars/user.png",
+        role: "SUPER_ADMIN",
+      };
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
@@ -132,6 +121,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             </div>
             <div className="flex items-center gap-2">
               <NotificationsDropdown notifications={notifications} />
+              <div>{session?.userId && <HeaderLockButton />}</div>
               <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
               <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} />
@@ -139,6 +129,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
           </div>
         </header>
         <div className="h-full p-4 md:p-6">{children}</div>
+        {session?.userId ? <PinGate userId={session.userId} pinLength={4} /> : null}
       </SidebarInset>
     </SidebarProvider>
   );

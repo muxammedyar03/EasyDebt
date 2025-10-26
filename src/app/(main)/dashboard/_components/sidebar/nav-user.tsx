@@ -1,6 +1,6 @@
 "use client";
 
-import { EllipsisVertical, CircleUser, CreditCard, MessageSquareDot, LogOut } from "lucide-react";
+import { EllipsisVertical, CircleUser, CreditCard, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,15 +18,7 @@ import { useEffect, useState } from "react";
 import { User } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
-export function NavUser({
-  user,
-}: {
-  readonly user: {
-    readonly name: string;
-    readonly email: string;
-    readonly avatar: string;
-  };
-}) {
+export function NavUser() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const [userData, setUserData] = useState<User>();
@@ -50,7 +42,7 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={"/avatars/user.png"} alt={user.name} />
+                <AvatarImage src={"/avatars/user.png"} alt={userData?.first_name + " " + userData?.last_name} />
                 <AvatarFallback className="rounded-lg">
                   {getInitials(userData?.first_name + " " + userData?.last_name)}
                 </AvatarFallback>
@@ -88,13 +80,9 @@ export function NavUser({
                 <CircleUser />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <CreditCard />
                 Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <MessageSquareDot />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

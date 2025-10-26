@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -37,7 +36,6 @@ interface AddDebtDialogProps {
 }
 
 export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
 
@@ -94,8 +92,6 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       if (onSuccess) {
         onSuccess();
       }
-
-      router.refresh();
     } catch (error) {
       console.error("Error adding debt:", error);
       toast.error(error instanceof Error ? error.message : "Qarz qo'shishda xatolik yuz berdi");
@@ -106,12 +102,20 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Qarz qo&apos;shish</DialogTitle>
           <DialogDescription>{debtorName} uchun yangi qarz qo&apos;shish</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          onClickCapture={(e) => e.stopPropagation()}
+          onKeyDownCapture={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+            }
+          }}
+        >
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">

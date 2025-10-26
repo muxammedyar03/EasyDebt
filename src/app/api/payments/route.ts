@@ -4,8 +4,6 @@ import { z } from "zod";
 
 import { getSession } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
-import { createNotification } from "@/lib/notifications";
-// import { updateDebtorPaymentDate } from "@/lib/overdue-checker";
 import { prisma } from "@/lib/prisma";
 
 const createPaymentSchema = z.object({
@@ -81,15 +79,6 @@ export async function POST(request: NextRequest) {
         amount: validatedData.amount,
         payment_type: validatedData.payment_type,
       },
-    });
-
-    // Create notification
-    await createNotification({
-      userId,
-      debtorId: validatedData.debtor_id,
-      type: "PAYMENT_RECEIVED",
-      title: "To'lov qabul qilindi",
-      message: `${result.debtor.first_name} ${result.debtor.last_name} - ${validatedData.amount.toLocaleString()} so'm to'lov qildi`,
     });
 
     return NextResponse.json(result.payment, { status: 201 });

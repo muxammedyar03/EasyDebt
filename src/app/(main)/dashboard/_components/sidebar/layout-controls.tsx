@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,15 +61,15 @@ export function LayoutControls(props: LayoutControlsProps) {
       <PopoverContent align="end">
         <div className="flex flex-col gap-5">
           <div className="space-y-1.5">
-            <h4 className="text-sm leading-none font-medium">Layout Settings</h4>
-            <p className="text-muted-foreground text-xs">Customize your dashboard layout preferences.</p>
+            <h4 className="text-sm leading-none font-medium">Boshqaruv paneli sozlamalari</h4>
+            <p className="text-muted-foreground text-xs">Boshqaruv paneli sozlamalarini o&apos;zgartiring.</p>
           </div>
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Preset</Label>
+              <Label className="text-xs font-medium">Shablon</Label>
               <Select value={themePreset} onValueChange={(value) => handleValueChange("theme_preset", value)}>
                 <SelectTrigger size="sm" className="w-full text-xs">
-                  <SelectValue placeholder="Preset" />
+                  <SelectValue placeholder="Shablon" />
                 </SelectTrigger>
                 <SelectContent>
                   {THEME_PRESET_OPTIONS.map((preset) => (
@@ -87,7 +88,7 @@ export function LayoutControls(props: LayoutControlsProps) {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Mode</Label>
+              <Label className="text-xs font-medium">Rejim</Label>
               <ToggleGroup
                 className="w-full"
                 size="sm"
@@ -96,17 +97,17 @@ export function LayoutControls(props: LayoutControlsProps) {
                 value={themeMode}
                 onValueChange={(value) => handleValueChange("theme_mode", value)}
               >
-                <ToggleGroupItem className="text-xs" value="light" aria-label="Toggle inset">
-                  Light
+                <ToggleGroupItem className="text-xs" value="light" aria-label="Ochiq rejimga o'tish">
+                  Ochiq
                 </ToggleGroupItem>
-                <ToggleGroupItem className="text-xs" value="dark" aria-label="Toggle sidebar">
-                  Dark
+                <ToggleGroupItem className="text-xs" value="dark" aria-label="Qorong'i rejimga o'tish">
+                  Qorong&apos;i
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Sidebar Variant</Label>
+              <Label className="text-xs font-medium">Yon panel turi</Label>
               <ToggleGroup
                 className="w-full"
                 size="sm"
@@ -115,20 +116,20 @@ export function LayoutControls(props: LayoutControlsProps) {
                 value={variant}
                 onValueChange={(value) => handleValueChange("sidebar_variant", value)}
               >
-                <ToggleGroupItem className="text-xs" value="inset" aria-label="Toggle inset">
-                  Inset
+                <ToggleGroupItem className="text-xs" value="inset" aria-label="Ichki rejimga o'tish">
+                  Ichki
                 </ToggleGroupItem>
-                <ToggleGroupItem className="text-xs" value="sidebar" aria-label="Toggle sidebar">
-                  Sidebar
+                <ToggleGroupItem className="text-xs" value="sidebar" aria-label="Yon panel rejimiga o'tish">
+                  Yon Panel
                 </ToggleGroupItem>
-                <ToggleGroupItem className="text-xs" value="floating" aria-label="Toggle floating">
-                  Floating
+                <ToggleGroupItem className="text-xs" value="floating" aria-label="Suzuvchi rejimga o'tish">
+                  Suzuvchi
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Navbar Style</Label>
+              <Label className="text-xs font-medium">Navigatsiya usuli</Label>
               <ToggleGroup
                 className="w-full"
                 size="sm"
@@ -137,17 +138,17 @@ export function LayoutControls(props: LayoutControlsProps) {
                 value={navbarStyle}
                 onValueChange={(value) => handleValueChange("navbar_style", value)}
               >
-                <ToggleGroupItem className="text-xs" value="sticky" aria-label="Toggle sticky">
-                  Sticky
+                <ToggleGroupItem className="text-xs" value="sticky" aria-label="Yopishqoq rejimga o'tish">
+                  Statik
                 </ToggleGroupItem>
-                <ToggleGroupItem className="text-xs" value="scroll" aria-label="Toggle scroll">
-                  Scroll
+                <ToggleGroupItem className="text-xs" value="scroll" aria-label="Aylantirish rejimiga o'tish">
+                  Dinamik
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Sidebar Collapsible</Label>
+              <Label className="text-xs font-medium">Yon panel yig&apos;ish</Label>
               <ToggleGroup
                 className="w-full"
                 size="sm"
@@ -156,17 +157,17 @@ export function LayoutControls(props: LayoutControlsProps) {
                 value={collapsible}
                 onValueChange={(value) => handleValueChange("sidebar_collapsible", value)}
               >
-                <ToggleGroupItem className="text-xs" value="icon" aria-label="Toggle icon">
-                  Icon
+                <ToggleGroupItem className="text-xs" value="icon" aria-label="Belgi rejimga o'tish">
+                  Belgi
                 </ToggleGroupItem>
-                <ToggleGroupItem className="text-xs" value="offcanvas" aria-label="Toggle offcanvas">
-                  OffCanvas
+                <ToggleGroupItem className="text-xs" value="offcanvas" aria-label="Yashirin rejimga o'tish">
+                  Yashirin
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Content Layout</Label>
+              <Label className="text-xs font-medium">Kontent joylashuvi</Label>
               <ToggleGroup
                 className="w-full"
                 size="sm"
@@ -175,11 +176,11 @@ export function LayoutControls(props: LayoutControlsProps) {
                 value={contentLayout}
                 onValueChange={(value) => handleValueChange("content_layout", value)}
               >
-                <ToggleGroupItem className="text-xs" value="centered" aria-label="Toggle centered">
-                  Centered
+                <ToggleGroupItem className="text-xs" value="centered" aria-label="Markazlashtirilganga o'tish">
+                  Markazlashtirilgan
                 </ToggleGroupItem>
-                <ToggleGroupItem className="text-xs" value="full-width" aria-label="Toggle full-width">
-                  Full Width
+                <ToggleGroupItem className="text-xs" value="full-width" aria-label="To'liq kenglikka o'tish">
+                  To&apos;liq kenglik
                 </ToggleGroupItem>
               </ToggleGroup>
             </div>

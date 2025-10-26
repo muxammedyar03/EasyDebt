@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -39,7 +38,6 @@ interface AddDebtorDialogProps {
 }
 
 export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDialogProps) {
-  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [debtAmount, setDebtAmount] = React.useState("");
   const [phone, setPhone] = React.useState("");
@@ -97,8 +95,6 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       if (onSuccess) {
         onSuccess();
       }
-
-      router.refresh();
     } catch (error) {
       console.error("Error adding debtor:", error);
       toast.error(error instanceof Error ? error.message : "Qarzdor qo'shishda xatolik yuz berdi");
