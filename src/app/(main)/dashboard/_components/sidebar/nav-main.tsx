@@ -241,7 +241,7 @@ export function NavMain({ items }: NavMainProps) {
                           isActive={isItemActive(item.url)}
                         >
                           <Link href={item.url} target={item.newTab ? "_blank" : undefined}>
-                            {item.icon && <item.icon />}
+                            {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
                             <span>{item.title}</span>
                           </Link>
                         </SidebarMenuButton>

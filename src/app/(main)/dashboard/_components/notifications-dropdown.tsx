@@ -77,8 +77,8 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       {!isMobile ? (
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
+          <Button variant="outline" className="relative md:h-12 md:w-12">
+            <Bell className="md:!h-5 md:!w-5" />
             {totalCount > 0 && (
               <Badge
                 variant="destructive"
@@ -114,7 +114,14 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
         {items.length === 0 ? (
           <div className="flex flex-col">
             <div className="text-muted-foreground p-4 text-center text-sm">{"Bildirishnomalar yo'q"}</div>
-            <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/notifications")}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                router.push("/dashboard/notifications");
+                setIsOpen(false);
+              }}
+            >
               {"Barchasini ko'rish"}
             </Button>
           </div>
