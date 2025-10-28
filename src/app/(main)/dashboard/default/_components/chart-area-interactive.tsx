@@ -9,6 +9,9 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 
 export const description = "An interactive area chart";
 
@@ -41,6 +44,7 @@ interface ChartAreaInteractiveProps {
 
 export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
   const isMobile = useIsMobile();
+  const router = useRouter();
   const [timeRange, setTimeRange] = React.useState("90d");
 
   React.useEffect(() => {
@@ -107,6 +111,11 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
             </SelectContent>
           </Select>
         </CardAction>
+        <CardTitle>
+          <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/reports")}>
+            Barchasini ko&apos;rish <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </CardTitle>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">

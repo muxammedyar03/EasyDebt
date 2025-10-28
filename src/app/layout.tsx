@@ -9,6 +9,13 @@ import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provi
 import { THEME_MODE_VALUES, THEME_PRESET_VALUES, type ThemePreset, type ThemeMode } from "@/types/preferences/theme";
 
 import "./globals.css";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: APP_CONFIG.meta.title,
@@ -26,7 +33,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       data-theme-preset={themePreset}
       suppressHydrationWarning
     >
-      <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
+      <body className={`min-h-screen antialiased ${inter.className}`} suppressHydrationWarning>
         <PreferencesStoreProvider themeMode={themeMode} themePreset={themePreset}>
           {children}
           <Toaster />

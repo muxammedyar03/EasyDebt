@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { RiskAnalysisCard } from "@/components/dashboard/risk-analysis-card";
 import { TrendAnalysis } from "@/components/dashboard/trend-analysis";
-import { PaymentMethodsCard } from "./_components/payment-methods-card";
+import CashClient from "./_components/cash-client";
 
 export default async function ReportsPage() {
   // Get all debtors
@@ -105,14 +105,47 @@ export default async function ReportsPage() {
     },
   ];
 
-  // Calculate payment methods statistics
-  const paymentsByMethod = {
-    cash: allPayments.filter((p) => p.payment_type === "CASH").reduce((sum, p) => sum + p.amount.toNumber(), 0),
-    card: allPayments.filter((p) => p.payment_type === "CARD").reduce((sum, p) => sum + p.amount.toNumber(), 0),
-    click: allPayments.filter((p) => p.payment_type === "CLICK").reduce((sum, p) => sum + p.amount.toNumber(), 0),
-  };
+  const payments = await prisma.payment.findMany({
+    include: {
+      debtor: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
 
-  const totalPayments = paymentsByMethod.cash + paymentsByMethod.card + paymentsByMethod.click;
+  const debts = await prisma.debt.findMany({
+    include: {
+      debtor: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  const paymentsData = payments.map((payment) => ({
+    id: payment.id,
+    debtor_id: payment.debtor_id,
+    debtor_name: `${payment.debtor.first_name} ${payment.debtor.last_name}`,
+    debitor_total_debt: payment.debtor.total_debt.toNumber(),
+    amount: payment.amount.toNumber(),
+    payment_type: payment.payment_type,
+    note: payment.note,
+    created_at: payment.created_at.toISOString(),
+    created_by: payment.created_by,
+    debitor_is_overdue: payment.debtor.is_overdue,
+  }));
+
+  const debtsData = debts.map((debt) => ({
+    id: debt.id,
+    debtor_id: debt.debtor_id,
+    debtor_name: `${debt.debtor.first_name} ${debt.debtor.last_name}`,
+    debitor_total_debt: debt.debtor.total_debt.toNumber(),
+    debitor_is_overdue: debt.debtor.is_overdue,
+    amount: debt.amount.toNumber(),
+    description: debt.description,
+    created_at: debt.created_at.toISOString(),
+  }));
 
   return (
     <div className="space-y-6">
@@ -120,7 +153,6 @@ export default async function ReportsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Hisobotlar</h1>
         <p className="text-muted-foreground">Batafsil statistika va tahlil</p>
       </div>
-
       <div className="grid gap-6 md:grid-cols-2">
         <RiskAnalysisCard
           totalDebtors={totalDebtors}
@@ -133,12 +165,7 @@ export default async function ReportsPage() {
         <TrendAnalysis trends={trends} />
       </div>
 
-      <PaymentMethodsCard
-        cash={paymentsByMethod.cash}
-        card={paymentsByMethod.card}
-        click={paymentsByMethod.click}
-        total={totalPayments}
-      />
+      <CashClient payments={paymentsData} debts={debtsData} />
     </div>
   );
 }
