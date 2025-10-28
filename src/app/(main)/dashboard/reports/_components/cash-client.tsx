@@ -42,7 +42,7 @@ export default function CashClient({ payments, debts }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const [timeRange, setTimeRange] = useState<"daily" | "week" | "month">("daily");
-
+  const router = useRouter();
   const getDateRange = () => {
     const selected = new Date(selectedDate);
 
@@ -135,17 +135,17 @@ export default function CashClient({ payments, debts }: Props) {
     if (totalDebt === 0) {
       return {
         className: "bg-green-100 text-green-800 hover:bg-green-100",
-        text: "Qarzsiz",
+        text: "To'langan",
       };
     } else if (isOverdue) {
       return {
         className: "bg-red-100 text-red-800 hover:bg-red-100",
-        text: "Muddati o'tgan",
+        text: "Limitdan o'tgan",
       };
     } else {
       return {
         className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-        text: "Qarzli",
+        text: "Qarzdor",
       };
     }
   };
@@ -167,11 +167,11 @@ export default function CashClient({ payments, debts }: Props) {
   };
 
   return (
-    <div className="container mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <div className="flex gap-4">
           {/* Tab Selector */}
-          <div className="bg-card flex gap-2 rounded-xl p-2">
+          <div className="bg-card border-border flex gap-2 rounded-xl border p-2">
             <Button
               variant={timeRange === "daily" ? "default" : "outline"}
               onClick={() => setTimeRange("daily")}
@@ -196,7 +196,7 @@ export default function CashClient({ payments, debts }: Props) {
           </div>
 
           {/* Date Slider */}
-          <div className="flex items-center gap-2">
+          <div className="bg-card border-border flex items-center gap-2 rounded-xl border p-2">
             <Button variant="outline" size="icon" onClick={() => navigateDate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -265,6 +265,7 @@ export default function CashClient({ payments, debts }: Props) {
                   filteredPayments.map((payment) => (
                     <div
                       key={payment.id}
+                      onClick={() => router.push(`/dashboard/default/debitor/${payment.debtor_id}`)}
                       className="hover:bg-accent flex flex-col items-center justify-between rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-3"
                     >
                       <div className="space-y-1">
@@ -321,6 +322,7 @@ export default function CashClient({ payments, debts }: Props) {
                     return (
                       <div
                         key={debt.id}
+                        onClick={() => router.push(`/dashboard/default/debitor/${debt.debtor_id}`)}
                         className="hover:bg-accent flex flex-col items-center justify-between rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4"
                       >
                         <div className="space-y-1">
