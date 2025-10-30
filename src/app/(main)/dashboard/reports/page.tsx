@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { RiskAnalysisCard } from "@/components/dashboard/risk-analysis-card";
 import { TrendAnalysis } from "@/components/dashboard/trend-analysis";
 import CashClient from "./_components/cash-client";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingDown, TrendingUp } from "lucide-react";
 
 export default async function ReportsPage() {
   // Get all debtors
@@ -147,11 +150,59 @@ export default async function ReportsPage() {
     created_at: debt.created_at.toISOString(),
   }));
 
+  // Totals for summary cards
+  const totalPaymentsAmount = payments.reduce((sum, p) => sum + p.amount.toNumber(), 0);
+  const totalPaymentsCount = payments.length;
+  const totalDebtsAmount = debts.reduce((sum, d) => sum + d.amount.toNumber(), 0);
+  const totalDebtsCount = debts.length;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Hisobotlar</h1>
         <p className="text-muted-foreground">Batafsil statistika va tahlil</p>
+      </div>
+      {/* Summary Cards */}
+      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-6 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2">
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription>Umumiy qarz</CardDescription>
+            <CardTitle className="flex items-end gap-1">
+              <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+                {totalDebtsAmount.toLocaleString()}
+              </p>
+              <span className="text-md leading-5">so&apos;m</span>
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline" className="text-red-600">
+                <TrendingUp className="size-4" />
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="text-muted-foreground">{totalDebtsCount} ta qarz yozuvi</div>
+          </CardFooter>
+        </Card>
+
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription>Umumiy to&apos;lovlar</CardDescription>
+            <CardTitle className="flex items-end gap-1">
+              <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+                {totalPaymentsAmount.toLocaleString()}
+              </p>
+              <span className="text-md leading-5">so&apos;m</span>
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline" className="text-green-600">
+                <TrendingDown className="size-4" />
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="text-muted-foreground">{totalPaymentsCount} ta to&apos;lov</div>
+          </CardFooter>
+        </Card>
       </div>
       <div className="grid gap-6 md:grid-cols-2">
         <RiskAnalysisCard
@@ -164,7 +215,8 @@ export default async function ReportsPage() {
         />
         <TrendAnalysis trends={trends} />
       </div>
-
+      <h1 className="!mb-2 pt-6 text-3xl font-bold tracking-tight">Qarz va to&apos;lovlar</h1>
+      <p className="text-muted-foreground">Vaqt boyicha qarz va to&apos;lovlar ro&apos;yxati</p>
       <CashClient payments={paymentsData} debts={debtsData} />
     </div>
   );

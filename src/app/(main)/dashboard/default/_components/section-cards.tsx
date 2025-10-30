@@ -56,28 +56,6 @@ export function SectionCards({ stats }: SectionCardsProps) {
           <div className="text-muted-foreground">{stats.totalDebtsCount} ta qarz yozuvi</div>
         </CardFooter>
       </Card>
-
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Umumiy to&apos;lovlar</CardDescription>
-          <CardTitle className="flex items-end gap-1">
-            <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
-              {stats.totalPaymentsAmount.toLocaleString()}
-            </p>
-            <span className="text-md leading-5">so&apos;m</span>
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline" className="text-green-600">
-              <TrendingDown className="size-4" />
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium text-green-600">To&apos;langan qarzlar</div>
-          <div className="text-muted-foreground">{stats.totalPaymentsCount} ta to&apos;lov</div>
-        </CardFooter>
-      </Card>
-
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Bugungi qarzlar</CardDescription>
@@ -95,6 +73,23 @@ export function SectionCards({ stats }: SectionCardsProps) {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="text-muted-foreground">{stats.todayDebtsCount} ta yangi qarz</div>
+        </CardFooter>
+      </Card>
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>Bugungi qarzlar soni</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {stats.todayDebtsCount}
+          </CardTitle>
+          <CardAction>
+            <Badge variant="outline" className="text-blue-600">
+              <Calendar className="size-4" />
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">Bugun yozilgan qarzlar</div>
+          <div className="text-muted-foreground">Yangi qarzlar soni</div>
         </CardFooter>
       </Card>
     </div>

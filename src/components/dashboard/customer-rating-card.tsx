@@ -23,7 +23,10 @@ export function CustomerRatingCard({ goodCount, averageCount, badCount, totalCou
   };
 
   return (
-    <Card className="cursor-pointer transition-all hover:shadow-lg" onClick={() => router.push("/dashboard/customers")}>
+    <Card
+      className="@container/card cursor-pointer transition-all hover:shadow-lg"
+      onClick={() => router.push("/dashboard/customers")}
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Mijozlar Reytingi</span>

@@ -11,7 +11,10 @@ export function ReportsCard() {
   const router = useRouter();
 
   return (
-    <Card className="cursor-pointer transition-all hover:shadow-lg" onClick={() => router.push("/dashboard/reports")}>
+    <Card
+      className="@container/card cursor-pointer transition-all hover:shadow-lg"
+      onClick={() => router.push("/dashboard/reports")}
+    >
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
