@@ -85,6 +85,28 @@ export default async function Page() {
     totalPaymentsAmount,
     todayDebtsCount: todayDebts.count,
     todayDebtsAmount: todayDebts.amount,
+    todayPaymentsCount: debtorsRaw.reduce(
+      (acc, debtor) =>
+        acc +
+        debtor.payments.filter((p) => {
+          const d = new Date(p.created_at);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime() === today.getTime();
+        }).length,
+      0,
+    ),
+    todayPaymentsAmount: debtorsRaw.reduce(
+      (acc, debtor) =>
+        acc +
+        debtor.payments
+          .filter((p) => {
+            const d = new Date(p.created_at);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime() === today.getTime();
+          })
+          .reduce((s, p) => s + p.amount.toNumber(), 0),
+      0,
+    ),
   };
 
   // Prepare chart data - group payments by date and payment type
