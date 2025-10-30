@@ -47,6 +47,7 @@ const NavItemExpanded = ({
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
   isSubmenuOpen: (subItems?: NavMainItem["subItems"]) => boolean;
 }) => {
+  const { isMobile, setOpenMobile } = useSidebar();
   return (
     <Collapsible key={item.title} asChild defaultOpen={isSubmenuOpen(item.subItems)} className="group/collapsible">
       <SidebarMenuItem>
@@ -69,7 +70,13 @@ const NavItemExpanded = ({
               isActive={isActive(item.url)}
               tooltip={item.title}
             >
-              <Link href={item.url} target={item.newTab ? "_blank" : undefined}>
+              <Link
+                href={item.url}
+                target={item.newTab ? "_blank" : undefined}
+                onClick={() => {
+                  if (isMobile) setOpenMobile(false);
+                }}
+              >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
                 {item.comingSoon && <IsComingSoon />}
@@ -83,7 +90,13 @@ const NavItemExpanded = ({
               {item.subItems.map((subItem) => (
                 <SidebarMenuSubItem key={subItem.title}>
                   <SidebarMenuSubButton aria-disabled={subItem.comingSoon} isActive={isActive(subItem.url)} asChild>
-                    <Link href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                    <Link
+                      href={subItem.url}
+                      target={subItem.newTab ? "_blank" : undefined}
+                      onClick={() => {
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
                       {subItem.icon && <subItem.icon />}
                       <span>{subItem.title}</span>
                       {subItem.comingSoon && <IsComingSoon />}
@@ -146,7 +159,7 @@ const NavItemCollapsed = ({
 
 export function NavMain({ items }: NavMainProps) {
   const pathname = usePathname();
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const [quickCreateOpen, setQuickCreateOpen] = React.useState(false);
   const { user } = useCurrentUser();
 
@@ -191,20 +204,38 @@ export function NavMain({ items }: NavMainProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/default" className="flex cursor-pointer items-center gap-2">
+                    <Link
+                      href="/dashboard/default"
+                      className="flex cursor-pointer items-center gap-2"
+                      onClick={() => {
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
                       <UserPlus className="h-4 w-4" />
                       <span>Qarzdor qo&apos;shish</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/debtors" className="flex cursor-pointer items-center gap-2">
+                    <Link
+                      href="/dashboard/debtors"
+                      className="flex cursor-pointer items-center gap-2"
+                      onClick={() => {
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
                       <Banknote className="h-4 w-4" />
                       <span>Qarz qo&apos;shish</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/debtors" className="flex cursor-pointer items-center gap-2">
+                    <Link
+                      href="/dashboard/debtors"
+                      className="flex cursor-pointer items-center gap-2"
+                      onClick={() => {
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                    >
                       <CreditCard className="h-4 w-4" />
                       <span>To&apos;lov qo&apos;shish</span>
                     </Link>
@@ -230,7 +261,6 @@ export function NavMain({ items }: NavMainProps) {
             <SidebarMenu>
               {group.items.map((item) => {
                 if (state === "collapsed" && !isMobile) {
-                  // If no subItems, just render the button as a link
                   if (!item.subItems) {
                     return (
                       <SidebarMenuItem key={item.title}>
@@ -240,7 +270,13 @@ export function NavMain({ items }: NavMainProps) {
                           tooltip={item.title}
                           isActive={isItemActive(item.url)}
                         >
-                          <Link href={item.url} target={item.newTab ? "_blank" : undefined}>
+                          <Link
+                            href={item.url}
+                            target={item.newTab ? "_blank" : undefined}
+                            onClick={() => {
+                              if (isMobile) setOpenMobile(false);
+                            }}
+                          >
                             {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
                             <span>{item.title}</span>
                           </Link>
@@ -248,10 +284,8 @@ export function NavMain({ items }: NavMainProps) {
                       </SidebarMenuItem>
                     );
                   }
-                  // Otherwise, render the dropdown as before
                   return <NavItemCollapsed key={item.title} item={item} isActive={isItemActive} />;
                 }
-                // Expanded view
                 return (
                   <NavItemExpanded key={item.title} item={item} isActive={isItemActive} isSubmenuOpen={isSubmenuOpen} />
                 );

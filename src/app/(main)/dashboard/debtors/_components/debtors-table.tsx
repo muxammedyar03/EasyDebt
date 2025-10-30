@@ -317,7 +317,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-2">
             <div className="relative flex-1 lg:max-w-sm">
-              <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+              <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
               <Input
                 placeholder="Ism, familiya yoki telefon..."
                 value={searchValue}
@@ -330,7 +330,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
           <div className="flex items-center gap-2">
             {isMobile ? (
               <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-                <SelectTrigger className="w-[140px] sm:w-[180px]">
+                <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -360,7 +360,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
             )}
             <Button
               variant="outline"
-              className="h-12 gap-2 bg-blue-500 text-white dark:bg-blue-600"
+              className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
               size="sm"
               onClick={handleExport}
             >

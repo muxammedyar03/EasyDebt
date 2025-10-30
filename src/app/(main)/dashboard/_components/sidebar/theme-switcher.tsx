@@ -19,7 +19,7 @@ export function ThemeSwitcher() {
   };
 
   return (
-    <Button className="md:h-12 md:w-12" onClick={handleValueChange}>
+    <Button className="hidden md:inline md:h-12 md:w-12" onClick={handleValueChange}>
       {themeMode === "dark" ? <Sun className="md:!h-6 md:!w-6" /> : <Moon className="md:!h-6 md:!w-6" />}
     </Button>
   );

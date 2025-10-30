@@ -13,9 +13,9 @@ export default function HeaderLockButton() {
       onClick={open}
       variant="outline"
       title="Lock / Open PIN gate"
-      className="inline-flex h-12 w-12 items-center border bg-white"
+      className="inline-flex h-10 items-center border bg-white md:h-12 md:w-12"
     >
-      <Lock className="!h-5 !w-5" />
+      <Lock className="md:!h-5 md:!w-5" />
     </Button>
   );
 }

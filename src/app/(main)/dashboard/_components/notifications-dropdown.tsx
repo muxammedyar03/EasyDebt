@@ -91,9 +91,9 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
         </DropdownMenuTrigger>
       ) : (
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
-          className="relative"
+          className="relative h-10 w-10 md:h-12 md:w-12"
           onClick={() => router.push("/dashboard/notifications")}
         >
           <Bell className="h-5 w-5" />

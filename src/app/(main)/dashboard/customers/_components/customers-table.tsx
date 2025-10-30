@@ -11,11 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerTableProps } from "@/types/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CustomersTableProps {
   customers: CustomerTableProps[];
   currentPage: number;
   totalPages: number;
+  totalDebtorsCount: number;
   goodCount: number;
   averageCount: number;
   badCount: number;
@@ -25,6 +28,7 @@ export function CustomersTable({
   customers,
   currentPage,
   totalPages,
+  totalDebtorsCount,
   goodCount,
   averageCount,
   badCount,
@@ -32,7 +36,8 @@ export function CustomersTable({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
-
+  const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useIsMobile();
   const currentRating = searchParams.get("rating") || "all";
 
   const handleSearch = React.useCallback(
@@ -66,15 +71,14 @@ export function CustomersTable({
     router.push(`/dashboard/customers?${params.toString()}`);
   };
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchValue !== searchParams.get("search")) {
-        handleSearch(searchValue);
-      }
+  // Debounce search on input change to avoid resetting pagination unexpectedly
+  const onSearchChange = (value: string) => {
+    setSearchValue(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      handleSearch(value);
     }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchValue, searchParams, handleSearch]);
+  };
 
   const getRatingBadge = (rating: "good" | "average" | "bad") => {
     switch (rating) {
@@ -112,39 +116,53 @@ export function CustomersTable({
       <div className="flex flex-col gap-4">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+          <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
           <Input
             placeholder="Ism, familiya yoki telefon..."
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            className="pl-8"
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="h-12 pl-8"
           />
         </div>
 
         {/* Tabs */}
-        <Tabs value={currentRating} onValueChange={handleRatingChange}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">
-              Barchasi
-              <span className="ml-2 text-xs">({goodCount + averageCount + badCount})</span>
-            </TabsTrigger>
-            <TabsTrigger value="good">
-              <TrendingUp className="mr-1 h-4 w-4" />
-              Yaxshi
-              <span className="ml-2 text-xs">({goodCount})</span>
-            </TabsTrigger>
-            <TabsTrigger value="average">
-              <Minus className="mr-1 h-4 w-4" />
-              O&apos;rtacha
-              <span className="ml-2 text-xs">({averageCount})</span>
-            </TabsTrigger>
-            <TabsTrigger value="bad">
-              <TrendingDown className="mr-1 h-4 w-4" />
-              Yomon
-              <span className="ml-2 text-xs">({badCount})</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {!isMobile ? (
+          <Tabs value={currentRating} onValueChange={handleRatingChange} className="h-12 w-full lg:w-1/2">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all">
+                Barchasi
+                <span className="ml-2 text-xs">({totalDebtorsCount})</span>
+              </TabsTrigger>
+              <TabsTrigger value="good">
+                <TrendingUp className="mr-1 h-4 w-4" />
+                Yaxshi
+                <span className="ml-2 text-xs">({goodCount})</span>
+              </TabsTrigger>
+              <TabsTrigger value="average">
+                <Minus className="mr-1 h-4 w-4" />
+                O&apos;rtacha
+                <span className="ml-2 text-xs">({averageCount})</span>
+              </TabsTrigger>
+              <TabsTrigger value="bad">
+                <TrendingDown className="mr-1 h-4 w-4" />
+                Yomon
+                <span className="ml-2 text-xs">({badCount})</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        ) : (
+          <Select value={currentRating} onValueChange={handleRatingChange}>
+            <SelectTrigger className="!h-12 w-32">
+              <SelectValue placeholder="Select a rating" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Barchasi</SelectItem>
+              <SelectItem value="good">Yaxshi</SelectItem>
+              <SelectItem value="average">O&apos;rtacha</SelectItem>
+              <SelectItem value="bad">Yomon</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Mobile Card View */}
@@ -238,6 +256,7 @@ export function CustomersTable({
           </div>
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(currentPage - 1)}
@@ -246,6 +265,7 @@ export function CustomersTable({
               Oldingi
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(currentPage + 1)}

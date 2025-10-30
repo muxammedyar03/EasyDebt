@@ -57,14 +57,14 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
       <CardContent className="px-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <h3
                 className="cursor-pointer text-lg font-semibold hover:underline"
                 onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
               >
                 {debtor.first_name} {debtor.last_name}
               </h3>
-              <Badge variant={status.variant} className="text-xs">
+              <Badge variant={status.variant} className="mr-2 text-xs">
                 {status.label}
               </Badge>
             </div>

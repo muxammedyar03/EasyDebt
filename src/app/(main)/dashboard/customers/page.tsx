@@ -20,16 +20,8 @@ export default async function CustomersPage(props: {
   const rating = rawRating || "all";
   const pageSize = 20;
 
-  // Get all debts and payments from last 3 months
-  const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
+  // Get all debts and payments (no date restriction to avoid empty lists)
   const debtsRaw = await prisma.debt.findMany({
-    where: {
-      created_at: {
-        gte: threeMonthsAgo,
-      },
-    },
     include: {
       debtor: true,
     },
@@ -39,11 +31,6 @@ export default async function CustomersPage(props: {
   });
 
   const paymentsRaw = await prisma.payment.findMany({
-    where: {
-      created_at: {
-        gte: threeMonthsAgo,
-      },
-    },
     include: {
       debtor: true,
     },
@@ -237,6 +224,9 @@ export default async function CustomersPage(props: {
     })),
   }));
 
+  // Total debtors (for accurate "Barchasi" count)
+  const totalDebtorsCount = await prisma.debtor.count();
+
   return (
     <div className="space-y-6">
       <div>
@@ -248,6 +238,7 @@ export default async function CustomersPage(props: {
         customers={transformedCustomers}
         currentPage={page}
         totalPages={totalPages}
+        totalDebtorsCount={totalDebtorsCount}
         goodCount={goodCount}
         averageCount={averageCount}
         badCount={badCount}

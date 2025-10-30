@@ -169,7 +169,7 @@ export default function CashClient({ payments, debts }: Props) {
   return (
     <div className="w-full space-y-6">
       <div>
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
           {/* Tab Selector */}
           <div className="bg-card border-border flex gap-2 rounded-xl border p-2">
             <Button
@@ -252,12 +252,10 @@ export default function CashClient({ payments, debts }: Props) {
 
         {/* Payments List */}
         <TabsContent value="payments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>To&apos;lovlar ro&apos;yxati</CardTitle>
-              <CardDescription>Jami: {formatCurrency(totals.totalPayments)}</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div>
+            <h1 className="text-2xl font-bold">To&apos;lovlar ro&apos;yxati</h1>
+            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrency(totals.totalPayments)}</p>
+            <div>
               <div className="space-y-3">
                 {filteredPayments.length === 0 ? (
                   <p className="text-muted-foreground py-8 text-center">To&apos;lovlar topilmadi</p>
@@ -266,7 +264,7 @@ export default function CashClient({ payments, debts }: Props) {
                     <div
                       key={payment.id}
                       onClick={() => router.push(`/dashboard/default/debitor/${payment.debtor_id}`)}
-                      className="hover:bg-accent flex flex-col items-center justify-between rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-3"
+                      className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-3 lg:items-center lg:gap-y-0"
                     >
                       <div className="space-y-1">
                         <p className="font-medium">{payment.debtor_name}</p>
@@ -301,18 +299,16 @@ export default function CashClient({ payments, debts }: Props) {
                   ))
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Debts List */}
         <TabsContent value="debts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Qarzlar ro&apos;yxati</CardTitle>
-              <CardDescription>Jami: {formatCurrency(totals.totalDebts)}</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div>
+            <h1 className="text-2xl font-bold">Qarzlar ro&apos;yxati</h1>
+            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrency(totals.totalDebts)}</p>
+            <div>
               <div className="space-y-3">
                 {filteredDebts.length === 0 ? (
                   <p className="text-muted-foreground py-8 text-center">Qarzlar topilmadi</p>
@@ -323,7 +319,7 @@ export default function CashClient({ payments, debts }: Props) {
                       <div
                         key={debt.id}
                         onClick={() => router.push(`/dashboard/default/debitor/${debt.debtor_id}`)}
-                        className="hover:bg-accent flex flex-col items-center justify-between rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4"
+                        className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4 lg:items-center lg:gap-y-0"
                       >
                         <div className="space-y-1">
                           <p className="font-medium">{debt.debtor_name}</p>
@@ -347,8 +343,8 @@ export default function CashClient({ payments, debts }: Props) {
                   })
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
