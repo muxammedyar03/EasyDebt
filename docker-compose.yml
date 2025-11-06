@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: debt_management_db
     environment:
       POSTGRES_DB: debt_management
