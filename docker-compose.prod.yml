@@ -4,6 +4,7 @@ services:
     container_name: debt_db
     environment:
       POSTGRES_DB: debt_management
+      N8N_API_KEY: ${N8N_API_KEY}
       POSTGRES_USER: ${DB_USER:-admin}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
@@ -25,6 +26,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public
       JWT_SECRET: ${JWT_SECRET}
+      N8N_API_KEY: ${N8N_API_KEY}
       NODE_ENV: production
       OPENSSL_CONF: /dev/null
       VIRTUAL_HOST: ${DOMAIN}
