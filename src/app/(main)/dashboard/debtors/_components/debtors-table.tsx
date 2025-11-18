@@ -99,11 +99,9 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   // Avoid triggering search on initial mount (which was resetting page to 1 after navigation)
   const isFirstRender = React.useRef(true);
 
-  const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
+  const getDebtorStatus = (totalDebt: number) => {
     if (totalDebt <= 0) {
       return { label: "To'langan", variant: "default" as const, color: "text-green-600" };
-    } else if (isOverdue) {
-      return { label: "Muddati o'tgan", variant: "destructive" as const, color: "text-red-600" };
     } else if (totalDebt > debtLimit) {
       return { label: "Limitdan oshgan", variant: "destructive" as const, color: "text-red-600" };
     } else {
@@ -336,15 +334,17 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 <SelectContent>
                   <SelectItem value="all">Barchasi</SelectItem>
                   <SelectItem value="qarzdor">Qarzdor</SelectItem>
+                  <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
                   <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
                   <SelectItem value="tolangan">To&apos;langan</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
               <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-                <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-4">
+                <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
                   <TabsTrigger value="all">Barchasi</TabsTrigger>
                   <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
+                  <TabsTrigger value="muddati_otgan">Muddati o&apos;tgan</TabsTrigger>
                   <TabsTrigger value="limitdan_oshgan" className="text-xs sm:text-sm">
                     Limitdan oshgan
                   </TabsTrigger>
@@ -447,7 +447,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 </TableRow>
               ) : (
                 debtors.map((debtor) => {
-                  const status = getDebtorStatus(debtor.total_debt, debtor.is_overdue);
+                  const status = getDebtorStatus(debtor.total_debt);
                   return (
                     <TableRow key={debtor.id}>
                       <TableCell>
@@ -464,7 +464,11 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                       </TableCell>
                       <TableCell>{debtor.phone_number || "-"}</TableCell>
                       <TableCell className={status.color}>{formatCurrency(debtor.total_debt)}</TableCell>
-                      <TableCell>
+                      <TableCell className="flex items-center gap-2">
+                        <Badge
+                          variant="default"
+                          className={`h-5 w-5 rounded-full ${debtor.is_overdue ? "bg-red-500" : "bg-green-500"}`}
+                        ></Badge>
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
                       <TableCell>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</TableCell>

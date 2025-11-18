@@ -229,7 +229,15 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
         label = "Limitdan oshgan";
       }
 
-      return <Badge variant={variant}>{label}</Badge>;
+      return (
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={"default"}
+            className={`h-5 w-5 rounded-full ${row.original.is_overdue ? "bg-red-500" : "bg-green-500"}`}
+          ></Badge>
+          <Badge variant={variant}>{label}</Badge>
+        </div>
+      );
     },
     enableSorting: false,
   },
@@ -237,7 +245,6 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     id: "actions-buttons",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Amallar" />,
     cell: ({ row }) => <ActionButtonsCell row={row} context={context} />,
-    enableSorting: false,
   },
   {
     id: "actions",

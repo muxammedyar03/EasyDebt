@@ -58,8 +58,15 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         })
       : null,
   ]);
+  const [overdueDaysSetting] = await Promise.all([
+    prisma.settings.findUnique({
+      where: { key: "overdue_days" },
+      select: { value: true },
+    }),
+  ]);
 
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
+  const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
 
   const notifications = await prisma.notification.findMany({
     where: { is_read: false },
@@ -124,7 +131,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <div>{session?.userId && <HeaderLockButton />}</div>
               <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
-              <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} />
+              <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
             </div>
           </div>
         </header>

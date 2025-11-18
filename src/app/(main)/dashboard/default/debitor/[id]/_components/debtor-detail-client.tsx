@@ -68,7 +68,7 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
 
         {/* History Tabs */}
         <Tabs defaultValue="debts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:w-1/2 lg:w-1/2">
+          <TabsList className="grid h-10 w-full grid-cols-3 md:w-1/2 lg:w-1/2">
             <TabsTrigger value="debts">
               Qarzlar tarixi
               <Badge variant="secondary" className="">
@@ -81,12 +81,7 @@ export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClient
                 {debtor.payments.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="timeline">
-              Vaqt chizig&apos;i
-              <Badge variant="secondary" className="">
-                {debtor.payments.length}
-              </Badge>
-            </TabsTrigger>
+            <TabsTrigger value="timeline">Vaqt chizig&apos;i</TabsTrigger>
           </TabsList>
           <TabsContent value="debts" className="mt-4">
             <DebtHistoryTable debts={debtor.debts} />

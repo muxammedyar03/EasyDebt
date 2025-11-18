@@ -12,11 +12,13 @@ interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialDebtLimit: number;
+  initialOverdueDays: number;
 }
 
-export function SettingsDialog({ open, onOpenChange, initialDebtLimit }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOverdueDays }: SettingsDialogProps) {
   const router = useRouter();
   const [debtLimit, setDebtLimit] = React.useState(initialDebtLimit.toString());
+  const [overdueDays, setOverdueDays] = React.useState(initialOverdueDays.toString());
   const [isLoading, setIsLoading] = React.useState(false);
 
   React.useEffect(() => {
@@ -36,8 +38,16 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit }: Setting
           value: debtLimit,
         }),
       });
+      const response2 = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "overdue_days",
+          value: overdueDays,
+        }),
+      });
 
-      if (response.ok) {
+      if (response.ok && response2.ok) {
         toast.success("Sozlamalar saqlandi");
         router.refresh();
         onOpenChange(false);
@@ -81,6 +91,19 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit }: Setting
             <p className="text-muted-foreground text-sm">
               Joriy limit: {formatNumber(debtLimit)} {"so'm"}
             </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="overdue_days">Muddati o&apos;tish kuni (kun)</Label>
+            <Input
+              id="overdue_days"
+              type="number"
+              min={1}
+              value={overdueDays}
+              onChange={(e) => setOverdueDays(e.target.value.replace(/\D/g, ""))}
+              placeholder="45"
+              required
+            />
+            <p className="text-muted-foreground text-sm">Joriy muddat: {overdueDays} kun</p>
           </div>
 
           <div className="flex justify-end gap-2">

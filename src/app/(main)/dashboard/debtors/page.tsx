@@ -44,6 +44,8 @@ export default async function DebtorsPage({
     where.total_debt = { gt: debtLimit };
   } else if (status === "tolangan") {
     where.total_debt = { lte: 0 };
+  } else if (status === "muddati_otgan") {
+    where.is_overdue = true;
   }
 
   // Get total count

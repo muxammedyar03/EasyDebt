@@ -20,8 +20,10 @@ import { useRouter } from "next/navigation";
 export function AccountSwitcher({
   debtLimit,
   activeUser,
+  overdueDays,
 }: {
   readonly debtLimit: number;
+  readonly overdueDays: number;
   readonly activeUser: {
     readonly id: string;
     readonly name: string;
@@ -88,7 +90,12 @@ export function AccountSwitcher({
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} initialDebtLimit={debtLimit} />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        initialDebtLimit={debtLimit}
+        initialOverdueDays={overdueDays}
+      />
     </DropdownMenu>
   );
 }

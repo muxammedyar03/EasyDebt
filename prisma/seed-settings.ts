@@ -13,6 +13,16 @@ async function main() {
     },
   });
 
+  // Create default overdue days setting
+  await prisma.settings.upsert({
+    where: { key: "overdue_days" },
+    update: {},
+    create: {
+      key: "overdue_days",
+      value: "45", // 45 days default
+    },
+  });
+
   console.log("Settings seeded successfully");
 }
 

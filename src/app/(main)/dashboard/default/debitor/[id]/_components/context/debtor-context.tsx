@@ -53,6 +53,8 @@ interface DebtorContextValue {
     color: string;
   };
   timeline: TimelineEvent[];
+  first_debt: Date;
+  daysSince: number;
   refresh: () => Promise<void>;
 }
 
@@ -103,6 +105,17 @@ export function DebtorProvider({ initialDebtor, children }: { initialDebtor: Deb
     return { score, label, color };
   }, [debtor, totals]);
 
+  const daysSince = React.useMemo(() => {
+    const fist_debt = debtor.debts.map((d) => new Date(d.created_at)).sort((a, b) => a.getTime() - b.getTime())[0];
+    const daysSince = (Date.now() - fist_debt.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince;
+  }, [debtor]);
+
+  const first_debt = React.useMemo(() => {
+    const fist_debt = debtor.debts.map((d) => new Date(d.created_at)).sort((a, b) => a.getTime() - b.getTime())[0];
+    return fist_debt;
+  }, [debtor]);
+
   const timeline: TimelineEvent[] = React.useMemo(() => {
     const debtEvents: TimelineEvent[] = debtor.debts.map((d) => ({
       id: `debt-${d.id}`,
@@ -138,8 +151,8 @@ export function DebtorProvider({ initialDebtor, children }: { initialDebtor: Deb
   }, [debtor.id]);
 
   const value: DebtorContextValue = React.useMemo(
-    () => ({ debtor, setDebtor, totals, rating, timeline, refresh }),
-    [debtor, totals, rating, timeline, refresh],
+    () => ({ debtor, setDebtor, totals, rating, timeline, refresh, daysSince, first_debt }),
+    [debtor, totals, rating, timeline, refresh, daysSince, first_debt],
   );
 
   return <DebtorContext.Provider value={value}>{children}</DebtorContext.Provider>;

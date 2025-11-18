@@ -40,3 +40,26 @@ export function formatCurrency(
 
   return new Intl.NumberFormat(locale, formatOptions).format(amount);
 }
+
+export function formatDateUz(date: Date): string {
+  const oylar = [
+    "yanvar",
+    "fevral",
+    "mart",
+    "aprel",
+    "may",
+    "iyun",
+    "iyul",
+    "avgust",
+    "sentyabr",
+    "oktyabr",
+    "noyabr",
+    "dekabr",
+  ];
+
+  const kun = date.getDate();
+  const oy = oylar[date.getMonth()];
+  const yil = date.getFullYear();
+
+  return `${kun}-${oy}/${yil}`;
+}

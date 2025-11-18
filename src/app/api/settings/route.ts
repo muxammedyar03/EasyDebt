@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { reEvaluateOverdueDebtors } from "@/lib/overdue-checker";
+import { revalidatePath } from "next/cache";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +16,18 @@ export async function POST(request: NextRequest) {
       update: { value },
       create: { key, value },
     });
+
+    if (key === "overdue_days") {
+      try {
+        await reEvaluateOverdueDebtors();
+        // Invalidate dashboard pages so the new statuses show up
+        revalidatePath("/dashboard/default");
+        revalidatePath("/dashboard/debtors");
+        revalidatePath("/dashboard");
+      } catch (e) {
+        console.error("Failed to re-evaluate overdue debtors after settings update:", e);
+      }
+    }
 
     return NextResponse.json(setting);
   } catch (error) {

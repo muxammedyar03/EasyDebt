@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { OverdueDebtorsCard } from "@/components/dashboard/overdue-debtors-card";
-import { CustomerRatingCard } from "@/components/dashboard/customer-rating-card";
-import { ReportsCard } from "./_components/reports-card";
 
 import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
 import { Payment } from "@prisma/client";
+
+// Ensure this page is always rendered dynamically so changes to is_overdue are reflected immediately
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function Page() {
   const debtorsRaw = await prisma.debtor.findMany({
@@ -14,16 +15,6 @@ export default async function Page() {
       debts: true,
       payments: true,
     },
-  });
-
-  // Get overdue debtors
-  const overdueDebtorsRaw = await prisma.debtor.findMany({
-    where: {
-      is_overdue: true,
-      total_debt: { gt: 0 },
-    },
-    orderBy: { last_payment_date: "asc" },
-    take: 10,
   });
 
   // Convert Decimal to number for type compatibility
@@ -215,32 +206,27 @@ export default async function Page() {
 
     const avgDays = count > 0 ? totalDays / count : 0;
 
-    if (avgDays <= 45) {
+    if (avgDays <= 60) {
       goodCount++;
-    } else if (avgDays <= 55) {
+    } else if (avgDays <= 90) {
       averageCount++;
     } else {
       badCount++;
     }
   });
 
-  const overdueDebtors = overdueDebtorsRaw.map((debtor) => ({
-    ...debtor,
-    total_debt: debtor.total_debt.toNumber(),
-  }));
-
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
       <DataTable data={debtors} debtLimit={debtLimit} />
 
       {/* Overdue Debtors Alert */}
-      {overdueDebtors.length > 0 && <OverdueDebtorsCard debtors={overdueDebtors} />}
+      {/* {overdueDebtors.length > 0 && <OverdueDebtorsCard debtors={overdueDebtors} />} */}
 
       {/* Statistics Cards */}
       <SectionCards stats={stats} />
 
       {/* New Cards Grid */}
-      <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+      {/* <div className="grid gap-4 md:grid-cols-2 md:gap-6">
         <CustomerRatingCard
           goodCount={goodCount}
           averageCount={averageCount}
@@ -248,7 +234,7 @@ export default async function Page() {
           totalCount={goodCount + averageCount + badCount}
         />
         <ReportsCard />
-      </div>
+      </div> */}
 
       {/* Chart */}
       <ChartAreaInteractive chartData={chartData} />

@@ -50,18 +50,34 @@ export function DebtorHeader({ onAddDebt, onAddPayment }: { onAddDebt: () => voi
           <p className="text-muted-foreground text-sm">{debtor.phone_number || "Telefon raqami yo'q"}</p>
         </div>
       </div>
-      <div className="mt-5 flex justify-end gap-2 md:mt-0">
-        <Button variant="outline" onClick={onAddDebt}>
-          <Plus className="mr-2 h-4 w-4" />
+      {/* Desktop buttons */}
+      <div className="mt-5 hidden justify-end gap-2 md:mt-0 md:flex">
+        <Button variant="outline" className="h-12" onClick={onAddDebt}>
+          <Plus className="h-4 w-4" />
           Qarz qo&apos;shish
         </Button>
-        <Button variant="outline" onClick={onAddPayment}>
-          <Minus className="mr-2 h-4 w-4" />
+        <Button variant="outline" className="h-12" onClick={onAddPayment}>
+          <Minus className="h-4 w-4" />
           To&apos;lov qo&apos;shish
         </Button>
-        <Button variant="default" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
+        <Button variant="default" className="h-12" onClick={handleExport}>
+          <Download className="h-4 w-4" />
           PDF Export
+        </Button>
+      </div>
+      {/* Mobile buttons */}
+      <div className="mt-5 grid grid-cols-3 gap-2 md:hidden">
+        <Button variant="outline" className="h-12" onClick={onAddDebt}>
+          <Plus className="h-4 w-4" />
+          Qarz
+        </Button>
+        <Button variant="outline" className="h-12" onClick={onAddPayment}>
+          <Minus className="h-4 w-4" />
+          To&apos;lov
+        </Button>
+        <Button variant="default" className="h-12" onClick={handleExport}>
+          <Download className="h-4 w-4" />
+          PDF
         </Button>
       </div>
     </div>

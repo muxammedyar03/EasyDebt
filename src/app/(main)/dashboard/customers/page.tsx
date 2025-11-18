@@ -14,6 +14,13 @@ export default async function CustomersPage(props: {
   const rawPage = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
   const rawSearch = Array.isArray(searchParams.search) ? searchParams.search[0] : searchParams.search;
   const rawRating = Array.isArray(searchParams.rating) ? searchParams.rating[0] : searchParams.rating;
+  const [overdueDaysSetting] = await Promise.all([
+    prisma.settings.findUnique({
+      where: { key: "overdue_days" },
+      select: { value: true },
+    }),
+  ]);
+  const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
 
   const page = parseInt(rawPage || "1");
   const search = rawSearch || "";
@@ -165,9 +172,9 @@ export default async function CustomersPage(props: {
 
     // Determine rating
     let rating: "good" | "average" | "bad";
-    if (avgDays <= 45) {
+    if (avgDays <= overdueDays) {
       rating = "good";
-    } else if (avgDays <= 55) {
+    } else if (avgDays <= overdueDays + 10) {
       rating = "average";
     } else {
       rating = "bad";
