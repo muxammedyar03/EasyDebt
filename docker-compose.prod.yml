@@ -68,12 +68,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - env.demo
     environment:
-        VIRTUAL_HOST: demo.easydebt.uz
-        LETSENCRYPT_HOST: demo.easydebt.uz
-        VIRTUAL_PORT: 3000
+      NODE_ENV: demo
+      DB_USER: admin
+      DB_PASSWORD: Muxammedyar@1
+      DATABASE_URL: postgresql://admin:Muxammedyar@1@postgres-demo:5432/debt_management_demo?schema=public
+      JWT_SECRET: demo_secret_key
+      N8N_API_KEY: demo_n8n_key
+      VIRTUAL_HOST: demo.easydebt.uz
+      LETSENCRYPT_HOST: demo.easydebt.uz
+      VIRTUAL_PORT: 3000
     networks:
       - app-network
       - nginx-proxy
