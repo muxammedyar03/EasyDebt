@@ -36,11 +36,8 @@ export async function POST(request: NextRequest) {
         throw new Error("Qarzdor topilmadi");
       }
 
-      // Check if payment amount exceeds total debt
+      // Allow overpayment: payment can exceed current debt (total_debt may become negative)
       const currentDebt = debtor.total_debt.toNumber();
-      if (validatedData.amount > currentDebt) {
-        throw new Error("To'lov miqdori umumiy qarzdan oshib ketdi");
-      }
 
       // Create payment record
       const payment = await tx.payment.create({
