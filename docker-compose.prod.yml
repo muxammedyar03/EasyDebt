@@ -18,6 +18,24 @@ services:
       retries: 5
     restart: unless-stopped
 
+  postgres-demo:
+    image: postgres:15-alpine
+    container_name: debt_db_demo
+    environment:
+      POSTGRES_DB: debt_management_demo
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - postgres_data_demo:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d debt_management_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -45,6 +63,22 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  app-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - env.demo
+    environment:
+        VIRTUAL_HOST: demo.easydebt.uz
+        LETSENCRYPT_HOST: demo.easydebt.uz
+        VIRTUAL_PORT: 3000
+    networks:
+      - app-network
+      - nginx-proxy
+    restart: unless-stopped
+
 
   nginx-proxy:
     image: nginxproxy/nginx-proxy:alpine
@@ -93,3 +127,4 @@ volumes:
   nginx_vhost:
   nginx_html:
   acme_state:
+  postgres_data_demo:
