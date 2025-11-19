@@ -70,11 +70,10 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: demo
-      DB_USER: admin
-      DB_PASSWORD: Muxammedyar@1
-      DATABASE_URL: postgresql://admin:Muxammedyar@1@postgres-demo:5432/debt_management_demo?schema=public
-      JWT_SECRET: demo_secret_key
-      N8N_API_KEY: demo_n8n_key
+      DB_USER: ${DB_USER:-admin}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres-demo:5432/debt_management_demo?schema=public
+      JWT_SECRET: ${JWT_SECRET}
       VIRTUAL_HOST: demo.easydebt.uz
       LETSENCRYPT_HOST: demo.easydebt.uz
       VIRTUAL_PORT: 3000
