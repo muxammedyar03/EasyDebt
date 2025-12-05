@@ -87,8 +87,13 @@ jobs:
             # Start new containers
             docker compose -f docker-compose.prod.yml up -d --build
 
+            sleep 15
+
             # Run database migrations
             docker compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
+
+            # Run database migrations for demo DB
+            docker compose -f docker-compose.prod.yml exec -T app-demo npx prisma migrate deploy
 
             # Clean up old images
             docker image prune -af --filter "until=24h"
