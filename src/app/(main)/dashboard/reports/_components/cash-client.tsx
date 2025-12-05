@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, CreditCard, Wallet, Smartphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, CreditCard, Wallet, Smartphone, Banknote, HandCoinsIcon } from "lucide-react";
 import { PaymentType } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
@@ -168,6 +167,29 @@ export default function CashClient({ payments, debts }: Props) {
 
   return (
     <div className="w-full space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <div className="rounded-xl border p-4 shadow-sm">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Jami Qarz</h3>
+            <HandCoinsIcon className="h-5 w-5 text-red-500" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-red-600 md:text-2xl">{formatCurrency(totals.totalDebts)}</div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border p-4 shadow-sm">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Jami To&apos;lov</h3>
+            <Banknote className="h-5 w-5 text-green-500" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-green-600 md:text-2xl">{formatCurrency(totals.totalPayments)}</div>
+          </div>
+        </div>
+      </div>
+
       <div>
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
           {/* Tab Selector */}
@@ -211,41 +233,41 @@ export default function CashClient({ payments, debts }: Props) {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Naqd</CardTitle>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* Summary Cards */}
+        <div className="bg-card rounded-lg border p-4">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Naqd</h3>
             <Wallet className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totals.cash)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Karta</CardTitle>
+          </div>
+          <div>
+            <div className="text-lg font-bold md:text-2xl">{formatCurrency(totals.cash)}</div>
+          </div>
+        </div>
+        <div className="bg-card rounded-lg border p-4">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Karta</h3>
             <CreditCard className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totals.card)}</div>
-          </CardContent>
-        </Card>
+          </div>
+          <div>
+            <div className="text-lg font-bold md:text-2xl">{formatCurrency(totals.card)}</div>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Click</CardTitle>
+        <div className="bg-card rounded-lg border p-4">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">Click</h3>
             <Smartphone className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totals.click)}</div>
-          </CardContent>
-        </Card>
+          </div>
+          <div>
+            <div className="text-lg font-bold md:text-2xl">{formatCurrency(totals.click)}</div>
+          </div>
+        </div>
       </div>
 
       {/* Payments / Debts Tabs */}
       <Tabs defaultValue="payments" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:w-1/2 lg:w-1/3">
+        <TabsList className="grid h-12 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
           <TabsTrigger value="payments">To&apos;lovlar ({filteredPayments.length})</TabsTrigger>
           <TabsTrigger value="debts">Qarzlar ({filteredDebts.length})</TabsTrigger>
         </TabsList>

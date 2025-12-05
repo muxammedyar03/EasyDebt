@@ -14,6 +14,12 @@ export default async function CustomersPage(props: {
   const rawPage = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
   const rawSearch = Array.isArray(searchParams.search) ? searchParams.search[0] : searchParams.search;
   const rawRating = Array.isArray(searchParams.rating) ? searchParams.rating[0] : searchParams.rating;
+  const rawSortField = Array.isArray(searchParams.sortField)
+    ? searchParams.sortField[0]
+    : (searchParams.sortField as string | undefined);
+  const rawSortOrder = Array.isArray(searchParams.sortOrder)
+    ? searchParams.sortOrder[0]
+    : (searchParams.sortOrder as string | undefined);
   const [overdueDaysSetting] = await Promise.all([
     prisma.settings.findUnique({
       where: { key: "overdue_days" },
@@ -26,6 +32,8 @@ export default async function CustomersPage(props: {
   const search = rawSearch || "";
   const rating = rawRating || "all";
   const pageSize = 20;
+  const sortField = (rawSortField || "date") as "date" | "name" | "days" | "payments" | "debt";
+  const sortOrder = (rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : "desc") as "asc" | "desc";
 
   // Get all debts and payments (no date restriction to avoid empty lists)
   const debtsRaw = await prisma.debt.findMany({
@@ -208,6 +216,57 @@ export default async function CustomersPage(props: {
         c.debtor.phone_number?.toLowerCase().includes(lowerSearch),
     );
   }
+
+  // Sort
+  customers.sort((a, b) => {
+    let aValue: number | string | Date;
+    let bValue: number | string | Date;
+
+    switch (sortField) {
+      case "name": {
+        const aName = `${a.debtor.first_name} ${a.debtor.last_name}`.toLowerCase();
+        const bName = `${b.debtor.first_name} ${b.debtor.last_name}`.toLowerCase();
+        aValue = aName;
+        bValue = bName;
+        break;
+      }
+      case "days": {
+        aValue = a.avgDaysBetweenPayments;
+        bValue = b.avgDaysBetweenPayments;
+        break;
+      }
+      case "payments": {
+        aValue = a.payments.length;
+        bValue = b.payments.length;
+        break;
+      }
+      case "debt": {
+        aValue = a.debtor.total_debt;
+        bValue = b.debtor.total_debt;
+        break;
+      }
+      case "date":
+      default: {
+        aValue = a.debtor.created_at;
+        bValue = b.debtor.created_at;
+        break;
+      }
+    }
+
+    let comparison = 0;
+
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      comparison = aValue.localeCompare(bValue);
+    } else if (aValue instanceof Date && bValue instanceof Date) {
+      comparison = aValue.getTime() - bValue.getTime();
+    } else {
+      const aNum = Number(aValue);
+      const bNum = Number(bValue);
+      comparison = aNum - bNum;
+    }
+
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
 
   // Pagination
   const totalCustomers = customers.length;

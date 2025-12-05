@@ -1,4 +1,4 @@
-import { LayoutDashboard, UserCog, FileText, Users, BarChart3, Settings, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, UserCog, FileText, Users, BarChart3, type LucideIcon } from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -79,12 +79,12 @@ export const sidebarItems: NavGroup[] = [
         isNew: true,
         roles: ["SUPER_ADMIN"],
       },
-      {
-        title: "Sozlamalar",
-        url: "/dashboard/settings",
-        icon: Settings,
-        isNew: true,
-      },
+      // {
+      //   title: "Sozlamalar",
+      //   url: "/dashboard/settings",
+      //   icon: Settings,
+      //   isNew: true,
+      // },
       // {
       //   title: "Analytics",
       //   url: "/dashboard/coming-soon",

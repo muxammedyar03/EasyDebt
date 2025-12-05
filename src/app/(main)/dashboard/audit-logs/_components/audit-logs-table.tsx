@@ -1,70 +1,44 @@
 "use client";
 
 import * as React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AuditLogTableProps } from "@/types/types";
+import { useTableUtils } from "../utils/useTableUtils";
 
-interface AuditLogsTableProps {
+export interface AuditLogsTableProps {
   logs: AuditLogTableProps[];
 }
 
 export function AuditLogsTable({ logs }: AuditLogsTableProps) {
-  const getActionBadge = (action: string) => {
-    switch (action) {
-      case "CREATE":
-        return <Badge className="bg-green-500">Yaratildi</Badge>;
-      case "UPDATE":
-        return <Badge className="bg-blue-500">Yangilandi</Badge>;
-      case "DELETE":
-        return <Badge variant="destructive">O&apos;chirildi</Badge>;
-      case "LOGIN":
-        return <Badge className="bg-purple-500">Kirish</Badge>;
-      case "LOGOUT":
-        return <Badge variant="secondary">Chiqish</Badge>;
-      case "PAYMENT_ADDED":
-        return <Badge className="bg-emerald-500">To&apos;lov</Badge>;
-      case "DEBT_ADDED":
-        return <Badge className="bg-orange-500">Qarz</Badge>;
-      default:
-        return <Badge variant="outline">{action}</Badge>;
-    }
-  };
+  const { getActionBadge, getEntityTypeName, formatDate, getActionDescription } = useTableUtils();
 
-  const getEntityTypeName = (type: string) => {
-    switch (type) {
-      case "Debtor":
-        return "Qarzdor";
-      case "Debt":
-        return "Qarz";
-      case "Payment":
-        return "To'lov";
-      case "User":
-        return "Foydalanuvchi";
-      case "Settings":
-        return "Sozlamalar";
-      default:
-        return type;
-    }
-  };
+  const [descriptions, setDescriptions] = React.useState<Record<number, string | null>>({});
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleString("uz-UZ", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadDescriptions = async () => {
+      const entries = await Promise.all(logs.map(async (log) => [log.id, await getActionDescription(log)] as const));
+
+      if (!isMounted) return;
+
+      setDescriptions(Object.fromEntries(entries));
+    };
+
+    loadDescriptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [logs, getActionDescription]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="py-0 pt-6">
+      <CardHeader className="px-2">
         <CardTitle>Oxirgi 100 ta harakat</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2">
         {/* Mobile View */}
         <div className="space-y-4 md:hidden">
           {logs.map((log) => (
@@ -84,6 +58,7 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
                       {log.entity_id && ` #${log.entity_id}`}
                     </p>
                   </div>
+                  {descriptions[log.id] && <p className="text-muted-foreground text-xs">{descriptions[log.id]}</p>}
                   {log.ip_address && (
                     <p className="text-muted-foreground text-xs">
                       <span className="font-medium">IP:</span> {log.ip_address}
@@ -104,13 +79,14 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
                 <TableHead>Foydalanuvchi</TableHead>
                 <TableHead>Harakat</TableHead>
                 <TableHead>Entity</TableHead>
-                <TableHead>IP Address</TableHead>
+                <TableHead>Tafsilotlar</TableHead>
+                {/* <TableHead>IP Address</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">
+                  <TableCell colSpan={6} className="text-center">
                     Ma&apos;lumot topilmadi
                   </TableCell>
                 </TableRow>
@@ -139,7 +115,10 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
                         {log.entity_id && <p className="text-muted-foreground text-xs">ID: {log.entity_id}</p>}
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{log.ip_address || "-"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {descriptions[log.id] && <p className="text-muted-foreground text-xs">{descriptions[log.id]}</p>}
+                    </TableCell>
+                    {/* <TableCell className="text-muted-foreground text-sm">{log.ip_address || "-"}</TableCell> */}
                   </TableRow>
                 ))
               )}

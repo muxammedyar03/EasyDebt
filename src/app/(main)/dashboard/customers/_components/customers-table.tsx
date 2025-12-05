@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerTableProps } from "@/types/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SortToggleGroup } from "./sort-toggle-group";
 
 interface CustomersTableProps {
   customers: CustomerTableProps[];
@@ -39,6 +40,8 @@ export function CustomersTable({
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const currentRating = searchParams.get("rating") || "all";
+  const currentSortField = searchParams.get("sortField") || null;
+  const currentSortOrder = (searchParams.get("sortOrder") as "asc" | "desc" | null) || null;
 
   const handleSearch = React.useCallback(
     (value: string) => {
@@ -68,6 +71,33 @@ export function CustomersTable({
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", page.toString());
+    router.push(`/dashboard/customers?${params.toString()}`);
+  };
+
+  const handleSortToggle = (field: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    // 1) boshqa field bosilsa -> shu field ASC
+    if (currentSortField !== field) {
+      params.set("sortField", field);
+      params.set("sortOrder", "asc");
+      params.set("page", "1");
+      router.push(`/dashboard/customers?${params.toString()}`);
+      return;
+    }
+
+    // 2) shu field ASC bo'lsa -> DESC
+    if (currentSortOrder === "asc") {
+      params.set("sortOrder", "desc");
+      params.set("page", "1");
+      router.push(`/dashboard/customers?${params.toString()}`);
+      return;
+    }
+
+    // 3) shu field DESC bo'lsa -> default (parametrlarni o'chirish)
+    params.delete("sortField");
+    params.delete("sortOrder");
+    params.set("page", "1");
     router.push(`/dashboard/customers?${params.toString()}`);
   };
 
@@ -115,20 +145,34 @@ export function CustomersTable({
       {/* Filters */}
       <div className="flex flex-col gap-4">
         {/* Search */}
-        <div className="relative flex-1">
-          <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
-          <Input
-            placeholder="Ism, familiya yoki telefon..."
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="h-12 pl-8"
+        <div className="flex flex-col gap-4 md:flex-row">
+          <div className="relative flex-1">
+            <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
+            <Input
+              placeholder="Ism, familiya yoki telefon..."
+              value={searchValue}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="h-12 pl-8"
+            />
+          </div>
+          <SortToggleGroup
+            sortOptions={[
+              { key: "date", label: "Sana" },
+              { key: "days", label: "Kunlar" },
+              { key: "payments", label: "To'lovlar" },
+              { key: "debt", label: "Qarz" },
+            ]}
+            currentSortField={currentSortField}
+            currentSortOrder={currentSortOrder}
+            onToggle={handleSortToggle}
+            className="h-12 flex-1"
           />
         </div>
 
         {/* Tabs */}
         {!isMobile ? (
-          <Tabs value={currentRating} onValueChange={handleRatingChange} className="h-12 w-full lg:w-1/2">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs value={currentRating} onValueChange={handleRatingChange} className="w-full lg:w-1/2">
+            <TabsList className="grid h-12 w-full grid-cols-4">
               <TabsTrigger value="all">
                 Barchasi
                 <span className="ml-2 text-xs">({totalDebtorsCount})</span>

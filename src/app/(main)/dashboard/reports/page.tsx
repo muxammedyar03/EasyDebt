@@ -5,6 +5,7 @@ import CashClient from "./_components/cash-client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function ReportsPage() {
   // Get all debtors
@@ -158,66 +159,82 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Hisobotlar</h1>
-        <p className="text-muted-foreground">Batafsil statistika va tahlil</p>
-      </div>
-      {/* Summary Cards */}
-      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-6 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2">
-        <Card className="@container/card">
-          <CardHeader>
-            <CardDescription>Umumiy qarz</CardDescription>
-            <CardTitle className="flex items-end gap-1">
-              <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
-                {totalDebtsAmount.toLocaleString()}
-              </p>
-              <span className="text-md leading-5">so&apos;m</span>
-            </CardTitle>
-            <CardAction>
-              <Badge variant="outline" className="text-red-600">
-                <TrendingUp className="size-4" />
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="text-muted-foreground">{totalDebtsCount} ta qarz yozuvi</div>
-          </CardFooter>
-        </Card>
+      <Tabs defaultValue="payments">
+        <TabsList className="h-12">
+          <TabsTrigger value="payments">
+            <div className="w-full md:w-44">
+              <h1 className="text-xl font-bold tracking-tight">Qarz va to&apos;lovlar</h1>
+            </div>
+          </TabsTrigger>
 
-        <Card className="@container/card">
-          <CardHeader>
-            <CardDescription>Umumiy to&apos;lovlar</CardDescription>
-            <CardTitle className="flex items-end gap-1">
-              <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
-                {totalPaymentsAmount.toLocaleString()}
-              </p>
-              <span className="text-md leading-5">so&apos;m</span>
-            </CardTitle>
-            <CardAction>
-              <Badge variant="outline" className="text-green-600">
-                <TrendingDown className="size-4" />
-              </Badge>
-            </CardAction>
-          </CardHeader>
-          <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="text-muted-foreground">{totalPaymentsCount} ta to&apos;lov</div>
-          </CardFooter>
-        </Card>
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <RiskAnalysisCard
-          totalDebtors={totalDebtors}
-          highRiskCount={highRiskCount}
-          mediumRiskCount={mediumRiskCount}
-          lowRiskCount={lowRiskCount}
-          overdueCount={overdueCount}
-          debtLimit={debtLimit}
-        />
-        <TrendAnalysis trends={trends} />
-      </div>
-      <h1 className="!mb-2 pt-6 text-3xl font-bold tracking-tight">Qarz va to&apos;lovlar</h1>
-      <p className="text-muted-foreground">Vaqt boyicha qarz va to&apos;lovlar ro&apos;yxati</p>
-      <CashClient payments={paymentsData} debts={debtsData} />
+          <TabsTrigger value="summary">
+            <div className="w-full md:w-44">
+              <h1 className="text-xl font-bold tracking-tight">Hisobotlar</h1>
+            </div>
+          </TabsTrigger>
+        </TabsList>
+        {/* Qarz va to'lovlar kunlar va vaqt boyicha */}
+        <TabsContent value="payments">
+          <p className="text-muted-foreground pb-4 pl-2">Vaqt boyicha qarz va to&apos;lovlar ro&apos;yxati</p>
+          <CashClient payments={paymentsData} debts={debtsData} />
+        </TabsContent>
+        {/* Hisobotlar */}
+        <TabsContent value="summary">
+          <p className="text-muted-foreground pb-4 pl-2">Batafsil statistika va tahlil</p>
+          <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-6 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2">
+            <Card className="@container/card">
+              <CardHeader>
+                <CardDescription>Umumiy qarz</CardDescription>
+                <CardTitle className="flex items-end gap-1">
+                  <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+                    {totalDebtsAmount.toLocaleString()}
+                  </p>
+                  <span className="text-md leading-5">so&apos;m</span>
+                </CardTitle>
+                <CardAction>
+                  <Badge variant="outline" className="text-red-600">
+                    <TrendingUp className="size-4" />
+                  </Badge>
+                </CardAction>
+              </CardHeader>
+              <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                <div className="text-muted-foreground">{totalDebtsCount} ta qarz yozuvi</div>
+              </CardFooter>
+            </Card>
+
+            <Card className="@container/card">
+              <CardHeader>
+                <CardDescription>Umumiy to&apos;lovlar</CardDescription>
+                <CardTitle className="flex items-end gap-1">
+                  <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+                    {totalPaymentsAmount.toLocaleString()}
+                  </p>
+                  <span className="text-md leading-5">so&apos;m</span>
+                </CardTitle>
+                <CardAction>
+                  <Badge variant="outline" className="text-green-600">
+                    <TrendingDown className="size-4" />
+                  </Badge>
+                </CardAction>
+              </CardHeader>
+              <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                <div className="text-muted-foreground">{totalPaymentsCount} ta to&apos;lov</div>
+              </CardFooter>
+            </Card>
+          </div>
+          <div className="grid gap-6 pt-4 md:grid-cols-2">
+            <RiskAnalysisCard
+              totalDebtors={totalDebtors}
+              highRiskCount={highRiskCount}
+              mediumRiskCount={mediumRiskCount}
+              lowRiskCount={lowRiskCount}
+              overdueCount={overdueCount}
+              debtLimit={debtLimit}
+            />
+            <TrendAnalysis trends={trends} />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
