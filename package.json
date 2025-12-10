@@ -18,6 +18,8 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create-admin-user.ts",
+    "db:seed:demo": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/seed-demo-data.ts",
+    "db:add-debt": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/add-random-debt.ts",
     "postinstall": "prisma generate"
   },
   "lint-staged": {

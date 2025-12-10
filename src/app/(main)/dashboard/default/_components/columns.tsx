@@ -104,7 +104,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
         throw new Error(errorData.error || "Qarzdorni o&apos;chirishda xatolik yuz berdi");
       }
 
-      toast.success("Qarzdor muvaffaqiyatli o&apos;chirildi");
+      toast.success("Qarzdor muvaffaqiyatli o'chirildi");
 
       if (context?.onDataChange) {
         context.onDataChange();
