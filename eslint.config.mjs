@@ -40,10 +40,8 @@ export default [
       react: pluginReact,
     },
     rules: {
-      // ✅ Prettier
-      "prettier/prettier": "warn",
+      // "prettier/prettier": "warn",
 
-      // ✅ Import tartibi
       // "import/order": [
       //   "error",
       //   {
@@ -62,7 +60,7 @@ export default [
       // ✅ React
       "react/jsx-no-useless-fragment": ["warn", { allowExpressions: true }],
       "react/no-array-index-key": "warn",
-      "react/no-unstable-nested-components": ["warn", { allowAsProps: true }],
+      // "react/no-unstable-nested-components": ["warn", { allowAsProps: true }],
 
       // ✅ TypeScript
       // "@typescript-eslint/no-explicit-any": "warn",
@@ -70,8 +68,8 @@ export default [
       // "@typescript-eslint/prefer-nullish-coalescing": "warn",
 
       // ✅ Qo‘shimcha (oddiy stil)
-      "no-trailing-spaces": "error",
-      "no-multiple-empty-lines": ["error", { max: 1, maxEOF: 1 }],
+      // "no-trailing-spaces": "error",
+      // "no-multiple-empty-lines": ["error", { max: 1, maxEOF: 1 }],
       // "object-curly-spacing": ["error", "always"],
       // "array-bracket-spacing": ["error", "never"],
       // "space-in-parens": ["error", "never"],
