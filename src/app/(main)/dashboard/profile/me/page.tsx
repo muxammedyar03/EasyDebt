@@ -64,8 +64,11 @@ export default function ProfilePage() {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, parolni o'zgartirish imkoni yo'q");
+      return;
+    }
     setSaving(true);
-
     try {
       const response = await fetch("/api/auth/profile", {
         method: "PUT",
@@ -97,7 +100,10 @@ export default function ProfilePage() {
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, parolni o'zgartirish imkoni yo'q");
+      return;
+    }
     if (formData.new_password !== formData.confirm_password) {
       toast.error("Yangi parollar mos kelmaydi");
       return;
@@ -111,12 +117,12 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-      const response = await fetch("/api/auth/change-password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          current_password: formData.current_password,
-          new_password: formData.new_password,
+        const response = await fetch("/api/auth/change-password", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            current_password: formData.current_password,
+            new_password: formData.new_password,
         }),
       });
 
@@ -229,7 +235,7 @@ export default function ProfilePage() {
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    {process.env.NODE_ENV}
+                    Saqlash
                   </>
                 )}
               </Button>
@@ -283,7 +289,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={process.env.NODE_ENV === "production"}>
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

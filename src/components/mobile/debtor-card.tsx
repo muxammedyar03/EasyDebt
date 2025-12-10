@@ -99,7 +99,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
               <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}>
                 Ko&apos;rish
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(debtor.id)} className="text-red-600">
+              <DropdownMenuItem disabled={process.env.NODE_ENV === "production"} onClick={() => onDelete(debtor.id)} className="text-red-600">
                 O&apos;chirish
               </DropdownMenuItem>
             </DropdownMenuContent>

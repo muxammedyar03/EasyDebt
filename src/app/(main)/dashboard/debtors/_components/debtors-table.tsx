@@ -203,6 +203,11 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
 
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, qarzorni o'chirish imkoni yo'q");
+      return;
+    }
+
     if (confirm(`${selectedIds.length} ta qarzdorni o'chirmoqchimisiz?`)) {
       try {
         const response = await fetch("/api/debtors/bulk-delete", {
@@ -222,6 +227,11 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   };
 
   const handleDelete = async (id: number) => {
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, qarzorni o'chirish imkoni yo'q");
+      return;
+    }
+  
     if (confirm("Qarzdorni o'chirmoqchimisiz?")) {
       try {
         const response = await fetch(`/api/debtors/${id}`, {
@@ -484,7 +494,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                               <Edit className="mr-2 h-4 w-4" />
                               Tahrirlash
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(debtor.id)} className="text-red-600">
+                            <DropdownMenuItem disabled={process.env.NODE_ENV === "production"} onClick={() => handleDelete(debtor.id)} className="text-red-600">
                               <Trash2 className="mr-2 h-4 w-4" />
                               O&apos;chirish
                             </DropdownMenuItem>

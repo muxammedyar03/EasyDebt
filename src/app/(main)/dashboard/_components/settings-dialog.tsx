@@ -27,6 +27,11 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, sozlamalar o'zgartirish imkoni yo'q");
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -110,7 +115,7 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Bekor qilish
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || process.env.NODE_ENV === "production"}>
               {isLoading ? "Saqlanmoqda..." : "Saqlash"}
             </Button>
           </div>

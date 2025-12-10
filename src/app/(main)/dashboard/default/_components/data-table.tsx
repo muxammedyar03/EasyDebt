@@ -21,6 +21,7 @@ import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
 import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 export function DataTable({
   data: initialData,
@@ -108,7 +109,12 @@ export function DataTable({
 
   const handleDelete = async (debtorId: number) => {
     if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
-
+  
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, qarzorni o'chirish imkoni yo'q");
+      return;
+    }
+  
     try {
       const response = await fetch(`/api/debtors/${debtorId}`, {
         method: "DELETE",

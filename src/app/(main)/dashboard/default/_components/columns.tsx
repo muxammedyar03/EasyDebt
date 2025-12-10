@@ -93,6 +93,11 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
       return toast.error("Qarzdorni o'chirishni bekor qilindi");
     }
 
+    if (process.env.NODE_ENV === "production") {
+      toast.error("Demo modda, qarzorni o'chirish imkoni yo'q");
+      return;
+    }
+
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/debtors/${row.original.id}`, {
@@ -149,7 +154,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
               await handleDelete();
             }}
             className="text-destructive"
-            disabled={isDeleting}
+            disabled={process.env.NODE_ENV === "production"}
           >
             {isDeleting ? "O'chirilmoqda..." : "O'chirish"}
           </DropdownMenuItem>
