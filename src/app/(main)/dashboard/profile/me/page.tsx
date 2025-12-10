@@ -220,7 +220,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={process.env.NODE_ENV === "demo"}>
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -229,7 +229,7 @@ export default function ProfilePage() {
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Saqlash
+                    {process.env.NODE_ENV}
                   </>
                 )}
               </Button>
