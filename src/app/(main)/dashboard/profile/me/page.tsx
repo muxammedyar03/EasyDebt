@@ -220,7 +220,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={process.env.NODE_ENV === "demo"}>
+              <Button type="submit" disabled={process.env.NODE_ENV === "production"}>
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
