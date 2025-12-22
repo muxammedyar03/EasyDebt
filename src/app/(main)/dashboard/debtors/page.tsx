@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { DebtorsTable } from "./_components/debtors-table";
 import { Prisma } from "@prisma/client";
 import { DebtItem } from "@/types/types";
+import { SectionCard } from "../_components/section-card";
+import { BadgeDollarSign, HandCoinsIcon, Users } from "lucide-react";
 
 // Ensure this page is always dynamic and not cached
 export const dynamic = "force-dynamic";
@@ -50,6 +52,20 @@ export default async function DebtorsPage({
 
   // Get total count
   const totalCount = await prisma.debtor.count({ where });
+  const totalDebt = await prisma.debtor.aggregate({
+    where,
+    _sum: {
+      total_debt: true,
+    },
+  });
+  const totalPayments = await prisma.payment.aggregate({
+    where: {
+      debtor: where,
+    },
+    _sum: {
+      amount: true,
+    },
+  });
 
   // Build orderBy
   const orderBy: Prisma.DebtorOrderByWithRelationInput = {};
@@ -95,8 +111,28 @@ export default async function DebtorsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Qarzdorlar</h1>
-          <p className="text-muted-foreground">Jami {totalCount} ta qarzdor</p>
         </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
+        <SectionCard
+          title="Umumiy qarzdorlar"
+          count={totalCount}
+          color="text-indigo-600"
+          icon={<Users className="!size-4" />}
+        />
+        <SectionCard
+          title="Ja'mi qarz"
+          defaultVisible
+          amount={totalDebt._sum.total_debt?.toNumber()}
+          icon={<BadgeDollarSign className="!h-4 !w-4" />}
+        />
+        <SectionCard
+          title="Ja'mi tolovlar"
+          defaultVisible
+          color="text-green-600"
+          amount={totalPayments._sum.amount?.toNumber()}
+          icon={<HandCoinsIcon className="!h-4 !w-4" />}
+        />
       </div>
 
       <DebtorsTable debtors={debtors} totalPages={totalPages} currentPage={page} debtLimit={debtLimit} />
