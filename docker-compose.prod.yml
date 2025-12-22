@@ -82,7 +82,6 @@ services:
       - nginx-proxy
     restart: unless-stopped
 
-
   nginx-proxy:
     image: nginxproxy/nginx-proxy:alpine
     container_name: nginx-proxy
