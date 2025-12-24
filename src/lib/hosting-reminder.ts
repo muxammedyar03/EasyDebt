@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import { getEffectiveShopId } from "./shop-context";
+import { getSession } from "./auth";
 
 export async function checkHostingReminder(): Promise<number> {
+  const session = await getSession();
   try {
     const now = new Date();
 
@@ -33,6 +36,7 @@ export async function checkHostingReminder(): Promise<number> {
       type: "HOSTING_REMINDER",
       title: "Hosting uchun to'lov yaqinlashmoqda",
       message: `${now.getUTCFullYear()}-yil ${now.getUTCMonth() + 1}-oyning hosting to'lovi haqida eslatma.`,
+      shopId: getEffectiveShopId(session) || 0,
     });
 
     console.log(`Hosting reminder created successfully for ${now.toISOString()}`);

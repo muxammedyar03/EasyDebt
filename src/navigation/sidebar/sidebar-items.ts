@@ -1,4 +1,4 @@
-import { LayoutDashboard, UserCog, FileText, Users, BarChart3, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, UserCog, FileText, Users, BarChart3, Building2, type LucideIcon } from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -29,6 +29,24 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
+    label: "Shop Management",
+    items: [
+      {
+        title: "Manage Shops",
+        url: "/dashboard/manage-shops/shops",
+        icon: Building2,
+        roles: ["SUPER_ADMIN"],
+      },
+      // {
+      //   title: "Change Shop",
+      //   url: "/change-shop",
+      //   icon: Shield,
+      //   roles: ["SUPER_ADMIN"],
+      // },
+    ],
+  },
+  {
+    id: 2,
     label: "Dashboards",
     items: [
       {
@@ -67,17 +85,17 @@ export const sidebarItems: NavGroup[] = [
         isNew: true,
       },
       {
-        title: "Audit Log",
-        url: "/dashboard/audit-logs",
-        icon: FileText,
-        isNew: true,
-      },
-      {
         title: "Users",
         url: "/dashboard/users",
         icon: Users,
         isNew: true,
         roles: ["SUPER_ADMIN"],
+      },
+      {
+        title: "Audit Log",
+        url: "/dashboard/audit-logs",
+        icon: FileText,
+        isNew: true,
       },
       // {
       //   title: "Sozlamalar",

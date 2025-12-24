@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, ListFilter } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ListFilter } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 import { DebtItem } from "@/types/types";
 import { SectionCard } from "../_components/section-card";
 import { BadgeDollarSign, HandCoinsIcon, Users } from "lucide-react";
+import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 // Ensure this page is always dynamic and not cached
 export const dynamic = "force-dynamic";
@@ -22,14 +24,29 @@ export default async function DebtorsPage({
   const sortOrder = (params.sortOrder === "asc" ? "asc" : "desc") as Prisma.SortOrder;
   const status = (params.status as string) || "all";
 
-  // Get debt limit from settings
-  const debtLimitSetting = await prisma.settings.findUnique({
-    where: { key: "debt_limit" },
+  // Get session and user info
+  const session = await getSession();
+  const effectiveShopId = getEffectiveShopId(session);
+
+  // Get debt limit from settings - shop-specific or global
+  const debtLimitSetting = await prisma.settings.findFirst({
+    where: {
+      OR: [
+        { shop_id: effectiveShopId, key: "debt_limit" }, // Shop-specific
+        { shop_id: null, key: "debt_limit" }, // Global fallback
+      ],
+    },
+    orderBy: { shop_id: "desc" }, // Shop-specific first
   });
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 
-  // Build where clause
+  // Build where clause with shop filter
   const where: Prisma.DebtorWhereInput = {};
+
+  // Apply shop filter based on effective shop
+  if (effectiveShopId) {
+    where.shop_id = effectiveShopId;
+  }
 
   if (search) {
     where.OR = [

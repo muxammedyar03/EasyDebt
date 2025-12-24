@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { UserRole, UserStatus } from "@prisma/client";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
 
@@ -7,14 +8,17 @@ export interface JWTPayload {
   userId: number;
   username: string;
   email?: string | null;
-  role: string;
+  role: UserRole;
+  shopId: number | null; // Admin/User uchun permanent shop
+  activeShopId?: number | null; // Super Admin uchun active shop context
+  status: UserStatus;
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
   return await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d") // Token expires in 7 days
+    .setExpirationTime("7d")
     .sign(JWT_SECRET);
 }
 
@@ -22,13 +26,22 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
 
-    // Validate that the payload has the required properties
+    // Backward compatibility - eski tokenlar uchun
     if (
       typeof payload.userId === "number" &&
       typeof payload.username === "string" &&
       typeof payload.role === "string"
     ) {
-      return payload as unknown as JWTPayload;
+      // Eski token bo'lsa, default qiymatlar beramiz
+      return {
+        userId: payload.userId as number,
+        username: payload.username as string,
+        email: payload.email as string | null | undefined,
+        role: payload.role as UserRole,
+        shopId: payload.shopId !== undefined ? (payload.shopId as number | null) : null,
+        activeShopId: payload.activeShopId !== undefined ? (payload.activeShopId as number | null) : undefined,
+        status: (payload.status as UserStatus) || ("ACTIVE" as UserStatus),
+      };
     }
 
     console.error("Invalid token payload structure");
@@ -56,7 +69,7 @@ export async function setAuthCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
     path: "/",
   });
 }

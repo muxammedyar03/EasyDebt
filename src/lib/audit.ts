@@ -7,6 +7,7 @@ export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS";
 
 interface AuditLogData {
   userId?: number;
+  shopId?: number;
   action: AuditAction;
   entityType: EntityType;
   entityId?: number;
@@ -21,6 +22,7 @@ export async function createAuditLog(data: AuditLogData) {
     await prisma.auditLog.create({
       data: {
         user_id: data.userId,
+        shop_id: data.shopId,
         action: data.action,
         entity_type: data.entityType,
         entity_id: data.entityId,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { UserStatus } from "@prisma/client";
 
 import { setAuthCookie, signToken } from "@/lib/auth";
 import { verifyPassword } from "@/lib/password";
@@ -15,18 +16,39 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = loginSchema.parse(body);
 
-    // Find user by username
+    // Find user by username with shop info
     const user = await prisma.user.findUnique({
       where: { username: validatedData.username },
+      include: {
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            is_active: true,
+          },
+        },
+      },
     });
 
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Check if user is active
-    if (!user.is_active) {
-      return NextResponse.json({ error: "Account is disabled" }, { status: 403 });
+    // Check user status
+    if (user.status === UserStatus.BLOCKED) {
+      return NextResponse.json({ error: "Account is blocked. Please contact administrator." }, { status: 403 });
+    }
+
+    if (user.status === UserStatus.DEACTIVATED) {
+      return NextResponse.json({ error: "Account is deactivated" }, { status: 403 });
+    }
+
+    // Check if shop is active (for non-super admins)
+    if (user.shop_id && user.shop && !user.shop.is_active) {
+      return NextResponse.json(
+        { error: "Your shop is currently inactive. Please contact administrator." },
+        { status: 403 },
+      );
     }
 
     // Verify password
@@ -36,12 +58,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Generate JWT token
+    // For SUPER_ADMIN, get first active shop as default
+    let activeShopId: number | null = null;
+    if (user.role === "SUPER_ADMIN") {
+      const firstShop = await prisma.shop.findFirst({
+        where: { is_active: true },
+        orderBy: { id: "asc" },
+      });
+      activeShopId = firstShop?.id || null;
+    }
+
+    // Generate JWT token with shop context
     const token = await signToken({
       userId: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
+      shopId: user.shop_id,
+      activeShopId: user.role === "SUPER_ADMIN" ? activeShopId : undefined,
+      status: user.status,
     });
 
     // Set HTTP-only cookie
@@ -54,8 +89,13 @@ export async function POST(req: NextRequest) {
         username: user.username,
         email: user.email,
         role: user.role,
+        status: user.status,
         first_name: user.first_name,
         last_name: user.last_name,
+        shop_id: user.shop_id,
+        shop_name: user.shop?.name || null,
+        active_shop_id: activeShopId,
+        needs_shop_selection: user.role === "SUPER_ADMIN" && !activeShopId,
       },
     });
   } catch (error) {

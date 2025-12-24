@@ -24,13 +24,24 @@ import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
 import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
+import { ShopSwitcher } from "./_components/sidebar/shop-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
   const session = await getSession();
+  const effectiveShopId = getEffectiveShopId(session);
+
+  // Get current shop info for display
+  const currentShop = effectiveShopId
+    ? await prisma.shop.findUnique({
+        where: { id: effectiveShopId },
+        select: { id: true, name: true },
+      })
+    : null;
   const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
     getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "inset"),
     getPreference<SidebarCollapsible>("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),
@@ -40,8 +51,14 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   // Get debt limit and notifications - Optimized with Promise.all
   const [debtLimitSetting, activeUser] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "debt_limit" },
+    prisma.settings.findFirst({
+      where: {
+        OR: [
+          { shop_id: effectiveShopId, key: "debt_limit" }, // Shop-specific
+          { shop_id: null, key: "debt_limit" }, // Global fallback
+        ],
+      },
+      orderBy: { shop_id: "desc" }, // Shop-specific first
       select: { value: true },
     }),
     session
@@ -54,13 +71,21 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             first_name: true,
             last_name: true,
             role: true,
+            shop_id: true,
+            status: true,
           },
         })
       : null,
   ]);
   const [overdueDaysSetting] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "overdue_days" },
+    prisma.settings.findFirst({
+      where: {
+        OR: [
+          { shop_id: effectiveShopId, key: "overdue_days" }, // Shop-specific
+          { shop_id: null, key: "overdue_days" }, // Global fallback
+        ],
+      },
+      orderBy: { shop_id: "desc" }, // Shop-specific first
       select: { value: true },
     }),
   ]);
@@ -68,8 +93,12 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
   const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
 
+  // Get notifications based on effective shop
   const notifications = await prisma.notification.findMany({
-    where: { is_read: false },
+    where: {
+      is_read: false,
+      ...(effectiveShopId && { shop_id: effectiveShopId }),
+    },
     orderBy: { created_at: "desc" },
     take: 3,
   });
@@ -105,7 +134,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} currentShop={currentShop} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
@@ -123,8 +152,18 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         >
           <div className="flex w-full items-center justify-between px-4 lg:px-6">
             <div className="flex items-center gap-1 lg:gap-2">
-              <SidebarTrigger className="text-2xl md:-ml-4" />
-              <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
+              <SidebarTrigger className="border-border bg-card hover:bg-card/80 text-inherit-foreground border text-2xl md:-ml-4" />
+              <Separator
+                orientation="vertical"
+                className="data-[orientation=vertical]:bg-border ml-2 data-[orientation=vertical]:h-10"
+              />
+              <div className="h-full">
+                <ShopSwitcher
+                  currentShop={currentShop || null}
+                  role={session?.role || "USER"}
+                  needsSelection={session?.role === "SUPER_ADMIN"}
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <NotificationsDropdown notifications={notifications} />

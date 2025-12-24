@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
@@ -20,7 +21,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
+    }
+
     const debtorsRaw = await prisma.debtor.findMany({
+      where: { shop_id: shopId },
       orderBy: { created_at: "desc" },
     });
 
@@ -51,6 +58,12 @@ export async function POST(request: NextRequest) {
     // Get userId from session
     const userId = session.userId;
 
+    // Get effective shop ID
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
+    }
+
     // Use transaction to create debtor and debt together
     const result = await prisma.$transaction(async (tx) => {
       const debtor = await tx.debtor.create({
@@ -60,6 +73,7 @@ export async function POST(request: NextRequest) {
           phone_number: validatedData.phone_number || null,
           address: validatedData.address || null,
           total_debt: validatedData.debt_amount || 0,
+          shop_id: shopId,
           created_by: userId,
         },
       });
@@ -71,6 +85,7 @@ export async function POST(request: NextRequest) {
             debtor_id: debtor.id,
             amount: validatedData.debt_amount,
             description: validatedData.debt_description || null,
+            shop_id: shopId,
             created_by: userId,
           },
         });

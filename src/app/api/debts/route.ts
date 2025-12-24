@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
@@ -24,6 +25,10 @@ export async function POST(request: NextRequest) {
     const validatedData = createDebtSchema.parse(body);
 
     const userId = session.userId;
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
+    }
 
     // Use transaction to create debt and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
@@ -42,13 +47,17 @@ export async function POST(request: NextRequest) {
           debtor_id: validatedData.debtor_id,
           amount: validatedData.amount,
           description: validatedData.description || null,
+          shop_id: shopId,
           created_by: userId,
         },
       });
 
       // Get debt limit from settings
-      const debtLimitSetting = await tx.settings.findUnique({
-        where: { key: "debt_limit" },
+      const debtLimitSetting = await tx.settings.findFirst({
+        where: {
+          shop_id: shopId,
+          key: "debt_limit",
+        },
       });
       const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 
@@ -68,6 +77,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId,
+      shopId,
       action: "DEBT_ADDED",
       entityType: "DEBT",
       entityId: result.debt.id,
@@ -83,6 +93,7 @@ export async function POST(request: NextRequest) {
     if (newTotalDebt > result.debtLimit) {
       await createNotification({
         userId,
+        shopId,
         debtorId: validatedData.debtor_id,
         type: "DEBT_LIMIT_EXCEEDED",
         title: "Qarz limiti oshdi",

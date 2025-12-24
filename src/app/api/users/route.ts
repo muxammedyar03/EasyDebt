@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { username, email, password, role, first_name, last_name, is_active } = body;
+    const { username, email, password, role, first_name, last_name, status, shop_id } = body;
 
     // Validation
     if (!username || !password || !role) {
@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
         role,
         first_name: first_name || null,
         last_name: last_name || null,
-        is_active: is_active ?? true,
+        status: status || "ACTIVE",
+        shop_id: shop_id || null,
       },
       select: {
         id: true,
@@ -64,7 +65,8 @@ export async function POST(request: NextRequest) {
         role: true,
         first_name: true,
         last_name: true,
-        is_active: true,
+        status: true,
+        shop_id: true,
         created_at: true,
       },
     });
@@ -92,7 +94,8 @@ export async function GET() {
         role: true,
         first_name: true,
         last_name: true,
-        is_active: true,
+        status: true,
+        shop_id: true,
         created_at: true,
       },
       orderBy: {

@@ -4,7 +4,7 @@ import { createNotification } from "@/lib/notifications";
 export async function checkOverdueDebtors() {
   try {
     // Load overdue days from settings (fallback to 45)
-    const overdueDaysSetting = await prisma.settings.findUnique({ where: { key: "overdue_days" } });
+    const overdueDaysSetting = await prisma.settings.findFirst({ where: { shop_id: null, key: "overdue_days" } });
     const OVERDUE_DAYS = (() => {
       const n = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : NaN;
       return Number.isFinite(n) && n > 0 ? n : 45;
@@ -54,6 +54,7 @@ export async function checkOverdueDebtors() {
         // Create notification
         await createNotification({
           userId: debtor.created_by,
+          shopId: debtor.shop_id,
           debtorId: debtor.id,
           type: "OVERDUE_PAYMENT",
           title: "Muddati o'tgan to'lov",
@@ -96,7 +97,7 @@ export async function getOverdueDebtors() {
 }
 
 export async function reEvaluateOverdueDebtors() {
-  const overdueDaysSetting = await prisma.settings.findUnique({ where: { key: "overdue_days" } });
+  const overdueDaysSetting = await prisma.settings.findFirst({ where: { shop_id: null, key: "overdue_days" } });
   const OVERDUE_DAYS = (() => {
     const n = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : NaN;
     return Number.isFinite(n) && n > 0 ? n : 45;
@@ -127,6 +128,7 @@ export async function reEvaluateOverdueDebtors() {
         await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: true } });
         await createNotification({
           userId: d.created_by,
+          shopId: d.shop_id,
           debtorId: d.id,
           type: "OVERDUE_PAYMENT",
           title: "Muddati o'tgan to'lov",

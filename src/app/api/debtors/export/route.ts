@@ -18,8 +18,14 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "all";
 
     // Get debt limit from settings
-    const debtLimitSetting = await prisma.settings.findUnique({
-      where: { key: "debt_limit" },
+    const debtLimitSetting = await prisma.settings.findFirst({
+      where: {
+        OR: [
+          { shop_id: session?.shopId, key: "debt_limit" },
+          { shop_id: null, key: "debt_limit" },
+        ],
+      },
+      orderBy: { shop_id: "desc" },
     });
     const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 

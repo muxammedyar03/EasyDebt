@@ -9,6 +9,7 @@ export type NotificationType =
 
 interface CreateNotificationData {
   userId?: number;
+  shopId: number; // Required
   debtorId?: number;
   type: NotificationType;
   title: string;
@@ -17,9 +18,14 @@ interface CreateNotificationData {
 
 export async function createNotification(data: CreateNotificationData) {
   try {
+    if (!data.shopId) {
+      throw new Error("Shop ID is required for notification");
+    }
+
     await prisma.notification.create({
       data: {
         user_id: data.userId,
+        shop_id: data.shopId,
         debtor_id: data.debtorId,
         type: data.type,
         title: data.title,

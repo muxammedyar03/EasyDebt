@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-
+import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
@@ -10,7 +11,15 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function Page() {
+  // Get session and effective shop
+  const session = await getSession();
+  const effectiveShopId = getEffectiveShopId(session);
+
+  // Build where clause with shop filter
+  const whereDebtor = effectiveShopId ? { shop_id: effectiveShopId } : {};
+
   const debtorsRaw = await prisma.debtor.findMany({
+    where: whereDebtor,
     include: {
       debts: true,
       payments: true,
@@ -153,9 +162,15 @@ export default async function Page() {
     chartData = sampleData;
   }
 
-  // Get debt limit for status
-  const debtLimitSetting = await prisma.settings.findUnique({
-    where: { key: "debt_limit" },
+  // Get debt limit from settings - shop-specific or global
+  const debtLimitSetting = await prisma.settings.findFirst({
+    where: {
+      OR: [
+        { shop_id: effectiveShopId, key: "debt_limit" }, // Shop-specific
+        { shop_id: null, key: "debt_limit" }, // Global fallback
+      ],
+    },
+    orderBy: { shop_id: "desc" }, // Shop-specific first
   });
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 
@@ -168,6 +183,7 @@ export default async function Page() {
       created_at: {
         gte: threeMonthsAgo,
       },
+      ...(effectiveShopId && { shop_id: effectiveShopId }),
     },
     include: {
       debtor: true,

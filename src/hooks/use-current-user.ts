@@ -7,9 +7,10 @@ interface User {
   username: string;
   email: string | null;
   role: string;
+  status: "ACTIVE" | "BLOCKED" | "DEACTIVATED";
+  shop_id: number | null;
   first_name: string | null;
   last_name: string | null;
-  is_active: boolean;
   created_at: string;
 }
 

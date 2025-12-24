@@ -319,7 +319,15 @@ export default function ProfilePage() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Holat:</span>
-            <span className="font-medium">{userData?.is_active ? "Faol" : "Nofaol"}</span>
+            <span className="font-medium">
+              {userData?.status === "ACTIVE"
+                ? "Faol"
+                : userData?.status === "BLOCKED"
+                  ? "Bloklangan"
+                  : userData?.status === "DEACTIVATED"
+                    ? "O'chirilgan"
+                    : "-"}
+            </span>
           </div>
         </CardContent>
       </Card>

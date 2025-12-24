@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
@@ -24,6 +25,10 @@ export async function POST(request: NextRequest) {
     const validatedData = createPaymentSchema.parse(body);
 
     const userId = session.userId;
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
+    }
 
     // Use transaction to create payment and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
@@ -36,9 +41,6 @@ export async function POST(request: NextRequest) {
         throw new Error("Qarzdor topilmadi");
       }
 
-      // Allow overpayment: payment can exceed current debt (total_debt may become negative)
-      const currentDebt = debtor.total_debt.toNumber();
-
       // Create payment record
       const payment = await tx.payment.create({
         data: {
@@ -46,6 +48,7 @@ export async function POST(request: NextRequest) {
           amount: validatedData.amount,
           payment_type: validatedData.payment_type,
           note: validatedData.note || null,
+          shop_id: shopId,
           created_by: userId,
         },
       });
@@ -68,6 +71,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId,
+      shopId,
       action: "PAYMENT_ADDED",
       entityType: "PAYMENT",
       entityId: result.payment.id,

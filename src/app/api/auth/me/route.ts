@@ -18,9 +18,10 @@ export async function GET() {
         username: true,
         email: true,
         role: true,
+        status: true,
+        shop_id: true,
         first_name: true,
         last_name: true,
-        is_active: true,
         created_at: true,
       },
     });

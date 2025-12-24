@@ -19,9 +19,10 @@ export default async function UsersPage() {
       username: true,
       email: true,
       role: true,
+      status: true,
+      shop_id: true,
       first_name: true,
       last_name: true,
-      is_active: true,
       created_at: true,
     },
     orderBy: {
@@ -34,9 +35,10 @@ export default async function UsersPage() {
     username: user.username,
     email: user.email,
     role: user.role,
+    status: user.status,
+    shop_id: user.shop_id,
     first_name: user.first_name,
     last_name: user.last_name,
-    is_active: user.is_active,
     created_at: user.created_at.toISOString(),
   }));
 

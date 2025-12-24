@@ -140,7 +140,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.role !== undefined) updateData.role = body.role;
     if (body.first_name !== undefined) updateData.first_name = body.first_name || null;
     if (body.last_name !== undefined) updateData.last_name = body.last_name || null;
-    if (body.is_active !== undefined) updateData.is_active = body.is_active;
+    if (body.status !== undefined) updateData.status = body.status;
+    // For shop relation, use connect/disconnect
+    if (body.shop_id !== undefined) {
+      if (body.shop_id === null) {
+        updateData.shop = { disconnect: true };
+      } else {
+        updateData.shop = { connect: { id: body.shop_id } };
+      }
+    }
 
     // Hash password if provided
     if (body.password) {
@@ -161,7 +169,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         role: true,
         first_name: true,
         last_name: true,
-        is_active: true,
+        status: true,
+        shop_id: true,
         updated_at: true,
       },
     });

@@ -35,7 +35,7 @@ async function main() {
       role: "ADMIN",
       first_name: "Admin",
       last_name: "User",
-      is_active: true,
+      status: "ACTIVE",
     },
   });
 

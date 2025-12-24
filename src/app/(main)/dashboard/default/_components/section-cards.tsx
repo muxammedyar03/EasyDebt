@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Users, TrendingUp, TrendingDown } from "lucide-react";
 
 import { SectionCard } from "../../_components/section-card";
@@ -21,26 +20,6 @@ interface SectionCardsProps {
 }
 
 export function SectionCards({ stats }: SectionCardsProps) {
-  const [visibleCards, setVisibleCards] = useState({
-    totalDebt: false,
-    todayPayments: false,
-    todayDebts: false,
-  });
-
-  const toggleVisibility = (cardKey: keyof typeof visibleCards) => {
-    setVisibleCards((prev) => ({
-      ...prev,
-      [cardKey]: !prev[cardKey],
-    }));
-  };
-
-  const maskAmount = (amount: number, isVisible: boolean) => {
-    if (isVisible) {
-      return amount.toLocaleString();
-    }
-    return "*******";
-  };
-
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <SectionCard

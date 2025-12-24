@@ -2,10 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { CustomersTable } from "./_components/customers-table";
 import { Debtor, Payment } from "@prisma/client";
 import { Debt, PaymentType as LocalPaymentType } from "@/types/types";
+import { getEffectiveShopId } from "@/lib/shop-context";
+import { getSession } from "@/lib/auth";
 
 export default async function CustomersPage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getSession();
+  const shopId = getEffectiveShopId(session);
   const searchParams = (props.searchParams ? await props.searchParams : {}) as Record<
     string,
     string | string[] | undefined
@@ -21,8 +25,8 @@ export default async function CustomersPage(props: {
     ? searchParams.sortOrder[0]
     : (searchParams.sortOrder as string | undefined);
   const [overdueDaysSetting] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "overdue_days" },
+    prisma.settings.findFirst({
+      where: { shop_id: shopId, key: "overdue_days" },
       select: { value: true },
     }),
   ]);

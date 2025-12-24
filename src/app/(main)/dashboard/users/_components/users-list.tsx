@@ -32,9 +32,10 @@ interface User {
   username: string;
   email: string | null;
   role: "SUPER_ADMIN" | "ADMIN" | "USER";
+  status: "ACTIVE" | "BLOCKED" | "DEACTIVATED";
+  shop_id: number | null;
   first_name: string | null;
   last_name: string | null;
-  is_active: boolean;
   created_at: string;
 }
 
@@ -59,21 +60,21 @@ export function UsersList({ users }: UsersListProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleToggleActive = async (userId: number, currentStatus: boolean) => {
+  const handleToggleActive = async (userId: number, currentStatus: string) => {
     setIsLoading(true);
+    const newStatus = currentStatus === "ACTIVE" ? "BLOCKED" : "ACTIVE";
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(`/api/dashboard/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: !currentStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
 
       if (!response.ok) {
         throw new Error("Xatolik yuz berdi");
       }
 
-      toast.success(`Foydalanuvchi ${!currentStatus ? "faollashtirildi" : "o'chirildi"}`);
-
+      toast.success(currentStatus === "ACTIVE" ? "Foydalanuvchi bloklandi" : "Foydalanuvchi faollashtirildi");
       router.refresh();
     } catch (error) {
       toast.error("Xatolik", {
@@ -159,8 +160,12 @@ export function UsersList({ users }: UsersListProps) {
                     <Badge variant={roleColors[user.role]}>{roleLabels[user.role]}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.is_active ? "default" : "secondary"}>
-                      {user.is_active ? "Faol" : "Nofaol"}
+                    <Badge
+                      variant={
+                        user.status === "ACTIVE" ? "default" : user.status === "BLOCKED" ? "destructive" : "secondary"
+                      }
+                    >
+                      {user.status === "ACTIVE" ? "Faol" : user.status === "BLOCKED" ? "Bloklangan" : "O'chirilgan"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(user.created_at)}</TableCell>
@@ -175,14 +180,11 @@ export function UsersList({ users }: UsersListProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Amallar</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleToggleActive(user.id, user.is_active)}
-                          disabled={isLoading}
-                        >
-                          {user.is_active ? (
+                        <DropdownMenuItem onClick={() => handleToggleActive(user.id, user.status)} disabled={isLoading}>
+                          {user.status === "ACTIVE" ? (
                             <>
                               <UserX className="mr-2 h-4 w-4" />
-                              O&apos;chirish
+                              Bloklash
                             </>
                           ) : (
                             <>

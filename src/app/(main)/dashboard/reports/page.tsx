@@ -6,8 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getSession } from "@/lib/auth";
 
 export default async function ReportsPage() {
+  const session = await getSession();
+  const user = session
+    ? await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { shop_id: true, role: true },
+      })
+    : null;
+
   // Get all debtors
   const debtorsRaw = await prisma.debtor.findMany({
     include: {
@@ -30,8 +39,14 @@ export default async function ReportsPage() {
   }));
 
   // Get debt limit
-  const debtLimitSetting = await prisma.settings.findUnique({
-    where: { key: "debt_limit" },
+  const debtLimitSetting = await prisma.settings.findFirst({
+    where: {
+      OR: [
+        { shop_id: user?.shop_id, key: "debt_limit" }, // Shop-specific
+        { shop_id: null, key: "debt_limit" }, // Global fallback
+      ],
+    },
+    orderBy: { shop_id: "desc" }, // Shop-specific first
   });
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
 

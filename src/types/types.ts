@@ -25,9 +25,10 @@ export type User = {
   email: string | null;
   password: string;
   role: UserRole;
+  status: "ACTIVE" | "BLOCKED" | "DEACTIVATED";
+  shop_id: number | null;
   first_name: string | null;
   last_name: string | null;
-  is_active: boolean;
   created_at: Date;
   updated_at: Date;
 
@@ -35,6 +36,10 @@ export type User = {
   created_debtors?: Debtor[];
   created_debts?: Debt[];
   created_payments?: Payment[];
+  last_activity?: {
+    action: string;
+    created_at: string;
+  } | null;
 };
 
 export type Debtor = {
@@ -118,3 +123,45 @@ export interface AuditLogTableProps {
     email: string | null;
   } | null;
 }
+
+// Shop Management Types
+export type Shop = {
+  id: number;
+  name: string;
+  location: string | null;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type ShopUser = {
+  id: number;
+  username: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  role: UserRole;
+  status: "ACTIVE" | "BLOCKED" | "DEACTIVATED";
+  shop_id: number | null;
+  created_at: Date;
+  updated_at: Date;
+  _count?: {
+    created_debtors: number;
+    created_debts: number;
+    created_payments: number;
+  };
+  last_activity?: {
+    action: string;
+    created_at: Date;
+  } | null;
+};
+
+export type UserFormData = {
+  username: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  status: "ACTIVE" | "BLOCKED" | "DEACTIVATED";
+};
