@@ -4,22 +4,49 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url       = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
-model User {
+// ==========================================
+// SHOP - Asosiy izolyatsiya birligi
+// ==========================================
+model Shop {
   id         Int      @id @default(autoincrement())
-  username   String   @unique
-  email      String?  @unique
-  password   String
-  role       UserRole @default(USER)
-  first_name String?
-  last_name  String?
-  is_active  Boolean  @default(true)
+  name       String
+  is_active  Boolean  @default(true)  // Shop bloklash uchun
+  address    String?
+  phone      String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  // Add PIN (hashed) - nullable
+  // Relations - Shopga tegishli barcha ma'lumotlar
+  users         User[]
+  debtors       Debtor[]
+  debts         Debt[]
+  payments      Payment[]
+  notifications Notification[]
+  audit_logs    AuditLog[]
+  settings      Settings[]
+
+  @@map("shops")
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  username   String     @unique
+  email      String?    @unique
+  password   String
+  role       UserRole   @default(USER)
+  status     UserStatus @default(ACTIVE) // Block/Deactivate uchun
+  shop_id    Int?       // SUPER_ADMIN uchun null bo'lishi mumkin
+  shop       Shop?      @relation(fields: [shop_id], references: [id])
+  
+  first_name String?
+  last_name  String?
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  // PIN (hashed) - nullable
   pin        String? 
 
   // Relations
@@ -27,11 +54,15 @@ model User {
   created_debts    Debt[]    @relation("DebtCreatedBy")
   created_payments Payment[] @relation("PaymentCreatedBy")
 
+  @@index([shop_id])
+  @@index([status])
   @@map("users")
 }
 
 model Debtor {
   id                Int       @id @default(autoincrement())
+  shop_id           Int       // Qaysi shopga tegishli
+  shop              Shop      @relation(fields: [shop_id], references: [id])
   first_name        String
   last_name         String
   phone_number      String?
@@ -49,6 +80,7 @@ model Debtor {
   payments Payment[]
 
   // Indexes for performance
+  @@index([shop_id])
   @@index([total_debt])
   @@index([created_by])
   @@index([created_at])
@@ -59,7 +91,10 @@ model Debtor {
 
 model Debt {
   id          Int      @id @default(autoincrement())
+  shop_id     Int      // Qaysi shopga tegishli
+  shop        Shop?     @relation(fields: [shop_id], references: [id])
   debtor_id   Int
+  debtor      Debtor   @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   amount      Decimal  @db.Decimal(10, 2)
   description String?
   items       Json?    // Store array of items with prices
@@ -67,10 +102,10 @@ model Debt {
   created_by  Int
 
   // Relations
-  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
 
   // Indexes for performance
+  @@index([shop_id])
   @@index([debtor_id])
   @@index([created_at])
   @@map("debts")
@@ -78,7 +113,10 @@ model Debt {
 
 model Payment {
   id           Int         @id @default(autoincrement())
+  shop_id      Int         // Qaysi shopga tegishli
+  shop         Shop        @relation(fields: [shop_id], references: [id])
   debtor_id    Int
+  debtor       Debtor      @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   amount       Decimal     @db.Decimal(10, 2)
   payment_type PaymentType @default(CASH)
   note         String?
@@ -86,10 +124,10 @@ model Payment {
   created_by   Int
 
   // Relations
-  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("PaymentCreatedBy", fields: [created_by], references: [id])
 
   // Indexes for performance
+  @@index([shop_id])
   @@index([debtor_id])
   @@index([created_at])
   @@map("payments")
@@ -101,6 +139,12 @@ enum UserRole {
   USER
 }
 
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DEACTIVATED
+}
+
 enum PaymentType {
   CASH
   CLICK
@@ -109,18 +153,25 @@ enum PaymentType {
 
 model Settings {
   id         Int      @id @default(autoincrement())
-  key        String   @unique
+  shop_id    Int?     // null = global settings, not null = shop-specific
+  key        String
   value      String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  // Relations
+  shop Shop? @relation(fields: [shop_id], references: [id])
+
+  @@unique([shop_id, key]) // Har shop uchun key unique
+  @@index([shop_id])
   @@map("settings")
 }
 
 model AuditLog {
   id          Int      @id @default(autoincrement())
+  shop_id     Int?     // null = super admin action, not null = shop-specific
   user_id     Int?
-  action      String
+  action      String   // LOGIN, LOGOUT, BLOCK_USER, DEACTIVATE_SHOP, etc.
   entity_type String
   entity_id   Int?
   old_value   Json?
@@ -129,6 +180,10 @@ model AuditLog {
   user_agent  String?
   created_at  DateTime @default(now())
 
+  // Relations
+  shop Shop? @relation(fields: [shop_id], references: [id])
+
+  @@index([shop_id])
   @@index([user_id])
   @@index([entity_type, entity_id])
   @@index([created_at])
@@ -137,6 +192,7 @@ model AuditLog {
 
 model Notification {
   id         Int              @id @default(autoincrement())
+  shop_id    Int              // Qaysi shopga tegishli
   user_id    Int?
   debtor_id  Int?
   type       NotificationType
@@ -145,6 +201,10 @@ model Notification {
   is_read    Boolean          @default(false)
   created_at DateTime         @default(now())
 
+  // Relations
+  shop Shop @relation(fields: [shop_id], references: [id])
+
+  @@index([shop_id])
   @@index([user_id])
   @@index([debtor_id])
   @@index([is_read])
