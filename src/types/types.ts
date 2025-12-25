@@ -106,15 +106,28 @@ export interface AuditLogTableProps {
   entity_type: string;
   entity_id: number | null;
   old_value: string;
-  new_value: string;
+  new_value:
+    | string
+    | {
+        debtor_id: number;
+        amount: number;
+        username: string;
+        debtorName: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        role: string;
+      };
+  description: string | null;
   ip_address: string | null;
   user_agent: string | null;
   created_at: Date;
   user: {
     id: number;
     username: string;
+    email: string | null;
     first_name: string | null;
     last_name: string | null;
-    email: string | null;
   } | null;
+  debtorName?: string | null;
 }

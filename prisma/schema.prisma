@@ -32,6 +32,7 @@ model User {
 
 model Debtor {
   id                Int       @id @default(autoincrement())
+  external_id       String    @unique @default(uuid())
   first_name        String
   last_name         String
   phone_number      String?
@@ -54,11 +55,13 @@ model Debtor {
   @@index([created_at])
   @@index([is_overdue])
   @@index([last_payment_date])
+  @@index([external_id])
   @@map("debtors")
 }
 
 model Debt {
   id          Int      @id @default(autoincrement())
+  external_id String   @unique @default(uuid())
   debtor_id   Int
   amount      Decimal  @db.Decimal(10, 2)
   description String?
@@ -73,11 +76,13 @@ model Debt {
   // Indexes for performance
   @@index([debtor_id])
   @@index([created_at])
+  @@index([external_id])
   @@map("debts")
 }
 
 model Payment {
   id           Int         @id @default(autoincrement())
+  external_id  String      @unique @default(uuid())
   debtor_id    Int
   amount       Decimal     @db.Decimal(10, 2)
   payment_type PaymentType @default(CASH)
@@ -92,6 +97,7 @@ model Payment {
   // Indexes for performance
   @@index([debtor_id])
   @@index([created_at])
+  @@index([external_id])
   @@map("payments")
 }
 
@@ -125,6 +131,7 @@ model AuditLog {
   entity_id   Int?
   old_value   Json?
   new_value   Json?
+  description String?
   ip_address  String?
   user_agent  String?
   created_at  DateTime @default(now())
@@ -158,4 +165,26 @@ enum NotificationType {
   DEBT_ADDED
   DEBT_LIMIT_EXCEEDED
   HOSTING_REMINDER
+}
+
+model ImportHistory {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  file_hash    String   @unique
+  debtors_count Int
+  debts_count  Int
+  payments_count Int
+  status       ImportStatus @default(SUCCESS)
+  error_message String?
+  created_at   DateTime @default(now())
+
+  @@index([user_id])
+  @@index([created_at])
+  @@map("import_history")
+}
+
+enum ImportStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
 }

@@ -11,7 +11,7 @@ interface PaymentHistoryTableProps {
     amount: number;
     payment_type: string;
     note: string | null;
-    created_at: Date;
+    created_at: Date | string;
   }>;
 }
 

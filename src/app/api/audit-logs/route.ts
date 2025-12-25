@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
       limit: limit ? parseInt(limit) : 50,
       offset: offset ? parseInt(offset) : 0,
     });
-
     return NextResponse.json({ logs });
   } catch (error) {
     console.error("Error fetching audit logs:", error);

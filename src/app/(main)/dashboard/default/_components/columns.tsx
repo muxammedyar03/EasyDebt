@@ -172,12 +172,14 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     header: ({ column }) => <DataTableColumnHeader className="w-5" column={column} title="№" />,
     cell: ({ row }) => <div>{row.index + 1}</div>,
     enableSorting: true,
+    enableHiding: false,
   },
   {
     accessorKey: "first_name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Qarzdor" />,
     cell: ({ row }) => <FirstNameCell row={row} />,
     enableSorting: true,
+    enableHiding: false,
   },
   {
     accessorKey: "phone_number",
@@ -190,6 +192,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       </div>
     ),
     enableSorting: false,
+    enableHiding: true,
   },
   {
     accessorKey: "address",
@@ -200,6 +203,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       </Badge>
     ),
     enableSorting: false,
+    enableHiding: true,
   },
   {
     accessorKey: "total_debt",
@@ -210,6 +214,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       <div className="text-base font-semibold">{row.original.total_debt.toLocaleString()} so&apos;m</div>
     ),
     enableSorting: true,
+    enableHiding: false,
   },
   {
     accessorKey: "status",
@@ -240,16 +245,19 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       );
     },
     enableSorting: false,
+    enableHiding: false,
   },
   {
     id: "actions-buttons",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Amallar" />,
     cell: ({ row }) => <ActionButtonsCell row={row} context={context} />,
+    enableHiding: false,
   },
   {
     id: "actions",
     cell: ({ row }) => <DropdownActionsCell row={row} context={context} />,
     enableSorting: false,
+    enableHiding: false,
   },
 ];
 

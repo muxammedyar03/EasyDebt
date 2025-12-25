@@ -18,20 +18,29 @@ interface DataTableViewOptionsProps<TData> {
 }
 
 export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
+  const columnLabels: Record<string, string> = {
+    phone_number: "Telefon",
+    address: "Manzil",
+    index: "№",
+    first_name: "Qarzdor",
+    total_debt: "Qarz miqdori",
+    status: "Status",
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="ml-auto hidden h-14 lg:flex">
           <Settings2 />
-          View
+          Ustunlar
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[150px]">
+      <DropdownMenuContent align="end" className="w-[180px]">
         <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
           .getAllColumns()
-          .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
+          .filter((column) => typeof column.accessorFn !== "undefined")
           .map((column) => {
             return (
               <DropdownMenuCheckboxItem
@@ -40,7 +49,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
                 checked={column.getIsVisible()}
                 onCheckedChange={(value) => column.toggleVisibility(!!value)}
               >
-                {column.id}
+                {columnLabels[column.id] || column.id}
               </DropdownMenuCheckboxItem>
             );
           })}

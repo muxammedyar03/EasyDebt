@@ -10,7 +10,7 @@ interface DebtHistoryTableProps {
     id: number;
     amount: number;
     description: string | null;
-    created_at: Date;
+    created_at: Date | string;
   }>;
 }
 

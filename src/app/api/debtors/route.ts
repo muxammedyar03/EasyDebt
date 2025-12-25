@@ -76,6 +76,38 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Get user info for description
+      const user = await tx.user.findUnique({
+        where: { id: session.userId },
+        select: { first_name: true, last_name: true, username: true },
+      });
+
+      const userFullName =
+        user?.first_name && user?.last_name
+          ? `${user.first_name} ${user.last_name}`
+          : user?.username || "Foydalanuvchi";
+
+      const debtorFullName = `${validatedData.first_name} ${validatedData.last_name}`;
+      const description = `${userFullName} yangi qarzdor ${debtorFullName} yaratdi`;
+
+      await tx.auditLog.create({
+        data: {
+          user_id: session.userId,
+          action: "CREATE",
+          entity_type: "DEBTOR",
+          new_value: {
+            debtor_id: debtor.id,
+            first_name: validatedData.first_name,
+            last_name: validatedData.last_name,
+            phone_number: validatedData.phone_number,
+            address: validatedData.address,
+          },
+          description,
+          ip_address: request.headers.get("cf-connecting-ip") || "",
+          user_agent: request.headers.get("user-agent") || "",
+        },
+      });
+
       return debtor;
     });
 

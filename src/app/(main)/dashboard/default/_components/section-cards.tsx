@@ -21,33 +21,12 @@ interface SectionCardsProps {
 }
 
 export function SectionCards({ stats }: SectionCardsProps) {
-  const [visibleCards, setVisibleCards] = useState({
-    totalDebt: false,
-    todayPayments: false,
-    todayDebts: false,
-  });
-
-  const toggleVisibility = (cardKey: keyof typeof visibleCards) => {
-    setVisibleCards((prev) => ({
-      ...prev,
-      [cardKey]: !prev[cardKey],
-    }));
-  };
-
-  const maskAmount = (amount: number, isVisible: boolean) => {
-    if (isVisible) {
-      return amount.toLocaleString();
-    }
-    return "*******";
-  };
-
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <SectionCard
         title="Ja'mi qarzdorlar"
         count={stats.totalDebtors}
         icon={<Users className="size-4" />}
-        titleFooter={"Umumiy qarzdorlar soni"}
         description="Tizimda ro'yxatdan o'tgan"
       />
 
@@ -65,8 +44,7 @@ export function SectionCards({ stats }: SectionCardsProps) {
         isHide
         defaultVisible
         icon={<TrendingUp className="size-4" />}
-        titleFooter={"Bugun to&apos;langan qarzlar"}
-        description={`${stats.todayPaymentsCount} ta to&apos;lov`}
+        description={`${stats.todayPaymentsCount} ta to'lov`}
       />
 
       <SectionCard
@@ -75,7 +53,6 @@ export function SectionCards({ stats }: SectionCardsProps) {
         isHide
         defaultVisible
         icon={<TrendingDown className="size-4" />}
-        titleFooter={"Bugungi qarzlar"}
         description={`${stats.todayDebtsCount} ta qarz`}
       />
     </div>

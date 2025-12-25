@@ -47,6 +47,26 @@ export async function POST(req: NextRequest) {
     // Set HTTP-only cookie
     await setAuthCookie(token);
 
+    const userFullName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username;
+    const description = `${userFullName} tizimga kirdi`;
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: user.id,
+        action: "LOGIN",
+        entity_type: "USER",
+        new_value: {
+          user_id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+        description,
+        ip_address: req.headers.get("cf-connecting-ip") || "",
+        user_agent: req.headers.get("user-agent") || "",
+      },
+    });
+
     return NextResponse.json({
       message: "Login successful",
       user: {

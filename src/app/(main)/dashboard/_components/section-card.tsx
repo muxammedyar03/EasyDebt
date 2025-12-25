@@ -38,26 +38,26 @@ export function SectionCard({
   const maskAmount = visible ? amount?.toLocaleString() : "*******";
 
   return (
-    <Card className="@container/card">
-      <CardHeader>
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="flex items-end gap-1">
-          <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
-            {count ? count : isHide ? maskAmount : amount?.toLocaleString()}
-          </p>
-          {!count && <span className="text-md leading-5">so&apos;m</span>}
-        </CardTitle>
-        <CardAction>
+    <Card className="@container/card p-4">
+      <CardHeader className="p-0">
+        <CardDescription className="flex justify-between p-0">
+          {title}
           <div className="flex items-center gap-2">
             {isHide ? <CardNumberToggler visible={visible || false} toggleVisibility={toggleVisibility} /> : null}
             <Badge variant="outline" className={`p-2 ${color || "text-red-600"}`}>
               {icon}
             </Badge>
           </div>
-        </CardAction>
+        </CardDescription>
+        <CardTitle className="flex items-end gap-1 p-0">
+          <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+            {count ? count : isHide ? maskAmount : amount?.toLocaleString()}
+          </p>
+          {!count && <span className="text-md leading-5">so&apos;m</span>}
+        </CardTitle>
       </CardHeader>
       {titleFooter || description ? (
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        <CardFooter className="flex-col items-start gap-1 p-0 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">{titleFooter}</div>
           <div className="text-muted-foreground">{description}</div>
         </CardFooter>

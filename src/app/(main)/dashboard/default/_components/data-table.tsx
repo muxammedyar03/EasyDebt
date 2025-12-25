@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { DataTable as DataTableNew } from "../../../../../components/data-table/data-table";
-import { withDndColumn } from "../../../../../components/data-table/table-utils";
 
 import { createDashboardColumns } from "./columns";
 import { debtorSchema } from "./schema";
@@ -67,12 +66,10 @@ export function DataTable({
 
   const columns = React.useMemo(
     () =>
-      withDndColumn(
-        createDashboardColumns({
-          onDataChange: handleDebtorAdded,
-          debtLimit,
-        }),
-      ),
+      createDashboardColumns({
+        onDataChange: handleDebtorAdded,
+        debtLimit,
+      }),
     [handleDebtorAdded, debtLimit],
   );
 
@@ -81,6 +78,10 @@ export function DataTable({
     columns,
     getRowId: (row) => row.id.toString(),
     defaultPageSize: 10,
+    initialColumnVisibility: {
+      phone_number: false,
+      address: false,
+    },
   });
 
   const handleAddDebt = (debtorId: number) => {

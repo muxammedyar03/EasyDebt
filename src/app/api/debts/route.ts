@@ -65,10 +65,23 @@ export async function POST(request: NextRequest) {
       return { debt, debtor, updatedDebtor, debtLimit };
     });
 
+    // Get user info for description
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { first_name: true, last_name: true, username: true },
+    });
+
+    const userFullName =
+      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
+
+    const debtorFullName = `${result.debtor.first_name} ${result.debtor.last_name}`;
+    const formattedAmount = validatedData.amount.toLocaleString("uz-UZ");
+    const description = `${userFullName} qarzdor ${debtorFullName} ga ${formattedAmount} so'm miqdorda qarz qo'shdi`;
+
     // Create audit log
     await createAuditLog({
       userId,
-      action: "DEBT_ADDED",
+      action: "UPDATE",
       entityType: "DEBT",
       entityId: result.debt.id,
       newValue: {
@@ -76,6 +89,7 @@ export async function POST(request: NextRequest) {
         amount: validatedData.amount,
         description: validatedData.description,
       },
+      description,
     });
 
     // Check if debt limit exceeded
