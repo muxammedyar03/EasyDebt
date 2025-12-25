@@ -15,7 +15,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate
+# Prisma already generated in deps stage
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- Production runner ----
