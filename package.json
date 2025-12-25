@@ -18,7 +18,12 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create-admin-user.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "docker:build": "DOCKER_BUILDKIT=1 docker compose -f docker-compose.prod.yml build",
+    "docker:up": "docker compose -f docker-compose.prod.yml up -d",
+    "docker:down": "docker compose -f docker-compose.prod.yml down",
+    "docker:logs": "docker compose -f docker-compose.prod.yml logs -f",
+    "docker:clean": "docker system prune -af --volumes"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [

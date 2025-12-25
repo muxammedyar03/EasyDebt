@@ -1,23 +1,39 @@
+# syntax=docker/dockerfile:1.4
+
 # ---- Base image ----
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # ---- Dependencies ----
 FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma
 COPY scripts ./scripts
-RUN npm ci
+
+# Cache npm dependencies
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit
+
+# Generate Prisma Client with cache
+RUN --mount=type=cache,target=/root/.cache/prisma \
+    npx prisma generate
 
 # ---- Builder ----
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Prisma already generated in deps stage
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+
+# Build environment variables
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
+
+# Cache Next.js build with BuildKit
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # ---- Production runner ----
 FROM node:20-alpine AS runner
