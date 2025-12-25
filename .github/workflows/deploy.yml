@@ -109,7 +109,7 @@ jobs:
             
             # Check migration logs
             echo "📝 Migration logs:"
-            docker compose -f docker-compose.prod.yml logs migrate migrate-demo || true
+            docker compose -f docker-compose.prod.yml logs migrate || true
 
             # Clean up old images
             docker image prune -af --filter "until=24h"

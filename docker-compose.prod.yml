@@ -18,51 +18,18 @@ services:
       retries: 5
     restart: unless-stopped
 
-  postgres-demo:
-    image: postgres:15-alpine
-    container_name: debt_db_demo
-    environment:
-      POSTGRES_DB: debt_management_demo
-      POSTGRES_USER: ${DB_USER:-admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-    volumes:
-      - postgres_data_demo:/var/lib/postgresql/data
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d debt_management_demo"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
-      target: builder
+      target: deps
     container_name: debt_migrate
+    working_dir: /app
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public
-    command: npx prisma migrate deploy
+    command: sh -c "npx prisma migrate deploy"
     depends_on:
       postgres:
-        condition: service_healthy
-    networks:
-      - app-network
-    restart: "no"
-
-  migrate-demo:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: builder
-    container_name: debt_migrate_demo
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres-demo:5432/debt_management_demo?schema=public
-    command: npx prisma migrate deploy
-    depends_on:
-      postgres-demo:
         condition: service_healthy
     networks:
       - app-network
@@ -99,32 +66,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  app-demo:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-    container_name: debt_app_demo
-    environment:
-      NODE_ENV: demo
-      DB_USER: ${DB_USER:-admin}
-      DB_PASSWORD: ${DB_PASSWORD:-changeme}
-      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres-demo:5432/debt_management_demo?schema=public
-      JWT_SECRET: ${JWT_SECRET}
-      VIRTUAL_HOST: demo.easydebt.uz
-      LETSENCRYPT_HOST: demo.easydebt.uz
-      VIRTUAL_PORT: 3000
-    depends_on:
-      postgres-demo:
-        condition: service_healthy
-      migrate-demo:
-        condition: service_completed_successfully
-    networks:
-      - app-network
-      - nginx-proxy
-    restart: unless-stopped
 
   nginx-proxy:
     image: nginxproxy/nginx-proxy:alpine
@@ -173,4 +114,3 @@ volumes:
   nginx_vhost:
   nginx_html:
   acme_state:
-  postgres_data_demo:
