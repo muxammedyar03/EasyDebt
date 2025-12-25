@@ -88,16 +88,21 @@ jobs:
             # Stop and remove old containers
             docker compose -f docker-compose.prod.yml down
 
-            # Start new containers
+            # Start new containers (migrations run automatically via init containers)
+            echo "🚀 Starting containers with automatic migrations..."
             docker compose -f docker-compose.prod.yml up -d --build
 
-            sleep 15
+            # Wait for app containers to be healthy
+            echo "⏳ Waiting for applications to be ready..."
+            sleep 10
 
-            # Run database migrations
-            docker compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
-
-            # Run database migrations for demo DB
-            docker compose -f docker-compose.prod.yml exec -T app-demo npx prisma migrate deploy
+            # Verify containers are running
+            echo "📊 Container status:"
+            docker compose -f docker-compose.prod.yml ps
+            
+            # Check migration logs
+            echo "📝 Migration logs:"
+            docker compose -f docker-compose.prod.yml logs migrate migrate-demo || true
 
             # Clean up old images
             docker image prune -af --filter "until=24h"
