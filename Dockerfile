@@ -14,13 +14,11 @@ COPY prisma ./prisma
 COPY scripts ./scripts
 COPY src/lib/migrations ./src/lib/migrations
 
-# Cache npm dependencies
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+# Install dependencies
+RUN npm ci --legacy-peer-deps --prefer-offline --no-audit
 
-# Generate Prisma Client with cache
-RUN --mount=type=cache,target=/root/.cache/prisma \
-    npx prisma generate
+# Generate Prisma Client
+RUN npx prisma generate
 
 # ---- Builder ----
 FROM base AS builder
