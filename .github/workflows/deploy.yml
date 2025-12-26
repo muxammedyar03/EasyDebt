@@ -92,7 +92,7 @@ jobs:
 
             # Start new containers (migrations run automatically via init containers)
             echo "🚀 Starting containers with automatic migrations..."
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --build
 
             # Wait for app containers to be healthy
             echo "⏳ Waiting for applications to be ready..."
