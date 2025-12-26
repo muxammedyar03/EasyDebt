@@ -19,16 +19,13 @@ services:
     restart: unless-stopped
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: deps
+    image: ghcr.io/USERNAME/REPO:latest
     container_name: debt_migrate
     working_dir: /app
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public
       NODE_ENV: production
-    command: sh -c "npx prisma migrate deploy && npm run migrate:prod"
+    command: sh -c "npx prisma migrate deploy || true && npm run migrate:prod || true"
     depends_on:
       postgres:
         condition: service_healthy
