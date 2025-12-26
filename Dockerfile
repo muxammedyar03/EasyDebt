@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.4
-
 # ---- Base image ----
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
@@ -30,9 +28,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 
-# Cache Next.js build with BuildKit
-RUN --mount=type=cache,target=/app/.next/cache \
-    npm run build
+# Build Next.js application
+RUN npm run build
 
 # ---- Production runner ----
 FROM node:20-alpine AS runner
