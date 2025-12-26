@@ -18,6 +18,11 @@ RUN npm ci --legacy-peer-deps --prefer-offline --no-audit
 # Generate Prisma Client
 RUN npx prisma generate
 
+# ---- Migration stage ----
+FROM deps AS migration
+WORKDIR /app
+# Migration uchun barcha kerakli fayllar allaqachon deps stage'da
+
 # ---- Builder ----
 FROM base AS builder
 WORKDIR /app
