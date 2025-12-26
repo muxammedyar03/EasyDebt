@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: ghcr.io/USERNAME/REPO:latest
+    image: ghcr.io/admin/next-shadcn-debitor:latest
     container_name: debt_migrate
     working_dir: /app
     environment:
