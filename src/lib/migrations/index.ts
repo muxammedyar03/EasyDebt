@@ -48,12 +48,10 @@ export async function runCustomMigrations(prisma: PrismaClient) {
       file_hash: "TEXT NOT NULL UNIQUE",
       imported_at: "TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP",
       imported_by: "INTEGER NOT NULL",
-      shop_id: "INTEGER NOT NULL",
       debtor_count: "INTEGER NOT NULL",
       debt_count: "INTEGER NOT NULL",
       payment_count: "INTEGER NOT NULL",
     })
-    .run('CREATE INDEX IF NOT EXISTS "ImportHistory_shop_id_idx" ON "ImportHistory"("shop_id")')
     .run('CREATE INDEX IF NOT EXISTS "ImportHistory_imported_by_idx" ON "ImportHistory"("imported_by")')
     .commit();
 
@@ -61,37 +59,6 @@ export async function runCustomMigrations(prisma: PrismaClient) {
   await createMigrationBuilder("2024-12-25-add-audit-log-description", adapter)
     .addColumn("audit_log", "description", "TEXT")
     .commit();
-
-  // Create shops table first
-  await createMigrationBuilder("2024-12-26-create-shops-table", adapter)
-    .createTable("shops", {
-      id: "SERIAL PRIMARY KEY",
-      name: "TEXT NOT NULL",
-      created_at: "TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP",
-      updated_at: "TIMESTAMP(3) NOT NULL",
-    })
-    .commit();
-
-  // Add shop_id to users table (nullable for SUPER_ADMIN)
-  await createMigrationBuilder("2024-12-26-add-user-shop-id", adapter)
-    .addColumn("users", "shop_id", "INTEGER")
-    .run(
-      `
-      DO $$ BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint 
-          WHERE conname = 'users_shop_id_fkey'
-        ) THEN
-          ALTER TABLE users ADD CONSTRAINT users_shop_id_fkey 
-            FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE RESTRICT ON UPDATE CASCADE;
-        END IF;
-      END $$;
-    `,
-    )
-    .commit();
-
-  // Add token to users table
-  await createMigrationBuilder("2024-12-26-add-user-token", adapter).addColumn("users", "token", "UUID").commit();
 
   console.log("✅ All custom migrations completed successfully!");
 }
