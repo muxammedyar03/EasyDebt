@@ -2,6 +2,24 @@ import { Badge } from "@/components/ui/badge";
 
 export function useTableUtils() {
   const getActionBadge = (action: string, entity_type: "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS") => {
+    // Action-based badges
+    if (action === "DEBT_ADDED") {
+      return <Badge className="bg-blue-500">Qarz qo&apos;shildi</Badge>;
+    }
+
+    if (action === "PAYMENT_ADDED") {
+      return <Badge className="bg-green-500">To&apos;lov qo&apos;shildi</Badge>;
+    }
+
+    if (action === "IMPORT_DATA") {
+      return <Badge className="bg-purple-500">Import qilindi</Badge>;
+    }
+
+    if (action === "EXPORT_DATA") {
+      return <Badge className="bg-indigo-500">Export qilindi</Badge>;
+    }
+
+    // Entity-based badges
     if (entity_type === "DEBTOR") {
       switch (action) {
         case "CREATE":
@@ -10,15 +28,6 @@ export function useTableUtils() {
           return <Badge className="bg-blue-500">Qarzdor yangilandi</Badge>;
         case "DELETE":
           return <Badge variant="destructive">Qarzdor o&apos;chirildi</Badge>;
-        default:
-          return <Badge variant="outline">{action}</Badge>;
-      }
-    }
-
-    if (entity_type === "DEBT_ADDED") {
-      switch (action) {
-        case "UPDATE":
-          return <Badge className="bg-blue-500">Qarz qo&apos;shildi</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -53,23 +62,7 @@ export function useTableUtils() {
       }
     }
 
-    if (entity_type === "IMPORT") {
-      switch (action) {
-        case "UPDATE":
-          return <Badge className="bg-blue-500">Import qo&apos;shildi</Badge>;
-        default:
-          return <Badge variant="outline">{action}</Badge>;
-      }
-    }
-
-    if (entity_type === "EXPORT") {
-      switch (action) {
-        case "UPDATE":
-          return <Badge className="bg-blue-500">Export qilindi</Badge>;
-        default:
-          return <Badge variant="outline">{action}</Badge>;
-      }
-    }
+    return <Badge variant="outline">{action}</Badge>;
   };
 
   const getEntityTypeName = (type: string) => {
