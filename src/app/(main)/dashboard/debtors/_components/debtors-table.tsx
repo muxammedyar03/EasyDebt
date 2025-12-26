@@ -78,6 +78,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
   const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
+  const [selectedDebtorId, setSelectedDebtorId] = React.useState<number | null>(null);
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
     {
       open: false,
@@ -491,7 +492,12 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setOpenEditDebtDialog(true)}>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedDebtorId(debtor.id);
+                                setOpenEditDebtDialog(true);
+                              }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Tahrirlash
                             </DropdownMenuItem>
@@ -500,11 +506,6 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                               O&apos;chirish
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                          <EditDebtorDialog
-                            debtor={debtor}
-                            open={openEditDebtDialog}
-                            onOpenChange={setOpenEditDebtDialog}
-                          />
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
@@ -514,6 +515,21 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
             </TableBody>
           </Table>
         </div>
+
+        {/* Edit Dialog - faqat tanlangan debtor uchun */}
+        {selectedDebtorId && (
+          <EditDebtorDialog
+            debtor={debtors.find((d) => d.id === selectedDebtorId)!}
+            open={openEditDebtDialog}
+            onOpenChange={(open) => {
+              setOpenEditDebtDialog(open);
+              if (!open) setSelectedDebtorId(null);
+            }}
+            onSuccess={() => {
+              router.refresh();
+            }}
+          />
+        )}
 
         {/* Pagination */}
         <div className="flex items-center justify-between">

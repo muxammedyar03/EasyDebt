@@ -1,6 +1,7 @@
 # Migration Muammosini Hal Qilish
 
 ## Muammo
+
 ```
 The `20251119095002_init` migration started at 2025-11-19 10:49:07.488798 UTC failed
 ```

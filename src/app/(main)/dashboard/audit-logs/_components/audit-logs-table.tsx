@@ -186,10 +186,10 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Sana</TableHead>
+                    {/* <TableHead>Sana</TableHead> */}
                     <TableHead>Foydalanuvchi</TableHead>
                     <TableHead>Harakat</TableHead>
-                    <TableHead>Entity</TableHead>
+                    {/* <TableHead>Entity</TableHead> */}
                     <TableHead>Tafsilotlar</TableHead>
                     {/* <TableHead>IP Address</TableHead> */}
                   </TableRow>
@@ -204,8 +204,8 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   ) : (
                     logs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap">{formatDate(log.created_at)}</TableCell>
-                        <TableCell>
+                        {/* <TableCell className="whitespace-nowrap">{formatDate(log.created_at)}</TableCell> */}
+                        <TableCell className="w-28">
                           {log.user ? (
                             <div>
                               <p className="font-medium">
@@ -213,26 +213,29 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                                   ? `${log.user.first_name} ${log.user.last_name}`
                                   : log.user.username}
                               </p>
-                              <p className="text-muted-foreground text-xs">{log.user.email}</p>
+                              <p className="text-muted-foreground text-xs">{formatDate(log.created_at)}</p>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">Tizim</span>
+                            <div>
+                              <p className="font-medium">Tizim</p>
+                              <p className="text-muted-foreground text-xs">{formatDate(log.created_at)}</p>
+                            </div>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-32 space-y-1">
                           {getActionBadge(
                             log.action,
                             log.entity_type as "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS",
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <div>
+                          <div className="flex items-end gap-2 pl-2">
                             <p className="font-medium">{getEntityTypeName(log.entity_type)}</p>
                             {log.entity_id && <p className="text-muted-foreground text-xs">ID: {log.entity_id}</p>}
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          {log.description && <p className="text-muted-foreground text-xs">{log.description}</p>}
+                        <TableCell className="text-muted-foreground w-1/2 min-w-0 text-xs">
+                          <p className="truncate whitespace-break-spaces">
+                            {log.description && <p className="text-muted-foreground text-xs">{log.description}</p>}
+                          </p>
                         </TableCell>
                         {/* <TableCell className="text-muted-foreground text-sm">{log.ip_address || "-"}</TableCell> */}
                       </TableRow>

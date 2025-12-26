@@ -27,7 +27,8 @@ services:
     working_dir: /app
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public
-    command: sh -c "npx prisma migrate deploy"
+      NODE_ENV: production
+    command: sh -c "npx prisma migrate deploy && npm run migrate:prod"
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,8 +56,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # migrate:
-      #   condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
     networks:
       - app-network
       - nginx-proxy

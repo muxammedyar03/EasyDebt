@@ -63,7 +63,7 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
   });
 
   React.useEffect(() => {
-    if (open) {
+    if (open && debtor) {
       reset({
         first_name: debtor.first_name,
         last_name: debtor.last_name,
@@ -72,7 +72,8 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
       });
       setPhone(formatUzPhone(debtor.phone_number || ""));
     }
-  }, [open, debtor, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, debtor.id]);
 
   const onSubmit = async (data: EditDebtorFormData) => {
     setIsLoading(true);

@@ -106,7 +106,7 @@ jobs:
             # Verify containers are running
             echo "📊 Container status:"
             docker compose -f docker-compose.prod.yml ps
-            
+
             # Check migration logs
             echo "📝 Migration logs:"
             docker compose -f docker-compose.prod.yml logs migrate || true

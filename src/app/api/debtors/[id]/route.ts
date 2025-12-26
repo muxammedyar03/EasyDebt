@@ -83,17 +83,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       data: validatedData,
     });
 
-    // Get user info for description
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { first_name: true, last_name: true, username: true },
-    });
-
-    const userFullName =
-      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
-
     const debtorFullName = `${updatedDebtor.first_name} ${updatedDebtor.last_name}`;
-    const description = `${userFullName} qarzdor ${debtorFullName} ma'lumotlarini yangiladi`;
+    const description = `Qarzdor ${debtorFullName} ma'lumotlarini yangiladi`;
 
     await prisma.auditLog.create({
       data: {
@@ -148,17 +139,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
-    // Get user info for description
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { first_name: true, last_name: true, username: true },
-    });
-
-    const userFullName =
-      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
-
     const debtorFullName = `${debtor.first_name} ${debtor.last_name}`;
-    const description = `${userFullName} qarzdor ${debtorFullName} ni o'chirdi`;
+    const description = `Qarzdor ${debtorFullName} ni o'chirdi`;
 
     await prisma.auditLog.create({
       data: {

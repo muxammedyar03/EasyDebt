@@ -76,19 +76,8 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Get user info for description
-      const user = await tx.user.findUnique({
-        where: { id: session.userId },
-        select: { first_name: true, last_name: true, username: true },
-      });
-
-      const userFullName =
-        user?.first_name && user?.last_name
-          ? `${user.first_name} ${user.last_name}`
-          : user?.username || "Foydalanuvchi";
-
       const debtorFullName = `${validatedData.first_name} ${validatedData.last_name}`;
-      const description = `${userFullName} yangi qarzdor ${debtorFullName} yaratdi`;
+      const description = `Yangi qarzdor ${debtorFullName} yaratdi`;
 
       await tx.auditLog.create({
         data: {

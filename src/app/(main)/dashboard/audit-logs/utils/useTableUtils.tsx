@@ -15,7 +15,7 @@ export function useTableUtils() {
       }
     }
 
-    if (entity_type === "DEBT") {
+    if (entity_type === "DEBT_ADDED") {
       switch (action) {
         case "UPDATE":
           return <Badge className="bg-blue-500">Qarz qo&apos;shildi</Badge>;
@@ -48,6 +48,24 @@ export function useTableUtils() {
       switch (action) {
         case "UPDATE":
           return <Badge className="bg-blue-500">O&apos;zgartirildi</Badge>;
+        default:
+          return <Badge variant="outline">{action}</Badge>;
+      }
+    }
+
+    if (entity_type === "IMPORT") {
+      switch (action) {
+        case "UPDATE":
+          return <Badge className="bg-blue-500">Import qo&apos;shildi</Badge>;
+        default:
+          return <Badge variant="outline">{action}</Badge>;
+      }
+    }
+
+    if (entity_type === "EXPORT") {
+      switch (action) {
+        case "UPDATE":
+          return <Badge className="bg-blue-500">Export qilindi</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }

@@ -157,6 +157,7 @@ export async function GET(request: NextRequest) {
           debtsCount: totalDebts,
           paymentsCount: totalPayments,
         },
+        description: `Qarzdorlar ro'yxati JSON formatida export qilindi.`,
       },
     });
 

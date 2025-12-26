@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Users, TrendingUp, TrendingDown } from "lucide-react";
 
 import { SectionCard } from "../../_components/section-card";

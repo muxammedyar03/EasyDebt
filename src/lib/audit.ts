@@ -1,7 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT" | "PAYMENT_ADDED" | "DEBT_ADDED";
+export type AuditAction =
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "LOGIN"
+  | "LOGOUT"
+  | "PAYMENT_ADDED"
+  | "DEBT_ADDED"
+  | "IMPORT"
+  | "EXPORT";
 
 export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS";
 

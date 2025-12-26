@@ -20,14 +20,6 @@ export async function POST(request: NextRequest) {
       where: { key },
     });
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { first_name: true, last_name: true, username: true },
-    });
-
-    const userFullName =
-      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
-
     const setting = await prisma.settings.upsert({
       where: { key },
       update: { value },
@@ -35,8 +27,8 @@ export async function POST(request: NextRequest) {
     });
 
     const oldValue = oldSettings?.value || "mavjud emas";
-    const keyName = key === "debt_limit" ? "qarz limiti" : key === "overdue_days" ? "muddati o'tish kuni" : key;
-    const description = `${userFullName} sozlamalardan "${keyName}" ni "${oldValue}" dan "${value}" ga o'zgartirdi`;
+    const keyName = key === "debt_limit" ? "Qarz limiti" : key === "overdue_days" ? "Muddati o'tish kuni" : key;
+    const description = `${keyName} - "${oldValue}" dan "${value}" ga o'zgartirildi`;
 
     await prisma.auditLog.create({
       data: {

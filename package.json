@@ -18,6 +18,8 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/create-admin-user.ts",
+    "migrate": "tsx scripts/migrate.ts",
+    "migrate:prod": "NODE_ENV=production tsx scripts/migrate.ts",
     "postinstall": "prisma generate",
     "docker:build": "DOCKER_BUILDKIT=1 docker compose -f docker-compose.prod.yml build",
     "docker:up": "docker compose -f docker-compose.prod.yml up -d",
@@ -67,6 +69,7 @@
     "xlsx": "^0.18.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
+    "tsx": "^4.7.0",
     "zod": "^3.25.76",
     "zustand": "^5.0.8"
   },

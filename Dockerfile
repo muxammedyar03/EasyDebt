@@ -12,6 +12,7 @@ FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma
 COPY scripts ./scripts
+COPY src/lib/migrations ./src/lib/migrations
 
 # Cache npm dependencies
 RUN --mount=type=cache,target=/root/.npm \
