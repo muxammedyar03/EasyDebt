@@ -43,8 +43,9 @@ README.md
 QUICK_START.md
 SMETA.md
 FEATURES.md
-CUSTOM_MIGRATIONS.md
 DOCKER_OPTIMIZATION.md
+CUSTOM_MIGRATIONS.md
+fix-migration.md
 
 # vercel
 .vercel

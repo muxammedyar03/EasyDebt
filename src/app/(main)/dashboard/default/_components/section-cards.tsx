@@ -26,7 +26,6 @@ export function SectionCards({ stats }: SectionCardsProps) {
         title="Ja'mi qarzdorlar"
         count={stats.totalDebtors}
         icon={<Users className="size-4" />}
-        titleFooter={"Umumiy qarzdorlar soni"}
         description="Tizimda ro'yxatdan o'tgan"
       />
 
@@ -44,8 +43,7 @@ export function SectionCards({ stats }: SectionCardsProps) {
         isHide
         defaultVisible
         icon={<TrendingUp className="size-4" />}
-        titleFooter={"Bugun to&apos;langan qarzlar"}
-        description={`${stats.todayPaymentsCount} ta to&apos;lov`}
+        description={`${stats.todayPaymentsCount} ta to'lov`}
       />
 
       <SectionCard
@@ -54,7 +52,6 @@ export function SectionCards({ stats }: SectionCardsProps) {
         isHide
         defaultVisible
         icon={<TrendingDown className="size-4" />}
-        titleFooter={"Bugungi qarzlar"}
         description={`${stats.todayDebtsCount} ta qarz`}
       />
     </div>

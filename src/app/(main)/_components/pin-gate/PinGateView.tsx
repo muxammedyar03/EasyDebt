@@ -111,7 +111,7 @@ export function PinGateView(props: PinGateViewProps) {
                           >
                             <InputOTPGroup>
                               {Array.from({ length: pinLength }).map((_, i) => (
-                                <InputOTPSlot key={i.toString()} index={i} />
+                                <InputOTPSlot key={Math.random() * 1000} index={i} />
                               ))}
                             </InputOTPGroup>
                           </InputOTP>
@@ -129,7 +129,7 @@ export function PinGateView(props: PinGateViewProps) {
                           >
                             <InputOTPGroup>
                               {Array.from({ length: pinLength }).map((_, i) => (
-                                <InputOTPSlot key={i.toString()} index={i} />
+                                <InputOTPSlot key={Math.random() * 1000} index={i} />
                               ))}
                             </InputOTPGroup>
                           </InputOTP>
@@ -155,7 +155,7 @@ export function PinGateView(props: PinGateViewProps) {
                             >
                               <InputOTPGroup>
                                 {Array.from({ length: pinLength }).map((_, i) => (
-                                  <InputOTPSlot key={i.toString()} index={i} />
+                                  <InputOTPSlot key={Math.random() * 1000} index={i} />
                                 ))}
                               </InputOTPGroup>
                             </InputOTP>
@@ -217,7 +217,7 @@ export function PinGateView(props: PinGateViewProps) {
                               >
                                 <InputOTPGroup>
                                   {Array.from({ length: pinLength }).map((_, i) => (
-                                    <InputOTPSlot key={i.toString()} index={i} />
+                                    <InputOTPSlot key={Math.random() * 1000} index={i} />
                                   ))}
                                 </InputOTPGroup>
                               </InputOTP>

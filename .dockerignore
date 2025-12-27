@@ -45,3 +45,17 @@ README.md
 OPTIMIZATION.md
 SETUP.md
 media
+
+# GitHub
+.github
+
+# Docker
+.dockerignore
+
+# Lint
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# TypeScript
+tsconfig.tsbuildinfo

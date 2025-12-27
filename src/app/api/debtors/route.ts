@@ -91,6 +91,27 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      const debtorFullName = `${validatedData.first_name} ${validatedData.last_name}`;
+      const description = `Yangi qarzdor ${debtorFullName} yaratdi`;
+
+      await tx.auditLog.create({
+        data: {
+          user_id: session.userId,
+          action: "CREATE",
+          entity_type: "DEBTOR",
+          new_value: {
+            debtor_id: debtor.id,
+            first_name: validatedData.first_name,
+            last_name: validatedData.last_name,
+            phone_number: validatedData.phone_number,
+            address: validatedData.address,
+          },
+          description,
+          ip_address: request.headers.get("cf-connecting-ip") || "",
+          user_agent: request.headers.get("user-agent") || "",
+        },
+      });
+
       return debtor;
     });
 

@@ -36,7 +36,7 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
   const [items, setItems] = React.useState<NotificationsDropdownProps["notifications"]>(notifications ?? []);
   const [totalCount, setTotalCount] = React.useState<number>(notifications?.length ?? 0);
   const isMobile = useIsMobile();
-  async function fetchUnread() {
+  const fetchUnread = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/notifications?page=1&pageSize=3&read=false`, { cache: "no-store" });
       if (!res.ok) return;
@@ -46,7 +46,7 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
     } catch {
       toast("Xatolik", { description: "Bildirishnomalar o'zgartirilmadi" });
     }
-  }
+  }, []);
 
   // Seed from SSR props once on mount/update
   React.useEffect(() => {
@@ -54,16 +54,16 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
     setTotalCount(notifications?.length ?? 0);
   }, [notifications]);
 
-  // Poll every 5s for fresh data
+  // Poll every 30s for fresh data (5s juda tez edi)
   React.useEffect(() => {
-    const id = setInterval(fetchUnread, 5000);
+    const id = setInterval(fetchUnread, 30000);
     return () => clearInterval(id);
-  }, []);
+  }, [fetchUnread]);
 
   // Also refresh when menu opens
   React.useEffect(() => {
     if (isOpen) fetchUnread();
-  }, [isOpen]);
+  }, [isOpen, fetchUnread]);
 
   const labelByType: Record<NotificationType, string> = {
     OVERDUE_PAYMENT: "Muddati o'tgan",

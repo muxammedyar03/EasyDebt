@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Trash2, Edit, MoreHorizontal, Search, FileDown } from "lucide-react";
+import { Trash2, Edit, MoreHorizontal, Search, FileDown, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { exportToExcel, formatNumberForExcel } from "@/lib/excel-export";
@@ -25,6 +25,7 @@ import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EditDebtorDialog } from "../../default/_components/edit-debtor-dialog";
+import { ExportImportDialog } from "./export-import-dialog";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -77,6 +78,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
   const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
+  const [selectedDebtorId, setSelectedDebtorId] = React.useState<number | null>(null);
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
     {
       open: false,
@@ -95,6 +97,8 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     debtorName: "",
     totalDebt: 0,
   });
+  const [exportDialog, setExportDialog] = React.useState(false);
+  const [importDialog, setImportDialog] = React.useState(false);
 
   // Avoid triggering search on initial mount (which was resetting page to 1 after navigation)
   const isFirstRender = React.useRef(true);
@@ -358,6 +362,14 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 O&apos;chirish ({selectedIds.length})
               </Button>
             )}
+            <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setImportDialog(true)}>
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Import</span>
+            </Button>
+            <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setExportDialog(true)}>
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
             <Button
               variant="outline"
               className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
@@ -480,7 +492,12 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setOpenEditDebtDialog(true)}>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedDebtorId(debtor.id);
+                                setOpenEditDebtDialog(true);
+                              }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Tahrirlash
                             </DropdownMenuItem>
@@ -489,11 +506,6 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                               O&apos;chirish
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                          <EditDebtorDialog
-                            debtor={debtor}
-                            open={openEditDebtDialog}
-                            onOpenChange={setOpenEditDebtDialog}
-                          />
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
@@ -503,6 +515,21 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
             </TableBody>
           </Table>
         </div>
+
+        {/* Edit Dialog - faqat tanlangan debtor uchun */}
+        {selectedDebtorId && (
+          <EditDebtorDialog
+            debtor={debtors.find((d) => d.id === selectedDebtorId)!}
+            open={openEditDebtDialog}
+            onOpenChange={(open) => {
+              setOpenEditDebtDialog(open);
+              if (!open) setSelectedDebtorId(null);
+            }}
+            onSuccess={() => {
+              router.refresh();
+            }}
+          />
+        )}
 
         {/* Pagination */}
         <div className="flex items-center justify-between">
@@ -545,6 +572,10 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         debtorName={quickPaymentDialog.debtorName}
         totalDebt={quickPaymentDialog.totalDebt}
       />
+
+      {/* Export/Import Dialogs */}
+      <ExportImportDialog open={exportDialog} onOpenChange={setExportDialog} mode="export" />
+      <ExportImportDialog open={importDialog} onOpenChange={setImportDialog} mode="import" />
     </>
   );
 }

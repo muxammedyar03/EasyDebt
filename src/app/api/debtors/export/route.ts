@@ -4,6 +4,19 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
+type ExportData = {
+  id: number | string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  address: string;
+  total_debt: number;
+  total_debts: number;
+  total_payments: number;
+  status: string;
+  created_at: string;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -75,7 +88,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Format data for export
-    const exportData = debtors.map((debtor) => {
+    const exportData: ExportData[] = debtors.map((debtor) => {
       const totalDebt = debtor.total_debt.toNumber();
       const totalDebts = debtor.debts.reduce((sum, debt) => sum + debt.amount.toNumber(), 0);
       const totalPayments = debtor.payments.reduce((sum, payment) => sum + payment.amount.toNumber(), 0);
@@ -99,6 +112,19 @@ export async function GET(request: NextRequest) {
         status,
         created_at: debtor.created_at.toLocaleDateString("uz-UZ"),
       };
+    });
+
+    exportData.push({
+      id: "Ja'mi",
+      first_name: "",
+      last_name: "",
+      phone_number: "",
+      address: "",
+      total_debt: exportData.reduce((sum, debtor) => sum + debtor.total_debt, 0),
+      total_debts: exportData.reduce((sum, debtor) => sum + debtor.total_debts, 0),
+      total_payments: exportData.reduce((sum, debtor) => sum + debtor.total_payments, 0),
+      status: "",
+      created_at: "",
     });
 
     return NextResponse.json({ debtors: exportData });

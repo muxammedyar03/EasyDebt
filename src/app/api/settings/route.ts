@@ -22,11 +22,31 @@ export async function POST(request: NextRequest) {
     if (!shopId) {
       return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
     }
+    const oldSettings = await prisma.settings.findUnique({
+      where: { shop_id_key: { shop_id: shopId, key } },
+    });
 
     const setting = await prisma.settings.upsert({
       where: { shop_id_key: { shop_id: shopId, key } },
       update: { value },
       create: { shop_id: shopId, key, value },
+    });
+
+    const oldValue = oldSettings?.value || "mavjud emas";
+    const keyName = key === "debt_limit" ? "Qarz limiti" : key === "overdue_days" ? "Muddati o'tish kuni" : key;
+    const description = `${keyName} - "${oldValue}" dan "${value}" ga o'zgartirildi`;
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: session.userId,
+        action: "UPDATE",
+        entity_type: "SETTINGS",
+        old_value: JSON.stringify({ key, value: oldValue }),
+        new_value: JSON.stringify({ key, value }),
+        description,
+        ip_address: request.headers.get("cf-connecting-ip") || "",
+        user_agent: request.headers.get("user-agent") || "",
+      },
     });
 
     if (key === "overdue_days") {
