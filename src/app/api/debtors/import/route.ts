@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { PaymentType, Prisma } from "@prisma/client";
 import { DebtItem } from "@/types/types";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 type ImportDebt = {
   external_id: string;
@@ -57,6 +58,12 @@ export async function POST(request: NextRequest) {
     // Faqat SUPER_ADMIN va ADMIN import qila oladi
     if (session.role === "USER") {
       return NextResponse.json({ error: "Faqat admin foydalanuvchilar import qila oladi" }, { status: 403 });
+    }
+
+    // Shop ID olish
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      return NextResponse.json({ error: "Shop tanlanmagan" }, { status: 400 });
     }
 
     // Request body'ni bir marta o'qib saqlaymiz
@@ -130,6 +137,7 @@ export async function POST(request: NextRequest) {
                 last_name: debtorData.last_name,
                 phone_number: debtorData.phone_number,
                 address: debtorData.address,
+                shop_id: shopId,
                 created_by: session.userId,
                 total_debt: 0, // Keyinroq hisoblanadi
               },
@@ -156,6 +164,7 @@ export async function POST(request: NextRequest) {
                   amount: new Prisma.Decimal(debtData.amount),
                   description: debtData.description,
                   items: debtData.items as DebtItem[],
+                  shop_id: shopId,
                   created_at: new Date(debtData.created_at),
                   created_by: session.userId,
                 },
@@ -179,6 +188,7 @@ export async function POST(request: NextRequest) {
                   amount: new Prisma.Decimal(paymentData.amount) as Prisma.Decimal,
                   payment_type: paymentData.payment_type as PaymentType,
                   note: paymentData.note,
+                  shop_id: shopId,
                   created_at: new Date(paymentData.created_at),
                   created_by: session.userId,
                 },

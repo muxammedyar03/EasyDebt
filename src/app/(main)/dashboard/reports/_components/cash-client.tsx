@@ -75,7 +75,7 @@ export default function CashClient({ payments, debts }: Props) {
       const pDate = new Date(p.created_at).toISOString().split("T")[0];
       return dateRange.includes(pDate);
     });
-  }, [selectedDate, timeRange, payments, getDateRange]);
+  }, [payments, getDateRange]);
 
   const filteredDebts = useMemo(() => {
     const dateRange = getDateRange();
@@ -83,7 +83,7 @@ export default function CashClient({ payments, debts }: Props) {
       const dDate = new Date(d.created_at).toISOString().split("T")[0];
       return dateRange.includes(dDate);
     });
-  }, [selectedDate, timeRange, debts, getDateRange]);
+  }, [debts, getDateRange]);
 
   // Calculate totals
   const totals = useMemo(() => {

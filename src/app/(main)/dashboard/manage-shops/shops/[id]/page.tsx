@@ -7,9 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Edit2, Save, X } from "lucide-react";
+import { ArrowLeft, Edit, Edit2, Plus, Save, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import ShopUsersContent from "./users/_components/shop-users-content";
+import { ShopUser, UserRole, UserFormData } from "@/types/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { shopUsersService } from "@/services/shop-users-service";
+import { useShopUsersStore } from "@/stores/shop-users-store";
 
 interface Shop {
   id: number;
@@ -24,21 +37,39 @@ interface Shop {
   total_debt?: number;
 }
 
+const INITIAL_USER_FORM_DATA: UserFormData = {
+  username: "",
+  email: "",
+  password: "",
+  first_name: "",
+  last_name: "",
+  role: UserRole.USER,
+  status: "ACTIVE",
+};
+
 export default function ShopDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const shopId = parseInt(params.id as string);
 
+  const { updateUser, fetchUsers } = useShopUsersStore();
+
   const [shop, setShop] = useState<Shop | null>(null);
+  const [editingUser, setEditingUser] = useState<ShopUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
+  const [shopFormData, setShopFormData] = useState({
     name: "",
     address: "",
     phone: "",
     is_active: true,
   });
+
+  // User dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [userFormData, setUserFormData] = useState<UserFormData>(INITIAL_USER_FORM_DATA);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchShop();
@@ -53,7 +84,7 @@ export default function ShopDetailsPage() {
       const data = await response.json();
       const shopData = data.shops?.find((s: Shop) => s.id === shopId) || data;
       setShop(shopData);
-      setFormData({
+      setShopFormData({
         name: shopData.name,
         address: shopData.address || "",
         phone: shopData.phone || "",
@@ -68,7 +99,7 @@ export default function ShopDetailsPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name) {
+    if (!shopFormData.name) {
       toast.error("Shop name is required");
       return;
     }
@@ -78,7 +109,7 @@ export default function ShopDetailsPage() {
       const response = await fetch(`/api/dashboard/shops/${shopId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(shopFormData),
       });
 
       if (!response.ok) {
@@ -100,7 +131,7 @@ export default function ShopDetailsPage() {
 
   const handleCancel = () => {
     if (shop) {
-      setFormData({
+      setShopFormData({
         name: shop.name,
         address: shop.address || "",
         phone: shop.phone || "",
@@ -112,7 +143,7 @@ export default function ShopDetailsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-4xl p-6">
+      <div className="container mx-auto max-w-7xl p-6">
         <div className="mb-6">
           <Skeleton className="mb-2 h-8 w-32" />
           <Skeleton className="h-4 w-64" />
@@ -136,7 +167,7 @@ export default function ShopDetailsPage() {
 
   if (!shop) {
     return (
-      <div className="container mx-auto max-w-4xl p-6">
+      <div className="container mx-auto max-w-7xl p-6">
         <div className="py-12 text-center">
           <h1 className="mb-2 text-2xl font-bold">Shop not found</h1>
           <Button onClick={() => router.back()}>Go Back</Button>
@@ -145,16 +176,93 @@ export default function ShopDetailsPage() {
     );
   }
 
+  const handleCreateEdit = (user: ShopUser | null = null): void => {
+    setEditingUser(user);
+    if (user) {
+      setUserFormData({
+        username: user.username,
+        email: user.email || "",
+        password: "",
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        role: user.role,
+        status: user.status,
+      });
+    } else {
+      setUserFormData(INITIAL_USER_FORM_DATA);
+    }
+    setDialogOpen(true);
+  };
+
+  const handleUserSubmit = async (): Promise<void> => {
+    if (!userFormData.username.trim()) {
+      toast.error("Username is required");
+      return;
+    }
+
+    if (!editingUser && !userFormData.password) {
+      toast.error("Password is required for new users");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      if (editingUser) {
+        const updateData: Partial<UserFormData> = {
+          email: userFormData.email,
+          first_name: userFormData.first_name,
+          last_name: userFormData.last_name,
+          role: userFormData.role,
+          status: userFormData.status,
+        };
+
+        if (userFormData.password) {
+          updateData.password = userFormData.password;
+        }
+
+        await shopUsersService.updateUser(editingUser.id, updateData);
+        updateUser(editingUser.id, updateData);
+        toast.success("User updated successfully");
+      } else {
+        await shopUsersService.createUser(shopId, userFormData);
+        toast.success("User created successfully");
+        await fetchUsers(shopId);
+      }
+
+      setDialogOpen(false);
+      setUserFormData(INITIAL_USER_FORM_DATA);
+      setEditingUser(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save user";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto max-w-4xl p-6">
+    <div className="container mx-auto max-w-7xl p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">{shop.name}</h1>
-          <p className="text-muted-foreground mt-1">Shop details and information</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">{shop.name}</h1>
+            <p className="text-muted-foreground mt-1">Do&apos;kon boshqaruvi va foydalanuvchilar</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Tahrirlash
+          </Button>
+          <Button onClick={() => handleCreateEdit(null)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Foydalanuvchi qo&apos;shish
+          </Button>
         </div>
       </div>
 
@@ -168,7 +276,7 @@ export default function ShopDetailsPage() {
           {!editing && (
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
               <Edit2 className="mr-2 h-4 w-4" />
-              Edit
+              Tahrirlash
             </Button>
           )}
         </CardHeader>
@@ -178,8 +286,8 @@ export default function ShopDetailsPage() {
             <Label htmlFor="shop-name">Shop Name</Label>
             <Input
               id="shop-name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={shopFormData.name}
+              onChange={(e) => setShopFormData({ ...shopFormData, name: e.target.value })}
               disabled={!editing}
               placeholder="Enter shop name"
             />
@@ -190,8 +298,8 @@ export default function ShopDetailsPage() {
             <Label htmlFor="shop-address">Address</Label>
             <Input
               id="shop-address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              value={shopFormData.address}
+              onChange={(e) => setShopFormData({ ...shopFormData, address: e.target.value })}
               disabled={!editing}
               placeholder="Enter shop address"
             />
@@ -202,8 +310,8 @@ export default function ShopDetailsPage() {
             <Label htmlFor="shop-phone">Phone</Label>
             <Input
               id="shop-phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              value={shopFormData.phone}
+              onChange={(e) => setShopFormData({ ...shopFormData, phone: e.target.value })}
               disabled={!editing}
               placeholder="+998 90 123 45 67"
             />
@@ -214,8 +322,8 @@ export default function ShopDetailsPage() {
             <Label htmlFor="shop-status">Active Status</Label>
             <Switch
               id="shop-status"
-              checked={formData.is_active}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+              checked={shopFormData.is_active}
+              onCheckedChange={(checked) => setShopFormData({ ...shopFormData, is_active: checked })}
               disabled={!editing}
             />
           </div>
@@ -250,37 +358,122 @@ export default function ShopDetailsPage() {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
-      {shop.total_users !== undefined && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{shop.total_users}</div>
-            </CardContent>
-          </Card>
+      <ShopUsersContent shopId={shop.id} handleCreateEdit={handleCreateEdit} />
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Debtors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{shop.total_debtors}</div>
-            </CardContent>
-          </Card>
+      {/* Create/Edit User Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingUser ? "Edit User" : "Create New User"}</DialogTitle>
+            <DialogDescription>
+              {editingUser ? "Update user information" : "Add a new user to this shop"}
+            </DialogDescription>
+          </DialogHeader>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Debt</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{shop.total_debt?.toLocaleString()} so&apos;m</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                value={userFormData.username}
+                onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
+                placeholder="Enter username"
+                disabled={!!editingUser}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  value={userFormData.first_name}
+                  onChange={(e) => setUserFormData({ ...userFormData, first_name: e.target.value })}
+                  placeholder="First name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  value={userFormData.last_name}
+                  onChange={(e) => setUserFormData({ ...userFormData, last_name: e.target.value })}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={userFormData.email}
+                onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                placeholder="user@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password {editingUser ? "(leave empty to keep current)" : "*"}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={userFormData.password}
+                onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                placeholder={editingUser ? "Leave empty to keep current" : "Enter password"}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={userFormData.role}
+                  onValueChange={(value) => setUserFormData({ ...userFormData, role: value as UserRole })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                    <SelectItem value={UserRole.USER}>User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={userFormData.status}
+                  onValueChange={(value) =>
+                    setUserFormData({ ...userFormData, status: value as "ACTIVE" | "BLOCKED" | "DEACTIVATED" })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="BLOCKED">Blocked</SelectItem>
+                    <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUserSubmit} disabled={submitting}>
+              {submitting ? "Saving..." : editingUser ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -15,9 +15,8 @@ import {
   Eye,
   Ban,
   CheckCircle,
-  AlertCircle,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -83,9 +82,9 @@ export default function ShopManagementPage() {
   useEffect(() => {
     checkAccess();
     fetchShops();
-  }, [statusFilter]);
+  }, [statusFilter, checkAccess, fetchShops]);
 
-  const checkAccess = async () => {
+  async function checkAccess() {
     // Check if user is SUPER_ADMIN
     const response = await fetch("/api/auth/me");
     if (response.ok) {
@@ -97,9 +96,9 @@ export default function ShopManagementPage() {
     } else {
       router.push("/login");
     }
-  };
+  }
 
-  const fetchShops = async () => {
+  async function fetchShops() {
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
@@ -119,7 +118,7 @@ export default function ShopManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleCreateNew = () => {
     setEditingShop(null);
@@ -340,8 +339,8 @@ export default function ShopManagementPage() {
           <TableBody>
             {filteredShops.map((shop) => (
               <TableRow key={shop.id}>
-                <TableCell>
-                  <div>
+                <TableCell onClick={() => router.push(`/dashboard/manage-shops/shops/${shop.id}`)}>
+                  <div className="cursor-pointer">
                     <div className="font-medium">{shop.name}</div>
                     {shop.address && <div className="text-muted-foreground text-sm">{shop.address}</div>}
                     {shop.phone && <div className="text-muted-foreground text-sm">{shop.phone}</div>}

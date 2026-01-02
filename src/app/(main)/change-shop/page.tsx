@@ -32,9 +32,9 @@ export default function ChangeShopPage() {
 
   useEffect(() => {
     fetchShops();
-  }, []);
+  }, [fetchShops]);
 
-  const fetchShops = async () => {
+  async function fetchShops() {
     try {
       const response = await fetch("/api/auth/change-shop");
 
@@ -57,7 +57,7 @@ export default function ChangeShopPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleShopChange = async (shopId: number) => {
     if (shopId === currentShopId) {

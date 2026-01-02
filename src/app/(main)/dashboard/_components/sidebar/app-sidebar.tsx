@@ -56,11 +56,7 @@ import { NavUser } from "./nav-user";
 //   ],
 // };
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  currentShop?: { id: number; name: string } | null;
-}
-
-export function AppSidebar({ currentShop, ...props }: AppSidebarProps) {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
