@@ -26,3 +26,52 @@ export const formatNumber = (value: string): string => {
   const numbers = value.replace(/\D/g, "");
   return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
 };
+
+export function formatCurrency(
+  amount: number,
+  opts?: {
+    currency?: string;
+    locale?: string;
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+    noDecimals?: boolean;
+  },
+) {
+  const { currency = "USD", locale = "en-US", minimumFractionDigits, maximumFractionDigits, noDecimals } = opts ?? {};
+
+  const formatOptions: Intl.NumberFormatOptions = {
+    style: "currency",
+    currency,
+    minimumFractionDigits: noDecimals ? 0 : minimumFractionDigits,
+    maximumFractionDigits: noDecimals ? 0 : maximumFractionDigits,
+  };
+
+  return new Intl.NumberFormat(locale, formatOptions).format(amount);
+}
+
+export function formatDateUz(date: Date): string {
+  const oylar = [
+    "yanvar",
+    "fevral",
+    "mart",
+    "aprel",
+    "may",
+    "iyun",
+    "iyul",
+    "avgust",
+    "sentyabr",
+    "oktyabr",
+    "noyabr",
+    "dekabr",
+  ];
+
+  const kun = date.getDate();
+  const oy = oylar[date.getMonth()];
+  const yil = date.getFullYear();
+
+  return `${kun}-${oy}/${yil}`;
+}
+
+export function formatCurrencyUzs(amount: number) {
+  return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
+}

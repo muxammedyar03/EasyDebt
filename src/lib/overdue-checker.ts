@@ -36,12 +36,6 @@ export async function checkOverdueDebtors() {
       },
     });
 
-    console.log(
-      "[overdue-checker] matched debtors:",
-      overdueDebtors.length,
-      overdueDebtors.map((d) => d.id),
-    );
-
     // Mark as overdue and create notifications
     for (const debtor of overdueDebtors) {
       try {

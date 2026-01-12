@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EditDebtorDialog } from "../../default/_components/edit-debtor-dialog";
 import { ExportImportDialog } from "./export-import-dialog";
+import { DebtorView } from "@/types/view";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -50,8 +51,8 @@ interface PaymentTransformed {
 
 interface Debtor {
   id: number;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   phone_number: string | null;
   address: string | null;
   total_debt: number;
@@ -65,7 +66,7 @@ interface Debtor {
 }
 
 interface DebtorsTableProps {
-  debtors: Debtor[];
+  debtors: DebtorView[];
   totalPages: number;
   currentPage: number;
   debtLimit: number;
@@ -269,8 +270,8 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         headers: ["ID", "Ism", "Familiya", "Telefon", "Manzil", "Jami qarz", "Jami to'lovlar"],
         rows: debtors.map((debtor: Debtor & { total_debts?: number; total_payments?: number; status: string }) => [
           debtor.id,
-          debtor.first_name,
-          debtor.last_name,
+          debtor.firstName,
+          debtor.lastName,
           debtor.phone_number || "-",
           debtor.address || "-",
           formatNumberForExcel(debtor.total_debt),
@@ -295,7 +296,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       setQuickDebtDialog({
         open: true,
         debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
+        debtorName: `${debtor.firstName} ${debtor.lastName}`,
       });
     }
   };
@@ -306,8 +307,8 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       setQuickPaymentDialog({
         open: true,
         debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
-        totalDebt: debtor.total_debt,
+        debtorName: `${debtor.firstName} ${debtor.lastName}`,
+        totalDebt: debtor.totalDebt,
       });
     }
   };
@@ -459,7 +460,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 </TableRow>
               ) : (
                 debtors.map((debtor) => {
-                  const status = getDebtorStatus(debtor.total_debt);
+                  const status = getDebtorStatus(debtor.totalDebt);
                   return (
                     <TableRow key={debtor.id}>
                       <TableCell>
@@ -472,18 +473,18 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                         className="font-medium"
                         onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
                       >
-                        {debtor.first_name} {debtor.last_name}
+                        {debtor.firstName} {debtor.lastName}
                       </TableCell>
-                      <TableCell>{debtor.phone_number || "-"}</TableCell>
-                      <TableCell className={status.color}>{formatCurrency(debtor.total_debt)}</TableCell>
+                      <TableCell>{debtor.phoneNumber || "-"}</TableCell>
+                      <TableCell className={status.color}>{formatCurrency(debtor.totalDebt)}</TableCell>
                       <TableCell className="flex items-center gap-2">
                         <Badge
                           variant="default"
-                          className={`h-5 w-5 rounded-full ${debtor.is_overdue ? "bg-red-500" : "bg-green-500"}`}
+                          className={`h-5 w-5 rounded-full ${debtor.isOverdue ? "bg-red-500" : "bg-green-500"}`}
                         ></Badge>
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
-                      <TableCell>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</TableCell>
+                      <TableCell>{new Date(debtor.createdAt).toLocaleDateString("uz-UZ")}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

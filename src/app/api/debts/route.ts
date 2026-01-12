@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId,
-      action: "UPDATE",
+      action: "DEBT_ADDED",
       entityType: "DEBT",
       entityId: result.debt.id,
       newValue: {

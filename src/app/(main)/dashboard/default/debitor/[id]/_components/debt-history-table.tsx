@@ -4,14 +4,10 @@ import * as React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DebtDomain } from "@/types/domain";
 
 interface DebtHistoryTableProps {
-  debts: Array<{
-    id: number;
-    amount: number;
-    description: string | null;
-    created_at: Date | string;
-  }>;
+  debts: DebtDomain[];
 }
 
 export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
@@ -51,7 +47,7 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
             {currentDebts.map((debt) => (
               <TableRow key={debt.id}>
                 <TableCell>
-                  {new Date(debt.created_at).toLocaleDateString("uz-UZ", {
+                  {new Date(debt.createdAt).toLocaleDateString("uz-UZ", {
                     year: "numeric",
                     month: "numeric",
                     day: "numeric",

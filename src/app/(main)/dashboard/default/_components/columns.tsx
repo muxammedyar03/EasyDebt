@@ -21,6 +21,7 @@ import { AddPaymentDialog } from "./add-payment-dialog";
 import { EditDebtorDialog } from "./edit-debtor-dialog";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { DebtorView } from "@/types/view";
 
 interface ColumnsContext {
   onDataChange?: () => void;
@@ -87,6 +88,43 @@ const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: Colum
 const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: ColumnsContext }) => {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const debtorView: DebtorView = {
+    id: row.original.id,
+    externalId: String(row.original.id),
+    fullName: `${row.original.first_name} ${row.original.last_name}`,
+    firstName: row.original.first_name,
+    lastName: row.original.last_name,
+    displayName: `${row.original.first_name} ${row.original.last_name.charAt(0)}.`,
+    phoneNumber: row.original.phone_number,
+    phoneDisplay: row.original.phone_number,
+    address: row.original.address,
+    totalDebt: row.original.total_debt,
+    totalDebtFormatted: `${row.original.total_debt.toLocaleString()} so'm`,
+    isOverdue: row.original.is_overdue,
+    lastPaymentDate: null,
+    lastPaymentDateFormatted: null,
+    riskStatus: "medium",
+    riskStatusBadge: {
+      label: "Medium",
+      variant: "secondary",
+      color: "yellow",
+    },
+    status: "active",
+    statusBadge: {
+      label: "Active",
+      variant: "default",
+    },
+    daysOverdue: null,
+    daysOverdueDisplay: null,
+    isHighRisk: false,
+    canEdit: true,
+    canDelete: true,
+    createdAt: row.original.created_at,
+    createdAtFormatted: new Date(row.original.created_at).toLocaleDateString(),
+    updatedAt: row.original.updated_at,
+    updatedAtFormatted: new Date(row.original.updated_at).toLocaleDateString(),
+  };
 
   const handleDelete = async () => {
     if (!confirm(`${row.original.first_name} ${row.original.last_name} ni o'chirishni xohlaysizmi?`)) {
@@ -159,7 +197,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
       <EditDebtorDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        debtor={row.original}
+        debtor={debtorView}
         onSuccess={context?.onDataChange}
       />
     </>

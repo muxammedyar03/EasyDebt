@@ -4,15 +4,10 @@ import * as React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PaymentDomain } from "@/types/domain";
 
 interface PaymentHistoryTableProps {
-  payments: Array<{
-    id: number;
-    amount: number;
-    payment_type: string;
-    note: string | null;
-    created_at: Date | string;
-  }>;
+  payments: PaymentDomain[];
 }
 
 const paymentTypeLabels: Record<string, string> = {
@@ -61,7 +56,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
               <TableRow key={payment.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>
-                  {new Date(payment.created_at).toLocaleDateString("uz-UZ", {
+                  {new Date(payment.createdAt).toLocaleDateString("uz-UZ", {
                     year: "numeric",
                     month: "numeric",
                     day: "numeric",
@@ -75,7 +70,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{paymentTypeLabels[payment.payment_type] || payment.payment_type}</Badge>
+                  <Badge variant="outline">{paymentTypeLabels[payment.paymentType] || payment.paymentType}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{payment.note || "—"}</TableCell>
               </TableRow>

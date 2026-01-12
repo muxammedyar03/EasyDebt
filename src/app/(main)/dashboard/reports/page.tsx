@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { RiskAnalysisCard } from "@/components/dashboard/risk-analysis-card";
-import { TrendAnalysis } from "@/components/dashboard/trend-analysis";
+import { RiskAnalysisCard } from "@/app/(main)/dashboard/reports/_components/risk-analysis-card";
+import { TrendAnalysis } from "@/app/(main)/dashboard/reports/_components/trend-analysis";
 import CashClient from "./_components/cash-client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";

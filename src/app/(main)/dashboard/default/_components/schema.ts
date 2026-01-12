@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const paymentSchema = z.object({
+  amount: z.string().min(1, "Summani kiriting"),
+  payment_type: z.enum(["CASH", "CLICK", "CARD"]),
+  note: z.string().optional(),
+});
+
 export const debtorSchema = z.object({
   id: z.number(),
   first_name: z.string(),

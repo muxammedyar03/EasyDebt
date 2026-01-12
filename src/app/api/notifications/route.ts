@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     const q = (searchParams.get("q") ?? "").trim();
     const type = (searchParams.get("type") ?? "").trim();
     const readParam = (searchParams.get("read") ?? "").trim();
-    console.log(type);
 
     const where: Prisma.NotificationWhereInput = {};
     if (session.userId) {

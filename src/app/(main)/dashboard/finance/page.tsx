@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { AccountOverview } from "./_components/account-overview";
 import { CurrencyExchange } from "./_components/currency-exchange";
 import { ExpenseSummary } from "./_components/expense-summary";
@@ -6,6 +7,7 @@ import { FinancialOverview } from "./_components/financial-overview";
 export const dynamic = "force-dynamic";
 
 export default function Page() {
+  redirect("/dashboard/default");
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div className="flex flex-col gap-4 lg:col-span-1">

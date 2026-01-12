@@ -24,21 +24,20 @@ export function SortToggleGroup({
     <div className={cn("flex gap-2", className)}>
       {sortOptions.map((option) => {
         const isActive = currentSortField === option.key;
+        const order = isActive ? currentSortOrder : "asc";
         const stateLabel = !isActive ? (
           <ListFilter />
-        ) : currentSortOrder === "asc" ? (
+        ) : order === "asc" ? (
           <ArrowUpNarrowWide className="!h-5 !w-5 text-blue-500" />
-        ) : currentSortOrder === "desc" ? (
-          <ArrowDownWideNarrow className="!h-5 !w-5 text-orange-500" />
         ) : (
-          ""
+          <ArrowDownWideNarrow className="!h-5 !w-5 text-orange-500" />
         );
 
         return (
           <Button
             key={option.key}
             variant={"outline"}
-            className={cn("h-full gap-1 px-2")}
+            className={cn("h-full gap-1 px-2", isActive && "border-primary")}
             onClick={() => onToggle(option.key)}
           >
             {stateLabel && <span>{stateLabel}</span>}

@@ -1,9 +1,11 @@
-import { prisma } from "@/lib/prisma";
 import { DebtorsTable } from "./_components/debtors-table";
-import { Prisma } from "@prisma/client";
-import { DebtItem } from "@/types/types";
 import { SectionCard } from "../_components/section-card";
 import { BadgeDollarSign, HandCoinsIcon, Users } from "lucide-react";
+import { debtorService } from "@/lib/services/debtor.service";
+import { domainToViewDebtor } from "@/lib/mappers";
+import type { DebtorDomainFilters, DebtorStatus } from "@/types/domain/debtor.domain";
+import type { DebtorView } from "@/types/view";
+import { debtService } from "@/lib/services/debt.service";
 
 // Ensure this page is always dynamic and not cached
 export const dynamic = "force-dynamic";
@@ -19,93 +21,41 @@ export default async function DebtorsPage({
   const limit = Number(params.limit) || 10;
   const search = (params.search as string) || "";
   const sortBy = (params.sortBy as string) || "created_at";
-  const sortOrder = (params.sortOrder === "asc" ? "asc" : "desc") as Prisma.SortOrder;
+  const sortOrder = (params.sortOrder === "asc" ? "asc" : "desc") as "asc" | "desc";
   const status = (params.status as string) || "all";
+  const debtLimit = await debtService.debtLimit();
 
-  // Get debt limit from settings
-  const debtLimitSetting = await prisma.settings.findUnique({
-    where: { key: "debt_limit" },
+  const domainStatus: DebtorStatus | undefined =
+    status === "qarzdor"
+      ? "active"
+      : status === "limitdan_oshgan"
+        ? "active"
+        : status === "tolangan"
+          ? "paid_off"
+          : status === "muddati_otgan"
+            ? "overdue"
+            : undefined;
+
+  const filters: DebtorDomainFilters = {
+    search,
+    status: domainStatus,
+    riskStatus: undefined,
+    isOverdue: status === "muddati_otgan" ? true : undefined,
+    minDebt: undefined,
+    maxDebt: undefined,
+    createdBy: undefined,
+  };
+
+  const debtorsFromService = await debtorService.findMany(filters, {
+    page,
+    limit,
+    sortBy,
+    sortOrder,
   });
 
-  const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
-
-  // Build where clause
-  const where: Prisma.DebtorWhereInput = {};
-
-  if (search) {
-    where.OR = [
-      { first_name: { contains: search, mode: "insensitive" } },
-      { last_name: { contains: search, mode: "insensitive" } },
-      { phone_number: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
-  // Status filter
-  if (status === "qarzdor") {
-    where.total_debt = { gt: 0, lte: debtLimit };
-  } else if (status === "limitdan_oshgan") {
-    where.total_debt = { gt: debtLimit };
-  } else if (status === "tolangan") {
-    where.total_debt = { lte: 0 };
-  } else if (status === "muddati_otgan") {
-    where.is_overdue = true;
-  }
-
-  // Get total count
-  const totalCount = await prisma.debtor.count({ where });
-  const totalDebt = await prisma.debtor.aggregate({
-    where,
-    _sum: {
-      total_debt: true,
-    },
-  });
-  const totalPayments = await prisma.payment.aggregate({
-    where: {
-      debtor: where,
-    },
-    _sum: {
-      amount: true,
-    },
-  });
-
-  // Build orderBy
-  const orderBy: Prisma.DebtorOrderByWithRelationInput = {};
-  if (sortBy === "name") {
-    orderBy.first_name = sortOrder;
-  } else if (sortBy === "amount") {
-    orderBy.total_debt = sortOrder;
-  } else {
-    orderBy[sortBy as keyof Prisma.DebtorOrderByWithRelationInput] = sortOrder;
-  }
-
-  // Fetch debtors
-  const debtorsRaw = await prisma.debtor.findMany({
-    where,
-    orderBy,
-    skip: (page - 1) * limit,
-    take: limit,
-    include: {
-      debts: true,
-      payments: true,
-    },
-  });
-
-  // Convert Decimal to number and cast JSON types
-  const debtors = debtorsRaw.map((debtor) => ({
-    ...debtor,
-    total_debt: debtor.total_debt.toNumber(),
-    debts: debtor.debts.map((debt) => ({
-      ...debt,
-      amount: debt.amount.toNumber(),
-      items: debt.items as DebtItem[] | null,
-    })),
-    payments: debtor.payments.map((payment) => ({
-      ...payment,
-      amount: payment.amount.toNumber(),
-    })),
-  }));
-
-  const totalPages = Math.ceil(totalCount / limit);
+  const debtorViews: DebtorView[] = debtorsFromService.data.map((debtor) => domainToViewDebtor(debtor));
+  const totalDebt = await debtorService.debtorsTotalDebt();
+  const totalPayments = await debtorService.debtorsTotalPayments();
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
@@ -117,26 +67,31 @@ export default async function DebtorsPage({
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3 2xl:grid-cols-4">
         <SectionCard
           title="Umumiy qarzdorlar"
-          count={totalCount}
+          count={debtorsFromService.total}
           color="text-indigo-600"
           icon={<Users className="!size-4" />}
         />
         <SectionCard
           title="Ja'mi qarz"
           defaultVisible
-          amount={totalDebt._sum.total_debt?.toNumber()}
+          amount={totalDebt}
           icon={<BadgeDollarSign className="!h-4 !w-4" />}
         />
         <SectionCard
           title="Ja'mi tolovlar"
           defaultVisible
           color="text-green-600"
-          amount={totalPayments._sum.amount?.toNumber()}
+          amount={totalPayments}
           icon={<HandCoinsIcon className="!h-4 !w-4" />}
         />
       </div>
 
-      <DebtorsTable debtors={debtors} totalPages={totalPages} currentPage={page} debtLimit={debtLimit} />
+      <DebtorsTable
+        debtors={debtorViews}
+        totalPages={debtorsFromService.totalPages}
+        currentPage={debtorsFromService.page}
+        debtLimit={debtLimit}
+      />
     </div>
   );
 }

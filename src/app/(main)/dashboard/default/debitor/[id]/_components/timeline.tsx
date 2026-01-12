@@ -40,7 +40,7 @@ export function DebtorTimeline() {
               </div>
               <p className="text-muted-foreground text-sm">{e.subtitle || "—"}</p>
               <p className="text-muted-foreground mt-1 text-xs">
-                {e.created_at.toLocaleString("uz-UZ", {
+                {e.createdAt.toLocaleString("uz-UZ", {
                   year: "numeric",
                   month: "numeric",
                   day: "numeric",

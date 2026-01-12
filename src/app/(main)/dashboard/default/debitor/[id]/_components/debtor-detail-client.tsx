@@ -13,32 +13,7 @@ import { DebtorProvider, useDebtor } from "./context/debtor-context";
 import { DebtorHeader } from "./header";
 import { DebtorTimeline } from "./timeline";
 import { StatsCards } from "./stats-cards";
-
-interface DebtorDetailClientProps {
-  debtor: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    phone_number: string | null;
-    address: string | null;
-    total_debt: number;
-    created_at: Date | string;
-    updated_at: Date | string;
-    debts: Array<{
-      id: number;
-      amount: number;
-      description: string | null;
-      created_at: Date | string;
-    }>;
-    payments: Array<{
-      id: number;
-      amount: number;
-      payment_type: string;
-      note: string | null;
-      created_at: Date | string;
-    }>;
-  };
-}
+import { DebtorDomain } from "@/types/domain";
 
 function DebtorDetailContent() {
   const { debtor, refresh } = useDebtor();
@@ -49,6 +24,10 @@ function DebtorDetailContent() {
     console.log("💚 Dialog success - calling refresh");
     await refresh();
   }, [refresh]);
+
+  if (!debtor) {
+    return <>Qarzdor topilmadi</>;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,22 +43,22 @@ function DebtorDetailContent() {
           <TabsTrigger value="debts">
             Qarzlar tarixi
             <Badge variant="secondary" className="">
-              {debtor.debts.length}
+              {debtor.debts?.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
             To&apos;lovlar tarixi
             <Badge variant="secondary" className="">
-              {debtor.payments.length}
+              {debtor.payments?.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="timeline">Vaqt chizig&apos;i</TabsTrigger>
         </TabsList>
         <TabsContent value="debts" className="mt-4">
-          <DebtHistoryTable debts={debtor.debts} />
+          {debtor.debts && <DebtHistoryTable debts={debtor.debts} />}
         </TabsContent>
         <TabsContent value="payments" className="mt-4">
-          <PaymentHistoryTable payments={debtor.payments} />
+          {debtor.payments && <PaymentHistoryTable payments={debtor.payments} />}
         </TabsContent>
         <TabsContent value="timeline" className="mt-4">
           <DebtorTimeline />
@@ -91,21 +70,21 @@ function DebtorDetailContent() {
         open={debtDialogOpen}
         onOpenChange={setDebtDialogOpen}
         debtorId={debtor.id}
-        debtorName={`${debtor.first_name} ${debtor.last_name}`}
+        debtorName={`${debtor.firstName} ${debtor.lastName}`}
         onSuccess={handleDialogSuccess}
       />
       <AddPaymentDialog
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
         debtorId={debtor.id}
-        debtorName={`${debtor.first_name} ${debtor.last_name}`}
+        debtorName={`${debtor.firstName} ${debtor.lastName}`}
         onSuccess={handleDialogSuccess}
       />
     </div>
   );
 }
 
-export function DebtorDetailClient({ debtor: initialDebtor }: DebtorDetailClientProps) {
+export function DebtorDetailClient({ debtor: initialDebtor }: { debtor: DebtorDomain }) {
   return (
     <DebtorProvider initialDebtor={initialDebtor}>
       <DebtorDetailContent />

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { formatNumber } from "@/lib/format";
 
 const debtSchema = z.object({
   amount: z.string().min(1, "Summani kiriting"),
@@ -39,13 +40,6 @@ export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSucce
       description: "",
     },
   });
-
-  const formatNumber = (value: string) => {
-    // Remove all non-digit characters
-    const numbers = value.replace(/\D/g, "");
-    // Format with thousand separators
-    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
-  };
 
   const onSubmit = async (data: DebtFormValues) => {
     setIsLoading(true);
