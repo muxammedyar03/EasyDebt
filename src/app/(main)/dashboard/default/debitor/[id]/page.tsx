@@ -16,7 +16,7 @@ export default async function DebtorDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const debtor = await debtorService.findById(Number(id));
+  const debtor = await debtorService.findById(Number(id), true);
 
   if (!debtor) {
     notFound();
