@@ -33,6 +33,7 @@ import {
 } from "@/lib/mappers/debtor.mapper";
 import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view";
 import { PaymentDomain } from "@/types/domain";
+import { calculateAverageDaysBetweenDebtAndPayment, calculateCustomerRating } from "@/lib/rating-calculator";
 
 /**
  * Service class for Debtor operations
@@ -301,7 +302,6 @@ export class DebtorService {
   ): Promise<PaginatedCustomerRatingsView> {
     const settings = await this.getSettings();
     const overdueDays = settings.overdueDays;
-    const MIN_PAYMENT_PERCENT = 0.5; // Minimum payment percentage to consider valid (50% of debt amount)
 
     // Get all debts and payments
     const [debtsRaw, paymentsRaw] = await Promise.all([
@@ -336,55 +336,30 @@ export class DebtorService {
 
     debtsByDebtor.forEach((debtorDebts, debtorId) => {
       const debtorPayments = paymentsByDebtor.get(debtorId) || [];
-
-      if (debtorPayments.length === 0) return; // No payments yet
-
       const debtor = debtorDebts[0].debtor;
       const totalDebt = debtor.total_debt.toNumber();
 
-      // For avgDaysBetweenDebtAndPayment, calculate average days from each debt to its first valid payment
-      let totalDays = 0;
-      let validPaymentsCount = 0;
+      // Convert Prisma types to plain objects for utility functions
+      const debtsForCalculation = debtorDebts.map((d) => ({
+        amount: d.amount.toNumber(),
+        createdAt: d.created_at,
+      }));
 
-      // For each debt, find payments that cover at least 30% of it
-      debtorDebts.forEach((debt) => {
-        const debtAmount = debt.amount.toNumber();
-        const minPaymentAmount = debtAmount * MIN_PAYMENT_PERCENT;
+      const paymentsForCalculation = debtorPayments.map((p) => ({
+        amount: p.amount.toNumber(),
+        createdAt: p.created_at,
+      }));
 
-        // Find payments after this debt
-        const eligiblePayments = debtorPayments.filter(
-          (payment) => payment.created_at >= debt.created_at && payment.amount.toNumber() >= minPaymentAmount,
-        );
+      const totalDebtAmount = debtorDebts.reduce((sum, d) => sum + d.amount.toNumber(), 0);
 
-        if (eligiblePayments.length > 0) {
-          const firstValidPayment = eligiblePayments[0];
-          const days = Math.floor(
-            (firstValidPayment.created_at.getTime() - debt.created_at.getTime()) / (1000 * 60 * 60 * 24),
-          );
+      // Use shared utility functions for consistent calculations
+      const avgDaysBetweenDebtAndPayment = calculateAverageDaysBetweenDebtAndPayment(
+        debtsForCalculation,
+        paymentsForCalculation,
+        totalDebtAmount,
+      );
 
-          totalDays += days;
-          validPaymentsCount++;
-        }
-      });
-
-      if (validPaymentsCount === 0) return; // No valid debt-payment pairs
-
-      const avgDays = totalDays / validPaymentsCount;
-
-      // If debtor has no debt, avgDaysBetweenDebtAndPayment should be 0
-      const avgDaysBetweenDebtAndPayment = totalDebt > 0 ? avgDays : 0;
-
-      // Determine rating - only calculate overdue days for debtors with debt
-      let rating: "high" | "medium" | "critical";
-      if (avgDays <= overdueDays - 15) {
-        rating = "high";
-      } else if (avgDays > overdueDays - 15 && avgDays <= overdueDays && totalDebt > 0) {
-        rating = "medium";
-      } else if (avgDays > overdueDays && totalDebt > 0) {
-        rating = "critical";
-      } else {
-        rating = "high";
-      }
+      const rating = calculateCustomerRating(avgDaysBetweenDebtAndPayment, totalDebt, overdueDays);
 
       customerRatings.set(debtorId, {
         debtorId,
@@ -399,7 +374,7 @@ export class DebtorService {
           createdAt: p.created_at,
           createdBy: p.created_by,
         })),
-        validPayments: validPaymentsCount,
+        validPayments: debtorPayments.length,
         avgDaysBetweenPayments: avgDaysBetweenDebtAndPayment,
         avgDaysBetweenDebtAndPayment: avgDaysBetweenDebtAndPayment,
         rating,

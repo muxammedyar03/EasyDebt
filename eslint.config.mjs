@@ -23,6 +23,8 @@ export default [
       "*.config.ts",
       "*.mjs",
       "next-env.d.ts",
+      "jest.config.js",
+      "jest.setup.js",
     ],
     languageOptions: {
       globals: globals.browser,

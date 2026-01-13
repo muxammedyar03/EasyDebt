@@ -1,6 +1,7 @@
 "use client";
 
 import { DebtorDomain } from "@/types/domain";
+import { calculatePaymentRating, type PaymentRating } from "@/lib/rating-calculator";
 import * as React from "react";
 
 interface TimelineEvent {
@@ -16,12 +17,6 @@ interface DebtorStats {
   totalDebtAdded: number;
   totalPaid: number;
   remaining: number;
-}
-
-interface PaymentRating {
-  score: number;
-  label: "Yomon" | "O'rtacha" | "Yaxshi" | "A'lo";
-  color: string;
 }
 
 interface DebtorContextValue {
@@ -63,53 +58,8 @@ export function DebtorProvider({
   }, [debts, payments, debtor.totalDebt]);
 
   const rating = React.useMemo(() => {
-    const defaultRating = { score: 0, label: "Yaxshi" as const, color: "text-orange-600" };
-
-    if (debts.length === 0 || payments.length === 0) {
-      return defaultRating;
-    }
-
-    const MIN_PAYMENT_PERCENT = 0.5;
-    let totalDays = 0;
-    let validPaymentsCount = 0;
-
-    debts.forEach((debt) => {
-      const minPaymentAmount = debt.amount * MIN_PAYMENT_PERCENT;
-      const eligiblePayments = payments.filter(
-        (payment) => payment.createdAt >= debt.createdAt && payment.amount >= minPaymentAmount,
-      );
-
-      if (eligiblePayments.length > 0) {
-        const firstValidPayment = eligiblePayments[0];
-        const days = Math.floor(
-          (firstValidPayment.createdAt.getTime() - debt.createdAt.getTime()) / (1000 * 60 * 60 * 24),
-        );
-        totalDays += days;
-        validPaymentsCount++;
-      }
-    });
-
-    if (validPaymentsCount === 0) {
-      return defaultRating;
-    }
-
-    const avgDays = totalDays / validPaymentsCount;
-    let label: PaymentRating["label"] = "Yomon";
-    let color = "text-red-600";
-
-    if (avgDays <= 15) {
-      label = "A'lo";
-      color = "text-green-600";
-    } else if (avgDays <= 30) {
-      label = "Yaxshi";
-      color = "text-emerald-600";
-    } else if (avgDays <= 45) {
-      label = "O'rtacha";
-      color = "text-yellow-600";
-    }
-
-    return { score: Math.round(avgDays), label, color };
-  }, [debts, payments]);
+    return calculatePaymentRating(debts, payments, stats.totalDebtAdded);
+  }, [debts, payments, stats.totalDebtAdded]);
 
   const firstDebtDate = React.useMemo(() => {
     if (debts.length === 0) {

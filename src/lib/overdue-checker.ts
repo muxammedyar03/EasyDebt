@@ -1,43 +1,87 @@
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
+import {
+  calculateDebtorOverdueStatus,
+  parseOverdueSettings,
+  getDefaultOverdueSettings,
+  type DebtWithPayments,
+} from "@/lib/overdue-calculator";
+
+/**
+ * Load overdue settings from database
+ * Returns parsed settings or defaults if not found
+ */
+async function loadOverdueSettings() {
+  const settings = await prisma.settings.findMany({
+    where: {
+      key: {
+        in: ["good_until_days", "medium_until_days", "min_paid_percent"],
+      },
+    },
+  });
+
+  const settingsRecord = settings.reduce(
+    (acc, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
+  return Object.keys(settingsRecord).length > 0 ? parseOverdueSettings(settingsRecord) : getDefaultOverdueSettings();
+}
 
 export async function checkOverdueDebtors() {
   try {
-    // Load overdue days from settings (fallback to 45)
-    const overdueDaysSetting = await prisma.settings.findUnique({ where: { key: "overdue_days" } });
-    const OVERDUE_DAYS = (() => {
-      const n = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : NaN;
-      return Number.isFinite(n) && n > 0 ? n : 45;
-    })();
+    const settings = await loadOverdueSettings();
+    console.log("[overdue-checker] using settings:", settings);
 
-    const overdueDate = new Date();
-    overdueDate.setDate(overdueDate.getDate() - OVERDUE_DAYS);
-    console.log("[overdue-checker] overdueDate:", overdueDate.toISOString());
-
-    // Overdue logic:
-    // - If there has been any payment: use last_payment_date and check if it's older than overdueDate
-    // - If there has never been a payment: use the first debt creation date (NOT debtor.created_at)
-    //   so that adding more debt does not reset the timer.
-    const overdueDebtors = await prisma.debtor.findMany({
+    // Get all debtors with debt and their payment history
+    const debtorsWithDebt = await prisma.debtor.findMany({
       where: {
         total_debt: { gt: 0 },
-        is_overdue: false,
-        OR: [
-          // Has payments, and the last payment is older than the threshold
-          { last_payment_date: { lt: overdueDate } },
-          // Has never paid (last_payment_date is null) and the first debt was created before the threshold
-          {
-            AND: [{ last_payment_date: null }, { debts: { some: { created_at: { lt: overdueDate } } } }],
-          },
-        ],
       },
       include: {
+        debts: true,
         creator: true,
       },
     });
 
+    // Get all payments separately (since Debt doesn't have direct payments relation in Prisma)
+    const allPayments = await prisma.payment.findMany({
+      select: { debtor_id: true, amount: true, created_at: true },
+    });
+
+    const overdueDebtors = [];
+
+    for (const debtor of debtorsWithDebt) {
+      // Get payments for this debtor
+      const debtorPayments = allPayments.filter((p) => p.debtor_id === debtor.id);
+
+      // Convert Prisma debts to calculation format
+      const debtsForCalculation: DebtWithPayments[] = debtor.debts.map((debt) => ({
+        amount: debt.amount.toNumber(),
+        createdAt: debt.created_at,
+        payments: debtorPayments.map((p) => ({
+          amount: p.amount.toNumber(),
+          createdAt: p.created_at,
+        })),
+      }));
+
+      // Calculate overdue status
+      const overdueStatus = calculateDebtorOverdueStatus(debtsForCalculation, settings);
+
+      // Check if status changed (was not overdue, now is)
+      if (overdueStatus.isOverdue && !debtor.is_overdue) {
+        overdueDebtors.push({
+          debtor,
+          status: overdueStatus,
+        });
+      }
+    }
+
     // Mark as overdue and create notifications
-    for (const debtor of overdueDebtors) {
+    for (const { debtor, status } of overdueDebtors) {
       try {
         await prisma.debtor.update({
           where: { id: debtor.id },
@@ -51,7 +95,7 @@ export async function checkOverdueDebtors() {
           debtorId: debtor.id,
           type: "OVERDUE_PAYMENT",
           title: "Muddati o'tgan to'lov",
-          message: `${debtor.first_name} ${debtor.last_name} ${OVERDUE_DAYS} kundan beri to'lov qilmagan. Qarz: ${debtor.total_debt.toNumber()} so'm`,
+          message: `${debtor.first_name} ${debtor.last_name} ${status.overdueDays} kundan beri to'lov qilmagan. Qarz: ${debtor.total_debt.toNumber()} so'm`,
         });
       } catch (e) {
         console.error("[overdue-checker] failed updating debtor", debtor.id, e);
@@ -90,47 +134,60 @@ export async function getOverdueDebtors() {
 }
 
 export async function reEvaluateOverdueDebtors() {
-  const overdueDaysSetting = await prisma.settings.findUnique({ where: { key: "overdue_days" } });
-  const OVERDUE_DAYS = (() => {
-    const n = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : 45;
-  })();
+  try {
+    const settings = await loadOverdueSettings();
+    console.log("[reEvaluateOverdueDebtors] using settings:", settings);
 
-  const overdueDate = new Date();
-  overdueDate.setDate(overdueDate.getDate() - OVERDUE_DAYS);
+    const debtors = await prisma.debtor.findMany({
+      where: { total_debt: { gt: 0 } },
+      include: {
+        debts: true,
+        creator: true,
+      },
+    });
 
-  const debtors = await prisma.debtor.findMany({
-    where: { total_debt: { gt: 0 } },
-    include: { debts: { select: { created_at: true } }, creator: true },
-  });
+    // Get all payments separately
+    const allPayments = await prisma.payment.findMany({
+      select: { debtor_id: true, amount: true, created_at: true },
+    });
 
-  for (const d of debtors) {
-    try {
-      const lastPayment = d.last_payment_date;
-      const firstDebtDate = d.debts.length
-        ? d.debts.reduce((min, b) => (b.created_at < min ? b.created_at : min), d.debts[0].created_at)
-        : null;
+    for (const d of debtors) {
+      try {
+        // Get payments for this debtor
+        const debtorPayments = allPayments.filter((p) => p.debtor_id === d.id);
 
-      const shouldBeOverdue = lastPayment
-        ? lastPayment < overdueDate
-        : firstDebtDate
-          ? firstDebtDate < overdueDate
-          : false;
+        // Convert Prisma debts to calculation format
+        const debtsForCalculation: DebtWithPayments[] = d.debts.map((debt) => ({
+          amount: debt.amount.toNumber(),
+          createdAt: debt.created_at,
+          payments: debtorPayments.map((p) => ({
+            amount: p.amount.toNumber(),
+            createdAt: p.created_at,
+          })),
+        }));
 
-      if (shouldBeOverdue && !d.is_overdue) {
-        await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: true } });
-        await createNotification({
-          userId: d.created_by,
-          debtorId: d.id,
-          type: "OVERDUE_PAYMENT",
-          title: "Muddati o'tgan to'lov",
-          message: `${d.first_name} ${d.last_name} ${OVERDUE_DAYS} kundan beri to'lov qilmagan. Qarz: ${d.total_debt.toNumber()} so'm`,
-        });
-      } else if (!shouldBeOverdue && d.is_overdue) {
-        await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: false } });
+        // Calculate overdue status
+        const overdueStatus = calculateDebtorOverdueStatus(debtsForCalculation, settings);
+
+        // Mark as overdue if should be but isn't
+        if (overdueStatus.isOverdue && !d.is_overdue) {
+          await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: true } });
+          await createNotification({
+            userId: d.created_by,
+            debtorId: d.id,
+            type: "OVERDUE_PAYMENT",
+            title: "Muddati o'tgan to'lov",
+            message: `${d.first_name} ${d.last_name} ${overdueStatus.overdueDays} kundan beri to'lov qilmagan. Qarz: ${d.total_debt.toNumber()} so'm`,
+          });
+        } else if (!overdueStatus.isOverdue && d.is_overdue) {
+          // Mark as not overdue if status changed
+          await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: false } });
+        }
+      } catch (e) {
+        console.error("[reEvaluateOverdueDebtors] failed for debtor", d.id, e);
       }
-    } catch (e) {
-      console.error("[reEvaluateOverdueDebtors] failed for debtor", d.id, e);
     }
+  } catch (error) {
+    console.error("Failed to re-evaluate overdue debtors:", error);
   }
 }
