@@ -28,20 +28,20 @@ export default async function DebtorsPage({
   const domainStatus: DebtorStatus | undefined =
     status === "qarzdor"
       ? "active"
-      : status === "limitdan_oshgan"
-        ? "active"
-        : status === "tolangan"
-          ? "paid_off"
-          : status === "muddati_otgan"
-            ? "overdue"
+      : status === "tolangan"
+        ? "paid_off"
+        : status === "muddati_otgan"
+          ? "overdue"
+          : status === "limitdan_oshgan"
+            ? "active"
             : undefined;
 
   const filters: DebtorDomainFilters = {
     search,
     status: domainStatus,
     riskStatus: undefined,
-    isOverdue: status === "muddati_otgan" ? true : undefined,
-    minDebt: undefined,
+    isOverdue: undefined,
+    minDebt: status === "limitdan_oshgan" ? debtLimit + 1 : undefined,
     maxDebt: undefined,
     createdBy: undefined,
   };

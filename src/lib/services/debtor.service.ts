@@ -116,7 +116,7 @@ export class DebtorService {
 
     return {
       data: domainDebtors,
-      total,
+      total: total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
@@ -509,16 +509,6 @@ export class DebtorService {
       where.is_overdue = filters.isOverdue;
     }
 
-    if (filters?.minDebt !== undefined || filters?.maxDebt !== undefined) {
-      where.total_debt = {};
-      if (filters.minDebt !== undefined) {
-        where.total_debt.gte = filters.minDebt;
-      }
-      if (filters.maxDebt !== undefined) {
-        where.total_debt.lte = filters.maxDebt;
-      }
-    }
-
     if (filters?.createdBy) {
       where.created_by = filters.createdBy;
     }
@@ -531,11 +521,28 @@ export class DebtorService {
           break;
         case "overdue":
           where.is_overdue = true;
+          where.total_debt = { gt: 0 };
           break;
         case "active":
           where.total_debt = { gt: 0 };
           where.is_overdue = false;
           break;
+      }
+    }
+
+    // Apply minDebt/maxDebt filters (merge with existing total_debt conditions)
+    if (filters?.minDebt !== undefined || filters?.maxDebt !== undefined) {
+      if (!where.total_debt) {
+        where.total_debt = {};
+      }
+      if (typeof where.total_debt === "object" && !Array.isArray(where.total_debt)) {
+        const debtFilter = where.total_debt as Prisma.DecimalFilter<"Debtor">;
+        if (filters.minDebt !== undefined) {
+          debtFilter.gte = filters.minDebt;
+        }
+        if (filters.maxDebt !== undefined) {
+          debtFilter.lte = filters.maxDebt;
+        }
       }
     }
 

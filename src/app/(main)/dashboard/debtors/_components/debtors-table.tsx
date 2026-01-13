@@ -27,6 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { EditDebtorDialog } from "../../default/_components/edit-debtor-dialog";
 import { ExportImportDialog } from "./export-import-dialog";
 import { DebtorView } from "@/types/view";
+import { formatCurrencyUzs } from "@/lib/format";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -242,10 +243,6 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
-  };
-
   const handleExport = async () => {
     try {
       toast.loading("Excel fayl tayyorlanmoqda...");
@@ -441,7 +438,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                   Ism Familiya
                 </TableHead>
                 <TableHead>Telefon</TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("amount")}>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("debt")}>
                   Qarz summasi
                 </TableHead>
                 <TableHead>Status</TableHead>
@@ -476,7 +473,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                         {debtor.firstName} {debtor.lastName}
                       </TableCell>
                       <TableCell>{debtor.phoneNumber || "-"}</TableCell>
-                      <TableCell className={status.color}>{formatCurrency(debtor.totalDebt)}</TableCell>
+                      <TableCell className={status.color}>{formatCurrencyUzs(debtor.totalDebt)}</TableCell>
                       <TableCell className="flex items-center gap-2">
                         <Badge
                           variant="default"
