@@ -91,11 +91,18 @@ export function DebtorProvider({
       type: "PAYMENT" as const,
       amount: payment.amount,
       title: `To'lov: -${payment.amount.toLocaleString()} so'm`,
-      subtitle: payment.note ?? payment.paymentType,
+      subtitle:
+        (payment.note ?? payment.paymentType == "CASH")
+          ? "Naqd"
+          : payment.paymentType == "CLICK"
+            ? "Click"
+            : payment.paymentType == "CARD"
+              ? "Karta"
+              : "Unknown",
       createdAt: new Date(payment.createdAt),
     }));
 
-    return [...debtEvents, ...paymentEvents].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    return [...debtEvents, ...paymentEvents].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [debts, payments]);
 
   const debtorIdRef = React.useRef(initialDebtor.id);

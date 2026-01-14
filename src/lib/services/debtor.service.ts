@@ -66,8 +66,8 @@ export class DebtorService {
     const debtor = await prisma.debtor.findUnique({
       where: { id },
       include: {
-        debts: includeRelations,
-        payments: includeRelations,
+        debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+        payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
         creator: includeRelations,
       },
     });

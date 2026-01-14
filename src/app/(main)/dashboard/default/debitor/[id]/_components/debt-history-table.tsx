@@ -38,15 +38,17 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>№</TableHead>
               <TableHead>Sana</TableHead>
               <TableHead>Miqdor</TableHead>
               <TableHead>Tavsif</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentDebts.map((debt) => (
+            {currentDebts.map((debt, index) => (
               <TableRow key={debt.id}>
-                <TableCell>
+                <TableCell width={50}>{index + 1}</TableCell>
+                <TableCell width={400}>
                   {new Date(debt.createdAt).toLocaleDateString("uz-UZ", {
                     year: "numeric",
                     month: "numeric",
@@ -55,8 +57,10 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
                     minute: "2-digit",
                   })}
                 </TableCell>
-                <TableCell>
-                  <Badge variant="destructive">+{debt.amount.toLocaleString()} so&apos;m</Badge>
+                <TableCell width={500}>
+                  <Badge className="h-6 border-red-600/20 bg-red-500/10 px-3 text-xs text-red-700 dark:text-red-500">
+                    +{debt.amount.toLocaleString()} so&apos;m
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{debt.description || "—"}</TableCell>
               </TableRow>

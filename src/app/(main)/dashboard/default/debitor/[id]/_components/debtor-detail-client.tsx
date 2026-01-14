@@ -42,13 +42,16 @@ function DebtorDetailContent() {
         <TabsList className="grid h-10 w-full grid-cols-3 md:w-1/2 lg:w-1/2">
           <TabsTrigger value="debts">
             Qarzlar tarixi
-            <Badge variant="secondary" className="">
+            <Badge variant="secondary" className="border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-500">
               {debtor.debts?.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
             To&apos;lovlar tarixi
-            <Badge variant="secondary" className="">
+            <Badge
+              variant="secondary"
+              className="border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-500"
+            >
               {debtor.payments?.length}
             </Badge>
           </TabsTrigger>

@@ -325,59 +325,60 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 className="h-12 w-full pl-8"
               />
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isMobile ? (
-              <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-                <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Barchasi</SelectItem>
-                  <SelectItem value="qarzdor">Qarzdor</SelectItem>
-                  <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
-                  <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
-                  <SelectItem value="tolangan">To&apos;langan</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-                <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
-                  <TabsTrigger value="all">Barchasi</TabsTrigger>
-                  <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
-                  <TabsTrigger value="muddati_otgan">Muddati o&apos;tgan</TabsTrigger>
-                  <TabsTrigger value="limitdan_oshgan" className="text-xs sm:text-sm">
-                    Limitdan oshgan
-                  </TabsTrigger>
-                  <TabsTrigger value="tolangan">To&apos;langan</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-            {selectedIds.length > 0 && (
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="hidden md:flex">
-                <Trash2 className="mr-2 h-4 w-4" />
-                O&apos;chirish ({selectedIds.length})
+            <div className="flex items-center gap-2">
+              {selectedIds.length > 0 && (
+                <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="hidden md:flex">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  O&apos;chirish ({selectedIds.length})
+                </Button>
+              )}
+              <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setImportDialog(true)}>
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Import</span>
               </Button>
-            )}
-            <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setImportDialog(true)}>
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">Import</span>
-            </Button>
-            <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setExportDialog(true)}>
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
-              size="sm"
-              onClick={handleExport}
-            >
-              <FileDown className="h-4 w-4" />
-              <span className="hidden sm:inline">Excel</span>
-            </Button>
+              <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setExportDialog(true)}>
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
+                size="sm"
+                onClick={handleExport}
+              >
+                <FileDown className="h-4 w-4" />
+                <span className="hidden sm:inline">Excel</span>
+              </Button>
+            </div>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {isMobile ? (
+            <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+              <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Barchasi</SelectItem>
+                <SelectItem value="qarzdor">Qarzdor</SelectItem>
+                <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
+                <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
+                <SelectItem value="tolangan">To&apos;langan</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+              <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
+                <TabsTrigger value="all">Barchasi</TabsTrigger>
+                <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
+                <TabsTrigger value="muddati_otgan">Muddati o&apos;tgan</TabsTrigger>
+                <TabsTrigger value="limitdan_oshgan" className="text-xs sm:text-sm">
+                  Limitdan oshgan
+                </TabsTrigger>
+                <TabsTrigger value="tolangan">To&apos;langan</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </div>
 
         {/* Pagination (Top - Mobile) */}

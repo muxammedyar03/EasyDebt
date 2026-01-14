@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PaymentDomain } from "@/types/domain";
+import { getPaymentTypeClass } from "@/lib/utils";
 
 interface PaymentHistoryTableProps {
   payments: PaymentDomain[];
@@ -44,7 +45,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>N</TableHead>
+              <TableHead>№</TableHead>
               <TableHead>Sana</TableHead>
               <TableHead>Miqdor</TableHead>
               <TableHead>To&apos;lov turi</TableHead>
@@ -54,8 +55,8 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
           <TableBody>
             {currentPayments.map((payment, index: number) => (
               <TableRow key={payment.id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>
+                <TableCell width={50}>{index + 1}</TableCell>
+                <TableCell width={300}>
                   {new Date(payment.createdAt).toLocaleDateString("uz-UZ", {
                     year: "numeric",
                     month: "numeric",
@@ -64,13 +65,13 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
                     minute: "2-digit",
                   })}
                 </TableCell>
-                <TableCell>
-                  <Badge variant="default" className="bg-green-600">
-                    -{payment.amount.toLocaleString()} so&apos;m
-                  </Badge>
+                <TableCell width={300}>
+                  <p className="font-bold text-green-600">-{payment.amount.toLocaleString()} so&apos;m</p>
                 </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{paymentTypeLabels[payment.paymentType] || payment.paymentType}</Badge>
+                <TableCell width={300}>
+                  <Badge variant="default" className={`h-6 px-3 text-xs ${getPaymentTypeClass(payment.paymentType)}`}>
+                    {payment.paymentType}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{payment.note || "—"}</TableCell>
               </TableRow>

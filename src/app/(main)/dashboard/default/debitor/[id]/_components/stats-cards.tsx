@@ -4,7 +4,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDebtor } from "./context/debtor-context";
 import { BadgeDollarSign, Banknote, Calendar1Icon, ChartNoAxesCombined, FileText, HandCoinsIcon } from "lucide-react";
-import { formatDateUz } from "@/lib/format";
+import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 
 export function StatsCards() {
   const { debtor, stats, rating, daysSinceFirstDebt, firstDebtDate } = useDebtor();
@@ -47,7 +47,7 @@ export function StatsCards() {
           <BadgeDollarSign className="h-5 w-5 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.totalDebtAdded.toLocaleString()} so&apos;m</div>
+          <div className="text-2xl font-bold">{formatCurrencyUzs(stats.totalDebtAdded)}</div>
         </CardContent>
       </Card>
       <Card className="gap-1 py-4 xl:gap-2">
@@ -56,7 +56,7 @@ export function StatsCards() {
           <HandCoinsIcon className="h-5 w-5 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{stats.totalPaid.toLocaleString()} so&apos;m</div>
+          <div className="text-2xl font-bold text-green-600">{formatCurrencyUzs(stats.totalPaid)}</div>
         </CardContent>
       </Card>
       <Card className="gap-1 py-4 xl:gap-2">
@@ -65,7 +65,7 @@ export function StatsCards() {
           <Banknote className="h-6 w-6 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{debtor.totalDebt.toLocaleString()} so&apos;m</div>
+          <div className="text-2xl font-bold text-red-600">{formatCurrencyUzs(stats.remaining)}</div>
         </CardContent>
       </Card>
       <Card className="col-span-full gap-1 py-4 xl:col-span-1">

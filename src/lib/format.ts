@@ -75,3 +75,11 @@ export function formatDateUz(date: Date): string {
 export function formatCurrencyUzs(amount: number) {
   return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
 }
+
+export function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("uz-UZ", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
