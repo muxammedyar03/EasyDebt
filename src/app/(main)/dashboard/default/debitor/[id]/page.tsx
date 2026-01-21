@@ -17,10 +17,13 @@ export default async function DebtorDetailPage({ params }: PageProps) {
   }
 
   const debtor = await debtorService.findById(Number(id), true);
+  const overdueDays = await debtorService.getOverdueDays();
 
   if (!debtor) {
     notFound();
   }
 
-  return <DebtorDetailClient debtor={debtor} />;
+  // console.log({ debtor, debts: debtor.debts, payments: debtor.payments });
+
+  return <DebtorDetailClient debtor={debtor} overdueDays={overdueDays} />;
 }

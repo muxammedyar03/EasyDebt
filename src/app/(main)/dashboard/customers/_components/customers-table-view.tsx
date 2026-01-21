@@ -80,13 +80,13 @@ export function CustomersTableDumb({
             currentSortField={currentSortField}
             currentSortOrder={currentSortOrder}
             onToggle={onSortToggle}
-            className="h-12 flex-1"
+            className="h-12 pr-3 xl:flex-1"
           />
         </div>
 
         {/* Tabs */}
         {!isMobile ? (
-          <Tabs value={currentRating} onValueChange={onRatingChange} className="w-full lg:w-1/2">
+          <Tabs value={currentRating} onValueChange={onRatingChange} className="w-full xl:w-1/2">
             <TabsList className="grid h-12 w-full grid-cols-4">
               <TabsTrigger value="all">
                 Barchasi

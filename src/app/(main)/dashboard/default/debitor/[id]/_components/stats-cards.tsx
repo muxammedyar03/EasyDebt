@@ -47,7 +47,7 @@ export function StatsCards() {
           <BadgeDollarSign className="h-5 w-5 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrencyUzs(stats.totalDebtAdded)}</div>
+          <div className="text-2xl font-bold">{formatCurrencyUzs(stats.totalDebtAdded || 0)}</div>
         </CardContent>
       </Card>
       <Card className="gap-1 py-4 xl:gap-2">

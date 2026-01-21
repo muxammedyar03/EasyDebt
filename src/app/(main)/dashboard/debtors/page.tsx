@@ -30,17 +30,15 @@ export default async function DebtorsPage({
       ? "active"
       : status === "tolangan"
         ? "paid_off"
-        : status === "muddati_otgan"
-          ? "overdue"
-          : status === "limitdan_oshgan"
-            ? "active"
-            : undefined;
+        : status === "limitdan_oshgan"
+          ? undefined // Don't set status for limitdan_oshgan, we filter by minDebt instead
+          : undefined;
 
   const filters: DebtorDomainFilters = {
     search,
     status: domainStatus,
     riskStatus: undefined,
-    isOverdue: undefined,
+    isOverdue: status === "muddati_otgan" ? true : undefined,
     minDebt: status === "limitdan_oshgan" ? debtLimit + 1 : undefined,
     maxDebt: undefined,
     createdBy: undefined,
@@ -56,6 +54,11 @@ export default async function DebtorsPage({
   const debtorViews: DebtorView[] = debtorsFromService.data.map((debtor) => domainToViewDebtor(debtor));
   const totalDebt = await debtorService.debtorsTotalDebt();
   const totalPayments = await debtorService.debtorsTotalPayments();
+
+  console.log({
+    filters,
+    debtorViews,
+  });
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">

@@ -41,13 +41,13 @@ function DebtorDetailContent() {
       <Tabs defaultValue="debts" className="w-full">
         <TabsList className="grid h-10 w-full grid-cols-3 md:w-1/2 lg:w-1/2">
           <TabsTrigger value="debts">
-            Qarzlar tarixi
+            Qarzlar
             <Badge variant="secondary" className="border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-500">
               {debtor.debts?.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
-            To&apos;lovlar tarixi
+            To&apos;lovlar
             <Badge
               variant="secondary"
               className="border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-500"
@@ -87,9 +87,15 @@ function DebtorDetailContent() {
   );
 }
 
-export function DebtorDetailClient({ debtor: initialDebtor }: { debtor: DebtorDomain }) {
+export function DebtorDetailClient({
+  debtor: initialDebtor,
+  overdueDays,
+}: {
+  debtor: DebtorDomain;
+  overdueDays: number;
+}) {
   return (
-    <DebtorProvider initialDebtor={initialDebtor}>
+    <DebtorProvider initialDebtor={initialDebtor} overdueDays={overdueDays}>
       <DebtorDetailContent />
     </DebtorProvider>
   );

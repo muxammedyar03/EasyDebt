@@ -49,7 +49,16 @@ export function formatCurrency(
   return new Intl.NumberFormat(locale, formatOptions).format(amount);
 }
 
-export function formatDateUz(date: Date): string {
+export function formatDateUz(dateInput: Date | string, withTime: boolean = false): string {
+  // Convert string to Date if needed
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date:", dateInput);
+    return "--/--/----";
+  }
+
   const oylar = [
     "yanvar",
     "fevral",
@@ -69,11 +78,26 @@ export function formatDateUz(date: Date): string {
   const oy = oylar[date.getMonth()];
   const yil = date.getFullYear();
 
-  return `${kun}-${oy}/${yil}`;
+  return `${kun}-${oy}/${yil}${
+    withTime
+      ? " | " +
+        date.toLocaleTimeString("uz-UZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : ""
+  }`;
 }
 
 export function formatCurrencyUzs(amount: number) {
-  return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
+  // Use a consistent number format that works on both server and client
+  return (
+    new Intl.NumberFormat("uz-UZ", {
+      useGrouping: true,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + " so'm"
+  );
 }
 
 export function formatDate(dateStr: string) {

@@ -57,6 +57,11 @@ export class DebtorService {
     };
   }
 
+  public async getOverdueDays(): Promise<number> {
+    const settings = await this.getSettings();
+    return settings.overdueDays;
+  }
+
   /**
    * Find debtor by ID (returns Domain type)
    */
@@ -86,16 +91,79 @@ export class DebtorService {
   ): Promise<PaginatedResult<DebtorDomain>> {
     const settings = await this.getSettings();
 
-    // Build Prisma where clause from domain filters
-    const where = this.buildWhereClause(filters);
+    // Special handling for isOverdue filter - need to compute it runtime
+    const isOverdueFilter = filters?.isOverdue;
+    const filtersWithoutOverdue = { ...filters, isOverdue: undefined };
+
+    // Build Prisma where clause from domain filters (without isOverdue)
+    const where = this.buildWhereClause(filtersWithoutOverdue);
 
     // Build orderBy
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
 
-    // Get total count
+    // Import calculateDebtorOverdueStatus for accurate overdue calculation
+    const { calculateDebtorOverdueStatus } = await import("@/lib/overdue-calculator");
+
+    // If isOverdue filter is set, we need to fetch ALL matching debtors and filter in memory
+    if (isOverdueFilter !== undefined) {
+      const allDebtors = await prisma.debtor.findMany({
+        where,
+        orderBy,
+        include: {
+          debts: true,
+          payments: true,
+          creator: true,
+        },
+      });
+
+      // Convert to domain types and calculate overdue status for all debtors
+      const domainDebtors = allDebtors
+        .map((d) => {
+          const domainDebtor = prismaToDomainDebtor(d, settings);
+
+          // Calculate isOverdue using the accurate function
+          const debtsWithPayments = d.debts.map((debt) => ({
+            amount: debt.amount.toNumber(),
+            createdAt: debt.created_at,
+            payments: d.payments
+              .filter((p) => p.created_at >= debt.created_at)
+              .map((p) => ({
+                amount: p.amount.toNumber(),
+                createdAt: p.created_at,
+              })),
+          }));
+
+          const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
+            goodUntilDays: settings.overdueDays - 15,
+            mediumUntilDays: settings.overdueDays,
+            minPaidPercent: 0.5,
+          });
+
+          return {
+            ...domainDebtor,
+            isOverdue: overdueStatus.isOverdue,
+          };
+        })
+        .filter((d) => d.isOverdue === isOverdueFilter);
+
+      // Apply pagination manually
+      const page = pagination?.page ?? 1;
+      const limit = pagination?.limit ?? 10;
+      const skip = (page - 1) * limit;
+      const paginatedData = domainDebtors.slice(skip, skip + limit);
+
+      return {
+        data: paginatedData,
+        total: domainDebtors.length,
+        page,
+        limit,
+        totalPages: Math.ceil(domainDebtors.length / limit),
+      };
+    }
+
+    // Normal flow without isOverdue filter - but still calculate overdue status correctly
     const total = await prisma.debtor.count({ where });
 
-    // Get paginated results
     const page = pagination?.page ?? 1;
     const limit = pagination?.limit ?? 10;
     const skip = (page - 1) * limit;
@@ -112,8 +180,33 @@ export class DebtorService {
       },
     });
 
-    // Convert to domain types
-    const domainDebtors = debtors.map((d) => prismaToDomainDebtor(d, settings));
+    // Convert to domain types and calculate overdue status for all debtors
+    const domainDebtors = debtors.map((d) => {
+      const domainDebtor = prismaToDomainDebtor(d, settings);
+
+      // Calculate isOverdue using the accurate function
+      const debtsWithPayments = d.debts.map((debt) => ({
+        amount: debt.amount.toNumber(),
+        createdAt: debt.created_at,
+        payments: d.payments
+          .filter((p) => p.created_at >= debt.created_at)
+          .map((p) => ({
+            amount: p.amount.toNumber(),
+            createdAt: p.created_at,
+          })),
+      }));
+
+      const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
+        goodUntilDays: settings.overdueDays - 15,
+        mediumUntilDays: settings.overdueDays,
+        minPaidPercent: 0.5,
+      });
+
+      return {
+        ...domainDebtor,
+        isOverdue: overdueStatus.isOverdue,
+      };
+    });
 
     return {
       data: domainDebtors,

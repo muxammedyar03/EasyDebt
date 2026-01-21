@@ -40,9 +40,11 @@ export function useDebtor() {
 
 export function DebtorProvider({
   initialDebtor,
+  overdueDays,
   children,
 }: {
   initialDebtor: DebtorDomain;
+  overdueDays: number;
   children: React.ReactNode;
 }) {
   const [debtor, setDebtor] = React.useState<DebtorDomain>(initialDebtor);
@@ -58,8 +60,8 @@ export function DebtorProvider({
   }, [debts, payments, debtor.totalDebt]);
 
   const rating = React.useMemo(() => {
-    return calculatePaymentRating(debts, payments, stats.totalDebtAdded);
-  }, [debts, payments, stats.totalDebtAdded]);
+    return calculatePaymentRating(debts, payments, overdueDays, stats.remaining);
+  }, [debts, payments, stats.remaining, overdueDays]);
 
   const firstDebtDate = React.useMemo(() => {
     if (debts.length === 0) {
@@ -69,7 +71,7 @@ export function DebtorProvider({
   }, [debts]);
 
   const daysSinceFirstDebt = React.useMemo(() => {
-    if (debts.length === 0) {
+    if (debts.length <= 0) {
       return 0;
     }
     const days = Math.floor((Date.now() - firstDebtDate.getTime()) / (1000 * 60 * 60 * 24));

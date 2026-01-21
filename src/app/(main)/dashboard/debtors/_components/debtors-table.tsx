@@ -27,7 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { EditDebtorDialog } from "../../default/_components/edit-debtor-dialog";
 import { ExportImportDialog } from "./export-import-dialog";
 import { DebtorView } from "@/types/view";
-import { formatCurrencyUzs } from "@/lib/format";
+import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -482,7 +482,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                         ></Badge>
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
-                      <TableCell>{new Date(debtor.createdAt).toLocaleDateString("uz-UZ")}</TableCell>
+                      <TableCell>{formatDateUz(new Date(debtor.createdAt))}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

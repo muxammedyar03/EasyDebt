@@ -9,6 +9,8 @@ export type AuditAction =
   | "LOGOUT"
   | "PAYMENT_ADDED"
   | "DEBT_ADDED"
+  | "DEBT_UPDATED"
+  | "PAYMENT_UPDATED"
   | "IMPORT"
   | "EXPORT";
 

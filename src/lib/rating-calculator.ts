@@ -16,33 +16,68 @@ const DEFAULT_RATING: PaymentRating = {
 /**
  * Calculate payment rating based on debts and payments
  *
- * Rules:
- * 1. If 50% or more of total debt is paid -> "A'lo" (high rating, 0 days)
- * 2. If no debts or no payments -> default rating
- * 3. Calculate average days from debt to payment (or to today if no payment)
- * 4. Rate based on average days:
- *    - <= 15 days: "A'lo" (green)
- *    - <= 30 days: "Yaxshi" (emerald)
- *    - <= 45 days: "O'rtacha" (yellow)
- *    - > 45 days: "Yomon" (red)
+ * NEW LOGIC:
+ * 1. Find last 50%+ payment (reset point)
+ * 2. Consider only debts AFTER that payment
+ * 3. If debts exist after last 50%+ payment and no new payments -> calculate avgDays from that point
+ * 4. If no debts after last 50%+ payment -> avgDays = 0, A'lo rating
  */
 export function calculatePaymentRating(
   debts: DebtorDomain["debts"] = [],
   payments: DebtorDomain["payments"] = [],
+  overdueDays: number,
   totalDebtAmount?: number,
 ): PaymentRating {
-  // No debts or no payments
-  if (debts.length === 0 || payments.length === 0) {
+  if (debts.length === 0) {
     return DEFAULT_RATING;
   }
 
-  // Calculate total debt and total paid
-  const totalDebt = totalDebtAmount ?? debts.reduce((sum, d) => sum + d.amount, 0);
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const paidPercentage = totalDebt > 0 ? totalPaid / totalDebt : 0;
+  const now = new Date();
 
-  // If 50% or more is paid, return high rating with 0 days
-  if (paidPercentage >= 0.5) {
+  // Sort debts and payments by date
+  const sortedDebts = [...debts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const sortedPayments = [...payments].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+
+  // Find last 50%+ payment (reset point)
+  // Strategy: Go through all debts and payments chronologically
+  // Track cumulative debt and payment, check if payment >= 50% at each payment
+  let lastResetPayment: (typeof sortedPayments)[0] | null = null;
+
+  // Combine and sort all transactions by date
+  type TransactionItem = (typeof sortedDebts)[0] | (typeof sortedPayments)[0];
+  const allTransactions: Array<{ type: "debt" | "payment"; date: Date; amount: number; item: TransactionItem }> = [
+    ...sortedDebts.map((d) => ({ type: "debt" as const, date: new Date(d.createdAt), amount: d.amount, item: d })),
+    ...sortedPayments.map((p) => ({
+      type: "payment" as const,
+      date: new Date(p.createdAt),
+      amount: p.amount,
+      item: p,
+    })),
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Calculate remaining debt at each point in time
+  let remainingDebt = 0;
+
+  for (const transaction of allTransactions) {
+    if (transaction.type === "debt") {
+      remainingDebt += transaction.amount;
+    } else {
+      // Check if this payment is >= 50% of remaining debt at this point
+      const is50Plus = remainingDebt > 0 && transaction.amount >= remainingDebt * 0.5;
+      if (is50Plus) {
+        lastResetPayment = transaction.item as (typeof sortedPayments)[0];
+      }
+      remainingDebt -= transaction.amount;
+    }
+  }
+
+  // Check current total debt
+  const currentTotalDebt = totalDebtAmount ?? debts.reduce((sum, d) => sum + d.amount, 0);
+
+  // If total debt is 0 or negative -> A'lo rating, avgDays = 0
+  if (currentTotalDebt <= 0) {
     return {
       score: 0,
       label: "A'lo",
@@ -50,56 +85,38 @@ export function calculatePaymentRating(
     };
   }
 
-  // Calculate average days from debt to payment
-  let totalDays = 0;
-  let validPaymentsCount = 0;
-  const now = new Date();
+  // If total debt > 0, calculate avgDays from last payment to today
+  // Ignore whether there are debts after last reset or not
+  let avgDays: number;
 
-  debts.forEach((debt) => {
-    const minPaymentAmount = debt.amount * MIN_PAYMENT_PERCENT;
-    const eligiblePayments = payments.filter(
-      (payment) => new Date(payment.createdAt) >= new Date(debt.createdAt) && payment.amount >= minPaymentAmount,
-    );
-
-    let days: number;
-    if (eligiblePayments.length > 0) {
-      // Calculate days from debt to first valid payment
-      const firstValidPayment = eligiblePayments[0];
-      days = Math.floor(
-        (new Date(firstValidPayment.createdAt).getTime() - new Date(debt.createdAt).getTime()) / (1000 * 60 * 60 * 24),
-      );
-    } else {
-      // No valid payment found - calculate days from debt to today
-      days = Math.floor((now.getTime() - new Date(debt.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-    }
-
-    totalDays += days;
-    validPaymentsCount++;
-  });
-
-  // If no valid payments found, return default
-  if (validPaymentsCount === 0) {
-    return DEFAULT_RATING;
+  if (lastResetPayment) {
+    // Calculate days from last 50%+ payment to today
+    avgDays = Math.floor((now.getTime() - new Date(lastResetPayment.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  } else {
+    // No 50%+ payment yet, calculate from first debt to today
+    const firstDebt = sortedDebts[0];
+    avgDays = Math.floor((now.getTime() - new Date(firstDebt.createdAt).getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  const avgDays = totalDays / validPaymentsCount;
-
-  // Determine rating based on average days
+  // Determine rating based on avgDays
   let label: PaymentRating["label"];
   let color: string;
 
-  if (avgDays <= 15) {
+  if (avgDays <= overdueDays - 30 || currentTotalDebt <= 0) {
     label = "A'lo";
     color = "text-green-600";
-  } else if (avgDays <= 30) {
+  } else if (avgDays > overdueDays - 30 && avgDays <= overdueDays - 15 && currentTotalDebt > 0) {
     label = "Yaxshi";
     color = "text-emerald-600";
-  } else if (avgDays <= 45) {
+  } else if (avgDays > overdueDays - 15 && avgDays <= overdueDays && currentTotalDebt > 0) {
     label = "O'rtacha";
     color = "text-yellow-600";
-  } else {
+  } else if (avgDays > overdueDays && currentTotalDebt > 0) {
     label = "Yomon";
     color = "text-red-600";
+  } else {
+    label = "Yaxshi";
+    color = "text-emerald-600";
   }
 
   return {
@@ -123,32 +140,84 @@ export function calculatePaymentPercentage(
 }
 
 /**
- * Check if debtor should be marked as overdue
- * Debtor is overdue if:
- * 1. First debt is older than threshold AND
- * 2. Less than 50% of total debt has been paid
+ * Check if debtor is overdue based on debts and payments
+ *
+ * NEW LOGIC:
+ * 1. If total_debt <= 0 -> NOT overdue
+ * 2. If total_debt > 0 and last 50%+ payment exists -> check days from last payment to today
+ * 3. If total_debt > 0 and no 50%+ payment -> check days from first debt to today
+ * 4. If days > overdueDays -> OVERDUE
  */
 export function isDebtorOverdue(
   debts: DebtorDomain["debts"] = [],
   payments: DebtorDomain["payments"] = [],
   overdueDays: number = 45,
+  totalDebtAmount?: number,
 ): boolean {
   if (debts.length === 0) {
     return false;
   }
 
-  // Get first debt date
-  const firstDebtDate = debts.map((d) => new Date(d.createdAt)).sort((a, b) => a.getTime() - b.getTime())[0];
+  const now = new Date();
+  const sortedDebts = [...debts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const sortedPayments = [...payments].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
 
-  // Calculate overdue threshold
-  const overdueDate = new Date();
-  overdueDate.setDate(overdueDate.getDate() - overdueDays);
+  // Calculate current total debt
+  const currentTotalDebt =
+    totalDebtAmount ?? debts.reduce((sum, d) => sum + d.amount, 0) - payments.reduce((sum, p) => sum + p.amount, 0);
 
-  // Calculate payment percentage
-  const paidPercentage = calculatePaymentPercentage(debts, payments);
+  // If total debt is 0 or negative -> not overdue
+  if (currentTotalDebt <= 0) {
+    return false;
+  }
 
-  // Debtor is overdue if first debt is older than threshold AND less than 50% paid
-  return firstDebtDate < overdueDate && paidPercentage < 0.5;
+  // Find last 50%+ payment (same logic as calculatePaymentRating)
+  let lastResetPayment: (typeof sortedPayments)[0] | null = null;
+
+  type TransactionItem = (typeof sortedDebts)[0] | (typeof sortedPayments)[0];
+  const allTransactions: Array<{ type: "debt" | "payment"; date: Date; amount: number; item: TransactionItem }> = [
+    ...sortedDebts.map((d) => ({ type: "debt" as const, date: new Date(d.createdAt), amount: d.amount, item: d })),
+    ...sortedPayments.map((p) => ({
+      type: "payment" as const,
+      date: new Date(p.createdAt),
+      amount: p.amount,
+      item: p,
+    })),
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Calculate remaining debt at each point in time
+  let remainingDebt = 0;
+
+  for (const transaction of allTransactions) {
+    if (transaction.type === "debt") {
+      remainingDebt += transaction.amount;
+    } else {
+      // Check if this payment is >= 50% of remaining debt at this point
+      const is50Plus = remainingDebt > 0 && transaction.amount >= remainingDebt * 0.5;
+      if (is50Plus) {
+        lastResetPayment = transaction.item as (typeof sortedPayments)[0];
+      }
+      remainingDebt -= transaction.amount;
+    }
+  }
+
+  // Calculate days based on last 50%+ payment or first debt
+  let daysSince: number;
+
+  if (lastResetPayment) {
+    // Calculate days from last 50%+ payment to today
+    daysSince = Math.floor((now.getTime() - new Date(lastResetPayment.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  } else {
+    // No 50%+ payment yet, calculate from first debt to today
+    const firstDebt = sortedDebts[0];
+    daysSince = Math.floor((now.getTime() - new Date(firstDebt.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  const isOverdue = daysSince > overdueDays;
+
+  return isOverdue;
 }
 
 /**

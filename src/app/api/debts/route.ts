@@ -11,6 +11,7 @@ const createDebtSchema = z.object({
   debtor_id: z.number(),
   amount: z.number().positive("Qarz miqdori musbat bo'lishi kerak"),
   description: z.string().nullable().optional(),
+  created_at: z.string().optional(), // Dev mode: custom date
 });
 
 export async function POST(request: NextRequest) {
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
           amount: validatedData.amount,
           description: validatedData.description || null,
           created_by: userId,
+          ...(validatedData.created_at && process.env.NODE_ENV === "development"
+            ? { created_at: new Date(validatedData.created_at) }
+            : {}),
         },
       });
 
