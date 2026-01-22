@@ -322,7 +322,6 @@ export default function CashClient({ payments, debts }: Props) {
                   <p className="text-muted-foreground py-8 text-center">Qarzlar topilmadi</p>
                 ) : (
                   filteredDebts.map((debt) => {
-                    const debtorStatus = getDebtorStatus(debt.debitor_total_debt, debt.debitor_is_overdue);
                     return (
                       <div
                         key={debt.id}

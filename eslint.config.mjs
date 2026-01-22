@@ -74,9 +74,9 @@ export default [
       // ✅ Qo‘shimcha (oddiy stil)
       "no-trailing-spaces": "error",
       "no-multiple-empty-lines": ["error", { max: 1, maxEOF: 1 }],
-      // "object-curly-spacing": ["error", "always"],
-      // "array-bracket-spacing": ["error", "never"],
-      // "space-in-parens": ["error", "never"],
+      "object-curly-spacing": ["error", "always"],
+      "array-bracket-spacing": ["error", "never"],
+      "space-in-parens": ["error", "never"],
     },
   },
 
