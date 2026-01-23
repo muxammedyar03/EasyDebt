@@ -33,7 +33,7 @@ import {
 } from "@/lib/mappers/debtor.mapper";
 import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view";
 import { PaymentDomain } from "@/types/domain";
-import { calculateAverageDaysBetweenDebtAndPayment, calculatePaymentRating } from "@/lib/rating-calculator";
+import { calculatePaymentRating } from "@/lib/rating-calculator";
 
 /**
  * Service class for Debtor operations

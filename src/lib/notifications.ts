@@ -5,7 +5,8 @@ export type NotificationType =
   | "PAYMENT_RECEIVED"
   | "DEBT_ADDED"
   | "DEBT_LIMIT_EXCEEDED"
-  | "HOSTING_REMINDER";
+  | "HOSTING_REMINDER"
+  | "PAYMENT_REMINDER";
 
 interface CreateNotificationData {
   userId?: number;

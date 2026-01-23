@@ -23,3 +23,12 @@ export {
   type CreatePaymentDomainInput,
   type UpdatePaymentDomainInput,
 } from "./payment.domain";
+
+export type {
+  PaymentReminderDomain,
+  PaymentReminderStatus,
+  CreatePaymentReminderInput,
+  UpdatePaymentReminderInput,
+  PaymentReminderFilters,
+  PaymentReminderComputedFields,
+} from "./payment-reminder.domain";

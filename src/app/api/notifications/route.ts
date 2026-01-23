@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
     if (type) {
       where.type = type as NotificationType;
     } else {
-      where.type = { in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER"] as NotificationType[] };
+      where.type = {
+        in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER", "PAYMENT_REMINDER"] as NotificationType[],
+      };
     }
     if (readParam === "true" || readParam === "false") {
       where.is_read = readParam === "true";

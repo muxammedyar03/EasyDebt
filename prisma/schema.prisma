@@ -23,9 +23,10 @@ model User {
   pin        String? 
 
   // Relations
-  created_debtors  Debtor[]  @relation("CreatedBy")
-  created_debts    Debt[]    @relation("DebtCreatedBy")
-  created_payments Payment[] @relation("PaymentCreatedBy")
+  created_debtors   Debtor[]          @relation("CreatedBy")
+  created_debts     Debt[]            @relation("DebtCreatedBy")
+  created_payments  Payment[]         @relation("PaymentCreatedBy")
+  created_reminders PaymentReminder[] @relation("ReminderCreatedBy")
 
   @@map("users")
 }
@@ -45,9 +46,10 @@ model Debtor {
   created_by        Int
 
   // Relations
-  creator  User      @relation("CreatedBy", fields: [created_by], references: [id])
-  debts    Debt[]
-  payments Payment[]
+  creator   User              @relation("CreatedBy", fields: [created_by], references: [id])
+  debts     Debt[]
+  payments  Payment[]
+  reminders PaymentReminder[]
 
   // Indexes for performance
   @@index([total_debt])
@@ -165,6 +167,36 @@ enum NotificationType {
   DEBT_ADDED
   DEBT_LIMIT_EXCEEDED
   HOSTING_REMINDER
+  PAYMENT_REMINDER
+}
+
+model PaymentReminder {
+  id           Int                   @id @default(autoincrement())
+  debtor_id    Int
+  created_by   Int
+  reminder_at  DateTime
+  note         String?
+  status       PaymentReminderStatus @default(PENDING)
+  notified_at  DateTime?
+  created_at   DateTime              @default(now())
+  updated_at   DateTime              @updatedAt
+
+  // Relations
+  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  creator User   @relation("ReminderCreatedBy", fields: [created_by], references: [id])
+
+  @@index([debtor_id])
+  @@index([reminder_at])
+  @@index([status])
+  @@index([created_by])
+  @@map("payment_reminders")
+}
+
+enum PaymentReminderStatus {
+  PENDING
+  NOTIFIED
+  COMPLETED
+  CANCELLED
 }
 
 model ImportHistory {

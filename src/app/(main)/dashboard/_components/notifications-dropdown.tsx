@@ -71,6 +71,7 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
     PAYMENT_RECEIVED: "", // filtered elsewhere, but safe default
     DEBT_ADDED: "", // filtered elsewhere, but safe default
     HOSTING_REMINDER: "Hosting eslatma",
+    PAYMENT_REMINDER: "To'lov eslatmasi",
   };
 
   return (

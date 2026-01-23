@@ -5,3 +5,10 @@
  */
 
 export type { DebtorView, DebtorTableView, DebtorDetailView, DebtorViewOptions } from "./debtor.view";
+
+export {
+  REMINDER_STATUS_BADGES,
+  type PaymentReminderView,
+  type PaymentReminderListView,
+  type PaymentReminderFormData,
+} from "./payment-reminder.view";

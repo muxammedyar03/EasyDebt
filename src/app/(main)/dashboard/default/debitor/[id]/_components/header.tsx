@@ -9,7 +9,12 @@ import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { exportDebtorReceipt } from "@/lib/pdf";
 
-export function DebtorHeader({ onAddDebt, onAddPayment }: { onAddDebt: () => void; onAddPayment: () => void }) {
+interface DebtorHeaderProps {
+  onAddDebt: () => void;
+  onAddPayment: () => void;
+}
+
+export function DebtorHeader({ onAddDebt, onAddPayment }: DebtorHeaderProps) {
   const router = useRouter();
   const { debtor, stats, rating, timeline } = useDebtor();
   const { user } = useCurrentUser();
