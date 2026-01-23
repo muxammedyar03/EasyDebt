@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
@@ -107,6 +108,11 @@ export async function POST(request: NextRequest) {
         message: `${result.debtor.first_name} ${result.debtor.last_name} qarz limiti oshdi: ${newTotalDebt.toLocaleString()} so'm`,
       });
     }
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${validatedData.debtor_id}`);
 
     return NextResponse.json(result.debt, { status: 201 });
   } catch (error) {

@@ -4,6 +4,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { formatNumber, formatUzPhone } from "@/lib/format";
@@ -38,9 +39,12 @@ interface AddDebtorDialogProps {
 }
 
 export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDialogProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [debtAmount, setDebtAmount] = React.useState("");
   const [phone, setPhone] = React.useState("");
+  // Use ref to track if we need to refresh after dialog closes
+  const refreshAfterCloseRef = React.useRef(false);
 
   const {
     register,
@@ -89,12 +93,19 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       reset();
       setDebtAmount("");
       setPhone("");
+      refreshAfterCloseRef.current = true;
       onOpenChange(false);
 
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Refresh after dialog animation completes
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) {
+            onSuccess();
+          }
+          refreshAfterCloseRef.current = false;
+        }, 150);
+      });
     } catch (error) {
       console.error("Error adding debtor:", error);
       toast.error(error instanceof Error ? error.message : "Qarzdor qo'shishda xatolik yuz berdi");
@@ -180,7 +191,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>

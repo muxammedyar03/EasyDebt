@@ -256,8 +256,9 @@ export function domainToDetailViewDebtor(domainDebtor: DebtorDomain): DebtorDeta
 
 function computeRiskStatus(totalDebt: number, isOverdue: boolean, debtLimit: number): DebtorRiskStatus {
   if (totalDebt <= 0) return "low";
-  if (isOverdue && totalDebt > debtLimit) return "critical";
-  if (totalDebt > debtLimit) return "high";
+  // If debt is >= debtLimit, it's high risk (teng bo'lsa ham limitdan oshgan)
+  if (isOverdue && totalDebt >= debtLimit) return "critical";
+  if (totalDebt >= debtLimit) return "high";
   if (isOverdue) return "medium";
   return "low";
 }

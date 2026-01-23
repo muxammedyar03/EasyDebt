@@ -120,24 +120,24 @@ export default function CashClient({ payments, debts }: Props) {
     setSelectedDate(current.toISOString().split("T")[0]);
   };
 
-  const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
-    if (totalDebt === 0) {
-      return {
-        className: "bg-green-100 text-green-800 hover:bg-green-100",
-        text: "To'langan",
-      };
-    } else if (isOverdue) {
-      return {
-        className: "bg-red-100 text-red-800 hover:bg-red-100",
-        text: "Limitdan o'tgan",
-      };
-    } else {
-      return {
-        className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-        text: "Qarzdor",
-      };
-    }
-  };
+  // const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
+  //   if (totalDebt === 0) {
+  //     return {
+  //       className: "bg-green-100 text-green-800 hover:bg-green-100",
+  //       text: "To'langan",
+  //     };
+  //   } else if (isOverdue) {
+  //     return {
+  //       className: "bg-red-100 text-red-800 hover:bg-red-100",
+  //       text: "Limitdan o'tgan",
+  //     };
+  //   } else {
+  //     return {
+  //       className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+  //       text: "Qarzdor",
+  //     };
+  //   }
+  // };
 
   const getDateRangeText = () => {
     if (timeRange === "daily") {

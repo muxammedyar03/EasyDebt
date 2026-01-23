@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 const updateDebtorSchema = z.object({
   first_name: z.string().min(1).optional(),
@@ -141,6 +142,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${debtorId}`);
+
     return NextResponse.json({
       ...updatedDebtor,
       total_debt: updatedDebtor.total_debt.toNumber(),
@@ -201,6 +207,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.debtor.delete({
       where: { id: debtorId },
     });
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${debtorId}`);
 
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {

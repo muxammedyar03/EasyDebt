@@ -4,6 +4,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
@@ -43,9 +44,12 @@ interface AddDebtDialogProps {
 }
 
 export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+  // Use ref to track if we need to refresh after dialog closes
+  const refreshAfterCloseRef = React.useRef(false);
 
   const {
     register,
@@ -97,11 +101,19 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       reset();
       setAmount("");
       setSelectedDate(undefined);
+      refreshAfterCloseRef.current = true;
       onOpenChange(false);
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Refresh after dialog animation completes
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) {
+            onSuccess();
+          }
+          refreshAfterCloseRef.current = false;
+        }, 150);
+      });
     } catch (error) {
       console.error("Error adding debt:", error);
       toast.error(error instanceof Error ? error.message : "Qarz qo'shishda xatolik yuz berdi");
@@ -120,7 +132,8 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
         <form
           onSubmit={handleSubmit(onSubmit)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+            // Allow Enter to submit form, but prevent it in textarea
+            if (e.key === "Enter" && e.target instanceof HTMLTextAreaElement) {
               e.preventDefault();
             }
           }}
@@ -177,7 +190,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>

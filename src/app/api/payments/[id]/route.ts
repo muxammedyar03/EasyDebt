@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
@@ -111,6 +112,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
       description,
     });
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${result.oldPayment.debtor_id}`);
 
     return NextResponse.json(result.updatedPayment);
   } catch (error) {

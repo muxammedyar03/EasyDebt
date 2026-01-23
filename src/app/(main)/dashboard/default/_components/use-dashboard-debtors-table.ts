@@ -4,11 +4,11 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
-import type { DebtorRow } from "./data-table";
+import { DebtorView } from "@/types/view";
 
 type UseDashboardDebtorsTableParams = {
-  data: DebtorRow[];
-  columns: ColumnDef<DebtorRow>[];
+  data: DebtorView[];
+  columns: ColumnDef<DebtorView>[];
   onDeleteDebtor: (debtorId: number) => void | Promise<void>;
 };
 
@@ -53,7 +53,7 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
       setQuickDebtDialog({
         open: true,
         debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
+        debtorName: `${debtor.firstName} ${debtor.lastName}`,
       });
     }
   };
@@ -64,8 +64,8 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
       setQuickPaymentDialog({
         open: true,
         debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
-        totalDebt: debtor.total_debt,
+        debtorName: `${debtor.firstName} ${debtor.lastName}`,
+        totalDebt: debtor.totalDebt,
       });
     }
   };
@@ -79,9 +79,9 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
     const lowerFilter = globalFilter.toLowerCase();
     return data.filter(
       (debtor) =>
-        debtor.first_name.toLowerCase().includes(lowerFilter) ||
-        debtor.last_name.toLowerCase().includes(lowerFilter) ||
-        debtor.phone_number?.toLowerCase().includes(lowerFilter) ||
+        debtor.firstName.toLowerCase().includes(lowerFilter) ||
+        debtor.lastName.toLowerCase().includes(lowerFilter) ||
+        debtor.phoneNumber?.toLowerCase().includes(lowerFilter) ||
         debtor.address?.toLowerCase().includes(lowerFilter),
     );
   }, [data, globalFilter]);

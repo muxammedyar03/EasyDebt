@@ -25,40 +25,31 @@ export default async function DebtorsPage({
   const status = (params.status as string) || "all";
   const debtLimit = await debtService.debtLimit();
 
-  const domainStatus: DebtorStatus | undefined =
-    status === "qarzdor"
-      ? "active"
-      : status === "tolangan"
-        ? "paid_off"
-        : status === "limitdan_oshgan"
-          ? undefined // Don't set status for limitdan_oshgan, we filter by minDebt instead
-          : undefined;
+  let domainStatus: DebtorStatus | undefined;
+  switch (status) {
+    case "tolangan":
+      domainStatus = "paid_off";
+      break;
+    case "qarzdor":
+      domainStatus = "inactive";
+      break;
+  }
 
   const filters: DebtorDomainFilters = {
     search,
     status: domainStatus,
     riskStatus: undefined,
     isOverdue: status === "muddati_otgan" ? true : undefined,
-    minDebt: status === "limitdan_oshgan" ? debtLimit + 1 : undefined,
-    maxDebt: undefined,
+    minDebt: status === "qarzdor" ? 1 : status === "limitdan_oshgan" ? debtLimit : undefined,
+    maxDebt: status === "qarzdor" ? debtLimit - 1 : undefined,
     createdBy: undefined,
   };
 
-  const debtorsFromService = await debtorService.findMany(filters, {
-    page,
-    limit,
-    sortBy,
-    sortOrder,
-  });
+  const debtorsFromService = await debtorService.findMany(filters, { page, limit, sortBy, sortOrder });
 
   const debtorViews: DebtorView[] = debtorsFromService.data.map((debtor) => domainToViewDebtor(debtor));
   const totalDebt = await debtorService.debtorsTotalDebt();
   const totalPayments = await debtorService.debtorsTotalPayments();
-
-  console.log({
-    filters,
-    debtorViews,
-  });
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">

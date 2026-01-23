@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
 
     // Status filter
     if (status === "qarzdor") {
-      where.total_debt = { gt: 0, lte: debtLimit };
+      where.total_debt = { gt: 0, lt: debtLimit }; // 0 < total_debt < debtLimit
     } else if (status === "limitdan_oshgan") {
-      where.total_debt = { gt: debtLimit };
+      where.total_debt = { gte: debtLimit }; // total_debt >= debtLimit (teng bo'lsa ham)
     } else if (status === "tolangan") {
       where.total_debt = { lte: 0 };
     }

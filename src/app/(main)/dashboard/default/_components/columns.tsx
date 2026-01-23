@@ -15,7 +15,6 @@ import {
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
-import { Debtor } from "@/types/types";
 import { AddDebtDialog } from "./add-debt-dialog";
 import { AddPaymentDialog } from "./add-payment-dialog";
 import { EditDebtorDialog } from "./edit-debtor-dialog";
@@ -28,7 +27,7 @@ interface ColumnsContext {
   debtLimit?: number;
 }
 
-const FirstNameCell = ({ row }: { row: Row<Debtor> }) => {
+const FirstNameCell = ({ row }: { row: Row<DebtorView> }) => {
   const router = useRouter();
   return (
     <div
@@ -38,13 +37,13 @@ const FirstNameCell = ({ row }: { row: Row<Debtor> }) => {
       }}
       className="cursor-pointer text-base font-semibold"
     >
-      {row.original.first_name}
+      {row.original.firstName}
     </div>
   );
 };
 
 // Cell component for action buttons
-const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: ColumnsContext }) => {
+const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: ColumnsContext }) => {
   const [debtDialogOpen, setDebtDialogOpen] = React.useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
 
@@ -69,7 +68,7 @@ const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: Colum
         open={debtDialogOpen}
         onOpenChange={setDebtDialogOpen}
         debtorId={row.original.id}
-        debtorName={`${row.original.first_name} ${row.original.last_name}`}
+        debtorName={`${row.original.firstName} ${row.original.lastName}`}
         onSuccess={context?.onDataChange}
       />
 
@@ -77,7 +76,7 @@ const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: Colum
         open={paymentDialogOpen}
         onOpenChange={setPaymentDialogOpen}
         debtorId={row.original.id}
-        debtorName={`${row.original.first_name} ${row.original.last_name}`}
+        debtorName={`${row.original.firstName} ${row.original.lastName}`}
         onSuccess={context?.onDataChange}
       />
     </>
@@ -85,23 +84,23 @@ const ActionButtonsCell = ({ row, context }: { row: Row<Debtor>; context?: Colum
 };
 
 // Cell component for dropdown actions
-const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: ColumnsContext }) => {
+const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?: ColumnsContext }) => {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const debtorView: DebtorView = {
     id: row.original.id,
     externalId: String(row.original.id),
-    fullName: `${row.original.first_name} ${row.original.last_name}`,
-    firstName: row.original.first_name,
-    lastName: row.original.last_name,
-    displayName: `${row.original.first_name} ${row.original.last_name.charAt(0)}.`,
-    phoneNumber: row.original.phone_number,
-    phoneDisplay: row.original.phone_number,
+    fullName: `${row.original.firstName} ${row.original.lastName}`,
+    firstName: row.original.firstName,
+    lastName: row.original.lastName,
+    displayName: `${row.original.firstName} ${row.original.lastName.charAt(0)}.`,
+    phoneNumber: row.original.phoneNumber,
+    phoneDisplay: row.original.phoneNumber,
     address: row.original.address,
-    totalDebt: row.original.total_debt,
-    totalDebtFormatted: `${row.original.total_debt.toLocaleString()} so'm`,
-    isOverdue: row.original.is_overdue,
+    totalDebt: row.original.totalDebt,
+    totalDebtFormatted: `${row.original.totalDebt.toLocaleString()} so'm`,
+    isOverdue: row.original.riskStatus === "low",
     lastPaymentDate: null,
     lastPaymentDateFormatted: null,
     riskStatus: "medium",
@@ -120,14 +119,14 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
     isHighRisk: false,
     canEdit: true,
     canDelete: true,
-    createdAt: row.original.created_at,
-    createdAtFormatted: new Date(row.original.created_at).toLocaleDateString(),
-    updatedAt: row.original.updated_at,
-    updatedAtFormatted: new Date(row.original.updated_at).toLocaleDateString(),
+    createdAt: row.original.createdAt,
+    createdAtFormatted: new Date(row.original.createdAt).toLocaleDateString(),
+    updatedAt: row.original.updatedAt,
+    updatedAtFormatted: new Date(row.original.updatedAt).toLocaleDateString(),
   };
 
   const handleDelete = async () => {
-    if (!confirm(`${row.original.first_name} ${row.original.last_name} ni o'chirishni xohlaysizmi?`)) {
+    if (!confirm(`${row.original.firstName} ${row.original.lastName} ni o'chirishni xohlaysizmi?`)) {
       return toast.error("Qarzdorni o'chirishni bekor qilindi");
     }
 
@@ -204,7 +203,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<Debtor>; context?: Col
   );
 };
 
-export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debtor>[] => [
+export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<DebtorView>[] => [
   {
     accessorKey: "index",
     header: ({ column }) => <DataTableColumnHeader className="w-5" column={column} title="№" />,
@@ -225,7 +224,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.phone_number || "—"}
+          {row.original.phoneNumber || "—"}
         </Badge>
       </div>
     ),
@@ -249,7 +248,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
       <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />
     ),
     cell: ({ row }) => (
-      <div className="text-base font-semibold">{row.original.total_debt.toLocaleString()} so&apos;m</div>
+      <div className="text-base font-semibold">{row.original.totalDebt.toLocaleString()} so&apos;m</div>
     ),
     enableSorting: true,
     enableHiding: false,
@@ -259,7 +258,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => {
       const debtLimit = context?.debtLimit || 2000000;
-      const totalDebt = row.original.total_debt;
+      const totalDebt = row.original.totalDebt;
 
       let variant: "default" | "destructive" | "secondary" = "secondary";
       let label = "Qarzdor";
@@ -276,7 +275,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
         <div className="flex items-center gap-2">
           <Badge
             variant={"default"}
-            className={`h-5 w-5 rounded-full ${row.original.is_overdue ? "bg-red-500" : "bg-green-500"}`}
+            className={`h-5 w-5 rounded-full ${row.original.isOverdue ? "bg-red-500" : "bg-green-500"}`}
           ></Badge>
           <Badge variant={variant}>{label}</Badge>
         </div>

@@ -14,7 +14,7 @@ export const debtorSchema = z.object({
   address: z.string().nullable(),
   total_debt: z.number(),
   is_overdue: z.boolean(),
-  created_at: z.date(),
-  updated_at: z.date(),
+  created_at: z.coerce.date(), // Accept string or Date and convert to Date
+  updated_at: z.coerce.date(), // Accept string or Date and convert to Date
   created_by: z.number(),
 });

@@ -14,15 +14,14 @@ import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
 import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { DebtorRow } from "./data-table";
 import { useDashboardDebtorsTable } from "./use-dashboard-debtors-table";
-import { rowToViewDebtor } from "@/lib/mappers/debtor.mapper";
+import { DebtorView } from "@/types/view";
 
 type DataTableViewProps = {
-  data: DebtorRow[];
+  data: DebtorView[];
   debtLimit: number;
-  columns: ColumnDef<DebtorRow>[];
-  onReorder: (rows: DebtorRow[]) => void;
+  columns: ColumnDef<DebtorView>[];
+  onReorder: (rows: DebtorView[]) => void;
   onDeleteDebtor: (debtorId: number) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
 };
@@ -84,7 +83,7 @@ export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDeb
           filteredData.map((debtor) => (
             <DebtorCard
               key={debtor.id}
-              debtor={rowToViewDebtor(debtor, { debtLimit })}
+              debtor={debtor}
               debtLimit={debtLimit}
               onAddDebt={handleAddDebt}
               onAddPayment={handleAddPayment}
@@ -101,7 +100,7 @@ export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDeb
           table={table}
           columns={columns}
           onReorder={(rows) => {
-            onReorder(rows as DebtorRow[]);
+            onReorder(rows);
           }}
         />
         <div className="mt-2">

@@ -32,6 +32,7 @@ interface QuickAddDebtProps {
 export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSuccess }: QuickAddDebtProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const refreshAfterCloseRef = React.useRef(false);
 
   const form = useForm<DebtFormValues>({
     resolver: zodResolver(debtSchema),
@@ -62,12 +63,19 @@ export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSucce
 
       toast.success("Qarz muvaffaqiyatli qo'shildi");
       form.reset();
+      refreshAfterCloseRef.current = true;
       onOpenChange(false);
-      if (onSuccess) {
-        await onSuccess();
-      } else {
-        router.refresh();
-      }
+
+      // Refresh after dialog animation completes
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) {
+            onSuccess();
+          }
+          refreshAfterCloseRef.current = false;
+        }, 150);
+      });
     } catch (error) {
       console.error(error);
       toast.error("Qarz qo'shishda xatolik yuz berdi");

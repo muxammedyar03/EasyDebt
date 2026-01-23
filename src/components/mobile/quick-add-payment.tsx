@@ -31,6 +31,7 @@ export function QuickAddPayment({
 }: QuickAddPaymentProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const refreshAfterCloseRef = React.useRef(false);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -63,12 +64,19 @@ export function QuickAddPayment({
 
       toast.success("To'lov muvaffaqiyatli qo'shildi");
       form.reset();
+      refreshAfterCloseRef.current = true;
       onOpenChange(false);
-      if (onSuccess) {
-        await onSuccess();
-      } else {
-        router.refresh();
-      }
+
+      // Refresh after dialog animation completes
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) {
+            onSuccess();
+          }
+          refreshAfterCloseRef.current = false;
+        }, 150);
+      });
     } catch (error) {
       console.error(error);
       toast.error("To'lov qo'shishda xatolik yuz berdi");
