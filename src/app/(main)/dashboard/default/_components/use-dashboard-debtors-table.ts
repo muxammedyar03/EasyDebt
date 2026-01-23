@@ -42,7 +42,7 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
     getRowId: (row) => row.id.toString(),
     defaultPageSize: 10,
     initialColumnVisibility: {
-      phone_number: false,
+      phoneNumber: false,
       address: false,
     },
   });

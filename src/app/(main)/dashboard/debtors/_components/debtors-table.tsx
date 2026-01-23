@@ -445,16 +445,18 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
-                  Ism Familiya
+                <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("name")}>
+                  Ism Familiya{" "}
+                  {searchParams.get("sortBy") === "name" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Telefon</TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("debt")}>
-                  Qarz summasi
+                <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("debt")}>
+                  Qarz summasi{" "}
+                  {searchParams.get("sortBy") === "debt" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("created_at")}>
-                  Sana
+                <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("date")}>
+                  Sana {searchParams.get("sortBy") === "date" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>

@@ -191,11 +191,7 @@ export function PaymentReminderDialog({
                   id="time"
                   type="time"
                   placeholder="Vaqt tanlang"
-                  value={
-                    new Date().getMinutes().toString().padStart(2, "0") +
-                    ":" +
-                    new Date().getSeconds().toString().padStart(2, "0")
-                  }
+                  value={formState.time}
                   onChange={(e) => setFormTime(e.target.value)}
                   disabled={isSubmitting}
                   className="border-border h-12 border"

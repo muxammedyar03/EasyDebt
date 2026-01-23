@@ -205,21 +205,21 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
 
 export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<DebtorView>[] => [
   {
-    accessorKey: "index",
+    id: "index",
     header: ({ column }) => <DataTableColumnHeader className="w-5" column={column} title="№" />,
     cell: ({ row }) => <div>{row.index + 1}</div>,
-    enableSorting: true,
+    enableSorting: false,
     enableHiding: false,
   },
   {
-    accessorKey: "first_name",
+    accessorKey: "firstName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Qarzdor" />,
     cell: ({ row }) => <FirstNameCell row={row} />,
     enableSorting: true,
     enableHiding: false,
   },
   {
-    accessorKey: "phone_number",
+    accessorKey: "phoneNumber",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Telefon" />,
     cell: ({ row }) => (
       <div className="w-32">
@@ -243,7 +243,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
     enableHiding: true,
   },
   {
-    accessorKey: "total_debt",
+    accessorKey: "totalDebt",
     header: ({ column }) => (
       <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />
     ),
