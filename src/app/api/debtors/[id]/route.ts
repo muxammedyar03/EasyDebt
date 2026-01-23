@@ -122,7 +122,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     const debtorFullName = `${updatedDebtor.first_name} ${updatedDebtor.last_name}`;
-    const description = `Qarzdor ${debtorFullName} ma'lumotlarini yangiladi`;
+    const description = `Qarzdor ${debtorFullName} ma'lumotlari yangilandi`;
 
     await prisma.auditLog.create({
       data: {
@@ -183,7 +183,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const debtorFullName = `${debtor.first_name} ${debtor.last_name}`;
-    const description = `Qarzdor ${debtorFullName} ni o'chirdi`;
+    const description = `Qarzdor ${debtorFullName} o'chirildi`;
 
     await prisma.auditLog.create({
       data: {

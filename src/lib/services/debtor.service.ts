@@ -29,11 +29,11 @@ import {
   prismaToDomainDebtor,
   domainToTableViewDebtor,
   domainToDetailViewDebtor,
-  customerRatingDomainToTableProps,
+  domainToViewDebtor,
 } from "@/lib/mappers/debtor.mapper";
 import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view";
 import { PaymentDomain } from "@/types/domain";
-import { calculateAverageDaysBetweenDebtAndPayment, calculateCustomerRating } from "@/lib/rating-calculator";
+import { calculateAverageDaysBetweenDebtAndPayment, calculatePaymentRating } from "@/lib/rating-calculator";
 
 /**
  * Service class for Debtor operations
@@ -443,16 +443,7 @@ export class DebtorService {
         createdAt: p.created_at,
       }));
 
-      const totalDebtAmount = debtorDebts.reduce((sum, d) => sum + d.amount.toNumber(), 0);
-
-      // Use shared utility functions for consistent calculations
-      const avgDaysBetweenDebtAndPayment = calculateAverageDaysBetweenDebtAndPayment(
-        debtsForCalculation,
-        paymentsForCalculation,
-        totalDebtAmount,
-      );
-
-      const rating = calculateCustomerRating(avgDaysBetweenDebtAndPayment, totalDebt, overdueDays);
+      const days = calculatePaymentRating(debtsForCalculation, paymentsForCalculation, overdueDays, totalDebt);
 
       customerRatings.set(debtorId, {
         debtorId,
@@ -468,9 +459,17 @@ export class DebtorService {
           createdBy: p.created_by,
         })),
         validPayments: debtorPayments.length,
-        avgDaysBetweenPayments: avgDaysBetweenDebtAndPayment,
-        avgDaysBetweenDebtAndPayment: avgDaysBetweenDebtAndPayment,
-        rating,
+        rating: {
+          ...days,
+          label:
+            days.label === "Yomon"
+              ? "critical"
+              : days.label === "O'rtacha"
+                ? "medium"
+                : days.label === "Yaxshi"
+                  ? "high"
+                  : "high",
+        },
       });
     });
 
@@ -479,7 +478,7 @@ export class DebtorService {
 
     // Apply rating filter
     if (filters?.rating) {
-      customers = customers.filter((c) => c.rating === filters.rating);
+      customers = customers.filter((c) => c.rating.label === filters.rating);
     }
 
     // Apply search filter
@@ -507,8 +506,8 @@ export class DebtorService {
           bVal = `${b.debtor.firstName} ${b.debtor.lastName}`.toLowerCase();
           break;
         case "days":
-          aVal = a.avgDaysBetweenDebtAndPayment;
-          bVal = b.avgDaysBetweenDebtAndPayment;
+          aVal = a.rating.score;
+          bVal = b.rating.score;
           break;
         case "payments":
           aVal = a.validPayments;
@@ -533,9 +532,9 @@ export class DebtorService {
     // Count by rating (before pagination)
     const allCustomers = Array.from(customerRatings.values());
     const counts = {
-      high: allCustomers.filter((c) => c.rating === "high").length,
-      medium: allCustomers.filter((c) => c.rating === "medium").length,
-      critical: allCustomers.filter((c) => c.rating === "critical").length,
+      high: allCustomers.filter((c) => c.rating.label === "high").length,
+      medium: allCustomers.filter((c) => c.rating.label === "medium").length,
+      critical: allCustomers.filter((c) => c.rating.label === "critical").length,
     };
 
     // Apply pagination
@@ -547,7 +546,13 @@ export class DebtorService {
     const paginatedCustomers = customers.slice(skip, skip + limit);
 
     // Convert domain ratings to view types for UI
-    const viewCustomers = paginatedCustomers.map(customerRatingDomainToTableProps);
+    const viewCustomers: PaginatedCustomerRatingsView["data"] = paginatedCustomers.map((c) => ({
+      debtorId: c.debtorId,
+      debtor: domainToViewDebtor(c.debtor),
+      payments: c.payments,
+      validPayments: c.validPayments,
+      rating: c.rating,
+    }));
 
     return {
       data: viewCustomers,

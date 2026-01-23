@@ -9,15 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CustomerTableProps } from "@/types/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SortToggleGroup } from "./sort-toggle-group";
 import { useDebtorRatingStatus } from "@/hooks/useDebtorRatingStatus";
 import { formatCurrencyUzs } from "@/lib/format";
+import { PaginatedCustomerRatingsView } from "@/types/domain/customer-rating.domain";
 
 interface CustomersTableDumbProps {
-  customers: CustomerTableProps[];
+  customers: PaginatedCustomerRatingsView["data"];
   currentPage: number;
   totalPages: number;
   totalDebtorsCount: number;
@@ -141,7 +141,7 @@ export function CustomersTableDumb({
                     <h3 className="font-semibold">
                       {customer.debtor.firstName} {customer.debtor.lastName}
                     </h3>
-                    {rating(customer.rating)}
+                    {rating(customer.rating.label)}
                   </div>
                   {customer.debtor.phoneNumber && (
                     <p className="text-muted-foreground text-sm">{customer.debtor.phoneNumber}</p>
@@ -149,7 +149,7 @@ export function CustomersTableDumb({
                   <div className="flex items-center justify-between pt-2">
                     <div>
                       <p className="text-muted-foreground text-xs">O&apos;rtacha kunlar</p>
-                      <p className="text-lg font-bold">{customer.avgDaysBetweenPayments.toFixed(0)} kun</p>
+                      <p className="text-lg font-bold">{customer.rating.score} kun</p>
                     </div>
                     <div className="text-right">
                       <p className="text-muted-foreground text-xs">To&apos;lovlar</p>
@@ -194,8 +194,8 @@ export function CustomersTableDumb({
                     {customer.debtor.firstName} {customer.debtor.lastName}
                   </TableCell>
                   <TableCell>{customer.debtor.phoneNumber || "-"}</TableCell>
-                  <TableCell>{rating(customer.rating)}</TableCell>
-                  <TableCell>{customer.avgDaysBetweenPayments.toFixed(0)} kun</TableCell>
+                  <TableCell>{rating(customer.rating.label)}</TableCell>
+                  <TableCell>{customer.rating.score} kun</TableCell>
                   <TableCell>{customer.payments.length}</TableCell>
                   <TableCell className={customer.debtor.totalDebt > 0 ? "text-red-600" : "text-green-600"}>
                     {formatCurrencyUzs(customer.debtor.totalDebt)}

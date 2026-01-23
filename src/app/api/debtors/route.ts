@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       }
 
       const debtorFullName = `${validatedData.first_name} ${validatedData.last_name}`;
-      const description = `Yangi qarzdor ${debtorFullName} yaratdi`;
+      const description = `Yangi qarzdor ${debtorFullName} yaratildi`;
 
       await tx.auditLog.create({
         data: {

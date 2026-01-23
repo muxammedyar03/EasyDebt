@@ -11,11 +11,11 @@ export function useTableUtils() {
       return <Badge className="bg-green-500">To&apos;lov qo&apos;shildi</Badge>;
     }
 
-    if (action === "IMPORT_DATA") {
+    if (action === "IMPORT") {
       return <Badge className="bg-purple-500">Import qilindi</Badge>;
     }
 
-    if (action === "EXPORT_DATA") {
+    if (action === "EXPORT") {
       return <Badge className="bg-indigo-500">Export qilindi</Badge>;
     }
 

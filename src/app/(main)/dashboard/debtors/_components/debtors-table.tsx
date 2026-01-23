@@ -325,8 +325,8 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       <div className="space-y-4">
         {/* Filters */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1 lg:max-w-sm">
+          <div className="flex flex-1 items-center justify-between gap-2">
+            <div className="relative flex-1 lg:max-w-xl">
               <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
               <Input
                 placeholder="Ism, familiya yoki telefon..."

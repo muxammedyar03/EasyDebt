@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
     await prisma.auditLog.create({
       data: {
         user_id: session.userId,
-        action: "EXPORT_JSON",
+        action: "EXPORT",
         entity_type: "DEBTOR",
         new_value: {
           debtorsCount: allDebtors.length,

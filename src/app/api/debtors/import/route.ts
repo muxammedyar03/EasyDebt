@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
         await tx.auditLog.create({
           data: {
             user_id: session.userId,
-            action: "IMPORT_DATA",
+            action: "IMPORT",
             entity_type: "DEBTOR",
             description: `${createdDebtors} qarzdor, ${createdDebts} qarz va ${createdPayments} to'lov muvaffaqiyatli import qilindi`,
             new_value: {

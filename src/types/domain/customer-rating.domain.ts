@@ -21,9 +21,11 @@ export type CustomerRatingDomain = {
   debtor: DebtorDomain;
   payments: PaymentDomain[];
   validPayments: number;
-  avgDaysBetweenPayments: number;
-  avgDaysBetweenDebtAndPayment: number;
-  rating: CustomerRating;
+  rating: {
+    score: number;
+    label: CustomerRating;
+    color: string;
+  };
 };
 
 /**
@@ -42,9 +44,11 @@ export type CustomerRatingView = {
   debtor: DebtorView;
   payments: PaymentDomain[];
   validPayments: number;
-  avgDaysBetweenPayments: number;
-  avgDaysBetweenDebtAndPayment: number;
-  rating: CustomerRating;
+  rating: {
+    score: number;
+    label: CustomerRating;
+    color: string;
+  };
 };
 
 /**

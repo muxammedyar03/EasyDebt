@@ -3,10 +3,10 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CustomersTableDumb } from "./customers-table-view";
-import { CustomerTableProps } from "@/types/types";
+import { PaginatedCustomerRatingsView } from "@/types/domain/customer-rating.domain";
 
 interface CustomersTableWrapProps {
-  initialCustomers: CustomerTableProps[];
+  initialCustomers: PaginatedCustomerRatingsView["data"];
   initialCurrentPage: number;
   initialTotalPages: number;
   totalDebtorsCount: number;

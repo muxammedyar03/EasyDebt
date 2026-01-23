@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, FileDown } from "lucide-react";
+import { Search, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -103,16 +103,16 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
   };
 
   return (
-    <div className="grid gap-6 2xl:grid-cols-[1fr_300px]">
+    <div className="grid gap-6 2xl:grid-cols-[1fr_400px]">
       {/* Main Content */}
       <div className="space-y-6">
         <Card className="py-0 pt-6">
-          <CardHeader className="px-2">
+          <CardHeader className="px-2 md:px-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle>Audit Log ({totalCount} ta yozuv)</CardTitle>
+              <CardTitle className="text-lg md:text-xl">Audit Log ({totalCount} ta yozuv)</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="px-2">
+          <CardContent className="px-2 md:px-4">
             {/* Search and Actions */}
             <div className="mb-6 flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
@@ -247,17 +247,19 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
+              <div className="mt-6 mb-3 flex items-center justify-between">
                 <div className="text-muted-foreground text-sm">
                   {currentPage} / {totalPages} sahifa
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange(currentPage - 1)}
+                    className="h-12 px-6"
                     disabled={currentPage === 1}
                   >
+                    <ChevronLeft className="h-4 w-4" />
                     Oldingi
                   </Button>
                   <Button
@@ -265,8 +267,10 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                     size="sm"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
+                    className="h-12 px-6"
                   >
                     Keyingi
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

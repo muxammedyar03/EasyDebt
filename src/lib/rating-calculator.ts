@@ -6,6 +6,9 @@ export interface PaymentRating {
   color: string;
 }
 
+/** Minimal type for debt/payment calculations - only fields actually used */
+type TransactionInput = { amount: number; createdAt: Date };
+
 const MIN_PAYMENT_PERCENT = 0.5;
 const DEFAULT_RATING: PaymentRating = {
   score: 0,
@@ -23,8 +26,8 @@ const DEFAULT_RATING: PaymentRating = {
  * 4. If no debts after last 50%+ payment -> avgDays = 0, A'lo rating
  */
 export function calculatePaymentRating(
-  debts: DebtorDomain["debts"] = [],
-  payments: DebtorDomain["payments"] = [],
+  debts: TransactionInput[] = [],
+  payments: TransactionInput[] = [],
   overdueDays: number,
   totalDebtAmount?: number,
 ): PaymentRating {
