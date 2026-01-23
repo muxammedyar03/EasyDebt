@@ -25,19 +25,11 @@ export const THEME_PRESET_OPTIONS = [
     },
   },
   {
-    label: "Brutalist",
-    value: "brutalist",
+    label: "Caffeine",
+    value: "caffeine",
     primary: {
-      light: "oklch(0.6489 0.237 26.9728)",
-      dark: "oklch(0.7044 0.1872 23.1858)",
-    },
-  },
-  {
-    label: "Soft Pop",
-    value: "soft-pop",
-    primary: {
-      light: "oklch(0.5106 0.2301 276.9656)",
-      dark: "oklch(0.6801 0.1583 276.9349)",
+      light: "oklch(0.4341 0.0392 41.9938)",
+      dark: "oklch(0.9247 0.0524 66.1732)",
     },
   },
   {
@@ -46,6 +38,14 @@ export const THEME_PRESET_OPTIONS = [
     primary: {
       light: "oklch(0.64 0.17 36.44)",
       dark: "oklch(0.64 0.17 36.44)",
+    },
+  },
+  {
+    label: "Twitter",
+    value: "twitter",
+    primary: {
+      light: "oklch(0.6723 0.1606 244.9955)",
+      dark: "oklch(0.6692 0.1607 245.011)",
     },
   },
 ] as const;

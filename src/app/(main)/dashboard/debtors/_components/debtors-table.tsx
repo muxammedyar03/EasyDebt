@@ -265,16 +265,26 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       // Prepare export data
       const exportData = {
         headers: ["ID", "Ism", "Familiya", "Telefon", "Manzil", "Jami qarz", "Jami to'lovlar"],
-        rows: debtors.map((debtor: Debtor & { total_debts?: number; total_payments?: number; status: string }) => [
-          debtor.id,
-          debtor.firstName,
-          debtor.lastName,
-          debtor.phone_number || "-",
-          debtor.address || "-",
-          formatNumberForExcel(debtor.total_debt),
-          formatNumberForExcel(debtor.total_payments || 0),
-        ]),
-        filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}`,
+        rows: debtors.map(
+          (
+            debtor: Debtor & {
+              total_debts?: number;
+              total_payments?: number;
+              status: string;
+              first_name?: string;
+              last_name?: string;
+            },
+          ) => [
+            debtor.id,
+            debtor.first_name || debtor.firstName,
+            debtor.last_name || debtor.lastName,
+            debtor.phone_number || "-",
+            debtor.address || "-",
+            formatNumberForExcel(debtor.total_debt),
+            formatNumberForExcel(debtor.total_payments || 0),
+          ],
+        ),
+        filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}_${status}`,
       };
 
       exportToExcel(exportData);
