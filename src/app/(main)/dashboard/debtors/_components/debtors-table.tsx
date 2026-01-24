@@ -79,6 +79,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [isSearching, setIsSearching] = React.useState(false);
   const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
   const [selectedDebtorId, setSelectedDebtorId] = React.useState<number | null>(null);
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
@@ -141,10 +142,16 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     }
     // If URL already contains the same search value, do nothing
     const urlSearch = searchParams.get("search") || "";
-    if (urlSearch === searchValue) return;
+    if (urlSearch === searchValue) {
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
     const timer = setTimeout(() => {
       handleSearch(searchValue);
-    }, 500);
+      setIsSearching(false);
+    }, 300); // 300ms - tezroq
 
     return () => clearTimeout(timer);
   }, [searchValue, handleSearch, searchParams]);
@@ -332,8 +339,13 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 placeholder="Ism, familiya yoki telefon..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="h-12 w-full pl-8"
+                className="h-12 w-full pr-10 pl-8"
               />
+              {isSearching && (
+                <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                  <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {selectedIds.length > 0 && (

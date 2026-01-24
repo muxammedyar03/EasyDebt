@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Transaction bilan import qilish (30 soniya timeout)
+    // 4. Transaction bilan import qilish (5 daqiqa timeout)
     const result = await prisma.$transaction(
       async (tx) => {
         const debtorMap = new Map<string, number>();
@@ -100,19 +100,25 @@ export async function POST(request: NextRequest) {
         let createdDebts = 0;
         let createdPayments = 0;
 
-        // 5. Debtorlarni yaratish
+        // 5. Avval barcha mavjud external_id'larni olish (batch)
+        const existingDebtorIds = await tx.debtor.findMany({
+          where: {
+            external_id: { in: importData.debtors.map((d) => d.external_id) },
+          },
+          select: { id: true, external_id: true },
+        });
+        const existingDebtorMap = new Map(existingDebtorIds.map((d) => [d.external_id, d.id]));
+
+        // 6. Debtorlarni yaratish/yangilash
         for (const debtorData of importData.debtors) {
-          // External ID orqali mavjudligini tekshirish
-          const existingDebtor = await tx.debtor.findUnique({
-            where: { external_id: debtorData.external_id },
-          });
+          const existingId = existingDebtorMap.get(debtorData.external_id);
 
           let debtorId: number;
 
-          if (existingDebtor) {
+          if (existingId) {
             // Agar mavjud bo'lsa, yangilaymiz
-            const updated = await tx.debtor.update({
-              where: { external_id: debtorData.external_id },
+            await tx.debtor.update({
+              where: { id: existingId },
               data: {
                 first_name: debtorData.first_name,
                 last_name: debtorData.last_name,
@@ -120,7 +126,7 @@ export async function POST(request: NextRequest) {
                 address: debtorData.address,
               },
             });
-            debtorId = updated.id;
+            debtorId = existingId;
           } else {
             // Yangi debtor yaratamiz
             const created = await tx.debtor.create({
@@ -131,67 +137,83 @@ export async function POST(request: NextRequest) {
                 phone_number: debtorData.phone_number,
                 address: debtorData.address,
                 created_by: session.userId,
-                total_debt: 0, // Keyinroq hisoblanadi
+                total_debt: 0,
               },
             });
             debtorId = created.id;
             createdDebtors++;
           }
 
-          // Mapping'ga qo'shamiz
           debtorMap.set(debtorData.external_id, debtorId);
+        }
 
-          // 6. Debtlarni yaratish
+        // 7. Barcha mavjud debt external_id'larni olish (batch)
+        const allDebtExternalIds = importData.debtors.flatMap((d) => d.debts.map((debt) => debt.external_id));
+        const existingDebtIds = await tx.debt.findMany({
+          where: { external_id: { in: allDebtExternalIds } },
+          select: { external_id: true },
+        });
+        const existingDebtSet = new Set(existingDebtIds.map((d) => d.external_id));
+
+        // 8. Debtlarni batch yaratish
+        const debtsToCreate: Prisma.DebtCreateManyInput[] = [];
+        for (const debtorData of importData.debtors) {
+          const debtorId = debtorMap.get(debtorData.external_id)!;
           for (const debtData of debtorData.debts) {
-            // External ID orqali mavjudligini tekshirish
-            const existingDebt = await tx.debt.findUnique({
-              where: { external_id: debtData.external_id },
-            });
-
-            if (!existingDebt) {
-              await tx.debt.create({
-                data: {
-                  external_id: debtData.external_id,
-                  debtor_id: debtorId,
-                  amount: new Prisma.Decimal(debtData.amount),
-                  description: debtData.description,
-                  items: debtData.items as DebtItem[],
-                  created_at: new Date(debtData.created_at),
-                  created_by: session.userId,
-                },
+            if (!existingDebtSet.has(debtData.external_id)) {
+              debtsToCreate.push({
+                external_id: debtData.external_id,
+                debtor_id: debtorId,
+                amount: new Prisma.Decimal(debtData.amount),
+                description: debtData.description,
+                items: debtData.items as DebtItem[],
+                created_at: new Date(debtData.created_at),
+                created_by: session.userId,
               });
-              createdDebts++;
-            }
-          }
-
-          // 7. Paymentlarni yaratish
-          for (const paymentData of debtorData.payments) {
-            // External ID orqali mavjudligini tekshirish
-            const existingPayment = await tx.payment.findUnique({
-              where: { external_id: paymentData.external_id },
-            });
-
-            if (!existingPayment) {
-              await tx.payment.create({
-                data: {
-                  external_id: paymentData.external_id,
-                  debtor_id: debtorId,
-                  amount: new Prisma.Decimal(paymentData.amount) as Prisma.Decimal,
-                  payment_type: paymentData.payment_type as PaymentType,
-                  note: paymentData.note,
-                  created_at: new Date(paymentData.created_at),
-                  created_by: session.userId,
-                },
-              });
-              createdPayments++;
             }
           }
         }
 
-        // 8. Total debt'larni qayta hisoblash (batch optimizatsiya)
+        if (debtsToCreate.length > 0) {
+          await tx.debt.createMany({ data: debtsToCreate, skipDuplicates: true });
+          createdDebts = debtsToCreate.length;
+        }
+
+        // 9. Barcha mavjud payment external_id'larni olish (batch)
+        const allPaymentExternalIds = importData.debtors.flatMap((d) => d.payments.map((p) => p.external_id));
+        const existingPaymentIds = await tx.payment.findMany({
+          where: { external_id: { in: allPaymentExternalIds } },
+          select: { external_id: true },
+        });
+        const existingPaymentSet = new Set(existingPaymentIds.map((p) => p.external_id));
+
+        // 10. Paymentlarni batch yaratish
+        const paymentsToCreate: Prisma.PaymentCreateManyInput[] = [];
+        for (const debtorData of importData.debtors) {
+          const debtorId = debtorMap.get(debtorData.external_id)!;
+          for (const paymentData of debtorData.payments) {
+            if (!existingPaymentSet.has(paymentData.external_id)) {
+              paymentsToCreate.push({
+                external_id: paymentData.external_id,
+                debtor_id: debtorId,
+                amount: new Prisma.Decimal(paymentData.amount),
+                payment_type: paymentData.payment_type as PaymentType,
+                note: paymentData.note,
+                created_at: new Date(paymentData.created_at),
+                created_by: session.userId,
+              });
+            }
+          }
+        }
+
+        if (paymentsToCreate.length > 0) {
+          await tx.payment.createMany({ data: paymentsToCreate, skipDuplicates: true });
+          createdPayments = paymentsToCreate.length;
+        }
+
+        // 11. Total debt'larni qayta hisoblash (batch)
         const debtorIds = Array.from(debtorMap.values());
 
-        // Barcha debt va payment'larni bir query'da olish
         const allDebts = await tx.debt.groupBy({
           by: ["debtor_id"],
           where: { debtor_id: { in: debtorIds } },
@@ -204,26 +226,27 @@ export async function POST(request: NextRequest) {
           _sum: { amount: true },
         });
 
-        // Map'ga o'tkazish
-        const debtMap = new Map(allDebts.map((d) => [d.debtor_id, d._sum.amount?.toNumber() || 0]));
-        const paymentMap = new Map(allPayments.map((p) => [p.debtor_id, p._sum.amount?.toNumber() || 0]));
+        const debtSumMap = new Map(allDebts.map((d) => [d.debtor_id, d._sum.amount?.toNumber() || 0]));
+        const paymentSumMap = new Map(allPayments.map((p) => [p.debtor_id, p._sum.amount?.toNumber() || 0]));
 
-        // Har bir debtor uchun total debt'ni yangilash
-        for (const debtorId of debtorIds) {
-          const totalDebts = debtMap.get(debtorId) || 0;
-          const totalPayments = paymentMap.get(debtorId) || 0;
-          const totalDebt = totalDebts - totalPayments;
+        // Batch update uchun Promise.all ishlatamiz
+        await Promise.all(
+          debtorIds.map((debtorId) => {
+            const totalDebts = debtSumMap.get(debtorId) || 0;
+            const totalPayments = paymentSumMap.get(debtorId) || 0;
+            const totalDebt = totalDebts - totalPayments;
 
-          await tx.debtor.update({
-            where: { id: debtorId },
-            data: {
-              total_debt: new Prisma.Decimal(totalDebt),
-              last_payment_date: totalPayments > 0 ? new Date() : null,
-            },
-          });
-        }
+            return tx.debtor.update({
+              where: { id: debtorId },
+              data: {
+                total_debt: new Prisma.Decimal(totalDebt),
+                last_payment_date: totalPayments > 0 ? new Date() : null,
+              },
+            });
+          }),
+        );
 
-        // 9. Import history yaratish
+        // 12. Import history yaratish
         await tx.importHistory.create({
           data: {
             user_id: session.userId,
@@ -235,7 +258,7 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // 10. Audit log
+        // 13. Audit log
         await tx.auditLog.create({
           data: {
             user_id: session.userId,
@@ -257,8 +280,8 @@ export async function POST(request: NextRequest) {
         };
       },
       {
-        maxWait: 30000, // 30 soniya kutish
-        timeout: 30000, // 30 soniya timeout
+        maxWait: 300000, // 5 daqiqa kutish
+        timeout: 300000, // 5 daqiqa timeout
       },
     );
 

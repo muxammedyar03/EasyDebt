@@ -571,11 +571,30 @@ export class DebtorService {
     const where: Prisma.DebtorWhereInput = {};
 
     if (filters?.search) {
-      where.OR = [
-        { first_name: { contains: filters.search, mode: "insensitive" } },
-        { last_name: { contains: filters.search, mode: "insensitive" } },
-        { phone_number: { contains: filters.search, mode: "insensitive" } },
-      ];
+      // Split search by spaces and filter empty strings
+      const searchTerms = filters.search.trim().split(/\s+/).filter(Boolean);
+
+      if (searchTerms.length === 1) {
+        // Single word search - search across all fields
+        const term = searchTerms[0];
+        where.OR = [
+          { first_name: { contains: term, mode: "insensitive" } },
+          { last_name: { contains: term, mode: "insensitive" } },
+          { phone_number: { contains: term, mode: "insensitive" } },
+          { address: { contains: term, mode: "insensitive" } },
+        ];
+      } else {
+        // Multiple words - ALL terms must match somewhere (AND logic)
+        // Each term can match in any field (OR logic within each term)
+        where.AND = searchTerms.map((term) => ({
+          OR: [
+            { first_name: { contains: term, mode: "insensitive" } },
+            { last_name: { contains: term, mode: "insensitive" } },
+            { phone_number: { contains: term, mode: "insensitive" } },
+            { address: { contains: term, mode: "insensitive" } },
+          ],
+        }));
+      }
     }
 
     if (filters?.isOverdue !== undefined) {

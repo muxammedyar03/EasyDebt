@@ -66,6 +66,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
   if (isLoading) {
     return (
       <Card className="h-auto border-dashed p-3 sm:h-24">
+        {devModeAlert()}
         <CardContent className="flex h-full flex-col justify-between gap-6 p-0 pt-2 sm:flex-row sm:items-center sm:pt-0 lg:p-2">
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -84,7 +85,8 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
   if (!activeReminder) {
     const colorClass = "bg-green-500/10 text-green-500 hover:text-green-500 border border-green-500/20";
     return (
-      <Card className="border-muted-foreground/30 h-auto border-dashed p-3 sm:h-24">
+      <Card className="border-muted-foreground/30 relative h-auto border-dashed p-3 sm:h-24">
+        {devModeAlert()}
         <CardContent className="flex h-full flex-col items-center justify-between gap-6 p-0 sm:flex-row lg:p-2">
           {/* Header */}
           <div className="flex h-full w-full items-center justify-between gap-4 pt-2 sm:pt-0">
@@ -135,7 +137,8 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
   };
 
   return (
-    <Card className={cn("border p-3", urgencyStyles[timeInfo?.urgency ?? "normal"])}>
+    <Card className={cn("relative border p-3", urgencyStyles[timeInfo?.urgency ?? "normal"])}>
+      {devModeAlert()}
       <CardContent className="flex h-full flex-col items-center justify-between gap-6 p-0 sm:flex-row lg:p-2">
         <div className="flex h-full w-full items-center justify-between gap-4 pt-2 sm:pt-0">
           <div
@@ -185,3 +188,14 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
     </Card>
   );
 }
+
+const devModeAlert = () => {
+  return (
+    <Card className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center rounded-3xl border border-red-500/50 bg-gray-400/10 backdrop-blur-xs">
+      <Badge variant="destructive" className="text-base">
+        <AlertCircle className="h-4 w-4" />
+        Texnik ishlar tufayli bu funksiya mavjud emas!
+      </Badge>
+    </Card>
+  );
+};

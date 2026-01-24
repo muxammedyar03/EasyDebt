@@ -37,6 +37,7 @@ export function CustomersTable({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [isSearching, setIsSearching] = React.useState(false);
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const currentRating = searchParams.get("rating") || "all";
@@ -104,11 +105,18 @@ export function CustomersTable({
   // Debounce search on input change to avoid resetting pagination unexpectedly
   const onSearchChange = (value: string) => {
     setSearchValue(value);
+    setIsSearching(true);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       handleSearch(value);
-    }, 500);
+      setIsSearching(false);
+    }, 300); // 300ms - tezroq
   };
+
+  // URL o'zgarganda isSearching'ni reset qilish
+  React.useEffect(() => {
+    setIsSearching(false);
+  }, [searchParams]);
   //  "high" | "medium" | "critical"
   const getRatingBadge = (rating: "high" | "medium" | "critical") => {
     switch (rating) {
@@ -152,8 +160,13 @@ export function CustomersTable({
               placeholder="Ism, familiya yoki telefon..."
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="h-12 pl-8"
+              className="h-12 pr-10 pl-8"
             />
+            {isSearching && (
+              <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+              </div>
+            )}
           </div>
           <SortToggleGroup
             sortOptions={[

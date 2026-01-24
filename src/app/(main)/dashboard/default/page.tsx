@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function Page() {
-  // Fetch raw debtors for the dashboard table (shape must match debtorSchema)
+  // Fetch ALL debtors for the dashboard table (client-side search/pagination)
   const [debtorsRaw, stats, debtLimit, chartData] = await Promise.all([
-    debtorService.findMany(),
+    debtorService.findMany(undefined, { page: 1, limit: 10000 }), // Barcha debtorlar
     debtorService.getStats(),
     debtService.debtLimit(),
     paymentService.getPaymentsChartData(),

@@ -36,7 +36,11 @@ type DataTableViewProps = {
  */
 export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDebtor, onRefresh }: DataTableViewProps) {
   const isMobile = useIsMobile();
-  const { table, state, handlers, filteredData } = useDashboardDebtorsTable({ data, columns, onDeleteDebtor });
+  const { table, state, handlers, filteredData, isSearching } = useDashboardDebtorsTable({
+    data,
+    columns,
+    onDeleteDebtor,
+  });
 
   const {
     isDialogOpen,
@@ -56,16 +60,20 @@ export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDeb
       className={`bg-card flex flex-col gap-y-4 rounded-xl p-4 shadow-sm ${isMobile ? "bg-card dark:bg-card rounded-xl border px-2 pb-4" : ""}`}
     >
       <div className="mt-6 mb-3 flex items-center gap-2 md:m-0">
-        <Input
-          type="text"
-          className="border-border h-14 w-full text-base font-medium xl:w-1/2"
-          placeholder="Ism telefon va address boyicha qidirish"
-          value={globalFilter}
-          onChange={(e) => {
-            setGlobalFilter(e.target.value);
-            table.setGlobalFilter(e.target.value);
-          }}
-        />
+        <div className="relative w-full xl:w-1/2">
+          <Input
+            type="text"
+            className="border-border h-14 w-full pr-10 text-base font-medium"
+            placeholder="Ism, telefon va manzil bo'yicha qidirish..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+          />
+          {isSearching && (
+            <div className="absolute top-1/2 right-3 -translate-y-1/2">
+              <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+            </div>
+          )}
+        </div>
         <DataTableViewOptions table={table} />
         <Button variant="outline" size="sm" className="h-14 w-14 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
           <Plus />

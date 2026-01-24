@@ -12,6 +12,51 @@ type UseDashboardDebtorsTableParams = {
   onDeleteDebtor: (debtorId: number) => void | Promise<void>;
 };
 
+// Cache - debtor uchun searchable text bir marta yaratiladi
+const searchCache = new WeakMap<DebtorView, { text: string; phone: string }>();
+
+function getSearchableData(debtor: DebtorView) {
+  let cached = searchCache.get(debtor);
+  if (!cached) {
+    cached = {
+      text: `${debtor.firstName} ${debtor.lastName} ${debtor.address || ""} ${debtor.fullName || ""}`.toLowerCase(),
+      phone: (debtor.phoneNumber || "").replace(/\D/g, ""),
+    };
+    searchCache.set(debtor, cached);
+  }
+  return cached;
+}
+
+/**
+ * Optimized multi-term search filter
+ * - WeakMap cache bilan tezroq ishlaydi
+ * - Telefon raqamini formatdan qat'iy nazar qidiradi
+ */
+function filterDebtors(data: DebtorView[], searchQuery: string): DebtorView[] {
+  const trimmed = searchQuery.trim();
+  if (!trimmed) return data;
+
+  const searchTerms = trimmed.toLowerCase().split(/\s+/).filter(Boolean);
+  if (searchTerms.length === 0) return data;
+
+  // Qidiruv terminlarini oldindan tayyorlash
+  const preparedTerms = searchTerms.map((term) => ({
+    term,
+    digits: term.replace(/\D/g, ""),
+  }));
+
+  return data.filter((debtor) => {
+    const { text, phone } = getSearchableData(debtor);
+
+    return preparedTerms.every(({ term, digits }) => {
+      // Telefon raqamida qidirish (raqam bo'lsa)
+      if (digits && phone.includes(digits)) return true;
+      // Matnda qidirish
+      return text.includes(term);
+    });
+  });
+}
+
 export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseDashboardDebtorsTableParams) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [globalFilter, setGlobalFilter] = React.useState("");
@@ -36,8 +81,18 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
     totalDebt: 0,
   });
 
+  // useDeferredValue - input instant, filter deferred (React 18)
+  const deferredFilter = React.useDeferredValue(globalFilter);
+
+  // Filterlangan data - deferred filter bilan (UI bloklanmaydi)
+  const filteredData = React.useMemo(() => filterDebtors(data, deferredFilter), [data, deferredFilter]);
+
+  // Filter ishlayotganini ko'rsatish uchun
+  const isSearching = globalFilter !== deferredFilter;
+
+  // Table filterlangan data bilan ishlaydi
   const table = useDataTableInstance({
-    data,
+    data: filteredData, // ✅ Filterlangan data
     columns,
     getRowId: (row) => row.id.toString(),
     defaultPageSize: 10,
@@ -74,18 +129,6 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
     void onDeleteDebtor(debtorId);
   };
 
-  const filteredData = React.useMemo(() => {
-    if (!globalFilter) return data;
-    const lowerFilter = globalFilter.toLowerCase();
-    return data.filter(
-      (debtor) =>
-        debtor.firstName.toLowerCase().includes(lowerFilter) ||
-        debtor.lastName.toLowerCase().includes(lowerFilter) ||
-        debtor.phoneNumber?.toLowerCase().includes(lowerFilter) ||
-        debtor.address?.toLowerCase().includes(lowerFilter),
-    );
-  }, [data, globalFilter]);
-
   return {
     table,
     state: {
@@ -104,5 +147,6 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
       handleDelete,
     },
     filteredData,
+    isSearching,
   };
 }
