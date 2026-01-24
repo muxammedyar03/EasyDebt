@@ -210,8 +210,8 @@ export function startCronScheduler() {
         console.error("[cron] Payment reminders error:", error);
       }
     },
-    1 * 60 * 1000,
-  ); // 1 minute
+    30 * 60 * 1000, // 30 minutes
+  );
 
   // Overdue check - every hour (will only notify once per debtor)
   setInterval(
@@ -226,8 +226,8 @@ export function startCronScheduler() {
         console.error("[cron] Overdue check error:", error);
       }
     },
-    60 * 60 * 1000,
-  ); // 1 hour
+    30 * 60 * 1000, // 30 minutes
+  );
 
   // Hosting reminder - every hour (will only create once per month)
   setInterval(
