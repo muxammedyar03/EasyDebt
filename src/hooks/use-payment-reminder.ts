@@ -103,8 +103,8 @@ export function usePaymentReminder(
       const reminders = data.data || [];
       setAllReminders(reminders);
 
-      // Find active (pending) reminder
-      const active = reminders.find((r: PaymentReminderDomain) => r.status === "PENDING");
+      // Find active reminder (PENDING or NOTIFIED - user must manually complete/cancel)
+      const active = reminders.find((r: PaymentReminderDomain) => r.status === "PENDING" || r.status === "NOTIFIED");
       setActiveReminder(active || null);
 
       // If there's an active reminder, pre-fill the form

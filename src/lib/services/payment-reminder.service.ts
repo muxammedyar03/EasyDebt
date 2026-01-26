@@ -408,6 +408,38 @@ export class PaymentReminderService {
     const field = fieldMap[sortBy] ?? sortBy;
     return { [field]: order } as Prisma.PaymentReminderOrderByWithRelationInput;
   }
+
+  /**
+   * Get all active reminders (PENDING and NOTIFIED) grouped by debtor_id
+   * Used for dashboard display
+   */
+  async getActiveRemindersByDebtor(): Promise<Map<number, PaymentReminderDomain>> {
+    const reminders = await prisma.paymentReminder.findMany({
+      where: {
+        status: {
+          in: ["PENDING", "NOTIFIED"],
+        },
+      },
+      include: {
+        debtor: true,
+        creator: true,
+      },
+      orderBy: {
+        reminder_at: "asc",
+      },
+    });
+
+    const reminderMap = new Map<number, PaymentReminderDomain>();
+
+    for (const reminder of reminders) {
+      // Only keep the first (earliest) reminder per debtor
+      if (!reminderMap.has(reminder.debtor_id)) {
+        reminderMap.set(reminder.debtor_id, prismaToDomainReminder(reminder));
+      }
+    }
+
+    return reminderMap;
+  }
 }
 
 // Export singleton instance

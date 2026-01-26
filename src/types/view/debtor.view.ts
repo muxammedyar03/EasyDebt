@@ -69,6 +69,14 @@ export type DebtorView = {
   paymentsCount?: number;
   totalPaid?: number;
   totalPaidFormatted?: string;
+
+  // Payment reminder (for dashboard)
+  nextReminder?: {
+    id: number;
+    reminderAt: Date;
+    status: "PENDING" | "NOTIFIED";
+    note: string | null;
+  } | null;
 };
 
 /**

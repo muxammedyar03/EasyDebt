@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { EllipsisVertical, Minus, Plus } from "lucide-react";
+import { Bell, Clock, EllipsisVertical, Minus, Plus } from "lucide-react";
+import { formatDistanceToNow, isPast, differenceInHours, differenceInMinutes } from "date-fns";
+import { uz } from "date-fns/locale";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
@@ -21,6 +24,7 @@ import { EditDebtorDialog } from "./edit-debtor-dialog";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DebtorView } from "@/types/view";
+import { formatDateUz } from "@/lib/format";
 
 interface ColumnsContext {
   onDataChange?: () => void;
@@ -56,10 +60,10 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onMouseDownCapture={(e) => e.stopPropagation()}
         onMouseUpCapture={(e) => e.stopPropagation()}
       >
-        <Button variant="outline" size="sm" onClick={() => setDebtDialogOpen(true)}>
+        <Button variant="outline" size="lg" onClick={() => setDebtDialogOpen(true)}>
           <Plus className="h-4 w-4" /> Qarz
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setPaymentDialogOpen(true)}>
+        <Button variant="outline" size="lg" onClick={() => setPaymentDialogOpen(true)}>
           <Minus className="h-4 w-4" /> To&apos;lov
         </Button>
       </div>
@@ -80,6 +84,66 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onSuccess={context?.onDataChange}
       />
     </>
+  );
+};
+
+// Cell component for reminder indicator
+const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
+  const reminder = row.original.nextReminder;
+
+  if (!reminder) {
+    return null;
+  }
+
+  const reminderDate = new Date(reminder.reminderAt);
+  const isOverdue = isPast(reminderDate);
+  const isNotified = reminder.status === "NOTIFIED";
+
+  // Calculate time display
+  let timeText: string;
+  let urgencyClass: string;
+
+  if (isNotified) {
+    timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
+    urgencyClass = "h-9 px-3 bg-purple-500/10 text-purple-600 border-purple-500/30";
+  } else if (isOverdue) {
+    timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
+    urgencyClass = "bg-red-500/20 text-red-700 border-red-500/30";
+  } else {
+    const hoursLeft = differenceInHours(reminderDate, new Date());
+    const minutesLeft = differenceInMinutes(reminderDate, new Date());
+
+    if (minutesLeft < 60) {
+      timeText = `${minutesLeft} daqiqa`;
+      urgencyClass = "bg-orange-500/20 text-orange-700 border-orange-500/30";
+    } else if (hoursLeft < 24) {
+      timeText = `${hoursLeft} soat`;
+      urgencyClass = "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
+    } else {
+      const daysLeft = Math.ceil(hoursLeft / 24);
+      timeText = `${daysLeft} kun`;
+      urgencyClass = "bg-blue-500/20 text-blue-700 border-blue-500/30";
+    }
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline" className={`flex cursor-help items-center gap-1 px-2 py-1 ${urgencyClass}`}>
+            {isNotified ? <Bell className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+            <span className="text-xs">{timeText}</span>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent className="bg-white">
+          <div className="text-xs">
+            <p className="font-medium text-black">{isNotified ? "Eslatma yuborilgan" : "Eslatma vaqti"}</p>
+            <p className="text-muted-foreground">{formatDateUz(reminderDate, true)}</p>
+            {reminder.note && <p className="text-muted-foreground mt-1">{reminder.note}</p>}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
@@ -155,7 +219,8 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
   };
 
   return (
-    <>
+    <div className="flex items-center justify-end gap-2">
+      <ReminderIndicatorCell row={row} />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -199,7 +264,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
         debtor={debtorView}
         onSuccess={context?.onDataChange}
       />
-    </>
+    </div>
   );
 };
 
@@ -262,13 +327,24 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
 
       let variant: "default" | "destructive" | "secondary" = "secondary";
       let label = "Qarzdor";
+      const redColor = "bg-red-500/10 text-red-700 border border-red-500/30";
+      const greenColor = "bg-green-500/10 text-green-700 border border-green-500/30";
+      const defaultColor =
+        "bg-gray-500/10 text-gray-700 dark:text-gray-300 border border-gray-900/30 dark:border-gray-500/50";
+      let color = "";
 
       if (totalDebt <= 0) {
         variant = "default";
         label = "To'langan";
+        color = greenColor;
       } else if (totalDebt > debtLimit) {
-        variant = "destructive";
+        variant = "default";
         label = "Limitdan oshgan";
+        color = redColor;
+      } else {
+        variant = "default";
+        label = "Qarzdor";
+        color = defaultColor;
       }
 
       return (
@@ -277,7 +353,9 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
             variant={"default"}
             className={`h-5 w-5 rounded-full ${row.original.isOverdue ? "bg-red-500" : "bg-green-500"}`}
           ></Badge>
-          <Badge variant={variant}>{label}</Badge>
+          <Badge variant={variant} className={`h-7 rounded-xl px-2 font-medium ${color}`}>
+            {label}
+          </Badge>
         </div>
       );
     },

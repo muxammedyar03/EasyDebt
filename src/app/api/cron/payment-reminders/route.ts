@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { checkPaymentReminders } from "@/lib/crons";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,8 +10,16 @@ export const fetchCache = "force-no-store";
 /**
  * GET /api/cron/payment-reminders
  * Cron job to check and process due payment reminders
+ *
+ * Auth: CRON_SECRET (header yoki query param)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Auth tekshirish
+  const auth = verifyCronAuth(request);
+  if (!auth.authorized) {
+    return auth.error;
+  }
+
   try {
     console.log("[cron/payment-reminders] invoked");
     const count = await checkPaymentReminders();

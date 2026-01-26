@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { PaymentReminderDomain } from "@/types/domain/payment-reminder.domain";
-import { isDevMode } from "@/lib/dev-mode";
 
 interface ReminderStatusCardProps {
   activeReminder: PaymentReminderDomain | null;
@@ -116,11 +115,14 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
   }
 
   // Has active reminder - show status
+  const isNotified = activeReminder.status === "NOTIFIED";
+
   const urgencyStyles = {
     normal: "bg-blue-500/10 border-blue-500/30",
     warning: "bg-yellow-500/10 border-yellow-500/30",
     urgent: "bg-orange-500/10 border-orange-500/30",
     overdue: "bg-red-500/10 border-red-500/30",
+    notified: "bg-purple-500/10 border-purple-500/30",
   };
 
   const iconStyles = {
@@ -128,6 +130,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
     warning: "bg-yellow-500/20 text-yellow-600",
     urgent: "bg-orange-500/20 text-orange-600",
     overdue: "bg-red-500/20 text-red-600",
+    notified: "bg-purple-500/20 text-purple-600",
   };
 
   const badgeStyles = {
@@ -135,27 +138,32 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
     warning: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
     urgent: "bg-orange-500/10 text-orange-700 border-orange-500/20",
     overdue: "bg-red-500/10 text-red-700 border-red-500/20",
+    notified: "bg-purple-500/10 text-purple-700 border-purple-500/20",
   };
 
+  // Use "notified" style if notified, otherwise use urgency
+  const currentStyle = isNotified ? "notified" : (timeInfo?.urgency ?? "normal");
+
   return (
-    <Card className={cn("relative border p-3", urgencyStyles[timeInfo?.urgency ?? "normal"])}>
+    <Card className={cn("relative border p-3", urgencyStyles[currentStyle])}>
       {/* {devModeAlert()} */}
       <CardContent className="flex h-full flex-col items-center justify-between gap-6 p-0 sm:flex-row lg:p-2">
         <div className="flex h-full w-full items-center justify-between gap-4 pt-2 sm:pt-0">
-          <div
-            className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-full",
-              iconStyles[timeInfo?.urgency ?? "normal"],
+          <div className={cn("flex h-10 w-10 items-center justify-center rounded-full", iconStyles[currentStyle])}>
+            {isNotified ? (
+              <Bell className="h-5 w-5" />
+            ) : timeInfo?.isOverdue ? (
+              <AlertCircle className="h-5 w-5" />
+            ) : (
+              <Bell className="h-5 w-5" />
             )}
-          >
-            {timeInfo?.isOverdue ? <AlertCircle className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium">To&apos;lov eslatmasi</p>
-              <Badge variant="outline" className={cn("text-xs", badgeStyles[timeInfo?.urgency ?? "normal"])}>
-                {timeInfo?.timeText}
+              <p className="text-sm font-medium">{isNotified ? "Eslatma yuborilgan" : "To'lov eslatmasi"}</p>
+              <Badge variant="outline" className={cn("text-xs", badgeStyles[currentStyle])}>
+                {isNotified ? `${timeInfo?.timeText}` : timeInfo?.timeText}
               </Badge>
             </div>
             <div className="text-muted-foreground mt-1 flex items-center gap-3 text-xs">
@@ -167,6 +175,11 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
                 <Clock className="h-3 w-3" />
                 {timeInfo?.formattedTime}
               </span>
+              {isNotified && activeReminder.notifiedAt && (
+                <span className="text-purple-600">
+                  • Bildirilgan: {format(new Date(activeReminder.notifiedAt), "HH:mm")}
+                </span>
+              )}
             </div>
             {activeReminder.note && (
               <p className="text-muted-foreground mt-1 truncate text-xs">{activeReminder.note}</p>
@@ -179,11 +192,13 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
           size="sm"
           onClick={onOpenDialog}
           className={cn(
-            "h-12 w-full cursor-pointer px-4 hover:bg-green-500/20 sm:w-auto",
-            urgencyStyles[timeInfo?.urgency ?? "normal"],
+            "h-12 w-full cursor-pointer px-4 sm:w-auto",
+            isNotified
+              ? "border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20"
+              : urgencyStyles[timeInfo?.urgency ?? "normal"] + " hover:bg-green-500/20",
           )}
         >
-          Boshqarish
+          {isNotified ? "Tugallash" : "Boshqarish"}
         </Button>
       </CardContent>
     </Card>

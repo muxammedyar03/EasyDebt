@@ -127,6 +127,80 @@ export function PaymentReminderDialog({
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
+        ) : activeReminder?.status === "NOTIFIED" ? (
+          /* NOTIFIED state - show completion UI */
+          <div className="py-4">
+            <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20">
+                  <Bell className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Eslatma yuborilgan</span>
+                    <Badge className="border-purple-500/20 bg-purple-500/10 text-purple-700">Bildirildi</Badge>
+                  </div>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {format(new Date(activeReminder.reminderAt), "d-MMMM yyyy, HH:mm", {
+                      locale: uz,
+                    })}
+                  </p>
+                  {activeReminder.note && <p className="text-muted-foreground mt-1 text-sm">{activeReminder.note}</p>}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground mt-4 text-center text-sm">
+              Qarzdorga eslatma yuborildi. Agar muammo hal bo&apos;lgan bo&apos;lsa, &quot;Tugallash&quot; tugmasini
+              bosing.
+            </p>
+
+            <div className="mt-6 grid gap-2 sm:grid-cols-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleComplete}
+                disabled={isSubmitting}
+                className="h-12 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/20 hover:text-green-700"
+              >
+                <CheckCircle2 className="mr-1 h-4 w-4" />
+                Tugallash
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+                className="h-12 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/20 hover:text-yellow-700"
+              >
+                <BellOff className="mr-1 h-4 w-4" />
+                Bekor qilish
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isSubmitting}
+                className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/20"
+              >
+                <Trash2 className="mr-1 h-4 w-4" />
+                O&apos;chirish
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              className="mt-4 h-12 w-full"
+            >
+              Yopish
+            </Button>
+          </div>
         ) : (
           <form onSubmit={handleSubmit}>
             {/* Show active reminder info */}

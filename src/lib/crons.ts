@@ -7,10 +7,15 @@
  * - Handles its own errors gracefully
  * - Logs its activity
  *
- * Cron jobs can be triggered via:
- * 1. API routes at /api/cron/* (for external cron services)
- * 2. Linux system crontab (curl to API routes)
- * 3. In-app node-cron scheduler (see startCronScheduler below)
+ * Cron jobs are triggered via Linux system crontab calling API routes:
+ * - /api/cron/payment-reminders - Every 5 minutes
+ * - /api/cron/check-overdue - Every hour
+ * - /api/cron/hosting-reminder - Every hour
+ *
+ * Example crontab entries (with authentication):
+ *   *\/5 * * * * curl -s "https://yoursite.com/api/cron/payment-reminders?key=YOUR_CRON_SECRET" > /dev/null
+ *   0 * * * * curl -s "https://yoursite.com/api/cron/check-overdue?key=YOUR_CRON_SECRET" > /dev/null
+ *   0 * * * * curl -s "https://yoursite.com/api/cron/hosting-reminder?key=YOUR_CRON_SECRET" > /dev/null
  */
 
 import { prisma } from "@/lib/prisma";
@@ -168,101 +173,30 @@ export async function cleanupOldReminders(daysOld = 90): Promise<number> {
   }
 }
 
-/**
- * Start in-app cron scheduler for VPS deployments
- *
- * Call this function once when the app starts (e.g., in instrumentation.ts)
- *
- * @example
- * // In src/instrumentation.ts:
- * export async function register() {
- *   if (process.env.NODE_ENV === 'production') {
- *     const { startCronScheduler } = await import('./lib/crons');
- *     startCronScheduler();
- *   }
- * }
- */
-let cronStarted = false;
-
-export function startCronScheduler() {
-  if (cronStarted) {
-    console.log("[cron] Scheduler already running");
-    return;
-  }
-
-  // Only run on server side
-  if (typeof window !== "undefined") {
-    return;
-  }
-
-  cronStarted = true;
-  console.log("[cron] Starting in-app cron scheduler...");
-
-  // Payment reminders - every 5 minutes
-  setInterval(
-    async () => {
-      try {
-        const count = await checkPaymentReminders();
-        if (count > 0) {
-          console.log(`[cron] Payment reminders processed: ${count}`);
-        }
-      } catch (error) {
-        console.error("[cron] Payment reminders error:", error);
-      }
-    },
-    30 * 60 * 1000, // 30 minutes
-  );
-
-  // Overdue check - every hour (will only notify once per debtor)
-  setInterval(
-    async () => {
-      try {
-        const { checkOverdueDebtors } = await import("./overdue-checker");
-        const count = await checkOverdueDebtors();
-        if (count > 0) {
-          console.log(`[cron] Overdue debtors processed: ${count}`);
-        }
-      } catch (error) {
-        console.error("[cron] Overdue check error:", error);
-      }
-    },
-    30 * 60 * 1000, // 30 minutes
-  );
-
-  // Hosting reminder - every hour (will only create once per month)
-  setInterval(
-    async () => {
-      try {
-        const { checkHostingReminder } = await import("./hosting-reminder");
-        const count = await checkHostingReminder();
-        if (count > 0) {
-          console.log(`[cron] Hosting reminder created`);
-        }
-      } catch (error) {
-        console.error("[cron] Hosting reminder error:", error);
-      }
-    },
-    60 * 60 * 1000,
-  ); // 1 hour
-
-  console.log("[cron] Scheduler started successfully");
-  console.log("[cron] - Payment reminders: every 5 minutes");
-  console.log("[cron] - Overdue check: every 1 hour");
-  console.log("[cron] - Hosting reminder: every 1 hour");
-}
-
 // ============================================================
-// Cron Schedule Reference (for Linux crontab or external services)
+// Linux Crontab Setup (VPS)
 // ============================================================
 //
-// Linux crontab example (run: crontab -e):
-//   */5 * * * * curl -s http://localhost:3000/api/cron/payment-reminders
-//   0 0 * * * curl -s http://localhost:3000/api/cron/check-overdue
-//   0 0 * * * curl -s http://localhost:3000/api/cron/hosting-reminder
+// 1. .env faylga CRON_SECRET qo'shing:
+//    CRON_SECRET=your-super-secret-key-here
 //
-// Vercel cron.json example:
-//   { "crons": [
-//     { "path": "/api/cron/payment-reminders", "schedule": "*/5 * * * *" },
-//     { "path": "/api/cron/check-overdue", "schedule": "0 0 * * *" },
-//     { "path": "/api/cron/hosting-reminder", "schedule": "0 0 * * *" }
-//   ]}
+// 2. SSH orqali serverga kiring va `crontab -e` buyrug'ini ishga tushiring
+//
+// 3. Quyidagi qatorlarni qo'shing (CRON_SECRET ni almashtiring):
+//
+// # Payment reminders - har 5 daqiqada
+// */5 * * * * curl -sH "Authorization: Bearer YOUR_CRON_SECRET" https://easydebt.uz/api/cron/payment-reminders > /dev/null 2>&1
+//
+// # Overdue check - har kuni soat 00:00 da
+// 0 0 * * * curl -sH "Authorization: Bearer YOUR_CRON_SECRET" https://easydebt.uz/api/cron/check-overdue > /dev/null 2>&1
+//
+// # Hosting reminder - har kuni soat 09:00 da
+// 0 9 * * * curl -sH "Authorization: Bearer YOUR_CRON_SECRET" https://easydebt.uz/api/cron/hosting-reminder > /dev/null 2>&1
+//
+// 4. Saqlang va chiqing (Ctrl+X, Y, Enter)
+//
+// Yoki query param bilan:
+// curl -s "https://easydebt.uz/api/cron/payment-reminders?key=YOUR_CRON_SECRET"
+//
+// Crontab tekshirish: crontab -l
+// ============================================================
