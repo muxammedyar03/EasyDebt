@@ -29,6 +29,18 @@ export { checkOverdueDebtors, reEvaluateOverdueDebtors } from "./overdue-checker
 export { checkHostingReminder } from "./hosting-reminder";
 
 /**
+ * Convert UTC date to Uzbekistan local time (UTC+5)
+ * The date from database is in UTC, we need to add 5 hours to get local time
+ */
+function toLocalTime(date: Date): Date {
+  // Create a new date object to avoid mutating the original
+  const localDate = new Date(date);
+  // Add 5 hours (Uzbekistan is UTC+5)
+  localDate.setHours(localDate.getHours() + 5);
+  return localDate;
+}
+
+/**
  * Payment Reminders Cron Job
  *
  * Checks for due payment reminders and creates notifications.
@@ -62,7 +74,8 @@ export async function checkPaymentReminders(): Promise<number> {
         }
 
         const debtorFullName = `${debtor.firstName} ${debtor.lastName}`;
-        const reminderTimeISO = format(reminder.reminderAt, "d-MMMM yyyy, HH:mm", { locale: uz });
+        const localReminderTime = toLocalTime(reminder.reminderAt);
+        const reminderTimeISO = format(localReminderTime, "d-MMMM yyyy, HH:mm", { locale: uz });
 
         // Create notification
         await createNotification({
