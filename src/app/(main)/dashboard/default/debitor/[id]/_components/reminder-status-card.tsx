@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { PaymentReminderDomain } from "@/types/domain/payment-reminder.domain";
+import { formatDateUz } from "@/lib/format";
 
 interface ReminderStatusCardProps {
   activeReminder: PaymentReminderDomain | null;
@@ -19,12 +20,32 @@ interface ReminderStatusCardProps {
 }
 
 export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: ReminderStatusCardProps) {
+  // Track current time for real-time updates
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  // Update current time every minute (or every 30 seconds if urgent)
+  React.useEffect(() => {
+    if (!activeReminder) return;
+
+    const reminderDate = new Date(activeReminder.reminderAt);
+    const hoursUntilReminder = differenceInHours(reminderDate, currentTime);
+
+    // Update more frequently if reminder is within 24 hours
+    const intervalMs = hoursUntilReminder <= 24 ? 30000 : 60000; // 30s if urgent, 1min otherwise
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, intervalMs);
+
+    return () => clearInterval(interval);
+  }, [activeReminder, currentTime]);
+
   // Calculate time remaining
   const timeInfo = React.useMemo(() => {
     if (!activeReminder) return null;
 
     const reminderDate = new Date(activeReminder.reminderAt);
-    const now = new Date();
+    const now = currentTime;
     const isOverdue = isPast(reminderDate);
     const daysDiff = differenceInDays(reminderDate, now);
     const hoursDiff = differenceInHours(reminderDate, now);
@@ -58,10 +79,10 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
       timeText,
       urgency,
       isOverdue,
-      formattedDate: format(reminderDate, "d-MMMM yyyy", { locale: uz }),
-      formattedTime: format(reminderDate, "HH:mm"),
+      formattedDate: formatDateUz(reminderDate),
+      formattedTime: formatDateUz(reminderDate, true),
     };
-  }, [activeReminder]);
+  }, [activeReminder, currentTime]);
 
   if (isLoading) {
     return (

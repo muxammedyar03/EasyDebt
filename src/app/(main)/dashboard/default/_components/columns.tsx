@@ -91,6 +91,25 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
 const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
   const reminder = row.original.nextReminder;
 
+  // Track current time for real-time updates
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    if (!reminder) return;
+
+    const reminderDate = new Date(reminder.reminderAt);
+    const hoursUntilReminder = differenceInHours(reminderDate, currentTime);
+
+    // Update more frequently if reminder is within 24 hours
+    const intervalMs = hoursUntilReminder <= 24 ? 30000 : 60000; // 30s if urgent, 1min otherwise
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, intervalMs);
+
+    return () => clearInterval(interval);
+  }, [reminder, currentTime]);
+
   if (!reminder) {
     return null;
   }
@@ -99,7 +118,7 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
   const isOverdue = isPast(reminderDate);
   const isNotified = reminder.status === "NOTIFIED";
 
-  // Calculate time display
+  // Calculate time display using current time
   let timeText: string;
   let urgencyClass: string;
 
@@ -110,18 +129,24 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
     timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
     urgencyClass = "bg-red-500/20 text-red-700 border-red-500/30";
   } else {
-    const hoursLeft = differenceInHours(reminderDate, new Date());
-    const minutesLeft = differenceInMinutes(reminderDate, new Date());
+    // Calculate total minutes left for accurate display
+    const totalMinutesLeft = differenceInMinutes(reminderDate, currentTime);
+    const hoursLeft = Math.floor(totalMinutesLeft / 60);
+    const daysLeft = Math.floor(hoursLeft / 24);
 
-    if (minutesLeft < 60) {
-      timeText = `${minutesLeft} daqiqa`;
+    if (totalMinutesLeft < 60) {
+      // Less than 1 hour - show minutes
+      timeText = `${totalMinutesLeft} daqiqa`;
       urgencyClass = "bg-orange-500/20 text-orange-700 border-orange-500/30";
     } else if (hoursLeft < 24) {
-      timeText = `${hoursLeft} soat`;
+      // Less than 24 hours - show hours (round up if there are extra minutes)
+      const displayHours = totalMinutesLeft % 60 > 0 ? hoursLeft + 1 : hoursLeft;
+      timeText = `${displayHours} soat`;
       urgencyClass = "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
     } else {
-      const daysLeft = Math.ceil(hoursLeft / 24);
-      timeText = `${daysLeft} kun`;
+      // 24 hours or more - show days (round up if there are extra hours)
+      const displayDays = hoursLeft % 24 > 0 ? daysLeft + 1 : daysLeft;
+      timeText = `${displayDays} kun`;
       urgencyClass = "bg-blue-500/20 text-blue-700 border-blue-500/30";
     }
   }

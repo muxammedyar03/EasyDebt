@@ -8,11 +8,21 @@ import { NextRequest, NextResponse } from "next/server";
  * - Query: ?key=<CRON_SECRET>
  *
  * Environment variable: CRON_SECRET
+ *
+ * Development mode'da: CRON_SECRET talab qilinmaydi (test qilish uchun)
+ * Production mode'da: CRON_SECRET majburiy
  */
 export function verifyCronAuth(request: NextRequest): { authorized: boolean; error?: NextResponse } {
+  const isDevelopment = process.env.NODE_ENV === "development";
   const cronSecret = process.env.CRON_SECRET;
 
-  // Agar CRON_SECRET sozlanmagan bo'lsa, xatolik qaytarish
+  // Development mode'da CRON_SECRET talab qilinmaydi
+  if (isDevelopment) {
+    console.log("[cron-auth] Development mode - skipping authentication");
+    return { authorized: true };
+  }
+
+  // Production mode'da CRON_SECRET majburiy
   if (!cronSecret) {
     console.error("[cron-auth] CRON_SECRET environment variable is not set");
     return {

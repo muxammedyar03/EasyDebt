@@ -21,8 +21,7 @@
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
-import { format } from "date-fns";
-import { uz } from "date-fns/locale";
+import { formatDateUz } from "./format";
 
 // Re-export existing cron functions for backward compatibility
 export { checkOverdueDebtors, reEvaluateOverdueDebtors } from "./overdue-checker";
@@ -62,9 +61,7 @@ export async function checkPaymentReminders(): Promise<number> {
         }
 
         const debtorFullName = `${debtor.firstName} ${debtor.lastName}`;
-        const reminderTimeFormatted = format(reminder.reminderAt, "d-MMMM yyyy, HH:mm", {
-          locale: uz,
-        });
+        const reminderTimeISO = formatDateUz(reminder.reminderAt, true);
 
         // Create notification
         await createNotification({
@@ -73,8 +70,8 @@ export async function checkPaymentReminders(): Promise<number> {
           type: "PAYMENT_REMINDER",
           title: "To'lov eslatmasi",
           message: reminder.note
-            ? `${debtorFullName} - ${reminder.note} (${reminderTimeFormatted})`
-            : `${debtorFullName} uchun to'lov eslatmasi (${reminderTimeFormatted})`,
+            ? `${debtorFullName} - ${reminder.note} (${reminderTimeISO})`
+            : `${debtorFullName} uchun to'lov eslatmasi (${reminderTimeISO})`,
         });
 
         // Mark reminder as notified
@@ -174,7 +171,25 @@ export async function cleanupOldReminders(daysOld = 90): Promise<number> {
 }
 
 // ============================================================
-// Linux Crontab Setup (VPS)
+// DEVELOPMENT MODE (localhost)
+// ============================================================
+//
+// Localhost'da cron job'lar AVTOMATIK ISHLAMAYDI.
+// Test qilish uchun API endpoint'larni manual chaqiring:
+//
+// Payment reminders:
+//   curl http://localhost:3000/api/cron/payment-reminders
+//
+// Check overdue:
+//   curl http://localhost:3000/api/cron/check-overdue
+//
+// Hosting reminder:
+//   curl http://localhost:3000/api/cron/hosting-reminder
+//
+// Eslatma: Development mode'da CRON_SECRET talab qilinmaydi.
+//
+// ============================================================
+// PRODUCTION MODE (Linux Crontab Setup)
 // ============================================================
 //
 // 1. .env faylga CRON_SECRET qo'shing:
