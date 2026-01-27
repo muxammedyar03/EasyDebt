@@ -39,9 +39,10 @@ const FirstNameCell = ({ row }: { row: Row<DebtorView> }) => {
         e.stopPropagation();
         router.push(`/dashboard/default/debitor/${row.original.id}`);
       }}
-      className="cursor-pointer text-base font-semibold"
+      className="flex cursor-pointer items-center justify-between gap-2 text-base font-semibold"
     >
       {row.original.firstName}
+      <ReminderIndicatorCell row={row} />
     </div>
   );
 };
@@ -124,7 +125,7 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
 
   if (isNotified) {
     timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
-    urgencyClass = "h-9 px-3 bg-purple-500/10 text-purple-600 border-purple-500/30";
+    urgencyClass = "bg-purple-500/10 text-purple-600 border-purple-500/30";
   } else if (isOverdue) {
     timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
     urgencyClass = "bg-red-500/20 text-red-700 border-red-500/30";
@@ -244,8 +245,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
   };
 
   return (
-    <div className="flex items-center justify-end gap-2">
-      <ReminderIndicatorCell row={row} />
+    <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -289,7 +289,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
         debtor={debtorView}
         onSuccess={context?.onDataChange}
       />
-    </div>
+    </>
   );
 };
 
