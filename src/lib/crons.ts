@@ -21,7 +21,8 @@
 import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
-import { formatDateUz } from "./format";
+import { uz } from "date-fns/locale";
+import { format } from "date-fns";
 
 // Re-export existing cron functions for backward compatibility
 export { checkOverdueDebtors, reEvaluateOverdueDebtors } from "./overdue-checker";
@@ -61,7 +62,7 @@ export async function checkPaymentReminders(): Promise<number> {
         }
 
         const debtorFullName = `${debtor.firstName} ${debtor.lastName}`;
-        const reminderTimeISO = formatDateUz(reminder.reminderAt, true);
+        const reminderTimeISO = format(reminder.reminderAt, "d-MMMM yyyy, HH:mm", { locale: uz });
 
         // Create notification
         await createNotification({
