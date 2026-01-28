@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { DebtorDetailClient } from "./_components/debtor-detail-client";
+import { debtorService } from "@/lib/services/debtor.service";
 
 interface PageProps {
   params: Promise<{
@@ -16,35 +16,16 @@ export default async function DebtorDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const debtor = await prisma.debtor.findUnique({
-    where: { id: debtorId },
-    include: {
-      debts: {
-        orderBy: { created_at: "desc" },
-      },
-      payments: {
-        orderBy: { created_at: "desc" },
-      },
-    },
-  });
+  const debtor = await debtorService.findById(Number(id), true);
+  const overdueDays = await debtorService.getOverdueDays();
+
+  // console.log(debtor);
 
   if (!debtor) {
     notFound();
   }
 
-  // Convert Decimal to number
-  const debtorData = {
-    ...debtor,
-    total_debt: debtor.total_debt.toNumber(),
-    debts: debtor.debts.map((debt) => ({
-      ...debt,
-      amount: debt.amount.toNumber(),
-    })),
-    payments: debtor.payments.map((payment) => ({
-      ...payment,
-      amount: payment.amount.toNumber(),
-    })),
-  };
+  // console.log({ debtor, debts: debtor.debts, payments: debtor.payments });
 
-  return <DebtorDetailClient debtor={debtorData} />;
+  return <DebtorDetailClient debtor={debtor} overdueDays={overdueDays} />;
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 const updateDebtorSchema = z.object({
   first_name: z.string().min(1).optional(),
@@ -40,17 +41,54 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
-    // Convert Decimal to number
+    // Compute days overdue
+    const daysOverdue = debtor.last_payment_date
+      ? Math.floor((Date.now() - debtor.last_payment_date.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    // Compute risk status (simple logic: high if overdue, medium if high debt, low otherwise)
+    const totalDebtNum = debtor.total_debt.toNumber();
+    const riskStatus = debtor.is_overdue ? "critical" : totalDebtNum > 5000000 ? "high" : "low";
+
+    // Compute status
+    const status = debtor.is_overdue ? "overdue" : totalDebtNum > 0 ? "active" : "settled";
+
+    // Convert to Domain format (camelCase)
     const debtorData = {
-      ...debtor,
-      total_debt: debtor.total_debt.toNumber(),
+      id: debtor.id,
+      externalId: debtor.external_id,
+      firstName: debtor.first_name,
+      lastName: debtor.last_name,
+      phoneNumber: debtor.phone_number,
+      address: debtor.address,
+      totalDebt: totalDebtNum,
+      isOverdue: debtor.is_overdue,
+      lastPaymentDate: debtor.last_payment_date,
+      riskStatus,
+      status,
+      daysOverdue: daysOverdue && daysOverdue > 45 ? daysOverdue : null,
+      createdAt: debtor.created_at,
+      updatedAt: debtor.updated_at,
+      createdBy: debtor.created_by,
       debts: debtor.debts.map((debt) => ({
-        ...debt,
+        id: debt.id,
+        externalId: debt.external_id,
+        debtorId: debt.debtor_id,
         amount: debt.amount.toNumber(),
+        description: debt.description,
+        items: debt.items,
+        createdAt: debt.created_at,
+        createdBy: debt.created_by,
       })),
       payments: debtor.payments.map((payment) => ({
-        ...payment,
+        id: payment.id,
+        externalId: payment.external_id,
+        debtorId: payment.debtor_id,
         amount: payment.amount.toNumber(),
+        paymentType: payment.payment_type,
+        note: payment.note,
+        createdAt: payment.created_at,
+        createdBy: payment.created_by,
       })),
     };
 
@@ -84,7 +122,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     const debtorFullName = `${updatedDebtor.first_name} ${updatedDebtor.last_name}`;
-    const description = `Qarzdor ${debtorFullName} ma'lumotlarini yangiladi`;
+    const description = `Qarzdor ${debtorFullName} ma'lumotlari yangilandi`;
 
     await prisma.auditLog.create({
       data: {
@@ -103,6 +141,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         user_agent: request.headers.get("user-agent") || "",
       },
     });
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${debtorId}`);
 
     return NextResponse.json({
       ...updatedDebtor,
@@ -140,7 +183,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     const debtorFullName = `${debtor.first_name} ${debtor.last_name}`;
-    const description = `Qarzdor ${debtorFullName} ni o'chirdi`;
+    const description = `Qarzdor ${debtorFullName} o'chirildi`;
 
     await prisma.auditLog.create({
       data: {
@@ -164,6 +207,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await prisma.debtor.delete({
       where: { id: debtorId },
     });
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${debtorId}`);
 
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {

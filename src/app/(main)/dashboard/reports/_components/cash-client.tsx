@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CreditCard, Wallet, Smartphone, Banknote, HandCoinsIcon } from "lucide-react";
 import { PaymentType } from "@prisma/client";
 import { useRouter } from "next/navigation";
+import { formatCurrencyUzs, formatDate } from "@/lib/format";
+import { getPaymentTypeClass } from "@/lib/utils";
 
 type PaymentData = {
   id: number;
@@ -118,36 +120,24 @@ export default function CashClient({ payments, debts }: Props) {
     setSelectedDate(current.toISOString().split("T")[0]);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " UZS";
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("uz-UZ", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-  };
-
-  const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
-    if (totalDebt === 0) {
-      return {
-        className: "bg-green-100 text-green-800 hover:bg-green-100",
-        text: "To'langan",
-      };
-    } else if (isOverdue) {
-      return {
-        className: "bg-red-100 text-red-800 hover:bg-red-100",
-        text: "Limitdan o'tgan",
-      };
-    } else {
-      return {
-        className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-        text: "Qarzdor",
-      };
-    }
-  };
+  // const getDebtorStatus = (totalDebt: number, isOverdue: boolean) => {
+  //   if (totalDebt === 0) {
+  //     return {
+  //       className: "bg-green-100 text-green-800 hover:bg-green-100",
+  //       text: "To'langan",
+  //     };
+  //   } else if (isOverdue) {
+  //     return {
+  //       className: "bg-red-100 text-red-800 hover:bg-red-100",
+  //       text: "Limitdan o'tgan",
+  //     };
+  //   } else {
+  //     return {
+  //       className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+  //       text: "Qarzdor",
+  //     };
+  //   }
+  // };
 
   const getDateRangeText = () => {
     if (timeRange === "daily") {
@@ -175,7 +165,7 @@ export default function CashClient({ payments, debts }: Props) {
             <HandCoinsIcon className="h-5 w-5 text-red-500" />
           </div>
           <div>
-            <div className="text-lg font-bold text-red-600 md:text-2xl">{formatCurrency(totals.totalDebts)}</div>
+            <div className="text-lg font-bold text-red-600 md:text-2xl">{formatCurrencyUzs(totals.totalDebts)}</div>
           </div>
         </div>
 
@@ -185,7 +175,9 @@ export default function CashClient({ payments, debts }: Props) {
             <Banknote className="h-5 w-5 text-green-500" />
           </div>
           <div>
-            <div className="text-lg font-bold text-green-600 md:text-2xl">{formatCurrency(totals.totalPayments)}</div>
+            <div className="text-lg font-bold text-green-600 md:text-2xl">
+              {formatCurrencyUzs(totals.totalPayments)}
+            </div>
           </div>
         </div>
       </div>
@@ -241,7 +233,7 @@ export default function CashClient({ payments, debts }: Props) {
             <Wallet className="text-muted-foreground h-4 w-4" />
           </div>
           <div>
-            <div className="text-lg font-bold md:text-2xl">{formatCurrency(totals.cash)}</div>
+            <div className="text-lg font-bold md:text-2xl">{formatCurrencyUzs(totals.cash)}</div>
           </div>
         </div>
         <div className="bg-card rounded-lg border p-4">
@@ -250,7 +242,7 @@ export default function CashClient({ payments, debts }: Props) {
             <CreditCard className="text-muted-foreground h-4 w-4" />
           </div>
           <div>
-            <div className="text-lg font-bold md:text-2xl">{formatCurrency(totals.card)}</div>
+            <div className="text-lg font-bold md:text-2xl">{formatCurrencyUzs(totals.card)}</div>
           </div>
         </div>
 
@@ -260,14 +252,14 @@ export default function CashClient({ payments, debts }: Props) {
             <Smartphone className="text-muted-foreground h-4 w-4" />
           </div>
           <div>
-            <div className="text-lg font-bold md:text-2xl">{formatCurrency(totals.click)}</div>
+            <div className="text-lg font-bold md:text-2xl">{formatCurrencyUzs(totals.click)}</div>
           </div>
         </div>
       </div>
 
       {/* Payments / Debts Tabs */}
       <Tabs defaultValue="payments" className="space-y-4">
-        <TabsList className="grid h-12 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
+        <TabsList className="grid h-10 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
           <TabsTrigger value="payments">To&apos;lovlar ({filteredPayments.length})</TabsTrigger>
           <TabsTrigger value="debts">Qarzlar ({filteredDebts.length})</TabsTrigger>
         </TabsList>
@@ -276,9 +268,9 @@ export default function CashClient({ payments, debts }: Props) {
         <TabsContent value="payments" className="space-y-4">
           <div>
             <h1 className="text-2xl font-bold">To&apos;lovlar ro&apos;yxati</h1>
-            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrency(totals.totalPayments)}</p>
+            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrencyUzs(totals.totalPayments)}</p>
             <div>
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {filteredPayments.length === 0 ? (
                   <p className="text-muted-foreground py-8 text-center">To&apos;lovlar topilmadi</p>
                 ) : (
@@ -293,29 +285,23 @@ export default function CashClient({ payments, debts }: Props) {
                         <p className="text-muted-foreground text-sm">
                           {new Date(payment.created_at).toLocaleString("uz-UZ")}
                         </p>
-                        {payment.note && <p className="text-muted-foreground text-sm italic">{payment.note}</p>}
+                        {payment.note && (
+                          <p className="text-muted-foreground text-sm italic">{"Izoh: " + payment.note}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <p className="text-muted-foreground text-sm">Qarz:</p>
-                        <p className="text-red-600">{formatCurrency(payment.debitor_total_debt)}</p>
+                        <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
+                        <p className="text-red-600">{formatCurrencyUzs(payment.debitor_total_debt)}</p>
                       </div>
                       <div className="flex items-center gap-3 lg:justify-end">
-                        <Badge
-                          variant={
-                            payment.payment_type === "CASH"
-                              ? "default"
-                              : payment.payment_type === "CARD"
-                                ? "secondary"
-                                : "outline"
-                          }
-                        >
+                        <Badge variant="default" className={`h-8 px-3 ${getPaymentTypeClass(payment.payment_type)}`}>
                           {payment.payment_type === "CASH"
                             ? "Naqd"
                             : payment.payment_type === "CARD"
                               ? "Karta"
                               : "Click"}
                         </Badge>
-                        <span className="font-bold text-green-600">{formatCurrency(payment.amount)}</span>
+                        <span className="font-bold text-green-600">{formatCurrencyUzs(payment.amount)}</span>
                       </div>
                     </div>
                   ))
@@ -329,21 +315,20 @@ export default function CashClient({ payments, debts }: Props) {
         <TabsContent value="debts" className="space-y-4">
           <div>
             <h1 className="text-2xl font-bold">Qarzlar ro&apos;yxati</h1>
-            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrency(totals.totalDebts)}</p>
+            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrencyUzs(totals.totalDebts)}</p>
             <div>
               <div className="space-y-3">
                 {filteredDebts.length === 0 ? (
                   <p className="text-muted-foreground py-8 text-center">Qarzlar topilmadi</p>
                 ) : (
                   filteredDebts.map((debt) => {
-                    const debtorStatus = getDebtorStatus(debt.debitor_total_debt, debt.debitor_is_overdue);
                     return (
                       <div
                         key={debt.id}
                         onClick={() => router.push(`/dashboard/default/debitor/${debt.debtor_id}`)}
                         className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4 lg:items-center lg:gap-y-0"
                       >
-                        <div className="space-y-1">
+                        <div className="col-span-2 space-y-1">
                           <p className="font-medium">{debt.debtor_name}</p>
                           <p className="text-muted-foreground text-sm">
                             {new Date(debt.created_at).toLocaleString("uz-UZ")}
@@ -353,12 +338,12 @@ export default function CashClient({ payments, debts }: Props) {
                           )}
                         </div>
                         <div className="space-y-2">
-                          <p className="text-muted-foreground text-sm">Qarz:</p>
-                          <p className="text-red-600">{formatCurrency(debt.debitor_total_debt)}</p>
+                          <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
+                          <p className="text-red-600">{formatCurrencyUzs(debt.debitor_total_debt)}</p>
                         </div>
-                        <Badge className={debtorStatus.className}>{debtorStatus.text}</Badge>
+                        {/* <Badge className={debtorStatus.className}>{debtorStatus.text}</Badge> */}
                         <span className="font-bold text-red-600 lg:justify-end lg:text-end">
-                          {formatCurrency(debt.amount)}
+                          {formatCurrencyUzs(debt.amount)}
                         </span>
                       </div>
                     );

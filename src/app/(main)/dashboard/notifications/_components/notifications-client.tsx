@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
+import { NotificationType } from "@prisma/client";
 
 type Item = {
   id: number;
@@ -70,8 +71,32 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
     updateParams({});
   }
 
+  const textColorByType: Record<NotificationType, string> = {
+    PAYMENT_REMINDER: "text-orange-700",
+    DEBT_LIMIT_EXCEEDED: "text-red-700",
+    HOSTING_REMINDER: "text-green-700",
+    OVERDUE_PAYMENT: "text-red-700",
+    PAYMENT_RECEIVED: "text-green-700",
+    DEBT_ADDED: "text-blue-700",
+  };
+
   return (
     <Card className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="!h-5 !w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Bildirishnomalar</h1>
+            <p className="text-muted-foreground text-sm">Bildirishnomalar sizga yuborilgan barcha xabarlar.</p>
+          </div>
+        </div>
+        <Button onClick={markAllAsRead}>
+          <Check className="!h-5 !w-5" />
+          Barchasini o&apos;qildi
+        </Button>
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <div className="min-w-[240px] flex-1">
           <Input
@@ -120,7 +145,6 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
           >
             Tozalash
           </Button>
-          <Button onClick={markAllAsRead}>Barchasini o&apos;qildi</Button>
         </div>
       </div>
 
@@ -147,9 +171,9 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
               </div>
 
               {/* Title va Sana */}
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 md:col-span-2">
                 <div
-                  className={`truncate text-sm font-medium sm:text-base ${n.is_read ? "text-muted-foreground" : ""}`}
+                  className={`truncate text-sm font-medium sm:text-base ${n.is_read ? "text-muted-foreground" : ""} ${textColorByType[n.type as NotificationType]}`}
                 >
                   {n.title}
                 </div>
@@ -177,9 +201,7 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
                     O&apos;qilgan deb belgilash
                   </Button>
                 ) : (
-                  <Button size="sm" variant="outline" disabled className="w-full sm:w-auto">
-                    O&apos;qildi
-                  </Button>
+                  ""
                 )}
               </div>
             </div>

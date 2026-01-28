@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     const q = (searchParams.get("q") ?? "").trim();
     const type = (searchParams.get("type") ?? "").trim();
     const readParam = (searchParams.get("read") ?? "").trim();
-    console.log(type);
 
     const where: Prisma.NotificationWhereInput = {};
     if (session.userId) {
@@ -34,7 +33,9 @@ export async function GET(request: NextRequest) {
     if (type) {
       where.type = type as NotificationType;
     } else {
-      where.type = { in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER"] as NotificationType[] };
+      where.type = {
+        in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER", "PAYMENT_REMINDER"] as NotificationType[],
+      };
     }
     if (readParam === "true" || readParam === "false") {
       where.is_read = readParam === "true";

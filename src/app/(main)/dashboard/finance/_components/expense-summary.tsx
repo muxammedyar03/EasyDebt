@@ -6,7 +6,7 @@ import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 
 const chartData = [{ period: "last-week", groceries: 380, transport: 120, other: 80 }];
 

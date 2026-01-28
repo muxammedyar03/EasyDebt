@@ -4,6 +4,8 @@ import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { debtorService } from "@/lib/services/debtor.service";
 
 const createDebtorSchema = z.object({
   first_name: z.string().min(1),
@@ -21,21 +23,45 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const shopId = getEffectiveShopId(session);
-    if (!shopId) {
-      return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
-    }
+    // Import overdue calculator for accurate is_overdue calculation
+    const { calculateDebtorOverdueStatus } = await import("@/lib/overdue-calculator");
+    const settings = await debtorService.getOverdueDays();
 
     const debtorsRaw = await prisma.debtor.findMany({
       where: { shop_id: shopId },
       orderBy: { created_at: "desc" },
+      include: {
+        debts: true,
+        payments: true,
+      },
     });
 
-    // Convert Decimal to number for type compatibility
-    const debtors = debtorsRaw.map((debtor) => ({
-      ...debtor,
-      total_debt: debtor.total_debt.toNumber(),
-    }));
+    // Convert Decimal to number and calculate accurate is_overdue
+    const debtors = debtorsRaw.map((debtor) => {
+      // Calculate isOverdue using the accurate function
+      const debtsWithPayments = debtor.debts.map((debt) => ({
+        amount: debt.amount.toNumber(),
+        createdAt: debt.created_at,
+        payments: debtor.payments
+          .filter((p) => p.created_at >= debt.created_at)
+          .map((p) => ({
+            amount: p.amount.toNumber(),
+            createdAt: p.created_at,
+          })),
+      }));
+
+      const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
+        goodUntilDays: settings - 15,
+        mediumUntilDays: settings,
+        minPaidPercent: 0.5,
+      });
+
+      return {
+        ...debtor,
+        total_debt: debtor.total_debt.toNumber(),
+        is_overdue: overdueStatus.isOverdue,
+      };
+    });
 
     return NextResponse.json(debtors);
   } catch (error) {
@@ -92,7 +118,7 @@ export async function POST(request: NextRequest) {
       }
 
       const debtorFullName = `${validatedData.first_name} ${validatedData.last_name}`;
-      const description = `Yangi qarzdor ${debtorFullName} yaratdi`;
+      const description = `Yangi qarzdor ${debtorFullName} yaratildi`;
 
       await tx.auditLog.create({
         data: {
@@ -114,6 +140,10 @@ export async function POST(request: NextRequest) {
 
       return debtor;
     });
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bell } from "lucide-react";
+import { Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -65,13 +65,25 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
     if (isOpen) fetchUnread();
   }, [isOpen, fetchUnread]);
 
-  const labelByType: Record<NotificationType, string> = {
-    OVERDUE_PAYMENT: "Muddati o'tgan",
-    DEBT_LIMIT_EXCEEDED: "Limitdan oshgan",
-    PAYMENT_RECEIVED: "", // filtered elsewhere, but safe default
-    DEBT_ADDED: "", // filtered elsewhere, but safe default
-    HOSTING_REMINDER: "Hosting eslatma",
+  const textColorByType: Record<NotificationType, string> = {
+    PAYMENT_REMINDER: "text-orange-600",
+    DEBT_LIMIT_EXCEEDED: "text-red-600",
+    HOSTING_REMINDER: "text-green-600",
+    OVERDUE_PAYMENT: "text-red-600",
+    PAYMENT_RECEIVED: "text-green-600",
+    DEBT_ADDED: "text-blue-600",
   };
+
+  const markAsRead = React.useCallback(async (id: number) => {
+    try {
+      await fetch(`/api/notifications/${id}`, { method: "PATCH" });
+      setItems(items.map((item) => (item.id === id ? { ...item, is_read: true } : item)));
+      toast("Bildirishnoma o'qildi holatiga o'zgartirildi", { duration: 3000 });
+      router.refresh();
+    } catch {
+      toast("Xatolik", { description: "Bildirishnoma o'qildi holatiga o'zgartirilmadi", duration: 3000 });
+    }
+  }, []);
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -127,10 +139,10 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
           </div>
         ) : (
           <>
-            {items.slice(0, 3).map((notification) => (
+            {items.slice(0, 3).map((notification, index) => (
               <DropdownMenuItem
                 key={notification.id}
-                className="cursor-pointer flex-col items-start gap-1 p-3"
+                className={`flex cursor-pointer items-center gap-1 border-b p-3 ${index === items.length - 1 ? "border-b-0" : ""} rounded-none`}
                 onClick={() => {
                   if (notification.debtor_id) {
                     router.push(`/dashboard/default/debitor/${notification.debtor_id}`);
@@ -140,15 +152,24 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
                   setIsOpen(false);
                 }}
               >
-                <div className="flex w-full items-center justify-between">
-                  <span className="line-clamp-2 font-medium">{notification.title}</span>
-                  {labelByType[notification.type] && (
-                    <Badge variant="destructive" className="text-xs whitespace-nowrap">
-                      {labelByType[notification.type]}
-                    </Badge>
-                  )}
+                <div className="flex-1 space-y-1">
+                  <span className={`line-clamp-2 font-medium ${textColorByType[notification.type]}`}>
+                    {notification.title}
+                  </span>
+                  <div className="text-muted-foreground line-clamp-2 text-xs">{notification.message}</div>
                 </div>
-                <div className="text-muted-foreground line-clamp-2 text-xs">{notification.message}</div>
+                {!notification.is_read && (
+                  <Button
+                    variant="outline"
+                    className="h-6 w-6 bg-blue-500 text-white hover:bg-blue-600 hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAsRead(notification.id);
+                    }}
+                  >
+                    <Check className="h-4 w-4 text-white" />
+                  </Button>
+                )}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />

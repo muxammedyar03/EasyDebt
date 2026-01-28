@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getSession } from "@/lib/auth";
+import { paymentReminderService } from "@/lib/services/payment-reminder.service";
+import { createAuditLog } from "@/lib/audit";
+
+const createReminderSchema = z.object({
+  debtor_id: z.number().int().positive("Qarzdor ID noto'g'ri"),
+  reminder_at: z.string().transform((val) => new Date(val)),
+  note: z.string().optional().nullable(),
+});
+
+const querySchema = z.object({
+  debtor_id: z.string().optional(),
+  status: z.enum(["PENDING", "NOTIFIED", "COMPLETED", "CANCELLED"]).optional(),
+  page: z.string().optional().default("1"),
+  limit: z.string().optional().default("10"),
+});
+
+/**
+ * GET /api/payment-reminders
+ * List payment reminders with optional filters
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const params = querySchema.parse({
+      debtor_id: searchParams.get("debtor_id") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+      page: searchParams.get("page") ?? "1",
+      limit: searchParams.get("limit") ?? "10",
+    });
+
+    const filters = {
+      debtorId: params.debtor_id ? parseInt(params.debtor_id, 10) : undefined,
+      status: params.status,
+    };
+
+    const pagination = {
+      page: parseInt(params.page, 10),
+      limit: parseInt(params.limit, 10),
+    };
+
+    const result = await paymentReminderService.findMany(filters, pagination);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error fetching payment reminders:", error);
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/payment-reminders
+ * Create a new payment reminder
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const validatedData = createReminderSchema.parse(body);
+
+    const reminder = await paymentReminderService.create({
+      debtorId: validatedData.debtor_id,
+      createdBy: session.userId,
+      reminderAt: validatedData.reminder_at,
+      note: validatedData.note ?? null,
+    });
+
+    // Create audit log
+    await createAuditLog({
+      userId: session.userId,
+      action: "CREATE",
+      entityType: "PAYMENT_REMINDER",
+      entityId: reminder.id,
+      newValue: {
+        debtor_id: validatedData.debtor_id,
+        reminder_at: validatedData.reminder_at,
+        note: validatedData.note,
+      },
+      description: `To'lov eslatmasi yaratildi: ${reminder.debtor?.firstName} ${reminder.debtor?.lastName} uchun`,
+    });
+
+    return NextResponse.json(reminder, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
+    }
+
+    console.error("Error creating payment reminder:", error);
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+  }
+}

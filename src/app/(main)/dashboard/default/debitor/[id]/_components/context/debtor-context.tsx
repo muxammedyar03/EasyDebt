@@ -1,60 +1,32 @@
 "use client";
 
+import { DebtorDomain } from "@/types/domain";
+import { calculatePaymentRating, type PaymentRating } from "@/lib/rating-calculator";
 import * as React from "react";
 
-export type Debt = {
-  id: number;
-  amount: number;
-  description: string | null;
-  created_at: Date | string;
-};
-
-export type Payment = {
-  id: number;
-  amount: number;
-  payment_type: string;
-  note: string | null;
-  created_at: Date | string;
-};
-
-export type Debtor = {
-  id: number;
-  first_name: string;
-  last_name: string;
-  phone_number: string | null;
-  address: string | null;
-  total_debt: number;
-  created_at: Date | string;
-  updated_at: Date | string;
-  debts: Debt[];
-  payments: Payment[];
-};
-
-export type TimelineEvent = {
+interface TimelineEvent {
   id: string;
   type: "DEBT" | "PAYMENT";
   amount: number;
   title: string;
   subtitle?: string | null;
-  created_at: Date;
-};
+  createdAt: Date;
+}
+
+interface DebtorStats {
+  totalDebtAdded: number;
+  totalPaid: number;
+  remaining: number;
+}
 
 interface DebtorContextValue {
-  debtor: Debtor;
-  setDebtor: React.Dispatch<React.SetStateAction<Debtor>>;
-  totals: {
-    totalDebtAdded: number;
-    totalPaid: number;
-    remaining: number;
-  };
-  rating: {
-    score: number; // 0..100
-    label: "Yomon" | "O'rtacha" | "Yaxshi" | "A'lo";
-    color: string;
-  };
+  debtor: DebtorDomain;
+  setDebtor: React.Dispatch<React.SetStateAction<DebtorDomain>>;
+  stats: DebtorStats;
+  rating: PaymentRating;
   timeline: TimelineEvent[];
-  first_debt: Date;
-  daysSince: number;
+  firstDebtDate: Date;
+  daysSinceFirstDebt: number;
   refresh: () => Promise<void>;
 }
 
@@ -66,124 +38,114 @@ export function useDebtor() {
   return ctx;
 }
 
-export function DebtorProvider({ initialDebtor, children }: { initialDebtor: Debtor; children: React.ReactNode }) {
-  const [debtor, setDebtor] = React.useState<Debtor>(initialDebtor);
+export function DebtorProvider({
+  initialDebtor,
+  overdueDays,
+  children,
+}: {
+  initialDebtor: DebtorDomain;
+  overdueDays: number;
+  children: React.ReactNode;
+}) {
+  const [debtor, setDebtor] = React.useState<DebtorDomain>(initialDebtor);
 
-  const totals = React.useMemo(() => {
-    const totalDebtAdded = debtor.debts.reduce((s, d) => s + d.amount, 0);
-    const totalPaid = debtor.payments.reduce((s, p) => s + p.amount, 0);
-    const remaining = debtor.total_debt;
+  const debts = React.useMemo(() => debtor.debts ?? [], [debtor.debts]);
+  const payments = React.useMemo(() => debtor.payments ?? [], [debtor.payments]);
+
+  const stats = React.useMemo(() => {
+    const totalDebtAdded = debts.reduce((sum, debt) => sum + debt.amount, 0);
+    const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const remaining = debtor.totalDebt;
     return { totalDebtAdded, totalPaid, remaining };
-  }, [debtor.debts, debtor.payments, debtor.total_debt]);
+  }, [debts, payments, debtor.totalDebt]);
 
   const rating = React.useMemo(() => {
-    const totalDebtAdded = debtor.debts.reduce((s, d) => s + d.amount, 0);
-    const totalPaid = debtor.payments.reduce((s, p) => s + p.amount, 0);
-    const ratio = totalPaid / Math.max(1, totalDebtAdded);
-    const lastPayment = debtor.payments.map((p) => new Date(p.created_at)).sort((a, b) => b.getTime() - a.getTime())[0];
+    return calculatePaymentRating(debts, payments, overdueDays, stats.remaining);
+  }, [debts, payments, stats.remaining, overdueDays]);
 
-    const daysSince = lastPayment ? (Date.now() - lastPayment.getTime()) / (1000 * 60 * 60 * 24) : Infinity;
-
-    let score = Math.round(Math.min(1, ratio) * 70);
-    if (daysSince < 7) score += 30;
-    else if (daysSince < 30) score += 15;
-
-    score = Math.max(0, Math.min(100, score));
-
-    let label: DebtorContextValue["rating"]["label"] = "Yomon";
-    let color = "text-red-600";
-    if (score >= 85) {
-      label = "A'lo";
-      color = "text-green-600";
-    } else if (score >= 65) {
-      label = "Yaxshi";
-      color = "text-emerald-600";
-    } else if (score >= 45) {
-      label = "O'rtacha";
-      color = "text-yellow-600";
+  const firstDebtDate = React.useMemo(() => {
+    if (debts.length === 0) {
+      return new Date();
     }
+    return debts.map((debt) => new Date(debt.createdAt)).sort((a, b) => a.getTime() - b.getTime())[0];
+  }, [debts]);
 
-    return { score, label, color };
-  }, [debtor.debts, debtor.payments]);
+  const daysSinceFirstDebt = React.useMemo(() => {
+    if (debts.length <= 0) {
+      return 0;
+    }
+    const days = Math.floor((Date.now() - firstDebtDate.getTime()) / (1000 * 60 * 60 * 24));
+    return days;
+  }, [debts, firstDebtDate]);
 
-  const daysSince = React.useMemo(() => {
-    if (debtor.debts.length === 0) return 0;
-    const fist_debt = debtor.debts.map((d) => new Date(d.created_at)).sort((a, b) => a.getTime() - b.getTime())[0];
-    const daysSince = (Date.now() - fist_debt.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSince;
-  }, [debtor.debts]);
-
-  const first_debt = React.useMemo(() => {
-    if (debtor.debts.length === 0) return new Date();
-    const fist_debt = debtor.debts.map((d) => new Date(d.created_at)).sort((a, b) => a.getTime() - b.getTime())[0];
-    return fist_debt;
-  }, [debtor.debts]);
-
-  const timeline: TimelineEvent[] = React.useMemo(() => {
-    const debtEvents: TimelineEvent[] = debtor.debts.map((d) => ({
-      id: `debt-${d.id}`,
-      type: "DEBT",
-      amount: d.amount,
-      title: `Qarz qo'shildi: +${d.amount.toLocaleString()} so'm`,
-      subtitle: d.description,
-      created_at: new Date(d.created_at),
+  const timeline = React.useMemo(() => {
+    const debtEvents: TimelineEvent[] = debts.map((debt) => ({
+      id: `debt-${debt.id}`,
+      type: "DEBT" as const,
+      amount: debt.amount,
+      title: `Qarz qo'shildi: +${debt.amount.toLocaleString()} so'm`,
+      subtitle: debt.description,
+      createdAt: new Date(debt.createdAt),
     }));
 
-    const paymentEvents: TimelineEvent[] = debtor.payments.map((p) => ({
-      id: `payment-${p.id}`,
-      type: "PAYMENT",
-      amount: p.amount,
-      title: `To'lov: -${p.amount.toLocaleString()} so'm`,
-      subtitle: p.note ?? p.payment_type,
-      created_at: new Date(p.created_at),
+    const paymentEvents: TimelineEvent[] = payments.map((payment) => ({
+      id: `payment-${payment.id}`,
+      type: "PAYMENT" as const,
+      amount: payment.amount,
+      title: `To'lov: -${payment.amount.toLocaleString()} so'm`,
+      subtitle:
+        (payment.note ?? payment.paymentType == "CASH")
+          ? "Naqd"
+          : payment.paymentType == "CLICK"
+            ? "Click"
+            : payment.paymentType == "CARD"
+              ? "Karta"
+              : "Unknown",
+      createdAt: new Date(payment.createdAt),
     }));
 
-    return [...debtEvents, ...paymentEvents].sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-  }, [debtor.debts, debtor.payments]);
+    return [...debtEvents, ...paymentEvents].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [debts, payments]);
 
   const debtorIdRef = React.useRef(initialDebtor.id);
 
   const refresh = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/debtors/${debtorIdRef.current}`);
+
       if (res.ok) {
         const data = await res.json();
-        // Only update if data actually changed
         setDebtor((prev) => {
           const hasChanged =
-            prev.total_debt !== data.total_debt ||
-            prev.debts.length !== data.debts.length ||
-            prev.payments.length !== data.payments.length;
+            prev.totalDebt !== data.totalDebt ||
+            (prev.debts?.length ?? 0) !== (data.debts?.length ?? 0) ||
+            (prev.payments?.length ?? 0) !== (data.payments?.length ?? 0);
 
-          if (!hasChanged) {
-            return prev;
-          }
-
-          return data;
+          return hasChanged ? data : prev;
         });
       }
-    } catch (e) {
-      console.error("Error refreshing debtor", e);
+    } catch (error) {
+      console.error("Error refreshing debtor:", error);
     }
   }, []);
 
-  // IMPORTANT: Stabilize value to prevent infinite re-renders
   const value: DebtorContextValue = React.useMemo(
-    () => ({ debtor, setDebtor, totals, rating, timeline, refresh, daysSince, first_debt }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      debtor.id,
-      debtor.total_debt,
-      debtor.debts.length,
-      debtor.payments.length,
-      totals.totalDebtAdded,
-      totals.totalPaid,
-      rating.score,
-      timeline.length,
-      daysSince,
-      // refresh va first_debt stable
-    ],
+    () => ({
+      debtor,
+      setDebtor,
+      stats,
+      rating,
+      timeline,
+      refresh,
+      firstDebtDate,
+      daysSinceFirstDebt,
+    }),
+    [debtor, stats, rating, timeline, refresh, firstDebtDate, daysSinceFirstDebt],
   );
+
+  if (!debtor) {
+    return <div>Debtor not found</div>;
+  }
 
   return <DebtorContext.Provider value={value}>{children}</DebtorContext.Provider>;
 }

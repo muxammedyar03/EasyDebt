@@ -1,8 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { checkHostingReminder } from "@/lib/hosting-reminder";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
-export async function GET() {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+/**
+ * GET /api/cron/hosting-reminder
+ * Cron job to check hosting payment reminder
+ *
+ * Auth: CRON_SECRET (header yoki query param)
+ */
+export async function GET(request: NextRequest) {
+  // Auth tekshirish
+  const auth = verifyCronAuth(request);
+  if (!auth.authorized) {
+    return auth.error;
+  }
+
   try {
+    console.log("[cron/hosting-reminder] invoked");
     const count = await checkHostingReminder();
 
     return NextResponse.json({
@@ -16,11 +35,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error in hosting reminder cron:", error);
-    return NextResponse.json(
-      {
-        error: "Serverda xatolik yuz berdi",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }

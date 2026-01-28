@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { DebtorView } from "@/types/view";
 
 const editDebtorSchema = z.object({
   first_name: z.string().min(1, "Ism kiritish shart"),
@@ -32,13 +33,7 @@ type EditDebtorFormData = z.infer<typeof editDebtorSchema>;
 interface EditDebtorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  debtor: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    phone_number: string | null;
-    address: string | null;
-  };
+  debtor: DebtorView;
   onSuccess?: () => void;
 }
 
@@ -55,9 +50,9 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
   } = useForm<EditDebtorFormData>({
     resolver: zodResolver(editDebtorSchema),
     defaultValues: {
-      first_name: debtor.first_name,
-      last_name: debtor.last_name,
-      phone_number: debtor.phone_number || "",
+      first_name: debtor.firstName,
+      last_name: debtor.lastName,
+      phone_number: debtor.phoneNumber || "",
       address: debtor.address || "",
     },
   });
@@ -65,12 +60,12 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
   React.useEffect(() => {
     if (open && debtor) {
       reset({
-        first_name: debtor.first_name,
-        last_name: debtor.last_name,
-        phone_number: debtor.phone_number || "",
+        first_name: debtor.firstName,
+        last_name: debtor.lastName,
+        phone_number: debtor.phoneNumber || "",
         address: debtor.address || "",
       });
-      setPhone(formatUzPhone(debtor.phone_number || ""));
+      setPhone(formatUzPhone(debtor.phoneNumber || ""));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, debtor.id]);

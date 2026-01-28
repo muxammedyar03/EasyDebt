@@ -9,10 +9,12 @@ export type AuditAction =
   | "LOGOUT"
   | "PAYMENT_ADDED"
   | "DEBT_ADDED"
+  | "DEBT_UPDATED"
+  | "PAYMENT_UPDATED"
   | "IMPORT"
   | "EXPORT";
 
-export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS";
+export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS" | "PAYMENT_REMINDER";
 
 interface AuditLogData {
   userId?: number;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
@@ -12,6 +13,7 @@ const createPaymentSchema = z.object({
   amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().nullable().optional(),
+  created_at: z.string().optional(), // Dev mode: custom date
 });
 
 export async function POST(request: NextRequest) {
@@ -50,6 +52,9 @@ export async function POST(request: NextRequest) {
           note: validatedData.note || null,
           shop_id: shopId,
           created_by: userId,
+          ...(validatedData.created_at && process.env.NODE_ENV === "development"
+            ? { created_at: new Date(validatedData.created_at) }
+            : {}),
         },
       });
 
@@ -95,6 +100,11 @@ export async function POST(request: NextRequest) {
       },
       description,
     });
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${validatedData.debtor_id}`);
 
     return NextResponse.json(result.payment, { status: 201 });
   } catch (error) {

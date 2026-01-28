@@ -3,11 +3,11 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDebtor } from "./context/debtor-context";
-import { formatDateUz } from "@/lib/utils";
 import { BadgeDollarSign, Banknote, Calendar1Icon, ChartNoAxesCombined, FileText, HandCoinsIcon } from "lucide-react";
+import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 
 export function StatsCards() {
-  const { debtor, totals, rating, daysSince, first_debt } = useDebtor();
+  const { debtor, stats, rating, daysSinceFirstDebt, firstDebtDate } = useDebtor();
 
   return (
     <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
@@ -23,7 +23,7 @@ export function StatsCards() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Qarzdor qo&apos;shilgan sana:</span>
-            <span>{formatDateUz(new Date(debtor.created_at))}</span>
+            <span>{formatDateUz(new Date(debtor.createdAt))}</span>
           </div>
         </CardContent>
       </Card>
@@ -34,11 +34,11 @@ export function StatsCards() {
         </CardHeader>
         <CardContent className="flex items-center justify-between pt-2">
           <div className="text-muted-foreground text-base">Birinchi qarz:</div>
-          <div className={`text-base font-semibold ${rating.color}`}>{formatDateUz(first_debt)}</div>
+          <div className={`text-base font-semibold`}>{formatDateUz(firstDebtDate)}</div>
         </CardContent>
         <CardContent className="flex items-center justify-between">
           <div className="text-muted-foreground text-base">Qarz olingandan boshlab o&apos;tdi:</div>
-          <div className={`text-base font-semibold ${rating.color}`}>{daysSince.toFixed()} kun</div>
+          <div className={`text-base font-semibold`}>{daysSinceFirstDebt} kun</div>
         </CardContent>
       </Card>
       <Card className="gap-1 py-4 xl:gap-2">
@@ -47,7 +47,7 @@ export function StatsCards() {
           <BadgeDollarSign className="h-5 w-5 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totals.totalDebtAdded.toLocaleString()} so&apos;m</div>
+          <div className="text-2xl font-bold">{formatCurrencyUzs(stats.totalDebtAdded || 0)}</div>
         </CardContent>
       </Card>
       <Card className="gap-1 py-4 xl:gap-2">
@@ -56,7 +56,7 @@ export function StatsCards() {
           <HandCoinsIcon className="h-5 w-5 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{totals.totalPaid.toLocaleString()} so&apos;m</div>
+          <div className="text-2xl font-bold text-green-600">{formatCurrencyUzs(stats.totalPaid)}</div>
         </CardContent>
       </Card>
       <Card className="gap-1 py-4 xl:gap-2">
@@ -65,7 +65,7 @@ export function StatsCards() {
           <Banknote className="h-6 w-6 text-indigo-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{debtor.total_debt.toLocaleString()} so&apos;m</div>
+          <div className="text-2xl font-bold text-red-600">{formatCurrencyUzs(stats.remaining)}</div>
         </CardContent>
       </Card>
       <Card className="col-span-full gap-1 py-4 xl:col-span-1">
@@ -75,7 +75,7 @@ export function StatsCards() {
         </CardHeader>
         <CardContent className="space-y-1 pt-2">
           <div className={`text-xl font-semibold ${rating.color}`}>{rating.label}</div>
-          <div className="text-muted-foreground text-xs">Ball: {rating.score} / 100</div>
+          <div className="text-muted-foreground text-xs">O&apos;rtacha kun: {rating.score}</div>
         </CardContent>
       </Card>
     </div>

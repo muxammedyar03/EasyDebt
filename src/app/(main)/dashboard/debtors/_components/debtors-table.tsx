@@ -26,6 +26,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EditDebtorDialog } from "../../default/_components/edit-debtor-dialog";
 import { ExportImportDialog } from "./export-import-dialog";
+import { DebtorView } from "@/types/view";
+import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 
 // Custom interfaces for transformed data (Decimal -> number)
 interface DebtTransformed {
@@ -50,8 +52,8 @@ interface PaymentTransformed {
 
 interface Debtor {
   id: number;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   phone_number: string | null;
   address: string | null;
   total_debt: number;
@@ -65,7 +67,7 @@ interface Debtor {
 }
 
 interface DebtorsTableProps {
-  debtors: Debtor[];
+  debtors: DebtorView[];
   totalPages: number;
   currentPage: number;
   debtLimit: number;
@@ -77,6 +79,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [isSearching, setIsSearching] = React.useState(false);
   const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
   const [selectedDebtorId, setSelectedDebtorId] = React.useState<number | null>(null);
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
@@ -139,10 +142,16 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     }
     // If URL already contains the same search value, do nothing
     const urlSearch = searchParams.get("search") || "";
-    if (urlSearch === searchValue) return;
+    if (urlSearch === searchValue) {
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
     const timer = setTimeout(() => {
       handleSearch(searchValue);
-    }, 500);
+      setIsSearching(false);
+    }, 300); // 300ms - tezroq
 
     return () => clearTimeout(timer);
   }, [searchValue, handleSearch, searchParams]);
@@ -241,10 +250,6 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
-  };
-
   const handleExport = async () => {
     try {
       toast.loading("Excel fayl tayyorlanmoqda...");
@@ -267,16 +272,26 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       // Prepare export data
       const exportData = {
         headers: ["ID", "Ism", "Familiya", "Telefon", "Manzil", "Jami qarz", "Jami to'lovlar"],
-        rows: debtors.map((debtor: Debtor & { total_debts?: number; total_payments?: number; status: string }) => [
-          debtor.id,
-          debtor.first_name,
-          debtor.last_name,
-          debtor.phone_number || "-",
-          debtor.address || "-",
-          formatNumberForExcel(debtor.total_debt),
-          formatNumberForExcel(debtor.total_payments || 0),
-        ]),
-        filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}`,
+        rows: debtors.map(
+          (
+            debtor: Debtor & {
+              total_debts?: number;
+              total_payments?: number;
+              status: string;
+              first_name?: string;
+              last_name?: string;
+            },
+          ) => [
+            debtor.id,
+            debtor.first_name || debtor.firstName,
+            debtor.last_name || debtor.lastName,
+            debtor.phone_number || "-",
+            debtor.address || "-",
+            formatNumberForExcel(debtor.total_debt),
+            formatNumberForExcel(debtor.total_payments || 0),
+          ],
+        ),
+        filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}_${status}`,
       };
 
       exportToExcel(exportData);
@@ -295,7 +310,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       setQuickDebtDialog({
         open: true,
         debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
+        debtorName: `${debtor.firstName} ${debtor.lastName}`,
       });
     }
   };
@@ -306,8 +321,8 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       setQuickPaymentDialog({
         open: true,
         debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
-        totalDebt: debtor.total_debt,
+        debtorName: `${debtor.firstName} ${debtor.lastName}`,
+        totalDebt: debtor.totalDebt,
       });
     }
   };
@@ -317,69 +332,75 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       <div className="space-y-4">
         {/* Filters */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1 lg:max-w-sm">
+          <div className="flex flex-1 items-center justify-between gap-2">
+            <div className="relative flex-1 lg:max-w-xl">
               <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
               <Input
                 placeholder="Ism, familiya yoki telefon..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="h-12 w-full pl-8"
+                className="h-12 w-full pr-10 pl-8"
               />
+              {isSearching && (
+                <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                  <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedIds.length > 0 && (
+                <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="hidden md:flex">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  O&apos;chirish ({selectedIds.length})
+                </Button>
+              )}
+              <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setImportDialog(true)}>
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Import</span>
+              </Button>
+              <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setExportDialog(true)}>
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
+                size="sm"
+                onClick={handleExport}
+              >
+                <FileDown className="h-4 w-4" />
+                <span className="hidden sm:inline">Excel</span>
+              </Button>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            {isMobile ? (
-              <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-                <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Barchasi</SelectItem>
-                  <SelectItem value="qarzdor">Qarzdor</SelectItem>
-                  <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
-                  <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
-                  <SelectItem value="tolangan">To&apos;langan</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
-                <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
-                  <TabsTrigger value="all">Barchasi</TabsTrigger>
-                  <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
-                  <TabsTrigger value="muddati_otgan">Muddati o&apos;tgan</TabsTrigger>
-                  <TabsTrigger value="limitdan_oshgan" className="text-xs sm:text-sm">
-                    Limitdan oshgan
-                  </TabsTrigger>
-                  <TabsTrigger value="tolangan">To&apos;langan</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-            {selectedIds.length > 0 && (
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="hidden md:flex">
-                <Trash2 className="mr-2 h-4 w-4" />
-                O&apos;chirish ({selectedIds.length})
-              </Button>
-            )}
-            <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setImportDialog(true)}>
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">Import</span>
-            </Button>
-            <Button variant="outline" className="h-12 gap-2" size="sm" onClick={() => setExportDialog(true)}>
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
-              size="sm"
-              onClick={handleExport}
-            >
-              <FileDown className="h-4 w-4" />
-              <span className="hidden sm:inline">Excel</span>
-            </Button>
-          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {isMobile ? (
+            <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+              <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Barchasi</SelectItem>
+                <SelectItem value="qarzdor">Qarzdor</SelectItem>
+                <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
+                <SelectItem value="limitdan_oshgan">Limitdan oshgan</SelectItem>
+                <SelectItem value="tolangan">To&apos;langan</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+              <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
+                <TabsTrigger value="all">Barchasi</TabsTrigger>
+                <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
+                <TabsTrigger value="muddati_otgan">Muddati o&apos;tgan</TabsTrigger>
+                <TabsTrigger value="limitdan_oshgan" className="text-xs sm:text-sm">
+                  Limitdan oshgan
+                </TabsTrigger>
+                <TabsTrigger value="tolangan">To&apos;langan</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </div>
 
         {/* Pagination (Top - Mobile) */}
@@ -436,16 +457,18 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
-                  Ism Familiya
+                <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("name")}>
+                  Ism Familiya{" "}
+                  {searchParams.get("sortBy") === "name" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Telefon</TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("amount")}>
-                  Qarz summasi
+                <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("debt")}>
+                  Qarz summasi{" "}
+                  {searchParams.get("sortBy") === "debt" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="cursor-pointer" onClick={() => handleSort("created_at")}>
-                  Sana
+                <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("date")}>
+                  Sana {searchParams.get("sortBy") === "date" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
@@ -459,7 +482,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 </TableRow>
               ) : (
                 debtors.map((debtor) => {
-                  const status = getDebtorStatus(debtor.total_debt);
+                  const status = getDebtorStatus(debtor.totalDebt);
                   return (
                     <TableRow key={debtor.id}>
                       <TableCell>
@@ -472,18 +495,18 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                         className="font-medium"
                         onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
                       >
-                        {debtor.first_name} {debtor.last_name}
+                        {debtor.firstName} {debtor.lastName}
                       </TableCell>
-                      <TableCell>{debtor.phone_number || "-"}</TableCell>
-                      <TableCell className={status.color}>{formatCurrency(debtor.total_debt)}</TableCell>
+                      <TableCell>{debtor.phoneNumber || "-"}</TableCell>
+                      <TableCell className={status.color}>{formatCurrencyUzs(debtor.totalDebt)}</TableCell>
                       <TableCell className="flex items-center gap-2">
                         <Badge
                           variant="default"
-                          className={`h-5 w-5 rounded-full ${debtor.is_overdue ? "bg-red-500" : "bg-green-500"}`}
+                          className={`h-5 w-5 rounded-full ${debtor.isOverdue ? "bg-red-500" : "bg-green-500"}`}
                         ></Badge>
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
-                      <TableCell>{new Date(debtor.created_at).toLocaleDateString("uz-UZ")}</TableCell>
+                      <TableCell>{formatDateUz(new Date(debtor.createdAt))}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

@@ -7,18 +7,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-
-const paymentSchema = z.object({
-  amount: z.string().min(1, "Summani kiriting"),
-  payment_type: z.enum(["CASH", "CLICK", "CARD"]),
-  note: z.string().optional(),
-});
+import { paymentSchema } from "@/app/(main)/dashboard/default/_components/schema";
+import { QuickAddPaymentForm } from "./quick-add-payment-form";
 
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
@@ -41,6 +31,7 @@ export function QuickAddPayment({
 }: QuickAddPaymentProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const refreshAfterCloseRef = React.useRef(false);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -50,13 +41,6 @@ export function QuickAddPayment({
       note: "",
     },
   });
-
-  const formatNumber = (value: string) => {
-    // Remove all non-digit characters
-    const numbers = value.replace(/\D/g, "");
-    // Format with thousand separators
-    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
-  };
 
   const onSubmit = async (data: PaymentFormValues) => {
     setIsLoading(true);
@@ -80,12 +64,19 @@ export function QuickAddPayment({
 
       toast.success("To'lov muvaffaqiyatli qo'shildi");
       form.reset();
+      refreshAfterCloseRef.current = true;
       onOpenChange(false);
-      if (onSuccess) {
-        await onSuccess();
-      } else {
-        router.refresh();
-      }
+
+      // Refresh after dialog animation completes
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) {
+            onSuccess();
+          }
+          refreshAfterCloseRef.current = false;
+        }, 150);
+      });
     } catch (error) {
       console.error(error);
       toast.error("To'lov qo'shishda xatolik yuz berdi");
@@ -94,105 +85,15 @@ export function QuickAddPayment({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
-  };
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>To&apos;lov qo&apos;shish - {debtorName}</DialogTitle>
-          <p className="text-muted-foreground text-sm">
-            Jami qarz: <span className="font-semibold">{formatCurrency(totalDebt)}</span>
-          </p>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Summa *</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      placeholder="0"
-                      {...field}
-                      onChange={(e) => {
-                        const formatted = formatNumber(e.target.value);
-                        field.onChange(formatted);
-                      }}
-                      autoFocus
-                      inputMode="numeric"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="payment_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>To&apos;lov turi *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Tanlang" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="CASH">Naqd</SelectItem>
-                      <SelectItem value="CARD">Karta</SelectItem>
-                      <SelectItem value="CLICK">Click</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="note"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Izoh</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="To'lov haqida qisqacha ma'lumot..."
-                      className="resize-none"
-                      rows={2}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading}
-              >
-                Bekor qilish
-              </Button>
-              <Button type="submit" className="flex-1" disabled={isLoading}>
-                {isLoading ? "Saqlanmoqda..." : "Saqlash"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <QuickAddPaymentForm
+      open={open}
+      onOpenChange={onOpenChange}
+      debtorName={debtorName}
+      totalDebt={totalDebt}
+      form={form}
+      isLoading={isLoading}
+      onSubmit={onSubmit}
+    />
   );
 }

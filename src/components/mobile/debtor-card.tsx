@@ -13,18 +13,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DebtorView } from "@/types/view";
 
 interface DebtorCardProps {
-  debtor: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    phone_number: string | null;
-    address: string | null;
-    total_debt: number;
-    is_overdue: boolean;
-    created_at: Date;
-  };
+  debtor: DebtorView;
   debtLimit: number;
   onAddDebt: (debtorId: number) => void;
   onAddPayment: (debtorId: number) => void;
@@ -50,7 +42,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
     return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
   };
 
-  const status = getDebtorStatus(debtor.total_debt, debtor.is_overdue);
+  const status = getDebtorStatus(debtor.totalDebt, debtor.isOverdue);
 
   return (
     <Card className="overflow-hidden">
@@ -62,7 +54,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
                 className="cursor-pointer text-lg font-semibold hover:underline"
                 onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
               >
-                {debtor.first_name} {debtor.last_name}
+                {debtor.firstName} {debtor.lastName}
               </h3>
               <Badge variant={status.variant} className="mr-2 text-xs">
                 {status.label}
@@ -70,11 +62,11 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
             </div>
 
             <div className="mt-2 space-y-1">
-              {debtor.phone_number && (
+              {debtor.phoneNumber && (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <Phone className="h-3.5 w-3.5" />
-                  <a href={`tel:${debtor.phone_number}`} className="hover:underline">
-                    {debtor.phone_number}
+                  <a href={`tel:${debtor.phoneNumber}`} className="hover:underline">
+                    {debtor.phoneNumber}
                   </a>
                 </div>
               )}
@@ -86,7 +78,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
               )}
             </div>
 
-            <div className={`mt-3 text-xl font-bold ${status.color}`}>{formatCurrency(debtor.total_debt)}</div>
+            <div className={`mt-3 text-xl font-bold ${status.color}`}>{formatCurrency(debtor.totalDebt)}</div>
           </div>
 
           <DropdownMenu>

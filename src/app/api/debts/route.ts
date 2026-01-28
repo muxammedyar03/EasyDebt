@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
@@ -12,6 +13,7 @@ const createDebtSchema = z.object({
   debtor_id: z.number(),
   amount: z.number().positive("Qarz miqdori musbat bo'lishi kerak"),
   description: z.string().nullable().optional(),
+  created_at: z.string().optional(), // Dev mode: custom date
 });
 
 export async function POST(request: NextRequest) {
@@ -49,6 +51,9 @@ export async function POST(request: NextRequest) {
           description: validatedData.description || null,
           shop_id: shopId,
           created_by: userId,
+          ...(validatedData.created_at && process.env.NODE_ENV === "development"
+            ? { created_at: new Date(validatedData.created_at) }
+            : {}),
         },
       });
 
@@ -91,7 +96,7 @@ export async function POST(request: NextRequest) {
     await createAuditLog({
       userId,
       shopId,
-      action: "UPDATE",
+      action: "DEBT_ADDED",
       entityType: "DEBT",
       entityId: result.debt.id,
       newValue: {
@@ -114,6 +119,11 @@ export async function POST(request: NextRequest) {
         message: `${result.debtor.first_name} ${result.debtor.last_name} qarz limiti oshdi: ${newTotalDebt.toLocaleString()} so'm`,
       });
     }
+
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${validatedData.debtor_id}`);
 
     return NextResponse.json(result.debt, { status: 201 });
   } catch (error) {

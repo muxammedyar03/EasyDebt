@@ -4,8 +4,13 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { uz } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { DEV_MODE } from "@/lib/dev-mode";
 
 import {
   Dialog,
@@ -19,12 +24,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { formatNumber } from "@/lib/format";
 
 const addPaymentSchema = z.object({
   amount: z.string().min(1, "To'lov miqdorini kiriting"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().optional(),
+  createdAt: z.date().optional(),
 });
 
 type AddPaymentFormData = z.infer<typeof addPaymentSchema>;
@@ -38,8 +47,12 @@ interface AddPaymentDialogProps {
 }
 
 export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddPaymentDialogProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+  // Use ref to track if we need to refresh after dialog closes
+  const refreshAfterCloseRef = React.useRef(false);
 
   const {
     register,
@@ -56,13 +69,6 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
   });
 
   const paymentType = watch("payment_type");
-
-  const formatNumber = (value: string) => {
-    // Remove all non-digit characters
-    const numbers = value.replace(/\D/g, "");
-    // Format with thousand separators
-    return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
-  };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatNumber(e.target.value);
@@ -85,6 +91,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
           amount: parseFloat(cleanAmount),
           payment_type: data.payment_type,
           note: data.note || null,
+          created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
         }),
       });
 
@@ -96,11 +103,20 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
       toast.success("To'lov muvaffaqiyatli qo'shildi");
       reset();
       setAmount("");
+      setSelectedDate(undefined);
+      refreshAfterCloseRef.current = true;
       onOpenChange(false);
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Refresh after dialog animation completes
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.refresh();
+          if (onSuccess) {
+            onSuccess();
+          }
+          refreshAfterCloseRef.current = false;
+        }, 150);
+      });
     } catch (error) {
       console.error("Error adding payment:", error);
       toast.error(error instanceof Error ? error.message : "To'lov qo'shishda xatolik yuz berdi");
@@ -118,10 +134,10 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          onClickCapture={(e) => e.stopPropagation()}
-          onKeyDownCapture={(e) => {
-            if (e.key === "Enter") {
-              e.stopPropagation();
+          onKeyDown={(e) => {
+            // Allow Enter to submit form, but prevent it in textarea
+            if (e.key === "Enter" && e.target instanceof HTMLTextAreaElement) {
+              e.preventDefault();
             }
           }}
         >
@@ -146,20 +162,23 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
               <Label htmlFor="payment_type">
                 To&apos;lov turi <span className="text-destructive">*</span>
               </Label>
-              <Select
+              <Tabs
                 value={paymentType}
                 onValueChange={(value) => setValue("payment_type", value as "CASH" | "CLICK" | "CARD")}
-                disabled={isLoading}
+                className="w-full"
               >
-                <SelectTrigger id="payment_type">
-                  <SelectValue placeholder="To'lov turini tanlang" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Naqd</SelectItem>
-                  <SelectItem value="CLICK">Click</SelectItem>
-                  <SelectItem value="CARD">Karta</SelectItem>
-                </SelectContent>
-              </Select>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="CASH" disabled={isLoading}>
+                    Naqd
+                  </TabsTrigger>
+                  <TabsTrigger value="CLICK" disabled={isLoading}>
+                    Click
+                  </TabsTrigger>
+                  <TabsTrigger value="CARD" disabled={isLoading}>
+                    Karta
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             <div className="grid gap-2">
@@ -172,9 +191,32 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 rows={3}
               />
             </div>
+
+            {DEV_MODE && (
+              <div className="grid gap-2">
+                <Label>Sana (Dev Mode)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn("justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                      disabled={isLoading}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-muted-foreground text-xs">Bo&apos;sh qoldirilsa, hozirgi sana ishlatiladi.</p>
+              </div>
+            )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish
             </Button>

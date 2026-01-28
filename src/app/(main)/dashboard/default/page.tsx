@@ -1,256 +1,47 @@
-import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
-import { getEffectiveShopId } from "@/lib/shop-context";
 import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
-import { Payment } from "@prisma/client";
+import { debtorService } from "@/lib/services/debtor.service";
+import { debtService } from "@/lib/services/debt.service";
+import { paymentService } from "@/lib/services/payment.service";
+import { paymentReminderService } from "@/lib/services/payment-reminder.service";
+import { domainToViewDebtor } from "@/lib/mappers";
 
 // Ensure this page is always rendered dynamically so changes to is_overdue are reflected immediately
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function Page() {
-  // Get session and effective shop
-  const session = await getSession();
-  const effectiveShopId = getEffectiveShopId(session);
+  // Fetch ALL debtors for the dashboard table (client-side search/pagination)
+  const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
+    debtorService.findMany(undefined, { page: 1, limit: 10000 }), // Barcha debtorlar
+    debtorService.getStats(),
+    debtService.debtLimit(),
+    paymentService.getPaymentsChartData(),
+    paymentReminderService.getActiveRemindersByDebtor(),
+  ]);
 
-  // Build where clause with shop filter
-  const whereDebtor = effectiveShopId ? { shop_id: effectiveShopId } : {};
-
-  const debtorsRaw = await prisma.debtor.findMany({
-    where: whereDebtor,
-    include: {
-      debts: true,
-      payments: true,
-    },
-  });
-
-  // Convert Decimal to number for type compatibility
-  const debtors = debtorsRaw.map((debtor) => ({
-    ...debtor,
-    total_debt: debtor.total_debt.toNumber(),
-    debts: debtor.debts.map((debt) => ({
-      ...debt,
-      amount: debt.amount.toNumber(),
-    })),
-    payments: debtor.payments.map((payment) => ({
-      ...payment,
-      amount: payment.amount.toNumber(),
-    })),
-  }));
-
-  // Calculate statistics
-  const totalDebtors = debtors.length;
-  const totalDebt = debtors.reduce((sum, debtor) => sum + debtor.total_debt, 0);
-
-  const totalDebtsCount = debtorsRaw.reduce((sum, debtor) => sum + debtor.debts.length, 0);
-  const totalDebtsAmount = debtorsRaw.reduce(
-    (sum, debtor) => sum + debtor.debts.reduce((s, debt) => s + debt.amount.toNumber(), 0),
-    0,
-  );
-
-  const totalPaymentsCount = debtorsRaw.reduce((sum, debtor) => sum + debtor.payments.length, 0);
-  const totalPaymentsAmount = debtorsRaw.reduce(
-    (sum, debtor) => sum + debtor.payments.reduce((s, payment) => s + payment.amount.toNumber(), 0),
-    0,
-  );
-
-  // Calculate today's debts
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const todayDebts = debtorsRaw.reduce(
-    (acc, debtor) => {
-      const todayDebtsList = debtor.debts.filter((debt) => {
-        const debtDate = new Date(debt.created_at);
-        debtDate.setHours(0, 0, 0, 0);
-        return debtDate.getTime() === today.getTime();
-      });
-
-      return {
-        count: acc.count + todayDebtsList.length,
-        amount: acc.amount + todayDebtsList.reduce((sum, debt) => sum + debt.amount.toNumber(), 0),
+  // Convert DebtorDomain[] to DebtorView[] and add reminder info
+  const debtorViews = debtorsRaw.data.map((debtor) => {
+    const view = domainToViewDebtor(debtor);
+    const reminder = remindersMap.get(debtor.id);
+    if (reminder) {
+      view.nextReminder = {
+        id: reminder.id,
+        reminderAt: reminder.reminderAt,
+        status: reminder.status as "PENDING" | "NOTIFIED",
+        note: reminder.note,
       };
-    },
-    { count: 0, amount: 0 },
-  );
-
-  const stats = {
-    totalDebtors,
-    totalDebt,
-    totalDebtsCount,
-    totalDebtsAmount,
-    totalPaymentsCount,
-    totalPaymentsAmount,
-    todayDebtsCount: todayDebts.count,
-    todayDebtsAmount: todayDebts.amount,
-    todayPaymentsCount: debtorsRaw.reduce(
-      (acc, debtor) =>
-        acc +
-        debtor.payments.filter((p) => {
-          const d = new Date(p.created_at);
-          d.setHours(0, 0, 0, 0);
-          return d.getTime() === today.getTime();
-        }).length,
-      0,
-    ),
-    todayPaymentsAmount: debtorsRaw.reduce(
-      (acc, debtor) =>
-        acc +
-        debtor.payments
-          .filter((p) => {
-            const d = new Date(p.created_at);
-            d.setHours(0, 0, 0, 0);
-            return d.getTime() === today.getTime();
-          })
-          .reduce((s, p) => s + p.amount.toNumber(), 0),
-      0,
-    ),
-  };
-
-  // Prepare chart data - group payments by date and payment type
-  const allPayments = await prisma.payment.findMany({
-    orderBy: {
-      created_at: "asc",
-    },
-  });
-
-  // Group payments by date
-  const paymentsByDate = new Map<string, { cash: number; card: number; click: number }>();
-
-  allPayments.forEach((payment) => {
-    const dateStr = payment.created_at.toISOString().split("T")[0];
-    const existing = paymentsByDate.get(dateStr) || { cash: 0, card: 0, click: 0 };
-
-    const amount = payment.amount.toNumber();
-    if (payment.payment_type === "CASH") {
-      existing.cash += amount;
-    } else if (payment.payment_type === "CARD") {
-      existing.card += amount;
-    } else if (payment.payment_type === "CLICK") {
-      existing.click += amount;
     }
-
-    paymentsByDate.set(dateStr, existing);
-  });
-
-  // Convert to array format for chart
-  let chartData = Array.from(paymentsByDate.entries())
-    .map(([date, amounts]) => ({
-      date,
-      cash: amounts.cash,
-      card: amounts.card,
-      click: amounts.click,
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  // If no data, generate sample data for last 30 days
-  if (chartData.length === 0) {
-    const sampleData = [];
-    const today = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      sampleData.push({
-        date: date.toISOString().split("T")[0],
-        cash: 0,
-        card: 0,
-        click: 0,
-      });
-    }
-    chartData = sampleData;
-  }
-
-  // Get debt limit from settings - shop-specific or global
-  const debtLimitSetting = await prisma.settings.findFirst({
-    where: {
-      OR: [
-        { shop_id: effectiveShopId, key: "debt_limit" }, // Shop-specific
-        { shop_id: null, key: "debt_limit" }, // Global fallback
-      ],
-    },
-    orderBy: { shop_id: "desc" }, // Shop-specific first
-  });
-  const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
-
-  // Calculate customer ratings (last 3 months)
-  const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-  const recentPayments = await prisma.payment.findMany({
-    where: {
-      created_at: {
-        gte: threeMonthsAgo,
-      },
-      ...(effectiveShopId && { shop_id: effectiveShopId }),
-    },
-    include: {
-      debtor: true,
-    },
-    orderBy: {
-      created_at: "desc",
-    },
-  });
-
-  // Group payments by debtor and calculate ratings
-  const paymentsByDebtor = new Map<number, Payment[]>();
-  recentPayments.forEach((payment) => {
-    const existing = paymentsByDebtor.get(payment.debtor_id) || [];
-    existing.push(payment);
-    paymentsByDebtor.set(payment.debtor_id, existing);
-  });
-
-  let goodCount = 0;
-  let averageCount = 0;
-  let badCount = 0;
-
-  paymentsByDebtor.forEach((debtorPayments) => {
-    if (debtorPayments.length < 2) return;
-
-    const sorted = debtorPayments.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-    let totalDays = 0;
-    let count = 0;
-
-    for (let i = 1; i < sorted.length; i++) {
-      const days = Math.floor(
-        (sorted[i].created_at.getTime() - sorted[i - 1].created_at.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      totalDays += days;
-      count++;
-    }
-
-    const avgDays = count > 0 ? totalDays / count : 0;
-
-    if (avgDays <= 60) {
-      goodCount++;
-    } else if (avgDays <= 90) {
-      averageCount++;
-    } else {
-      badCount++;
-    }
+    return view;
   });
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
-      <DataTable data={debtors} debtLimit={debtLimit} />
-
-      {/* Overdue Debtors Alert */}
-      {/* {overdueDebtors.length > 0 && <OverdueDebtorsCard debtors={overdueDebtors} />} */}
+      <DataTable data={debtorViews} debtLimit={debtLimit} />
 
       {/* Statistics Cards */}
       <SectionCards stats={stats} />
-
-      {/* New Cards Grid */}
-      {/* <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-        <CustomerRatingCard
-          goodCount={goodCount}
-          averageCount={averageCount}
-          badCount={badCount}
-          totalCount={goodCount + averageCount + badCount}
-        />
-        <ReportsCard />
-      </div> */}
 
       {/* Chart */}
       <ChartAreaInteractive chartData={chartData} />
