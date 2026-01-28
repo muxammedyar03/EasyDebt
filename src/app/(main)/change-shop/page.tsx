@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Users, TrendingUp, Check } from "lucide-react";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrencyUzs } from "@/lib/format";
 
 interface Shop {
   id: number;
@@ -165,7 +165,7 @@ export default function ChangeShopPage() {
                     <TrendingUp className="h-4 w-4" />
                     Total Debt
                   </span>
-                  <span className="font-medium">{formatCurrency(shop.total_debt)}</span>
+                  <span className="font-medium">{formatCurrencyUzs(shop.total_debt)}</span>
                 </div>
               </div>
 

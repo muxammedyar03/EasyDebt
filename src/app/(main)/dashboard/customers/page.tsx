@@ -1,13 +1,9 @@
 import { debtorService } from "@/lib/services/debtor.service";
 import { CustomersTableWrap } from "./_components/customers-table-wrap";
-import { getSession } from "@/lib/auth";
-import { getEffectiveShopId } from "@/lib/shop-context";
 
 export default async function CustomersPage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const session = await getSession();
-  const shopId = getEffectiveShopId(session);
   const searchParams = (props.searchParams ? await props.searchParams : {}) as Record<
     string,
     string | string[] | undefined

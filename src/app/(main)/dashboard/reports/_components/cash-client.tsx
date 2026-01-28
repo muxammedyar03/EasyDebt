@@ -147,7 +147,9 @@ export default function CashClient({ payments, debts }: Props) {
       return `${formatDate(dates[0])} - ${formatDate(dates[dates.length - 1])}`;
     } else {
       const date = new Date(selectedDate);
-      return date.toLocaleDateString("uz-UZ", { year: "numeric", month: "2-digit" });
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${month}/${year}`;
     }
   };
 

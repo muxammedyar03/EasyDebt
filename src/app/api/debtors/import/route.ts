@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
             if (!existingDebtSet.has(debtData.external_id)) {
               debtsToCreate.push({
                 external_id: debtData.external_id,
+                shop_id: shopId,
                 debtor_id: debtorId,
                 amount: new Prisma.Decimal(debtData.amount),
                 description: debtData.description,
@@ -203,6 +204,7 @@ export async function POST(request: NextRequest) {
             if (!existingPaymentSet.has(paymentData.external_id)) {
               paymentsToCreate.push({
                 external_id: paymentData.external_id,
+                shop_id: shopId,
                 debtor_id: debtorId,
                 amount: new Prisma.Decimal(paymentData.amount),
                 payment_type: paymentData.payment_type as PaymentType,

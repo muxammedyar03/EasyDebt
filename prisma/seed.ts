@@ -6,6 +6,27 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
+  // Test userlarini tekshirish (seed tomonidan yaratiladigan)
+  const seedUsernames = ["superadmin", "admin_chilonzor", "kassir_chilonzor", "admin_yunusobod", "blocked_user"];
+
+  const existingSeedUsers = await prisma.user.findMany({
+    where: { username: { in: seedUsernames } },
+    select: { username: true },
+  });
+
+  if (existingSeedUsers.length > 0) {
+    console.log(`⚠️  Seed userlar allaqachon mavjud: ${existingSeedUsers.map((u) => u.username).join(", ")}`);
+    console.log("💡 Qayta seed qilish uchun: npx prisma migrate reset");
+    console.log("   yoki mavjud userlarni o'chirib qayta ishga tushiring");
+    return;
+  }
+
+  // Boshqa userlar mavjudligini tekshirish
+  const otherUsers = await prisma.user.count();
+  if (otherUsers > 0) {
+    console.log(`ℹ️  Bazada ${otherUsers} ta boshqa user mavjud. Seed davom ettirilmoqda...`);
+  }
+
   // 1. Shoplar yaratish
   const shop1 = await prisma.shop.create({
     data: {
@@ -34,7 +55,7 @@ async function main() {
   console.log("✅ Shoplar yaratildi:", { shop1: shop1.name, shop2: shop2.name });
 
   // 2. Userlar yaratish
-  const hashedPassword = await bcrypt.hash("123456", 10);
+  const hashedPassword = await bcrypt.hash("admin1234", 10);
   const hashedPin = await bcrypt.hash("1234", 10);
 
   // Super Admin (shop_id = null)
@@ -55,8 +76,8 @@ async function main() {
   // Shop 1 - Admin
   const admin1 = await prisma.user.create({
     data: {
-      username: "admin_chilonzor",
-      email: "admin@chilonzor.com",
+      username: "admin1",
+      email: "admin1@example.com",
       password: hashedPassword,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
@@ -70,7 +91,7 @@ async function main() {
   // Shop 1 - User
   const user1 = await prisma.user.create({
     data: {
-      username: "kassir_chilonzor",
+      username: "kassir1",
       email: "kassir@chilonzor.com",
       password: hashedPassword,
       role: UserRole.USER,
@@ -84,8 +105,8 @@ async function main() {
   // Shop 2 - Admin
   const admin2 = await prisma.user.create({
     data: {
-      username: "admin_yunusobod",
-      email: "admin@yunusobod.com",
+      username: "admin1",
+      email: "admin1@example.com",
       password: hashedPassword,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
@@ -234,6 +255,15 @@ async function main() {
     },
   });
 
+  // Shop 3 (inactive) settings
+  await prisma.settings.create({
+    data: {
+      shop_id: shop3.id,
+      key: "debt_limit",
+      value: "3000000",
+    },
+  });
+
   // 7. Audit Log examples
   await prisma.auditLog.create({
     data: {
@@ -248,12 +278,36 @@ async function main() {
 
   await prisma.auditLog.create({
     data: {
+      shop_id: null,
+      user_id: superAdmin.id,
+      action: "CREATE_SHOP",
+      entity_type: "Shop",
+      entity_id: shop3.id,
+      new_value: { name: "Test Shop (Inactive)", is_active: false },
+    },
+  });
+
+  await prisma.auditLog.create({
+    data: {
       shop_id: shop1.id,
       user_id: admin1.id,
       action: "CREATE_DEBTOR",
       entity_type: "Debtor",
       entity_id: debtor1.id,
       new_value: { first_name: "Alisher", last_name: "Navoiy" },
+    },
+  });
+
+  // Blocked user audit log
+  await prisma.auditLog.create({
+    data: {
+      shop_id: shop2.id,
+      user_id: admin2.id,
+      action: "BLOCK_USER",
+      entity_type: "User",
+      entity_id: blockedUser.id,
+      old_value: { status: "ACTIVE" },
+      new_value: { status: "BLOCKED" },
     },
   });
 

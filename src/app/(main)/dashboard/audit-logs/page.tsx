@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { AuditLogsTable } from "./_components/audit-logs-table";
 import { AuditLog, Prisma } from "@prisma/client";
-import { AuditLogTableProps } from "@/types/types";
+import { AuditLogTableProps, UserRole } from "@/types/types";
 import { toast } from "sonner";
+import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,9 +22,23 @@ export default async function AuditLogsPage({
   const entityType = (params.entityType as string) || "";
   const dateFrom = (params.dateFrom as string) || "";
   const dateTo = (params.dateTo as string) || "";
+  const allShops = params.allShops === "true";
+  const session = await getSession();
+  const shopId = getEffectiveShopId(session);
+
+  if (!shopId && session?.role !== "SUPER_ADMIN") {
+    return <div>Shop context not found</div>;
+  }
 
   // Build where clause
   const where: Prisma.AuditLogWhereInput = {};
+
+  // Shop filter: SUPER_ADMIN can see all shops if allShops=true
+  if (session?.role === "SUPER_ADMIN" && allShops) {
+    // Don't filter by shop_id - show all shops
+  } else if (shopId) {
+    where.shop_id = shopId;
+  }
 
   // Search filter (user, action, entity)
   if (search) {
@@ -119,12 +135,16 @@ export default async function AuditLogsPage({
   });
 
   // Fetch debtor names in one query
+  const debtorWhereClause: Prisma.DebtorWhereInput = {
+    id: { in: Array.from(debtorIds) },
+  };
+  // Only filter by shop if not viewing all shops
+  if (shopId && !(session?.role === "SUPER_ADMIN" && allShops)) {
+    debtorWhereClause.shop_id = shopId;
+  }
+
   const debtors = await prisma.debtor.findMany({
-    where: {
-      id: {
-        in: Array.from(debtorIds),
-      },
-    },
+    where: debtorWhereClause,
     select: {
       id: true,
       first_name: true,
@@ -172,6 +192,8 @@ export default async function AuditLogsPage({
         totalPages={totalPages}
         currentPage={page}
         totalCount={totalCount}
+        role={session?.role as UserRole}
+        shopId={shopId}
       />
     </div>
   );

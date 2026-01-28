@@ -19,8 +19,14 @@ const createDebtorSchema = z.object({
 export async function GET() {
   try {
     const session = await getSession();
+    const shopId = getEffectiveShopId(session);
+
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!shopId) {
+      return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
     }
 
     // Import overdue calculator for accurate is_overdue calculation

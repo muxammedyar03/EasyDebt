@@ -34,6 +34,8 @@ import {
 import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view";
 import { PaymentDomain } from "@/types/domain";
 import { calculatePaymentRating } from "@/lib/rating-calculator";
+import { getSession } from "../auth";
+import { getEffectiveShopId } from "../shop-context";
 
 /**
  * Service class for Debtor operations
@@ -46,15 +48,34 @@ export class DebtorService {
    * Get settings needed for domain calculations
    */
   private async getSettings() {
+    const session = await getSession();
+    const shopId = getEffectiveShopId(session);
+
+    if (!shopId) {
+      return {
+        debtLimit: 2000000,
+        overdueDays: 45,
+      };
+    }
+
     const [debtLimitSetting, overdueDaysSetting] = await Promise.all([
-      prisma.settings.findUnique({ where: { key: "debt_limit" } }),
-      prisma.settings.findUnique({ where: { key: "overdue_days" } }),
+      prisma.settings.findUnique({ where: { shop_id_key: { shop_id: shopId, key: "debt_limit" } } }),
+      prisma.settings.findUnique({ where: { shop_id_key: { shop_id: shopId, key: "overdue_days" } } }),
     ]);
 
     return {
       debtLimit: debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000,
       overdueDays: overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45,
     };
+  }
+
+  private async getShopId(): Promise<number> {
+    const session = await getSession();
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      throw new Error("Shop context not found");
+    }
+    return shopId;
   }
 
   public async getOverdueDays(): Promise<number> {
@@ -69,7 +90,10 @@ export class DebtorService {
     const settings = await this.getSettings();
 
     const debtor = await prisma.debtor.findUnique({
-      where: { id },
+      where: {
+        id,
+        shop_id: await this.getShopId(),
+      },
       include: {
         debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
         payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
@@ -96,7 +120,7 @@ export class DebtorService {
     const filtersWithoutOverdue = { ...filters, isOverdue: undefined };
 
     // Build Prisma where clause from domain filters (without isOverdue)
-    const where = this.buildWhereClause(filtersWithoutOverdue);
+    const where = await this.buildWhereClause(filtersWithoutOverdue);
 
     // Build orderBy
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
@@ -218,12 +242,13 @@ export class DebtorService {
   }
 
   async debtorsCount(): Promise<number> {
-    return await prisma.debtor.count();
+    return await prisma.debtor.count({ where: { shop_id: await this.getShopId() } });
   }
 
   async debtorsTotalDebt(): Promise<number> {
     const result = await prisma.debtor.aggregate({
       _sum: { total_debt: true },
+      where: { shop_id: await this.getShopId() },
     });
     return result._sum.total_debt?.toNumber() ?? 0;
   }
@@ -231,6 +256,7 @@ export class DebtorService {
   async debtorsTotalPayments(): Promise<number> {
     const result = await prisma.payment.aggregate({
       _sum: { amount: true },
+      where: { shop_id: await this.getShopId() },
     });
     return result._sum.amount?.toNumber() ?? 0;
   }
@@ -238,6 +264,7 @@ export class DebtorService {
   async debtorsTotalDebts(): Promise<number> {
     const result = await prisma.debt.aggregate({
       _sum: { amount: true },
+      where: { shop_id: await this.getShopId() },
     });
     return result._sum.amount?.toNumber() ?? 0;
   }
@@ -245,6 +272,7 @@ export class DebtorService {
   async todayDebtsCount(): Promise<number> {
     return await prisma.debt.count({
       where: {
+        shop_id: await this.getShopId(),
         created_at: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
           lte: new Date(new Date().setHours(23, 59, 59, 999)),
@@ -257,6 +285,7 @@ export class DebtorService {
     const result = await prisma.debt.aggregate({
       _sum: { amount: true },
       where: {
+        shop_id: await this.getShopId(),
         created_at: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
           lte: new Date(new Date().setHours(23, 59, 59, 999)),
@@ -269,6 +298,7 @@ export class DebtorService {
   async todayPaymentsCount(): Promise<number> {
     const result = await prisma.payment.count({
       where: {
+        shop_id: await this.getShopId(),
         created_at: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
           lte: new Date(new Date().setHours(23, 59, 59, 999)),
@@ -283,6 +313,7 @@ export class DebtorService {
     const result = await prisma.payment.aggregate({
       _sum: { amount: true },
       where: {
+        shop_id: await this.getShopId(),
         created_at: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
           lte: new Date(new Date().setHours(23, 59, 59, 999)),
@@ -316,6 +347,7 @@ export class DebtorService {
     // Create in database
     const debtor = await prisma.debtor.create({
       data: {
+        shop_id: await this.getShopId(),
         first_name: input.firstName,
         last_name: input.lastName,
         phone_number: input.phoneNumber,
@@ -337,7 +369,7 @@ export class DebtorService {
     const settings = await this.getSettings();
 
     const debtor = await prisma.debtor.update({
-      where: { id },
+      where: { id, shop_id: await this.getShopId() },
       data: {
         first_name: input.firstName,
         last_name: input.lastName,
@@ -357,7 +389,7 @@ export class DebtorService {
    */
   async delete(id: number): Promise<void> {
     await prisma.debtor.delete({
-      where: { id },
+      where: { id, shop_id: await this.getShopId() },
     });
   }
 
@@ -399,10 +431,12 @@ export class DebtorService {
     // Get all debts and payments
     const [debtsRaw, paymentsRaw] = await Promise.all([
       prisma.debt.findMany({
+        where: { shop_id: await this.getShopId() },
         include: { debtor: true },
         orderBy: { created_at: "asc" },
       }),
       prisma.payment.findMany({
+        where: { shop_id: await this.getShopId() },
         include: { debtor: true },
         orderBy: { created_at: "asc" },
       }),
@@ -567,8 +601,10 @@ export class DebtorService {
   /**
    * Build Prisma where clause from domain filters
    */
-  private buildWhereClause(filters?: DebtorDomainFilters): Prisma.DebtorWhereInput {
+  private async buildWhereClause(filters?: DebtorDomainFilters): Promise<Prisma.DebtorWhereInput> {
     const where: Prisma.DebtorWhereInput = {};
+
+    where.shop_id = await this.getShopId();
 
     if (filters?.search) {
       // Split search by spaces and filter empty strings

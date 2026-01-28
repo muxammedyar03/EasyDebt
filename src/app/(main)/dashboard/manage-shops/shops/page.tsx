@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -38,8 +38,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { formatCurrencyUzs } from "@/lib/format";
 
 interface Shop {
   id: number;
@@ -79,12 +79,7 @@ export default function ShopManagementPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    checkAccess();
-    fetchShops();
-  }, [statusFilter, checkAccess, fetchShops]);
-
-  async function checkAccess() {
+  const checkAccess = useCallback(async () => {
     // Check if user is SUPER_ADMIN
     const response = await fetch("/api/auth/me");
     if (response.ok) {
@@ -96,9 +91,9 @@ export default function ShopManagementPage() {
     } else {
       router.push("/login");
     }
-  }
+  }, [router]);
 
-  async function fetchShops() {
+  const fetchShops = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
@@ -118,7 +113,17 @@ export default function ShopManagementPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter, search]);
+
+  // Initial access check
+  useEffect(() => {
+    checkAccess();
+  }, [checkAccess]);
+
+  // Fetch shops when filter changes
+  useEffect(() => {
+    fetchShops();
+  }, [fetchShops]);
 
   const handleCreateNew = () => {
     setEditingShop(null);
@@ -233,7 +238,7 @@ export default function ShopManagementPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl p-6">
+    <div className="@container/main flex flex-col gap-4 md:gap-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -289,7 +294,7 @@ export default function ShopManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(shops.reduce((sum, shop) => sum + shop.total_debt, 0))}
+              {formatCurrencyUzs(shops.reduce((sum, shop) => sum + shop.total_debt, 0))}
             </div>
           </CardContent>
         </Card>
@@ -365,7 +370,7 @@ export default function ShopManagementPage() {
                   </div>
                 </TableCell>
                 <TableCell className="text-center">{shop._count.debtors}</TableCell>
-                <TableCell className="text-right">{formatCurrency(shop.total_debt)}</TableCell>
+                <TableCell className="text-right">{formatCurrencyUzs(shop.total_debt)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

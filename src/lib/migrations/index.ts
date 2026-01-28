@@ -60,6 +60,38 @@ export async function runCustomMigrations(prisma: PrismaClient) {
     .addColumn("audit_log", "description", "TEXT")
     .commit();
 
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-debtors", adapter)
+    .addColumn("debtors", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-debts", adapter)
+    .addColumn("debts", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-payments", adapter)
+    .addColumn("payments", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-audit-logs", adapter)
+    .addColumn("audit_logs", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-notifications", adapter)
+    .addColumn("notifications", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-settings", adapter)
+    .addColumn("settings", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-users", adapter)
+    .addColumn("users", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
+  await createMigrationBuilder("2026-01-28-add-shop-id-to-payment-reminders", adapter)
+    .addColumn("payment_reminders", "shop_id", "INTEGER NOT NULL DEFAULT 1")
+    .commit();
+
   console.log("✅ All custom migrations completed successfully!");
 }
 

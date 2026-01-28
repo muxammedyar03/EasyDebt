@@ -175,6 +175,7 @@ export async function reEvaluateOverdueDebtors() {
           await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: true } });
           await createNotification({
             userId: d.created_by,
+            shopId: d.shop_id,
             debtorId: d.id,
             type: "OVERDUE_PAYMENT",
             title: "Muddati o'tgan to'lov",

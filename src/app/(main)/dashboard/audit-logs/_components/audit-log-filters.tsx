@@ -9,18 +9,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { UserRole } from "@/types/types";
 
 interface AuditLogFiltersProps {
-  isMobile?: boolean;
+  isMobile: boolean;
+  role: UserRole;
 }
 
-export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
+export function AuditLogFilters({ isMobile, role }: AuditLogFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = React.useState(false);
 
   const [dateFrom, setDateFrom] = React.useState(searchParams.get("dateFrom") || "");
   const [dateTo, setDateTo] = React.useState(searchParams.get("dateTo") || "");
+  const [allShops, setAllShops] = React.useState(searchParams.get("allShops") === "true");
 
   const [selectedActions, setSelectedActions] = React.useState<string[]>(
     searchParams.get("action")?.split(",").filter(Boolean) || [],
@@ -66,6 +69,13 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
       params.delete("dateTo");
     }
 
+    // All shops filter (only for SUPER_ADMIN)
+    if (allShops) {
+      params.set("allShops", "true");
+    } else {
+      params.delete("allShops");
+    }
+
     params.set("page", "1");
     router.push(`?${params.toString()}`);
     if (isMobile) setOpen(false);
@@ -76,12 +86,29 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
     setDateTo("");
     setSelectedActions([]);
     setSelectedEntityTypes([]);
+    setAllShops(false);
     router.push("/dashboard/audit-logs");
     if (isMobile) setOpen(false);
   };
 
   const FilterContent = () => (
     <div className="space-y-4">
+      {/* Shop Filter */}
+      {role === UserRole.SUPER_ADMIN && (
+        <div className="space-y-2">
+          <Label htmlFor="allShops">Shoplar</Label>
+          <div className="border-border flex h-12 items-center space-x-2 rounded-md border p-2">
+            <Checkbox id="allShops" checked={allShops} onCheckedChange={(checked) => setAllShops(checked === true)} />
+            <label
+              htmlFor="allShops"
+              className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Barcha shoplar
+            </label>
+          </div>
+          {!allShops && <p className="text-muted-foreground text-xs">Faqat joriy shop harakatlari ko&apos;rsatiladi</p>}
+        </div>
+      )}
       {/* Date From */}
       <div className="space-y-2">
         <Label htmlFor="dateFrom">Boshlanish sanasi</Label>

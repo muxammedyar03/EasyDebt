@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AuditLogTableProps } from "@/types/types";
+import { AuditLogTableProps, UserRole } from "@/types/types";
 import { useTableUtils } from "../utils/useTableUtils";
 import { AuditLogFilters } from "./audit-log-filters";
 import { exportToExcel } from "@/lib/excel-export";
@@ -29,9 +29,11 @@ export interface AuditLogsTableProps {
   totalPages: number;
   currentPage: number;
   totalCount: number;
+  role: UserRole;
+  shopId: number | null;
 }
 
-export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: AuditLogsTableProps) {
+export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, role }: AuditLogsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getActionBadge, getEntityTypeName, formatDate } = useTableUtils();
@@ -132,7 +134,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   Qidirish
                 </Button>
                 <div className="2xl:hidden">
-                  <AuditLogFilters isMobile />
+                  <AuditLogFilters isMobile={true} role={role as UserRole} />
                 </div>
                 <Button
                   onClick={handleExport}
@@ -282,7 +284,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
       {/* Sidebar Filter - 2xl+ only */}
       <div className="hidden 2xl:block">
         <div className="sticky top-6">
-          <AuditLogFilters />
+          <AuditLogFilters isMobile={false} role={role as UserRole} />
         </div>
       </div>
     </div>

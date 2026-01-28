@@ -23,6 +23,8 @@ import { createNotification } from "@/lib/notifications";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { uz } from "date-fns/locale";
 import { format } from "date-fns";
+import { getEffectiveShopId } from "./shop-context";
+import { getSession } from "./auth";
 
 // Re-export existing cron functions for backward compatibility
 export { checkOverdueDebtors, reEvaluateOverdueDebtors } from "./overdue-checker";
@@ -49,6 +51,14 @@ function toLocalTime(date: Date): Date {
  * @returns Number of reminders processed
  */
 export async function checkPaymentReminders(): Promise<number> {
+  const session = await getSession();
+  const shopId = getEffectiveShopId(session);
+
+  if (!shopId) {
+    console.error("[cron/payment-reminders] Shop context not found");
+    return 0;
+  }
+
   try {
     console.log("[cron/payment-reminders] Starting check...");
 
@@ -79,6 +89,7 @@ export async function checkPaymentReminders(): Promise<number> {
 
         // Create notification
         await createNotification({
+          shopId: shopId,
           userId: reminder.createdBy,
           debtorId: reminder.debtorId,
           type: "PAYMENT_REMINDER",

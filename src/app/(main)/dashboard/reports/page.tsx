@@ -7,9 +7,16 @@ import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } 
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 export default async function ReportsPage() {
   const session = await getSession();
+  const shopId = getEffectiveShopId(session);
+
+  if (!shopId) {
+    return <div>Shop context not found</div>;
+  }
+
   const user = session
     ? await prisma.user.findUnique({
         where: { id: session.userId },
@@ -19,6 +26,7 @@ export default async function ReportsPage() {
 
   // Get all debtors
   const debtorsRaw = await prisma.debtor.findMany({
+    where: { shop_id: shopId },
     include: {
       debts: true,
       payments: true,
@@ -55,6 +63,7 @@ export default async function ReportsPage() {
     where: {
       is_overdue: true,
       total_debt: { gt: 0 },
+      shop_id: shopId,
     },
   });
 
@@ -67,6 +76,7 @@ export default async function ReportsPage() {
 
   // Get all payments
   const allPayments = await prisma.payment.findMany({
+    where: { shop_id: shopId },
     orderBy: {
       created_at: "asc",
     },
@@ -87,6 +97,7 @@ export default async function ReportsPage() {
 
   const currentMonthDebts = await prisma.debt.findMany({
     where: {
+      shop_id: shopId,
       created_at: {
         gte: currentMonthStart,
         lte: now,
@@ -96,6 +107,7 @@ export default async function ReportsPage() {
 
   const previousMonthDebts = await prisma.debt.findMany({
     where: {
+      shop_id: shopId,
       created_at: {
         gte: previousMonthStart,
         lte: previousMonthEnd,
@@ -125,6 +137,7 @@ export default async function ReportsPage() {
   ];
 
   const payments = await prisma.payment.findMany({
+    where: { shop_id: shopId },
     include: {
       debtor: true,
     },
@@ -134,6 +147,7 @@ export default async function ReportsPage() {
   });
 
   const debts = await prisma.debt.findMany({
+    where: { shop_id: shopId },
     include: {
       debtor: true,
     },

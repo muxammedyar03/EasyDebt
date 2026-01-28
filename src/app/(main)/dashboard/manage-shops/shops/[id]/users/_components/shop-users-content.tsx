@@ -36,8 +36,8 @@ import { format } from "date-fns";
 import { useShopUsersStore } from "@/stores/shop-users-store";
 import { shopUsersService } from "@/services/shop-users-service";
 import { ShopUser, UserRole } from "@/types/types";
-import { formatCurrency } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { formatCurrencyUzs } from "@/lib/format";
 
 interface ShopStats {
   todayDebts: number;
@@ -230,7 +230,7 @@ export default function ShopUsersContent({ shopId, handleCreateEdit }: ShopUsers
                 <TrendingUp className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.todayDebts)}</div>
+                <div className="text-2xl font-bold">{formatCurrencyUzs(stats.todayDebts)}</div>
                 <p className="text-muted-foreground text-xs">Bugun qo&apos;shilgan</p>
               </CardContent>
             </Card>
@@ -241,7 +241,7 @@ export default function ShopUsersContent({ shopId, handleCreateEdit }: ShopUsers
                 <Wallet className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.todayPayments)}</div>
+                <div className="text-2xl font-bold">{formatCurrencyUzs(stats.todayPayments)}</div>
                 <p className="text-muted-foreground text-xs">Bugun to&apos;langan</p>
               </CardContent>
             </Card>
@@ -283,7 +283,7 @@ export default function ShopUsersContent({ shopId, handleCreateEdit }: ShopUsers
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Tooltip formatter={(value) => formatCurrencyUzs(Number(value))} />
                   <Legend />
                   <Bar dataKey="Qarzlar" fill="#ef4444" />
                   <Bar dataKey="To'lovlar" fill="#22c55e" />
