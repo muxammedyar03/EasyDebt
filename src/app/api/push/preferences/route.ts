@@ -29,13 +29,6 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userPushPreferences = (
-      prisma as { userPushPreferences?: { findUnique: (args: unknown) => Promise<unknown | null> } }
-    ).userPushPreferences;
-    if (!userPushPreferences?.findUnique) {
-      return NextResponse.json({ enabled: false, notification_types: [] });
-    }
-
     const preferences = await prisma.userPushPreferences.findUnique({
       where: { user_id: session.userId },
     });
@@ -66,9 +59,6 @@ export async function POST(request: NextRequest) {
     const session = await getSession();
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!(prisma as { userPushPreferences?: unknown }).userPushPreferences) {
-      return NextResponse.json({ error: "Push preferences not available" }, { status: 503 });
     }
 
     const body = await request.json();
