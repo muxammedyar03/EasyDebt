@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+/invoices/
 
 # testing
 /coverage
@@ -32,23 +33,9 @@ yarn-error.log*
 .env.production
 .env.demo
 .env.development
-DEPLOYMENT.md
-AUTH_SETUP.md
-DEPLOY_GUIDE.md
-SERVER_SETUP.md
-SUMMARY.md
-CONTRIBUTING.md
-LICENSE
-README.md
-QUICK_START.md
-SMETA.md
-FEATURES.md
-DOCKER_OPTIMIZATION.md
-CUSTOM_MIGRATIONS.md
-fix-migration.md
-EXAMPLE_USAGE.ts
-ARCHITECTURE.md
-QUICK_REFERENCE.md
+archetecture_guidlines.md
+ARCHITECTURE_REFACTOR_TASKS.md
+PROJECT_STRUCTURE.md
 
 # vercel
 .vercel

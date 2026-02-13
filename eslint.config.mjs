@@ -25,6 +25,7 @@ export default [
       "next-env.d.ts",
       "jest.config.js",
       "jest.setup.js",
+      "public/sw.js",
     ],
     languageOptions: {
       globals: globals.browser,

@@ -20,15 +20,33 @@ export async function GET(request: NextRequest) {
     const readParam = (searchParams.get("read") ?? "").trim();
 
     const where: Prisma.NotificationWhereInput = {};
+
+    // User filter: must belong to user or be global (user_id = null)
+    const userConditions: Prisma.NotificationWhereInput[] = [];
     if (session.userId) {
-      where.OR = [{ user_id: session.userId }, { user_id: null }];
+      userConditions.push({ user_id: session.userId }, { user_id: null });
     }
+
+    // Search filter: title or message contains query
+    const searchConditions: Prisma.NotificationWhereInput[] = [];
     if (q) {
-      where.OR = [
-        ...(where.OR ?? []),
+      searchConditions.push(
         { title: { contains: q, mode: "insensitive" } },
         { message: { contains: q, mode: "insensitive" } },
-      ];
+      );
+    }
+
+    // Combine conditions with AND
+    const andConditions: Prisma.NotificationWhereInput[] = [];
+    if (userConditions.length > 0) {
+      andConditions.push({ OR: userConditions });
+    }
+    if (searchConditions.length > 0) {
+      andConditions.push({ OR: searchConditions });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
     if (type) {
       where.type = type as NotificationType;

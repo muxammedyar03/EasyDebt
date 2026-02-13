@@ -63,7 +63,7 @@ export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDeb
         <div className="relative w-full xl:w-1/2">
           <Input
             type="text"
-            className="border-border h-14 w-full pr-10 text-base font-medium"
+            className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
             placeholder="Ism, telefon va manzil bo'yicha qidirish..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
