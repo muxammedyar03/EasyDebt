@@ -82,7 +82,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
                       variant="default"
                       className={`h-6 px-3 text-xs md:hidden ${getPaymentTypeClass(payment.paymentType)}`}
                     >
-                      {payment.paymentType}
+                      {payment.paymentType == "CASH" ? "Naqd" : payment.paymentType == "CLICK" ? "Click" : "Karta"}
                     </Badge>
                   </TableCell>
                   {!isMobile && (
@@ -91,7 +91,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
                         variant="default"
                         className={`h-6 px-3 text-xs ${getPaymentTypeClass(payment.paymentType)}`}
                       >
-                        {payment.paymentType}
+                        {payment.paymentType == "CASH" ? "Naqd" : payment.paymentType == "CLICK" ? "Click" : "Karta"}
                       </Badge>
                     </TableCell>
                   )}

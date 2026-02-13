@@ -104,7 +104,8 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
 
   // No active reminder - show button to create
   if (!activeReminder) {
-    const colorClass = "bg-green-500/10 text-green-500 hover:text-green-500 border border-green-500/20";
+    const colorClass =
+      "bg-green-500/20 text-green-700 dark:text-green-500 hover:text-green-700 dark:hover:text-green-500 border border-green-500/20";
     return (
       <Card className="border-muted-foreground/30 relative h-auto border-dashed p-3 sm:h-24">
         {/* {devModeAlert()} */}
@@ -139,34 +140,38 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
   const isNotified = activeReminder.status === "NOTIFIED";
 
   const urgencyStyles = {
-    normal: "bg-blue-500/10 border-blue-500/30",
-    warning: "bg-yellow-500/10 border-yellow-500/30",
-    urgent: "bg-orange-500/10 border-orange-500/30",
-    overdue: "bg-red-500/10 border-red-500/30",
-    notified: "bg-purple-500/10 border-purple-500/30",
+    normal:
+      "bg-blue-600/10 hover:bg-blue-600/10 text-blue-700 hover:text-blue-700 dark:text-blue-500 border border-blue-500/15",
+    warning: "bg-yellow-600/10 hover:bg-yellow-600/10 text-yellow-700 hover:text-yellow-700 dark:text-yellow-500",
+    urgent:
+      "bg-orange-600/10 hover:bg-orange-600/10 text-orange-700 hover:text-orange-700 dark:text-orange-500 border border-orange-600/15",
+    overdue:
+      "bg-red-600/10 hover:bg-red-600/10 text-red-700 hover:text-red-700 dark:text-red-500 border border-red-600/15",
+    notified:
+      "bg-purple-600/10 hover:bg-purple-600/10 dark:bg-purple-600/15 text-purple-700 hover:text-purple-700 dark:text-purple-500 border border-purple-600/15",
   };
 
   const iconStyles = {
-    normal: "bg-blue-500/20 text-blue-600",
+    normal: "bg-blue-600/15 dark:bg-blue-600/20 text-blue-700 dark:text-blue-500",
     warning: "bg-yellow-500/20 text-yellow-600",
-    urgent: "bg-orange-500/20 text-orange-600",
-    overdue: "bg-red-500/20 text-red-600",
-    notified: "bg-purple-500/20 text-purple-600",
+    urgent: "bg-orange-600/15 text-orange-700 dark:text-orange-500",
+    overdue: "bg-red-600/10 dark:bg-red-600/15 text-red-700 dark:text-red-500",
+    notified: "bg-purple-500/15 text-purple-700 dark:text-purple-500",
   };
 
   const badgeStyles = {
-    normal: "bg-blue-500/10 text-blue-700 border-blue-500/20",
-    warning: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
-    urgent: "bg-orange-500/10 text-orange-700 border-orange-500/20",
-    overdue: "bg-red-500/10 text-red-700 border-red-500/20",
-    notified: "bg-purple-500/10 text-purple-700 border-purple-500/20",
+    normal: "bg-blue-600/15 text-blue-700 dark:text-blue-500",
+    warning: "bg-yellow-600/15 text-yellow-700 dark:text-yellow-500",
+    urgent: "bg-orange-600/15 text-orange-700 dark:text-orange-500",
+    overdue: "bg-red-600/15 text-red-700 dark:text-red-500",
+    notified: "bg-purple-600/15 text-purple-700 dark:text-purple-500",
   };
 
   // Use "notified" style if notified, otherwise use urgency
   const currentStyle = isNotified ? "notified" : (timeInfo?.urgency ?? "normal");
 
   return (
-    <Card className={cn("relative border p-3", urgencyStyles[currentStyle])}>
+    <Card className={cn("relative p-3", urgencyStyles[currentStyle])}>
       {/* {devModeAlert()} */}
       <CardContent className="flex h-full flex-col items-center justify-between gap-6 p-0 sm:flex-row lg:p-2">
         <div className="flex h-full w-full items-center justify-between gap-4 pt-2 sm:pt-0">
@@ -215,8 +220,8 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
           className={cn(
             "h-12 w-full cursor-pointer px-4 sm:w-auto",
             isNotified
-              ? "border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20"
-              : urgencyStyles[timeInfo?.urgency ?? "normal"] + " hover:bg-green-500/20",
+              ? "bg-purple-600/15 text-purple-700 hover:bg-purple-600/15 hover:text-purple-700 dark:text-purple-500"
+              : urgencyStyles[currentStyle],
           )}
         >
           {isNotified ? "Tugallash" : "Boshqarish"}

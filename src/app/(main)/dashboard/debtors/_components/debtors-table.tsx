@@ -108,11 +108,26 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const getDebtorStatus = (totalDebt: number) => {
     if (totalDebt <= 0) {
-      return { label: "To'langan", variant: "default" as const, color: "text-green-600" };
+      return {
+        label: "To'langan",
+        variant: "default" as const,
+        color: "text-green-600",
+        className: "bg-green-600/20 text-green-700 dark:text-green-500",
+      };
     } else if (totalDebt > debtLimit) {
-      return { label: "Limitdan oshgan", variant: "destructive" as const, color: "text-red-600" };
+      return {
+        label: "Limitdan oshgan",
+        variant: "default" as const,
+        color: "text-red-600",
+        className: "bg-red-600/15 text-red-700 dark:text-red-500",
+      };
     } else {
-      return { label: "Qarzdor", variant: "secondary" as const, color: "text-yellow-600" };
+      return {
+        label: "Qarzdor",
+        variant: "secondary" as const,
+        color: "text-yellow-600",
+        className: "bg-yellow-600/20 text-yellow-800 dark:text-yellow-500",
+      };
     }
   };
 
@@ -504,7 +519,12 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                           variant="default"
                           className={`h-5 w-5 rounded-full ${debtor.isOverdue ? "bg-red-500" : "bg-green-500"}`}
                         ></Badge>
-                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <Badge
+                          variant={status.variant}
+                          className={`h-7 rounded-xl px-2 font-medium ${status.className}`}
+                        >
+                          {status.label}
+                        </Badge>
                       </TableCell>
                       <TableCell>{formatDateUz(new Date(debtor.createdAt))}</TableCell>
                       <TableCell>

@@ -125,10 +125,10 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
 
   if (isNotified) {
     timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
-    urgencyClass = "bg-purple-500/10 text-purple-600 border-purple-500/30";
+    urgencyClass = "bg-purple-600/15 text-purple-700 dark:text-purple-500";
   } else if (isOverdue) {
     timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
-    urgencyClass = "bg-red-500/20 text-red-700 border-red-500/30";
+    urgencyClass = "bg-red-600/15 text-red-700 dark:text-red-500";
   } else {
     // Calculate total minutes left for accurate display
     const totalMinutesLeft = differenceInMinutes(reminderDate, currentTime);
@@ -138,17 +138,17 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
     if (totalMinutesLeft < 60) {
       // Less than 1 hour - show minutes
       timeText = `${totalMinutesLeft} daqiqa`;
-      urgencyClass = "bg-orange-500/20 text-orange-700 border-orange-500/30";
+      urgencyClass = "bg-orange-600/15 text-orange-700 dark:text-orange-500";
     } else if (hoursLeft < 24) {
       // Less than 24 hours - show hours (round up if there are extra minutes)
       const displayHours = totalMinutesLeft % 60 > 0 ? hoursLeft + 1 : hoursLeft;
       timeText = `${displayHours} soat`;
-      urgencyClass = "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
+      urgencyClass = "bg-yellow-600/15 text-yellow-700 dark:text-yellow-500";
     } else {
       // 24 hours or more - show days (round up if there are extra hours)
       const displayDays = hoursLeft % 24 > 0 ? daysLeft + 1 : daysLeft;
       timeText = `${displayDays} kun`;
-      urgencyClass = "bg-blue-500/20 text-blue-700 border-blue-500/30";
+      urgencyClass = "bg-blue-600/15 text-blue-700 dark:text-blue-500";
     }
   }
 
@@ -156,7 +156,7 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant="outline" className={`flex cursor-help items-center gap-1 px-2 py-1 ${urgencyClass}`}>
+          <Badge variant="default" className={`flex cursor-help items-center gap-1 px-2 py-1 ${urgencyClass}`}>
             {isNotified ? <Bell className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
             <span className="text-xs">{timeText}</span>
           </Badge>
@@ -352,10 +352,9 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
 
       let variant: "default" | "destructive" | "secondary" = "secondary";
       let label = "Qarzdor";
-      const redColor = "bg-red-500/10 text-red-700 border border-red-500/30";
-      const greenColor = "bg-green-500/10 text-green-700 border border-green-500/30";
-      const defaultColor =
-        "bg-gray-500/10 text-gray-700 dark:text-gray-300 border border-gray-900/30 dark:border-gray-500/50";
+      const redColor = "font-medium bg-red-600/15 text-red-700 dark:text-red-500";
+      const greenColor = "font-medium bg-green-600/20 text-green-700 dark:text-green-500";
+      const defaultColor = "font-semibold bg-gray-600/15 text-gray-700 dark:text-gray-300 ";
       let color = "";
 
       if (totalDebt <= 0) {
