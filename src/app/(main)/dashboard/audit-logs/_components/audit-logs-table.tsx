@@ -90,7 +90,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
         filename: `audit-logs_${new Date().toISOString().split("T")[0]}`,
       };
 
-      exportToExcel(exportData);
+      await exportToExcel(exportData);
       toast.dismiss();
       toast.success(`${logs.length} ta yozuv Excel fayliga yuklandi`);
     } catch (error) {

@@ -13,9 +13,9 @@
 CREATE TYPE "ImportStatus" AS ENUM ('SUCCESS', 'FAILED', 'PARTIAL');
 
 -- Step 1: Add external_id columns as NULLABLE
-ALTER TABLE "debtors" ADD COLUMN "external_id" TEXT;
-ALTER TABLE "debts" ADD COLUMN "external_id" TEXT;
-ALTER TABLE "payments" ADD COLUMN "external_id" TEXT;
+ALTER TABLE "debtors" ADD COLUMN IF NOT EXISTS "external_id" TEXT;
+ALTER TABLE "debts" ADD COLUMN IF NOT EXISTS "external_id" TEXT;
+ALTER TABLE "payments" ADD COLUMN IF NOT EXISTS "external_id" TEXT;
 
 -- Step 2: Populate external_id with UUID for existing rows
 UPDATE "debtors" SET "external_id" = gen_random_uuid()::text WHERE "external_id" IS NULL;

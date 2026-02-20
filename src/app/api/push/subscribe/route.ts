@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!(prisma as { pushSubscription?: unknown }).pushSubscription) {
+      return NextResponse.json({ error: "Push notifications not available" }, { status: 503 });
+    }
 
     const body = await request.json();
     const validatedData = subscribeSchema.parse(body);
@@ -77,6 +80,9 @@ export async function DELETE(request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!(prisma as { pushSubscription?: unknown }).pushSubscription) {
+      return NextResponse.json({ error: "Push notifications not available" }, { status: 503 });
+    }
 
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get("endpoint");
@@ -109,6 +115,22 @@ export async function GET(_request: NextRequest) {
     const session = await getSession();
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Guard: push models may be missing if migration not run or client stale
+    const pushSubscription = (prisma as { pushSubscription?: { findMany: (args: unknown) => Promise<unknown[]> } })
+      .pushSubscription;
+    const userPushPreferences = (
+      prisma as { userPushPreferences?: { findUnique: (args: unknown) => Promise<unknown | null> } }
+    ).userPushPreferences;
+
+    if (!pushSubscription?.findMany || !userPushPreferences?.findUnique) {
+      return NextResponse.json({
+        subscribed: false,
+        subscriptionCount: 0,
+        subscriptions: [],
+        preferences: { enabled: false, notificationTypes: [] },
+      });
     }
 
     const subscriptions = await prisma.pushSubscription.findMany({

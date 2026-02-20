@@ -109,11 +109,18 @@ export function usePushNotificationSettings(): UsePushNotificationSettingsReturn
         try {
           const success = await subscribe();
           if (!success) {
+            console.error("Failed to subscribe to push notifications");
             toast.error("Xatolik", {
               description: "Push notificationlar yoqilmadi. Iltimos, qayta urinib ko'ring.",
             });
             return;
           }
+        } catch (error) {
+          console.error("Failed to subscribe to push notifications", error);
+          toast.error("Xatolik", {
+            description: "Push notificationlar yoqilmadi. Iltimos, qayta urinib ko'ring.",
+          });
+          return;
         } finally {
           setIsSubscribing(false);
         }

@@ -23,10 +23,12 @@ model User {
   pin        String? 
 
   // Relations
-  created_debtors   Debtor[]          @relation("CreatedBy")
-  created_debts     Debt[]            @relation("DebtCreatedBy")
-  created_payments  Payment[]         @relation("PaymentCreatedBy")
-  created_reminders PaymentReminder[] @relation("ReminderCreatedBy")
+  created_debtors       Debtor[]                @relation("CreatedBy")
+  created_debts         Debt[]                  @relation("DebtCreatedBy")
+  created_payments      Payment[]              @relation("PaymentCreatedBy")
+  created_reminders     PaymentReminder[]      @relation("ReminderCreatedBy")
+  push_subscriptions    PushSubscription[]
+  user_push_preferences UserPushPreferences?
 
   @@map("users")
 }
@@ -219,4 +221,34 @@ enum ImportStatus {
   SUCCESS
   FAILED
   PARTIAL
+}
+
+model PushSubscription {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  endpoint   String
+  p256dh     String
+  auth       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, endpoint])
+  @@index([user_id])
+  @@map("push_subscriptions")
+}
+
+model UserPushPreferences {
+  id                  Int      @id @default(autoincrement())
+  user_id             Int      @unique
+  enabled             Boolean  @default(false)
+  notification_types  Json     @default("[]")
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("user_push_preferences")
 }
