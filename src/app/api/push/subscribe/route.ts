@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!(prisma as { pushSubscription?: unknown }).pushSubscription) {
+      return NextResponse.json({ error: "Push notifications not available" }, { status: 503 });
+    }
 
     const body = await request.json();
     const validatedData = subscribeSchema.parse(body);
@@ -77,6 +80,9 @@ export async function DELETE(request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!(prisma as { pushSubscription?: unknown }).pushSubscription) {
+      return NextResponse.json({ error: "Push notifications not available" }, { status: 503 });
+    }
 
     const { searchParams } = new URL(request.url);
     const endpoint = searchParams.get("endpoint");
@@ -110,6 +116,7 @@ export async function GET(_request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { user_id: session.userId },
       select: {
