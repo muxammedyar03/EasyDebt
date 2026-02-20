@@ -154,6 +154,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 onChange={handleAmountChange}
                 disabled={isLoading}
                 inputMode="numeric"
+                className="border-border h-11 border"
               />
               {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
@@ -167,14 +168,26 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 onValueChange={(value) => setValue("payment_type", value as "CASH" | "CLICK" | "CARD")}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="CASH" disabled={isLoading}>
+                <TabsList className="dark:bg-input/30 border-border grid h-11 w-full grid-cols-3 gap-1 bg-zinc-200 p-1 dark:border">
+                  <TabsTrigger
+                    value="CASH"
+                    disabled={isLoading}
+                    className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-orange-500 data-[state=active]:text-white dark:data-[state=active]:bg-orange-500"
+                  >
                     Naqd
                   </TabsTrigger>
-                  <TabsTrigger value="CLICK" disabled={isLoading}>
+                  <TabsTrigger
+                    value="CLICK"
+                    disabled={isLoading}
+                    className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-indigo-500 data-[state=active]:text-white dark:data-[state=active]:bg-indigo-500"
+                  >
                     Click
                   </TabsTrigger>
-                  <TabsTrigger value="CARD" disabled={isLoading}>
+                  <TabsTrigger
+                    value="CARD"
+                    disabled={isLoading}
+                    className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-emerald-500 data-[state=active]:text-white dark:data-[state=active]:bg-emerald-500"
+                  >
                     Karta
                   </TabsTrigger>
                 </TabsList>
@@ -189,6 +202,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 {...register("note")}
                 disabled={isLoading}
                 rows={3}
+                className="border-border border"
               />
             </div>
 
