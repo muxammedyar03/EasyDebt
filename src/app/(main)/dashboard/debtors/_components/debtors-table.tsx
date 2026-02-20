@@ -309,7 +309,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}_${status}`,
       };
 
-      exportToExcel(exportData);
+      await exportToExcel(exportData);
       toast.dismiss();
       toast.success(`${debtors.length} ta qarzdor Excel fayliga yuklandi`);
     } catch (error) {

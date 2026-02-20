@@ -91,6 +91,40 @@ export async function runCustomMigrations(prisma: PrismaClient) {
   await createMigrationBuilder("2026-01-28-add-shop-id-to-payment-reminders", adapter)
     .addColumn("payment_reminders", "shop_id", "INTEGER NOT NULL DEFAULT 1")
     .commit();
+  // Example: Add push_subscription to users table
+  await createMigrationBuilder("2026-02-14-add-push-subscription-to-users", adapter)
+    .addColumn("users", "push_subscription", "JSONB")
+    .commit();
+
+  // Example: Add push_preferences to users table
+  await createMigrationBuilder("2026-02-14-add-push-preferences-to-users", adapter)
+    .addColumn("users", "push_preferences", "JSONB")
+    .commit();
+
+  // Example: Add PushSubscription table and UserPushPreferences table
+  await createMigrationBuilder("2026-02-14-add-push-subscription-and-preferences-tables", adapter)
+    .createTable("PushSubscription", {
+      id: "SERIAL PRIMARY KEY",
+      user_id: "INTEGER NOT NULL",
+      endpoint: "TEXT NOT NULL",
+      p256dh: "TEXT NOT NULL",
+      auth: "TEXT NOT NULL",
+    })
+    .createTable("UserPushPreferences", {
+      id: "SERIAL PRIMARY KEY",
+      user_id: "INTEGER NOT NULL",
+      enabled: "BOOLEAN NOT NULL DEFAULT false",
+      notification_types: "JSONB NOT NULL DEFAULT '[]'",
+    })
+    .run('CREATE INDEX IF NOT EXISTS "PushSubscription_user_id_idx" ON "PushSubscription"("user_id")')
+    .run(
+      'CREATE UNIQUE INDEX IF NOT EXISTS "PushSubscription_user_id_endpoint_key" ON "PushSubscription"("user_id", "endpoint")',
+    )
+    .run('CREATE INDEX IF NOT EXISTS "UserPushPreferences_user_id_idx" ON "UserPushPreferences"("user_id")')
+    .run('CREATE UNIQUE INDEX IF NOT EXISTS "UserPushPreferences_user_id_key" ON "UserPushPreferences"("user_id")')
+    .commit();
+
+  console.log("PushSubscription table and UserPushPreferences table created successfully");
 
   console.log("✅ All custom migrations completed successfully!");
 }

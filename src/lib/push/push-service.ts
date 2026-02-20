@@ -182,7 +182,7 @@ export async function sendPushToAllSubscribers(payload: PushNotificationPayload)
       include: {
         user: {
           include: {
-            push_preferences: true,
+            user_push_preferences: true,
           },
         },
       },
@@ -192,13 +192,11 @@ export async function sendPushToAllSubscribers(payload: PushNotificationPayload)
     const invalidSubscriptions: number[] = [];
 
     for (const subscription of subscriptions) {
-      // Check user preferences
-      const preferences = subscription.user.push_preferences;
+      const preferences = subscription.user.user_push_preferences;
       if (!preferences || !preferences.enabled) {
         continue;
       }
 
-      // Check notification type
       const enabledTypes = (preferences.notification_types as string[]) || [];
       if (payload.type && !enabledTypes.includes(payload.type)) {
         continue;
@@ -220,7 +218,6 @@ export async function sendPushToAllSubscribers(payload: PushNotificationPayload)
       }
     }
 
-    // Remove invalid subscriptions
     if (invalidSubscriptions.length > 0) {
       await prisma.pushSubscription.deleteMany({
         where: { id: { in: invalidSubscriptions } },
