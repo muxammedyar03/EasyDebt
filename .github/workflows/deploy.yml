@@ -122,35 +122,23 @@ jobs:
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
 
-            echo "📥 Pulling latest compose/env (optional)..."
-            git pull origin main || true
+            echo "📥 Pulling latest compose/env..."
+            git pull origin main --no-edit || true
 
-            echo "📦 Pulling latest images from GHCR (no build on server)..."
-            docker compose -f docker-compose.prod.yml pull
+            echo "📦 Pulling images (app + migrate only, rest use cache)..."
+            docker compose -f docker-compose.prod.yml pull app migrate
 
-            echo "🚀 Starting containers (pull only, no down — minimal downtime)..."
+            echo "🚀 Starting containers..."
             docker compose -f docker-compose.prod.yml up -d
 
-            echo "⏳ Waiting for app to be ready..."
-            sleep 10
+            echo "⏳ Waiting for app (5s)..."
+            sleep 5
 
             echo "📊 Container status:"
             docker compose -f docker-compose.prod.yml ps
 
             echo "📝 Migration logs:"
-            docker compose -f docker-compose.prod.yml logs migrate || true
-
-            echo "🧹 Cleaning unused containers..."
-            docker container prune -f || true
-
-            echo "🧹 Cleaning old images..."
-            docker image prune -af --filter "until=24h" || true
-
-            echo "🧹 Cleaning build cache (no build on server)..."
-            docker builder prune -af || true
-
-            echo "📊 Disk usage after cleanup:"
-            docker system df || true
+            docker compose -f docker-compose.prod.yml logs --tail=50 migrate 2>/dev/null || true
 
             echo "✅ Deployment complete!"
 
