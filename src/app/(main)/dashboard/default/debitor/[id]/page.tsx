@@ -8,15 +8,16 @@ interface PageProps {
   }>;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function DebtorDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const debtorId = parseInt(id);
 
-  if (isNaN(debtorId)) {
+  if (!id || !UUID_REGEX.test(id)) {
     notFound();
   }
 
-  const debtor = await debtorService.findById(Number(id), true);
+  const debtor = await debtorService.findByExternalId(id, true);
   const overdueDays = await debtorService.getOverdueDays();
 
   // console.log(debtor);

@@ -508,7 +508,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                       </TableCell>
                       <TableCell
                         className="font-medium"
-                        onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
+                        onClick={() => router.push(`/dashboard/default/debitor/${debtor.externalId}`)}
                       >
                         {debtor.firstName} {debtor.lastName}
                       </TableCell>

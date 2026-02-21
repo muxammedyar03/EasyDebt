@@ -145,7 +145,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
-    revalidatePath(`/dashboard/default/debitor/${debtorId}`);
+    revalidatePath(`/dashboard/default/debitor/${updatedDebtor.external_id}`);
 
     return NextResponse.json({
       ...updatedDebtor,
@@ -211,7 +211,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
-    revalidatePath(`/dashboard/default/debitor/${debtorId}`);
+    revalidatePath(`/dashboard/default/debitor/${debtor.external_id}`);
 
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {

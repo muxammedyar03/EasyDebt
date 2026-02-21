@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       where.is_read = readParam === "true";
     }
 
-    const [items, total] = await Promise.all([
+    const [itemsRaw, total] = await Promise.all([
       prisma.notification.findMany({
         where,
         orderBy: { created_at: "desc" },
@@ -69,7 +69,21 @@ export async function GET(request: NextRequest) {
       prisma.notification.count({ where }),
     ]);
 
-    return NextResponse.json({ notifications: items, total, page, pageSize });
+    const debtorIds = [...new Set(itemsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
+    const idToExternalId = new Map<number, string>();
+    if (debtorIds.length > 0) {
+      const debtors = await prisma.debtor.findMany({
+        where: { id: { in: debtorIds } },
+        select: { id: true, external_id: true },
+      });
+      debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
+    }
+    const notifications = itemsRaw.map((n) => ({
+      ...n,
+      debtor_external_id: n.debtor_id ? (idToExternalId.get(n.debtor_id) ?? null) : null,
+    }));
+
+    return NextResponse.json({ notifications, total, page, pageSize });
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });

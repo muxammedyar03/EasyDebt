@@ -90,6 +90,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: build
+    # Deploy faqat versiya (tag) push bo'lganda — main ga push = build, tag push = build + deploy
+    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -104,6 +106,9 @@ jobs:
           script: |
             set -e
             cd /var/www/EasyDebt
+
+            # Tag nomi (v1.0.1) = image tag, server shu versiyani tortadi
+            # export IMAGE_TAG=${{ github.ref_name }}
 
             # Hozirgi build ning aniq image'ini tortish (latest emas — eski versiya tushmasin)
             export IMAGE_TAG=${{ github.sha }}

@@ -23,6 +23,7 @@ interface NotificationsDropdownProps {
     created_at: Date;
     user_id: number | null;
     debtor_id: number | null;
+    debtor_external_id: string | null;
     type: NotificationType;
     title: string;
     message: string;
@@ -144,8 +145,8 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
                 key={notification.id}
                 className={`flex cursor-pointer items-center gap-1 border-b p-3 ${index === items.length - 1 ? "border-b-0" : ""} rounded-none`}
                 onClick={() => {
-                  if (notification.debtor_id) {
-                    router.push(`/dashboard/default/debitor/${notification.debtor_id}`);
+                  if (notification.debtor_external_id) {
+                    router.push(`/dashboard/default/debitor/${notification.debtor_external_id}`);
                   } else {
                     router.push(`/dashboard/notifications`);
                   }

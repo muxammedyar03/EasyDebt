@@ -133,7 +133,7 @@ export function CustomersTableDumb({
             <Card
               key={customer.debtorId}
               className="cursor-pointer transition-all hover:shadow-md"
-              onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.id}`)}
+              onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.externalId}`)}
             >
               <CardContent className="p-4">
                 <div className="space-y-2">
@@ -188,7 +188,7 @@ export function CustomersTableDumb({
                 <TableRow
                   key={customer.debtorId}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.id}`)}
+                  onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.externalId}`)}
                 >
                   <TableCell className="font-medium">
                     {customer.debtor.firstName} {customer.debtor.lastName}

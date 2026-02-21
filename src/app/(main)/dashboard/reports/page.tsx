@@ -130,6 +130,7 @@ export default async function ReportsPage() {
   const paymentsData = payments.map((payment) => ({
     id: payment.id,
     debtor_id: payment.debtor_id,
+    debtor_external_id: payment.debtor.external_id,
     debtor_name: `${payment.debtor.first_name} ${payment.debtor.last_name}`,
     debitor_total_debt: payment.debtor.total_debt.toNumber(),
     amount: payment.amount.toNumber(),
@@ -143,6 +144,7 @@ export default async function ReportsPage() {
   const debtsData = debts.map((debt) => ({
     id: debt.id,
     debtor_id: debt.debtor_id,
+    debtor_external_id: debt.debtor.external_id,
     debtor_name: `${debt.debtor.first_name} ${debt.debtor.last_name}`,
     debitor_total_debt: debt.debtor.total_debt.toNumber(),
     debitor_is_overdue: debt.debtor.is_overdue,

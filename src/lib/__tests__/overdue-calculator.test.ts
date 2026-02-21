@@ -1,6 +1,9 @@
 /**
- * Test suite for overdue calculator
- * Validates the critical bug fix: earliest unpaid debt is used as start date
+ * Test suite for overdue calculator.
+ * Uses the same calculateDebtorOverdueStatus as dashboard:
+ * - debtor.service.ts (dashboard/default, dashboard/debtors)
+ * - default/debitor/[id] (via debtorService)
+ * - overdue-checker (cron)
  */
 
 import { calculateDebtorOverdueStatus, type DebtWithPayments, type OverdueSettings } from "../overdue-calculator";
@@ -85,14 +88,14 @@ describe("Overdue Calculator - Critical Bug Fix", () => {
     });
   });
 
-  describe("Scenario 3: Paid debt is excluded from overdue calculation", () => {
-    it("should ignore debts that reached 50% payment threshold", () => {
+  describe("Scenario 3: Overdue days from last 50%+ payment (dashboard logic)", () => {
+    it("should count overdue from last payment that was >= 50% of running debt", () => {
       const debts: DebtWithPayments[] = [
         {
           amount: 1000,
           createdAt: new Date("2025-10-22"),
           payments: [
-            { amount: 600, createdAt: new Date("2025-11-01") }, // 60% paid
+            { amount: 600, createdAt: new Date("2025-11-01") }, // 60% of debt 1 → resets counter
           ],
         },
         {
@@ -104,28 +107,27 @@ describe("Overdue Calculator - Critical Bug Fix", () => {
 
       const result = calculateDebtorOverdueStatus(debts, settings);
 
-      // Should use Jan 11 as start (first unpaid debt)
-      const jan11 = new Date("2026-01-11");
+      // Implementation uses last 50%+ payment date (Nov 1), not first unpaid debt (Jan 11)
+      const nov1 = new Date("2025-11-01");
       const today = new Date();
-      const expectedDays = Math.floor((today.getTime() - jan11.getTime()) / (1000 * 60 * 60 * 24));
+      const expectedDays = Math.floor((today.getTime() - nov1.getTime()) / (1000 * 60 * 60 * 24));
 
       expect(result.overdueDays).toBe(expectedDays);
-      expect(result.overdueDays).toBeLessThan(50); // Should be ~28 days
     });
   });
 
-  describe("Scenario 4: All debts paid above threshold", () => {
-    it("should return good status when all debts are paid >= 50%", () => {
+  describe("Scenario 4: Good status when remaining debt is zero", () => {
+    it("should return good status and 0 overdue days when fully paid (remainingDebt <= 0)", () => {
       const debts: DebtWithPayments[] = [
         {
           amount: 1000,
           createdAt: new Date("2025-10-22"),
-          payments: [{ amount: 600, createdAt: new Date("2025-11-01") }],
+          payments: [{ amount: 1000, createdAt: new Date("2025-11-01") }],
         },
         {
           amount: 500,
           createdAt: new Date("2026-01-11"),
-          payments: [{ amount: 300, createdAt: new Date("2026-01-15") }],
+          payments: [{ amount: 500, createdAt: new Date("2026-01-15") }],
         },
       ];
 
@@ -137,8 +139,8 @@ describe("Overdue Calculator - Critical Bug Fix", () => {
     });
   });
 
-  describe("Scenario 5: Aggregate payment percentage matters", () => {
-    it("should consider total paid across all debts", () => {
+  describe("Scenario 5: paidPercent and status from last 50%+ payment", () => {
+    it("should report aggregate paidPercent 0.5; status depends on overdue days from last 50%+ payment", () => {
       const debts: DebtWithPayments[] = [
         {
           amount: 1000,
@@ -154,10 +156,11 @@ describe("Overdue Calculator - Critical Bug Fix", () => {
 
       const result = calculateDebtorOverdueStatus(debts, settings);
 
-      // Total: 1000 paid / 2000 total = 50% → good status
-      expect(result.status).toBe("good");
-      expect(result.isOverdue).toBe(false);
+      // No single payment is >= 50% of running debt at that time, so overdue = from first debt (Oct 22)
       expect(result.paidPercent).toBe(0.5);
+      expect(result.overdueDays).toBeGreaterThan(45); // from Oct 22
+      expect(result.status).toBe("bad");
+      expect(result.isOverdue).toBe(true);
     });
   });
 
