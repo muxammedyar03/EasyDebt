@@ -29,6 +29,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Har bir commitda build cache buzilsin, yangi kod image'ga kirsin
+ARG COMMIT_SHA
+RUN echo "Build commit: ${COMMIT_SHA:-unknown}"
+
 # Build environment variables
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
