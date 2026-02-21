@@ -47,6 +47,7 @@ jobs:
             type=ref,event=branch
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.sha }}
 
       # Har commitda build konteksti o'zgaradi — COPY cache ishlanmaydi, yangi kod image'ga kiradi
       - name: Set build cache buster
@@ -102,14 +103,18 @@ jobs:
             set -e
             cd /var/www/EasyDebt
 
+            # Hozirgi build ning aniq image'ini tortish (latest emas — eski versiya tushmasin)
+            export IMAGE_TAG=${{ github.sha }}
+
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
 
             echo "📥 Pulling latest compose/env..."
             git pull origin main --no-edit || true
 
-            echo "📦 Pulling images (app + migrate, cache ishlatilmaydi)..."
-            docker compose -f docker-compose.prod.yml pull --quiet app migrate
+            echo "📦 Pulling image (commit $IMAGE_TAG)..."
+            docker compose -f docker-compose.prod.yml pull --quiet app
+            docker compose -f docker-compose.prod.yml pull --quiet migrate
 
             echo "🚀 Containerni yangi image bilan qayta yaratish..."
             docker compose -f docker-compose.prod.yml up -d --force-recreate app
