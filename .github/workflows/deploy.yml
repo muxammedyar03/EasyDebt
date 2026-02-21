@@ -119,6 +119,9 @@ jobs:
             set -e
             cd /var/www/EasyDebt
 
+            # Tag nomi (v1.0.1) = image tag, server shu versiyani tortadi
+            # export IMAGE_TAG=${{ github.ref_name }}
+
             # Hozirgi build ning aniq image'ini tortish (latest emas — eski versiya tushmasin)
             export IMAGE_TAG=${{ github.sha }}
 
