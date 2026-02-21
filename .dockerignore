@@ -45,6 +45,9 @@ README.md
 OPTIMIZATION.md
 SETUP.md
 media
+agent-transcripts
+*.md
+!prisma/**/*.md
 
 # GitHub
 .github
