@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: ghcr.io/muxammedyar03/EasyDebt:migrate
+    image: ghcr.io/muxammedyar03/easyDebt:migrate
     container_name: debt_migrate
     working_dir: /app
     environment:
