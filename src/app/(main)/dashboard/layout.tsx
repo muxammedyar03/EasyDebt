@@ -3,8 +3,9 @@ import { ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { SidebarProviderWithWidth } from "@/app/(main)/dashboard/_components/sidebar/sidebar-provider-with-width";
 import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -104,7 +105,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       };
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
       <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
       <SidebarInset
         data-content-layout={contentLayout}
@@ -138,6 +139,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         <div className="h-full p-4 md:p-6">{children}</div>
         {session?.userId ? <PinGate userId={session.userId} pinLength={4} /> : null}
       </SidebarInset>
-    </SidebarProvider>
+    </SidebarProviderWithWidth>
   );
 }

@@ -47,7 +47,7 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (app)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -61,6 +61,19 @@ jobs:
           cache-to: type=gha,mode=max,scope=build-cache
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          platforms: linux/amd64
+
+      - name: Build and push Docker image (migrate)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: migration
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
+          cache-from: |
+            type=gha,scope=build-cache
           platforms: linux/amd64
 
   deploy:
@@ -78,35 +91,42 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
+          command_timeout: 10m
           script: |
+            set -e
             cd /var/www/EasyDebt
 
-            # Pull latest code changes
-            git pull origin main
+            echo "🔐 Logging in to GHCR..."
+            docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
 
-            # Pull latest images
-            # docker compose -f docker-compose.prod.yml pull
+            echo "📥 Pulling latest compose/env (optional)..."
+            git pull origin main || true
 
-            # Stop and remove old containers
-            docker compose -f docker-compose.prod.yml down
+            echo "📦 Pulling latest images from GHCR (no build on server)..."
+            docker compose -f docker-compose.prod.yml pull
 
-            # Start new containers (migrations run automatically via init containers)
-            echo "🚀 Starting containers with automatic migrations..."
-            docker compose -f docker-compose.prod.yml up -d --build
+            echo "🚀 Starting containers (pull only, no down — minimal downtime)..."
+            docker compose -f docker-compose.prod.yml up -d
 
-            # Wait for app containers to be healthy
-            echo "⏳ Waiting for applications to be ready..."
+            echo "⏳ Waiting for app to be ready..."
             sleep 10
 
-            # Verify containers are running
             echo "📊 Container status:"
             docker compose -f docker-compose.prod.yml ps
 
-            # Check migration logs
             echo "📝 Migration logs:"
             docker compose -f docker-compose.prod.yml logs migrate || true
 
-            # Clean up old images
-            docker image prune -af --filter "until=24h"
+            echo "🧹 Cleaning unused containers..."
+            docker container prune -f || true
+
+            echo "🧹 Cleaning old images..."
+            docker image prune -af --filter "until=24h" || true
+
+            echo "🧹 Cleaning build cache (no build on server)..."
+            docker builder prune -af || true
+
+            echo "📊 Disk usage after cleanup:"
+            docker system df || true
 
             echo "✅ Deployment complete!"
