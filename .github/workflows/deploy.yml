@@ -48,6 +48,10 @@ jobs:
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # Har commitda build konteksti o'zgaradi — COPY cache ishlanmaydi, yangi kod image'ga kiradi
+      - name: Set build cache buster
+        run: echo "${{ github.sha }}" > .build-sha
+
       - name: Build and push Docker image (app)
         uses: docker/build-push-action@v5
         with:
@@ -104,11 +108,11 @@ jobs:
             echo "📥 Pulling latest compose/env..."
             git pull origin main --no-edit || true
 
-            echo "📦 Pulling images (app + migrate only, rest use cache)..."
-            docker compose -f docker-compose.prod.yml pull app migrate
+            echo "📦 Pulling images (app + migrate, cache ishlatilmaydi)..."
+            docker compose -f docker-compose.prod.yml pull --quiet app migrate
 
-            echo "🚀 Starting containers..."
-            docker compose -f docker-compose.prod.yml up -d
+            echo "🚀 Containerni yangi image bilan qayta yaratish..."
+            docker compose -f docker-compose.prod.yml up -d --force-recreate app
 
             echo "⏳ Waiting for app (5s)..."
             sleep 5
