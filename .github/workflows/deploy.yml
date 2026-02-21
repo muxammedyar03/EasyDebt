@@ -3,6 +3,7 @@ name: Docker Build and Deploy
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   pull_request:
     branches: ["main"]
 
@@ -45,6 +46,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
+            type=ref,event=tag
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ github.sha }}
