@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
-    revalidatePath(`/dashboard/default/debitor/${validatedData.debtor_id}`);
+    revalidatePath(`/dashboard/default/debitor/${result.debtor.external_id}`);
 
     return NextResponse.json(result.payment, { status: 201 });
   } catch (error) {

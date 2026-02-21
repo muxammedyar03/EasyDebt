@@ -13,6 +13,7 @@ import { getPaymentTypeClass } from "@/lib/utils";
 type PaymentData = {
   id: number;
   debtor_id: number;
+  debtor_external_id: string;
   debtor_name: string;
   debitor_total_debt: number;
   debitor_is_overdue: boolean;
@@ -26,6 +27,7 @@ type PaymentData = {
 type DebtData = {
   id: number;
   debtor_id: number;
+  debtor_external_id: string;
   debtor_name: string;
   debitor_total_debt: number;
   debitor_is_overdue: boolean;
@@ -279,7 +281,7 @@ export default function CashClient({ payments, debts }: Props) {
                   filteredPayments.map((payment) => (
                     <div
                       key={payment.id}
-                      onClick={() => router.push(`/dashboard/default/debitor/${payment.debtor_id}`)}
+                      onClick={() => router.push(`/dashboard/default/debitor/${payment.debtor_external_id}`)}
                       className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-3 lg:items-center lg:gap-y-0"
                     >
                       <div className="space-y-1">
@@ -327,7 +329,7 @@ export default function CashClient({ payments, debts }: Props) {
                     return (
                       <div
                         key={debt.id}
-                        onClick={() => router.push(`/dashboard/default/debitor/${debt.debtor_id}`)}
+                        onClick={() => router.push(`/dashboard/default/debitor/${debt.debtor_external_id}`)}
                         className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4 lg:items-center lg:gap-y-0"
                       >
                         <div className="col-span-2 space-y-1">

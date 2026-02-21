@@ -116,7 +116,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
-    revalidatePath(`/dashboard/default/debitor/${result.oldPayment.debtor_id}`);
+    revalidatePath(`/dashboard/default/debitor/${result.oldPayment.debtor.external_id}`);
 
     return NextResponse.json(result.updatedPayment);
   } catch (error) {

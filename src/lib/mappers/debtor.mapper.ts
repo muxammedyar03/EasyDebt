@@ -213,6 +213,7 @@ export function domainToTableViewDebtor(domainDebtor: DebtorDomain): DebtorTable
   const view = domainToViewDebtor(domainDebtor);
   return {
     id: view.id,
+    externalId: view.externalId,
     fullName: view.fullName,
     phoneDisplay: view.phoneDisplay,
     totalDebtFormatted: view.totalDebtFormatted,

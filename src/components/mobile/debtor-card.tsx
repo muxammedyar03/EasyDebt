@@ -72,7 +72,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
             <div className="flex items-start gap-2">
               <h3
                 className="cursor-pointer text-base font-semibold hover:underline"
-                onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}
+                onClick={() => router.push(`/dashboard/default/debitor/${debtor.externalId}`)}
               >
                 {debtor.firstName} {debtor.lastName}
               </h3>
@@ -108,7 +108,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.id}`)}>
+              <DropdownMenuItem onClick={() => router.push(`/dashboard/default/debitor/${debtor.externalId}`)}>
                 Ko&apos;rish
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onDelete(debtor.id)} className="text-red-600">

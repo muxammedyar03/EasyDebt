@@ -107,6 +107,30 @@ export class DebtorService {
   }
 
   /**
+   * Find debtor by external_id (UUID) — for URL-safe lookups
+   */
+  async findByExternalId(externalId: string, includeRelations = false): Promise<DebtorDomain | null> {
+    const settings = await this.getSettings();
+    const shopId = await this.getShopId();
+
+    const debtor = await prisma.debtor.findFirst({
+      where: {
+        external_id: externalId,
+        shop_id: shopId,
+      },
+      include: {
+        debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+        payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+        creator: includeRelations,
+      },
+    });
+
+    if (!debtor) return null;
+
+    return prismaToDomainDebtor(debtor, settings);
+  }
+
+  /**
    * Find debtors with filters and pagination (returns Domain types)
    */
   async findMany(

@@ -37,7 +37,7 @@ const FirstNameCell = ({ row }: { row: Row<DebtorView> }) => {
     <div
       onClick={(e) => {
         e.stopPropagation();
-        router.push(`/dashboard/default/debitor/${row.original.id}`);
+        router.push(`/dashboard/default/debitor/${row.original.externalId}`);
       }}
       className="flex cursor-pointer items-center justify-between gap-2 text-base font-semibold"
     >

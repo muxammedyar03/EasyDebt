@@ -94,15 +94,25 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
   const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
 
-  // Get notifications based on effective shop
-  const notifications = await prisma.notification.findMany({
-    where: {
-      is_read: false,
-      ...(effectiveShopId && { shop_id: effectiveShopId }),
-    },
+  const notificationsRaw = await prisma.notification.findMany({
+    where: { is_read: false, shop_id: effectiveShopId ?? undefined as number | undefined},
     orderBy: { created_at: "desc" },
     take: 3,
   });
+
+  const debtorIds = [...new Set(notificationsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
+  const idToExternalId = new Map<number, string>();
+  if (debtorIds.length > 0) {
+    const debtors = await prisma.debtor.findMany({
+      where: { id: { in: debtorIds } },
+      select: { id: true, external_id: true },
+    });
+    debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
+  }
+  const notifications = notificationsRaw.map((n) => ({
+    ...n,
+    debtor_external_id: n.debtor_id ? (idToExternalId.get(n.debtor_id) ?? null) : null,
+  }));
 
   const layoutPreferences = {
     contentLayout,

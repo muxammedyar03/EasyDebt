@@ -85,6 +85,7 @@ export type DebtorView = {
 export type DebtorTableView = Pick<
   DebtorView,
   | "id"
+  | "externalId"
   | "fullName"
   | "phoneDisplay"
   | "totalDebtFormatted"
