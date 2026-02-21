@@ -31,7 +31,7 @@ COPY . .
 
 # Har bir commitda build cache buzilsin, yangi kod image'ga kirsin
 ARG COMMIT_SHA
-RUN echo "Build commit: ${COMMIT_SHA:-unknown}"
+RUN echo "${COMMIT_SHA:-unknown}" > .build-sha
 
 # Build environment variables
 ENV NEXT_TELEMETRY_DISABLED=1 \
@@ -60,6 +60,8 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy package.json for prisma commands
 COPY --from=builder /app/package.json ./package.json
+# Build commit (CI da yoziladi) — /api/version tekshirish uchun
+COPY --from=builder /app/.build-sha ./.build-sha
 
 USER nextjs
 EXPOSE 3000
