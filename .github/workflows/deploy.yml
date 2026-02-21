@@ -11,11 +11,8 @@ env:
   REGISTRY: ghcr.io
   # Docker image names must be lowercase (e.g. EasyDebt -> easydebt)
   IMAGE_NAME: muxammedyar03/easydebt
-<<<<<<< HEAD
   # Force GitHub Actions JavaScript actions to use Node.js 24
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-=======
->>>>>>> 4515f6b (deploy fix)
 
 jobs:
   build:
@@ -84,7 +81,6 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
           cache-from: |
             type=gha,scope=build-cache
-          platforms: linux/amd64
 
       - name: Build and push Docker image (migrate)
         if: github.event_name == 'push'

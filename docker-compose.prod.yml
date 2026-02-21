@@ -35,12 +35,8 @@ services:
     restart: "no"
 
   app:
-<<<<<<< HEAD
     # IMAGE_TAG deploy vaqtida commit SHA bilan beriladi (workflow); yo'q bo'lsa latest
     image: ghcr.io/muxammedyar03/easydebt:${IMAGE_TAG:-latest}
-=======
-    image: ghcr.io/muxammedyar03/easydebt:latest
->>>>>>> 4515f6b (deploy fix)
     container_name: debt_app
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public&connection_limit=20&pool_timeout=30
