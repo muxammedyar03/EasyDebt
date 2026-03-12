@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
     // Use transaction to create payment and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
       // Get current debtor to check debt amount
-      const debtor = await tx.debtor.findUnique({
-        where: { id: validatedData.debtor_id },
+      const debtor = await tx.debtor.findFirst({
+        where: { id: validatedData.debtor_id, shop_id: shopId },
       });
 
       if (!debtor) {
@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       });
 
       // Update debtor's total_debt (decrease) and payment date
-      await tx.debtor.update({
-        where: { id: validatedData.debtor_id },
+      const updated = await tx.debtor.updateMany({
+        where: { id: validatedData.debtor_id, shop_id: shopId },
         data: {
           total_debt: {
             decrement: validatedData.amount,
@@ -69,6 +69,10 @@ export async function POST(request: NextRequest) {
           is_overdue: false,
         },
       });
+
+      if (updated.count !== 1) {
+        throw new Error("Qarzdor shopga tegishli emas");
+      }
 
       return { payment, debtor };
     });

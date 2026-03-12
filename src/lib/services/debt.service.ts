@@ -1,11 +1,8 @@
-import type { Prisma } from "@prisma/client";
-import { getEffectiveShopId } from "../shop-context";
 import { getSession } from "../auth";
-import { settingsRepository } from "@/entities/settings/api";
-import { debtRepository } from "@/entities/debt/api/debt.repository";
-
-/** Debt with debtor for report */
-type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
+import { getEffectiveShopId } from "../shop-context";
+import { settingsRepository } from "@/entities/settings";
+import { debtRepository } from "@/entities";
+import type { Prisma } from "@prisma/client";
 
 export type DebtReportItem = {
   id: number;
@@ -18,6 +15,8 @@ export type DebtReportItem = {
   description: string | null;
   created_at: string;
 };
+
+type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
 
 class DebtService {
   async debtLimit(): Promise<number> {
@@ -74,6 +73,26 @@ class DebtService {
       created_at: d.created_at.toISOString(),
     }));
   }
+
+  // async getTotalCount(): Promise<number> {
+  //   return prisma.debt.count();
+  // }
+
+  // async getDebtsInDateRange(from: Date, to: Date): Promise<{ sum: number; count: number }> {
+  //   const [debts, agg] = await Promise.all([
+  //     prisma.debt.findMany({
+  //       where: { created_at: { gte: from, lte: to } },
+  //     }),
+  //     prisma.debt.aggregate({
+  //       _sum: { amount: true },
+  //       where: { created_at: { gte: from, lte: to } },
+  //     }),
+  //   ]);
+  //   return {
+  //     sum: agg._sum.amount?.toNumber() ?? 0,
+  //     count: debts.length,
+  //   };
+  // }
 }
 
 export const debtService = new DebtService();

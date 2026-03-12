@@ -48,12 +48,12 @@ function domainToApiRow(domain: {
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    const shopId = getEffectiveShopId(session);
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const shopId = getEffectiveShopId(session);
     if (!shopId) {
       return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
     }

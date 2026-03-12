@@ -1,6 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { paymentRepository } from "@/entities/payment/api";
 import { aggregatePaymentsForChart, getEmptyChartPlaceholder, type PaymentChartPoint } from "@/entities/payment/model";
+import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 /** Payment with debtor for report */
 type PaymentWithDebtor = Prisma.PaymentGetPayload<{ include: { debtor: true } }>;
@@ -31,6 +33,15 @@ export type PaymentReportItem = {
 };
 
 export class PaymentService {
+  private async getShopId(): Promise<number> {
+    const session = await getSession();
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      throw new Error("Shop context not found");
+    }
+    return shopId;
+  }
+
   // async getTotalCount(): Promise<number> {
   //   return prisma.payment.count();
   // }
@@ -53,8 +64,9 @@ export class PaymentService {
 
   /** Task 4.2a: limit to avoid loading unbounded rows (default 2000). */
   async getPaymentsWithDebtorForReport(limit = 2000): Promise<PaymentReportItem[]> {
+    const shopId = await this.getShopId();
     const payments = (await paymentRepository.findMany(
-      {},
+      { shop_id: shopId },
       { include: { debtor: true }, orderBy: { created_at: "desc" }, take: limit },
     )) as PaymentWithDebtor[];
     return payments.map((p) => ({
@@ -81,7 +93,8 @@ export class PaymentService {
    * - If no data, returns last 30 days with zeros (for stable chart)
    */
   async getPaymentsChartData(): Promise<PaymentChartPoint[]> {
-    const allPayments = await paymentRepository.findMany({}, { orderBy: { created_at: "asc" } });
+    const shopId = await this.getShopId();
+    const allPayments = await paymentRepository.findMany({ shop_id: shopId }, { orderBy: { created_at: "asc" } });
     const chartData = aggregatePaymentsForChart(allPayments);
     return chartData.length === 0 ? getEmptyChartPlaceholder(30) : chartData;
   }

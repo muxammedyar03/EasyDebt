@@ -33,7 +33,7 @@ export type ReportsDashboardDto = {
 };
 
 class ReportsService {
-  async getDashboardReport(shopId: number): Promise<ReportsDashboardDto> {
+  async getDashboardReport(): Promise<ReportsDashboardDto> {
     // const debtLimit = await debtService.debtLimit();
     // const now = new Date();
     // const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -61,8 +61,8 @@ class ReportsService {
     //   debtService.getDebtsInDateRange(currentMonthStart, now),
     //   debtService.getDebtsInDateRange(previousMonthStart, previousMonthEnd),
     const [paymentsData, debtsData] = await Promise.all([
-      paymentService.getPaymentsWithDebtorForReport(shopId),
-      debtService.getDebtsWithDebtorForReport(shopId),
+      paymentService.getPaymentsWithDebtorForReport(),
+      debtService.getDebtsWithDebtorForReport(),
       // debtorService.debtorsTotalPayments(),
       // paymentService.getTotalCount(),
       // debtorService.debtorsTotalDebts(),

@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
     // Use transaction to create debt and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
       // Get debtor info
-      const debtor = await tx.debtor.findUnique({
-        where: { id: validatedData.debtor_id },
+      const debtor = await tx.debtor.findFirst({
+        where: { id: validatedData.debtor_id, shop_id: shopId },
       });
 
       if (!debtor) {
@@ -64,9 +64,11 @@ export async function POST(request: NextRequest) {
         throw new Error("Qarz limiti topilmadi, iltimos malum bir shopni tanlang");
       }
 
+      const newTotalDebt = debtor.total_debt.toNumber() + validatedData.amount;
+
       // Update debtor's total_debt
-      const updatedDebtor = await tx.debtor.update({
-        where: { id: validatedData.debtor_id },
+      const updated = await tx.debtor.updateMany({
+        where: { id: validatedData.debtor_id, shop_id: shopId },
         data: {
           total_debt: {
             increment: validatedData.amount,
@@ -74,7 +76,11 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return { debt, debtor, updatedDebtor, debtLimit };
+      if (updated.count !== 1) {
+        throw new Error("Qarzdor shopga tegishli emas");
+      }
+
+      return { debt, debtor, newTotalDebt, debtLimit };
     });
 
     // Get user info for description
@@ -106,15 +112,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Check if debt limit exceeded
-    const newTotalDebt = result.updatedDebtor.total_debt.toNumber();
-    if (newTotalDebt > result.debtLimit) {
+    if (result.newTotalDebt > result.debtLimit) {
       await createNotification({
         userId,
         shopId,
         debtorId: validatedData.debtor_id,
         type: "DEBT_LIMIT_EXCEEDED",
         title: "Qarz limiti oshdi",
-        message: `${result.debtor.first_name} ${result.debtor.last_name} qarz limiti oshdi: ${newTotalDebt.toLocaleString()} so'm`,
+        message: `${result.debtor.first_name} ${result.debtor.last_name} qarz limiti oshdi: ${result.newTotalDebt.toLocaleString()} so'm`,
       });
     }
 

@@ -18,9 +18,10 @@ type DebtorWithDebtsAndCreator = Prisma.DebtorGetPayload<{
  * Load overdue settings from database
  * Returns parsed settings or defaults if not found
  */
-async function loadOverdueSettings() {
+async function loadOverdueSettings(shopId: number | null) {
   const settings = await settingsRepository.findMany({
     key: { in: ["good_until_days", "medium_until_days", "min_paid_percent"] },
+    shop_id: shopId ?? 0,
   });
 
   const settingsRecord = settings.reduce(
@@ -36,20 +37,28 @@ async function loadOverdueSettings() {
 
 export async function checkOverdueDebtors() {
   try {
-    const settings = await loadOverdueSettings();
-
     // Get all debtors with debt and their payment history (via entity repositories)
     const debtorsWithDebt = (await debtorRepository.findMany(
       { total_debt: { gt: 0 } },
       { include: { debts: true, creator: true } },
     )) as DebtorWithDebtsAndCreator[];
 
+    const shopIds = [...new Set(debtorsWithDebt.map((d) => d.shop_id))];
+    if (shopIds.length === 0) return 0;
+    const settingsByShopId = new Map<number, Awaited<ReturnType<typeof loadOverdueSettings>>>();
+    await Promise.all(
+      shopIds.map(async (shopId) => {
+        settingsByShopId.set(shopId, await loadOverdueSettings(shopId));
+      }),
+    );
+
     // Get all payments separately (since Debt doesn't have direct payments relation in Prisma)
-    const allPayments = await paymentRepository.findMany({});
+    const allPayments = await paymentRepository.findMany({ shop_id: { in: shopIds } });
 
     const overdueDebtors = [];
 
     for (const debtor of debtorsWithDebt) {
+      const settings = settingsByShopId.get(debtor.shop_id) ?? getDefaultOverdueSettings();
       // Get payments for this debtor
       const debtorPayments = allPayments.filter((p) => p.debtor_id === debtor.id);
 
@@ -125,17 +134,17 @@ export async function getOverdueDebtors() {
   });
 }
 **/
-export async function reEvaluateOverdueDebtors() {
+export async function reEvaluateOverdueDebtors(shopId: number | null = null) {
   try {
-    const settings = await loadOverdueSettings();
+    const settings = await loadOverdueSettings(shopId ?? null);
 
     const debtors = (await debtorRepository.findMany(
-      { total_debt: { gt: 0 } },
+      { total_debt: { gt: 0 }, ...(shopId ? { shop_id: shopId } : {}) },
       { include: { debts: true, creator: true } },
     )) as DebtorWithDebtsAndCreator[];
 
     // Get all payments separately (via entity repository)
-    const allPayments = await paymentRepository.findMany({});
+    const allPayments = await paymentRepository.findMany(shopId ? { shop_id: shopId } : {});
 
     for (const d of debtors) {
       try {

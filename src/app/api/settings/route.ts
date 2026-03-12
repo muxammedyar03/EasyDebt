@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     if (key === "overdue_days") {
       try {
-        await reEvaluateOverdueDebtors();
+        await reEvaluateOverdueDebtors(shopId);
         // Invalidate dashboard pages so the new statuses show up
         revalidatePath("/dashboard/default");
         revalidatePath("/dashboard/debtors");
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(setting);
     }
 
-    const settings = await settingsRepository.findMany();
+    const settings = await settingsRepository.findMany({ shop_id: shopId ?? 0 });
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);
