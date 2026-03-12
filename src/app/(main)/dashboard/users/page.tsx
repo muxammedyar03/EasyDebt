@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/auth";
 import { CreateUserForm } from "./_components/create-user-form";
 import { UsersList } from "./_components/users-list";
@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 export default async function UsersPage() {
   const session = await getSession();
 
-  if (!session || session.role !== "SUPER_ADMIN") {
+  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
     redirect("/unauthorized");
   }
 
@@ -42,20 +42,16 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>Foydalanuvchilar</CardTitle>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Yangi foydalanuvchi qo&apos;shish va boshqarish. Faqat SUPER ADMIN uchun.
-            </p>
-          </div>
-          <CreateUserForm />
-        </CardHeader>
-        <CardContent>
-          <UsersList users={serializedUsers} />
-        </CardContent>
-      </Card>
+      <div className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div>
+          <CardTitle>Foydalanuvchilar</CardTitle>
+          <p className="text-muted-foreground mt-2 text-sm">Yangi foydalanuvchi qo&apos;shish va boshqarish.</p>
+        </div>
+        {session?.role === "SUPER_ADMIN" && <CreateUserForm />}
+      </div>
+      <div className="rounded-md border">
+        <UsersList users={serializedUsers} role={session?.role} />
+      </div>
     </div>
   );
 }

@@ -42,26 +42,31 @@ const NavItemExpanded = ({
   item,
   isActive,
   isSubmenuOpen,
+  roleDisabled,
 }: {
   item: NavMainItem;
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
   isSubmenuOpen: (subItems?: NavMainItem["subItems"]) => boolean;
+  roleDisabled?: boolean;
 }) => {
   const { isMobile, setOpenMobile } = useSidebar();
+  const disabled = item.comingSoon || roleDisabled;
   return (
     <Collapsible key={item.title} asChild defaultOpen={isSubmenuOpen(item.subItems)} className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           {item.subItems ? (
-            <SidebarMenuButton
-              disabled={item.comingSoon}
-              isActive={isActive(item.url, item.subItems)}
-              tooltip={item.title}
-            >
+            <SidebarMenuButton disabled={disabled} isActive={isActive(item.url, item.subItems)} tooltip={item.title}>
               {item.icon && <item.icon />}
               <span>{item.title}</span>
               {item.comingSoon && <IsComingSoon />}
               <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+            </SidebarMenuButton>
+          ) : roleDisabled ? (
+            <SidebarMenuButton disabled tooltip={item.title} isActive={false}>
+              {item.icon && <item.icon />}
+              <span>{item.title}</span>
+              {item.comingSoon && <IsComingSoon />}
             </SidebarMenuButton>
           ) : (
             <SidebarMenuButton
@@ -115,19 +120,18 @@ const NavItemExpanded = ({
 const NavItemCollapsed = ({
   item,
   isActive,
+  roleDisabled,
 }: {
   item: NavMainItem;
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
+  roleDisabled?: boolean;
 }) => {
+  const disabled = item.comingSoon || roleDisabled;
   return (
     <SidebarMenuItem key={item.title}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton
-            disabled={item.comingSoon}
-            tooltip={item.title}
-            isActive={isActive(item.url, item.subItems)}
-          >
+          <SidebarMenuButton disabled={disabled} tooltip={item.title} isActive={isActive(item.url, item.subItems)}>
             {item.icon && <item.icon />}
             <span>{item.title}</span>
             <ChevronRight />
@@ -174,17 +178,13 @@ export function NavMain({ items }: NavMainProps) {
     return subItems?.some((sub) => pathname.startsWith(sub.url)) ?? false;
   };
 
-  // Filter items by roles if specified
+  // Show all items; role-restricted items stay visible but disabled when user has no access
   const filteredItems: NavGroup[] = React.useMemo(() => {
     return items.map((group: NavGroup) => ({
       ...group,
-      items: group.items.filter((it: NavMainItem) => {
-        if (!it.roles || it.roles.length === 0) return true;
-        if (!user) return false; // hide role-restricted items until user is known
-        return it.roles.includes(user.role);
-      }),
+      items: group.items,
     }));
-  }, [items, user]);
+  }, [items]);
 
   return (
     <>
@@ -260,34 +260,55 @@ export function NavMain({ items }: NavMainProps) {
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {group.items.map((item) => {
+                const roleDisabled = Boolean(item.roles?.length && (!user || !item.roles.includes(user.role)));
                 if (state === "collapsed" && !isMobile) {
                   if (!item.subItems) {
                     return (
                       <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          aria-disabled={item.comingSoon}
-                          tooltip={item.title}
-                          isActive={isItemActive(item.url)}
-                        >
-                          <Link
-                            href={item.url}
-                            target={item.newTab ? "_blank" : undefined}
-                            onClick={() => {
-                              if (isMobile) setOpenMobile(false);
-                            }}
-                          >
+                        {roleDisabled ? (
+                          <SidebarMenuButton disabled tooltip={item.title} isActive={false}>
                             {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
                             <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
+                          </SidebarMenuButton>
+                        ) : (
+                          <SidebarMenuButton
+                            asChild
+                            aria-disabled={item.comingSoon}
+                            tooltip={item.title}
+                            isActive={isItemActive(item.url)}
+                          >
+                            <Link
+                              href={item.url}
+                              target={item.newTab ? "_blank" : undefined}
+                              onClick={() => {
+                                if (isMobile) setOpenMobile(false);
+                              }}
+                            >
+                              {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        )}
                       </SidebarMenuItem>
                     );
                   }
-                  return <NavItemCollapsed key={item.title} item={item} isActive={isItemActive} />;
+                  return (
+                    <NavItemCollapsed
+                      key={item.title}
+                      item={item}
+                      isActive={isItemActive}
+                      roleDisabled={roleDisabled}
+                    />
+                  );
                 }
                 return (
-                  <NavItemExpanded key={item.title} item={item} isActive={isItemActive} isSubmenuOpen={isSubmenuOpen} />
+                  <NavItemExpanded
+                    key={item.title}
+                    item={item}
+                    isActive={isItemActive}
+                    isSubmenuOpen={isSubmenuOpen}
+                    roleDisabled={roleDisabled}
+                  />
                 );
               })}
             </SidebarMenu>

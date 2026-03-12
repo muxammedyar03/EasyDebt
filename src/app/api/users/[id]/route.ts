@@ -132,6 +132,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Noma'lum action" }, { status: 400 });
     }
 
+    if (!session || session.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+    }
+
     // Prepare update data
     const updateData: Prisma.UserUpdateInput = {};
 
