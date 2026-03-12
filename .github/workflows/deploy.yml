@@ -104,8 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: build
-    # Deploy only when a version tag is pushed (workflow triggers `tags: ["v*"]`)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    if: github.event_name == 'push'
 
     steps:
       - name: Deploy to production server via SSH
@@ -134,7 +133,7 @@ jobs:
 
             echo "📦 Pulling image (commit $IMAGE_TAG)..."
             docker compose -f docker-compose.prod.yml pull --quiet app
-            docker compose -f docker-compose.prod.yml pull --quiet migrate
+            # docker compose -f docker-compose.prod.yml pull --quiet migrate
 
             echo "🚀 Containerni yangi image bilan qayta yaratish..."
             docker compose -f docker-compose.prod.yml up -d --force-recreate app
