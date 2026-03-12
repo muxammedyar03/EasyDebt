@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CreditCard, Wallet, Smartphone, Banknote, HandCoinsIcon } from "lucide-react";
 import { PaymentType } from "@prisma/client";
 import { useRouter } from "next/navigation";
-import { formatCurrencyUzs, formatDate } from "@/lib/format";
+import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 import { getPaymentTypeClass } from "@/lib/utils";
 
 type PaymentData = {
@@ -39,9 +39,10 @@ type DebtData = {
 type Props = {
   payments: PaymentData[];
   debts: DebtData[];
+  debtLimit: number;
 };
 
-export default function CashClient({ payments, debts }: Props) {
+export default function CashClient({ payments, debts, debtLimit }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const [timeRange, setTimeRange] = useState<"daily" | "week" | "month">("daily");
@@ -143,19 +144,38 @@ export default function CashClient({ payments, debts }: Props) {
 
   const getDateRangeText = () => {
     if (timeRange === "daily") {
-      return formatDate(selectedDate);
+      return formatDateUz(selectedDate);
     } else if (timeRange === "week") {
       const dates = getDateRange();
-      return `${formatDate(dates[0])} - ${formatDate(dates[dates.length - 1])}`;
+      return `${formatDateUz(dates[0])} - ${formatDateUz(dates[dates.length - 1])}`;
     } else {
       const date = new Date(selectedDate);
-      return date.toLocaleDateString("uz-UZ", { year: "numeric", month: "2-digit" });
+      return formatDateUz(date);
     }
   };
 
   const canGoNext = () => {
     return selectedDate < today;
   };
+
+  function debtLimitStatus(data: PaymentData | DebtData) {
+    if (data.amount > debtLimit) {
+      return {
+        className: "bg-red-600/15 text-red-700 dark:text-red-500 hover:bg-red-600/15",
+        label: "Limitdan oshgan",
+      };
+    } else if (data.amount <= 0) {
+      return {
+        className: "bg-green-600/15 text-green-700 dark:text-green-500 hover:bg-green-600/15",
+        label: "To'langan",
+      };
+    } else {
+      return {
+        className: "bg-gray-500/20 dark:bg-gray-500/30 text-gray-900 dark:text-white hover:bg-gray-700/20",
+        label: "Qarzdor",
+      };
+    }
+  }
 
   return (
     <div className="w-full space-y-6">
@@ -280,7 +300,7 @@ export default function CashClient({ payments, debts }: Props) {
                     <div
                       key={payment.id}
                       onClick={() => router.push(`/dashboard/default/debitor/${payment.debtor_external_id}`)}
-                      className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-3 lg:items-center lg:gap-y-0"
+                      className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4 lg:items-center lg:gap-y-0"
                     >
                       <div className="space-y-1">
                         <p className="font-medium">{payment.debtor_name}</p>
@@ -295,7 +315,19 @@ export default function CashClient({ payments, debts }: Props) {
                         <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
                         <p className="text-red-600">{formatCurrencyUzs(payment.debitor_total_debt)}</p>
                       </div>
-                      <div className="flex items-center gap-3 lg:justify-end">
+                      <Badge
+                        variant="default"
+                        className={`hidden h-8 px-3 lg:flex ${debtLimitStatus(payment).className}`}
+                      >
+                        {debtLimitStatus(payment).label}
+                      </Badge>
+                      <div className="flex items-center justify-end gap-3">
+                        <Badge
+                          variant="default"
+                          className={`flex h-8 px-3 lg:hidden ${debtLimitStatus(payment).className}`}
+                        >
+                          {debtLimitStatus(payment).label}
+                        </Badge>
                         <Badge variant="default" className={`h-8 px-3 ${getPaymentTypeClass(payment.payment_type)}`}>
                           {payment.payment_type === "CASH"
                             ? "Naqd"
@@ -303,7 +335,9 @@ export default function CashClient({ payments, debts }: Props) {
                               ? "Karta"
                               : "Click"}
                         </Badge>
-                        <span className="font-bold text-green-600">{formatCurrencyUzs(payment.amount)}</span>
+                        <span className="w-full text-end font-bold text-green-600 lg:w-36">
+                          {formatCurrencyUzs(payment.amount)}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -328,23 +362,41 @@ export default function CashClient({ payments, debts }: Props) {
                       <div
                         key={debt.id}
                         onClick={() => router.push(`/dashboard/default/debitor/${debt.debtor_external_id}`)}
-                        className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-4 lg:items-center lg:gap-y-0"
+                        className="hover:bg-accent flex flex-col justify-between gap-y-4 rounded-lg border p-4 transition-colors lg:grid lg:grid-cols-5 lg:items-center lg:gap-y-0"
                       >
-                        <div className="col-span-2 space-y-1">
-                          <p className="font-medium">{debt.debtor_name}</p>
-                          <p className="text-muted-foreground text-sm">
-                            {new Date(debt.created_at).toLocaleString("uz-UZ")}
-                          </p>
-                          {debt.description && (
-                            <p className="text-muted-foreground text-sm italic">{debt.description}</p>
-                          )}
+                        <div className="col-span-2 flex justify-between space-y-1">
+                          <div className="space-y-1">
+                            <p className="font-medium">{debt.debtor_name}</p>
+                            <p className="text-muted-foreground text-sm">
+                              {new Date(debt.created_at).toLocaleString("uz-UZ")}
+                            </p>
+                            {debt.description && (
+                              <p className="text-muted-foreground text-sm italic">{debt.description}</p>
+                            )}
+                          </div>
+                          <Badge
+                            variant="default"
+                            className={`flex h-8 px-3 lg:hidden ${debtLimitStatus(debt).className}`}
+                          >
+                            {debtLimitStatus(debt).label}
+                          </Badge>
                         </div>
-                        <div className="space-y-2">
-                          <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
-                          <p className="text-red-600">{formatCurrencyUzs(debt.debitor_total_debt)}</p>
+                        <div className="flex items-center justify-between space-y-2">
+                          <div>
+                            <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
+                            <p className="text-red-600">{formatCurrencyUzs(debt.debitor_total_debt)}</p>
+                          </div>
+                          <span className="flex font-bold text-red-600 lg:hidden lg:justify-end lg:text-end">
+                            {formatCurrencyUzs(debt.amount)}
+                          </span>
                         </div>
-                        {/* <Badge className={debtorStatus.className}>{debtorStatus.text}</Badge> */}
-                        <span className="font-bold text-red-600 lg:justify-end lg:text-end">
+                        <Badge
+                          variant="default"
+                          className={`hidden h-8 px-3 lg:flex ${debtLimitStatus(debt).className}`}
+                        >
+                          {debtLimitStatus(debt).label}
+                        </Badge>
+                        <span className="hidden font-bold text-red-600 lg:flex lg:justify-end lg:text-end">
                           {formatCurrencyUzs(debt.amount)}
                         </span>
                       </div>

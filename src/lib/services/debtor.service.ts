@@ -87,12 +87,10 @@ export class DebtorService {
    */
   async findByExternalId(externalId: string, includeRelations = false): Promise<DebtorDomain | null> {
     const settings = await this.getSettings();
-    const shopId = await this.getShopId();
 
     const debtor = await prisma.debtor.findFirst({
       where: {
         external_id: externalId,
-        shop_id: shopId,
       },
       include: {
         debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
