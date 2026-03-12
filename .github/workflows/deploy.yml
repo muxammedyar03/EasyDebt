@@ -90,9 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: build
-    # Deploy faqat versiya (tag) push bo'lganda — main ga push = build, tag push = build + deploy
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
 
     steps:
       - name: Deploy to production server via SSH
