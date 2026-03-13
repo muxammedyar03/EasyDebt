@@ -115,13 +115,51 @@ jobs:
 
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
+            
+            # Docker pull optimizatsiyasi
+            echo "⚙️  Docker pull optimizatsiyasi sozlanmoqda..."
+            # Max connections oshirish (default 6)
+            export DOCKER_CLI_PLUGINS_PATH=/usr/libexec/docker/cli-plugins:$DOCKER_CLI_PLUGINS_PATH || true
+            
+            # Docker daemon status tekshirish
+            echo "🔍 Docker daemon status:"
+            docker info | grep -E "(Server Version|Storage Driver|Logging Driver)" || true
 
             echo "📥 Pulling latest compose/env..."
             git pull origin main --no-edit || true
 
             echo "📦 Pulling image (commit $IMAGE_TAG)..."
-            docker compose -f docker-compose.prod.yml pull --quiet app
-            # docker compose -f docker-compose.prod.yml pull --quiet migrate
+            IMAGE_FULL="ghcr.io/muxammedyar03/easydebt:$IMAGE_TAG"
+            
+            echo "📊 Image hajmini tekshirish..."
+            docker images $IMAGE_FULL 2>/dev/null || echo "Image hali pull qilinmagan"
+            
+            echo "⬇️  Image pull qilinmoqda (progress ko'rsatiladi)..."
+            echo "💡 Tip: Agar pull sekin bo'lsa, network yoki registry muammosi bo'lishi mumkin"
+            
+            # Variant 1: To'g'ridan-to'g'ri docker pull (tezroq, progress ko'rsatadi)
+            echo "🔄 Variant 1: docker pull (tezroq, progress ko'rsatadi)..."
+            if timeout 900 docker pull $IMAGE_FULL 2>&1 | tee /tmp/docker-pull.log; then
+              echo "✅ docker pull muvaffaqiyatli!"
+            else
+              echo "⚠️  docker pull muvaffaqiyatsiz, docker compose pull bilan urinib ko'ramiz..."
+              # Variant 2: docker compose pull (fallback)
+              if ! timeout 900 docker compose -f docker-compose.prod.yml pull app 2>&1 | tee -a /tmp/docker-pull.log; then
+                echo "❌ Pull timeout yoki xatolik! Qayta urinib ko'ramiz..."
+                sleep 5
+                if ! timeout 900 docker pull $IMAGE_FULL; then
+                  echo "❌ Ikkinchi urinish ham muvaffaqiyatsiz."
+                  echo "📋 Pull loglari:"
+                  tail -50 /tmp/docker-pull.log || true
+                  echo "📊 Mavjud imagelar:"
+                  docker images ghcr.io/muxammedyar03/easydebt --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | head -10
+                  exit 1
+                fi
+              fi
+            fi
+            
+            echo "✅ Image muvaffaqiyatli pull qilindi!"
+            docker images $IMAGE_FULL --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
             echo "🚀 Containerni yangi image bilan qayta yaratish..."
             docker compose -f docker-compose.prod.yml up -d --force-recreate app
