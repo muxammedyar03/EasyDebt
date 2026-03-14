@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/errors";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -26,7 +27,7 @@ export async function GET() {
     return NextResponse.json(debtors);
   } catch (error) {
     console.error("Error fetching debtors:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -105,15 +106,13 @@ export async function POST(request: NextRequest) {
 
     console.error("Error creating debtor:", error);
 
-    // Check for Prisma errors
     if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string; meta?: Prisma.PrismaClientKnownRequestError };
-
+      const prismaError = error as { code: string };
       if (prismaError.code === "P2003") {
         return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
       }
     }
 
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

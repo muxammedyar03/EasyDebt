@@ -6,6 +6,7 @@ const DEFAULT_INCLUDE = { debtor: true, creator: true } satisfies Prisma.Payment
 /**
  * PaymentReminder entity – API (repository).
  * Data access only; no business logic.
+ * Methods return Prisma payloads; default include is { debtor: true, creator: true }.
  */
 export class PaymentReminderRepository {
   async findById(id: number, include: Prisma.PaymentReminderInclude = DEFAULT_INCLUDE) {

@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 import { formatNumber, formatUzPhone } from "@/lib/format";
 import {
   Dialog,
@@ -81,7 +82,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       });
     } catch (error) {
       console.error("Error adding debtor:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzdor qo'shishda xatolik yuz berdi");
+      toast.error(getErrorMessage(error, "Qarzdor qo'shishda xatolik yuz berdi"));
     } finally {
       setIsLoading(false);
     }
