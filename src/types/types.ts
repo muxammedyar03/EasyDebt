@@ -1,13 +1,6 @@
 import { DebtDomain, PaymentDomain } from "./domain";
 import { DebtorView } from "./view";
 
-// JSON types
-export type DebtItem = {
-  name: string;
-  price: number;
-  quantity?: number;
-};
-
 // Enums
 export enum UserRole {
   SUPER_ADMIN = "SUPER_ADMIN",

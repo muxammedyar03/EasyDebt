@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/errors";
 import { createAuditLog } from "@/lib/audit";
 import { debtorRepository } from "@/entities/debtor/api";
-import { DebtItem } from "@/types/types";
+import type { DebtItem } from "@/types/domain";
 
 type ExportDebt = {
   external_id: string;

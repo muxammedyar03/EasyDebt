@@ -6,7 +6,7 @@ import { Trash2, Edit, MoreHorizontal, Search, FileDown, Download, Upload } from
 import { toast } from "sonner";
 
 import { exportToExcel, formatNumberForExcel } from "@/lib/excel-export";
-import { DebtItem } from "@/types/types";
+import type { DebtItem } from "@/types/domain";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
