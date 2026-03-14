@@ -27,7 +27,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { formatNumber } from "@/lib/format";
-import { addPaymentSchema, type AddPaymentFormData } from "../model";
+import { addPaymentSchema, type AddPaymentFormData } from "@/lib/validation";
 import { createPayment } from "../api";
 
 export interface AddPaymentDialogProps {

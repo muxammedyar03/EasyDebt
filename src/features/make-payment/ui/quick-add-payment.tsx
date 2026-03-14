@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { paymentSchema, type PaymentFormValues } from "../model";
+import { paymentSchema, type PaymentFormValues } from "@/lib/validation";
 import { createPayment } from "../api";
 import { QuickAddPaymentForm } from "./quick-add-payment-form";
 

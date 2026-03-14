@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Payment schema moved to @/features/make-payment/model */
+/** Form schemas (debtor, debt, payment) in @/lib/validation */
 
 export const debtorSchema = z.object({
   id: z.number(),

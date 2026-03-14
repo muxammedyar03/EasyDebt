@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { formatCurrencyUzs, formatNumber } from "@/lib/format";
-import type { PaymentFormValues } from "../model";
+import type { PaymentFormValues } from "@/lib/validation";
 
 export interface QuickAddPaymentFormProps {
   open: boolean;

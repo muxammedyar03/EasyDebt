@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addDebtorSchema, type AddDebtorFormData } from "../model";
+import { addDebtorSchema, type AddDebtorFormData } from "@/lib/validation";
 import { createDebtor } from "../api";
 
 export interface AddDebtorDialogProps {
