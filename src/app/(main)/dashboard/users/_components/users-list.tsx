@@ -120,8 +120,10 @@ export function UsersList({ users, role }: UsersListProps) {
         method: "DELETE",
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error("Xatolik yuz berdi");
+        throw new Error(data.error || "Foydalanuvchini o'chirishda xatolik yuz berdi");
       }
 
       toast.success("Muvaffaqiyatli", {
@@ -131,7 +133,7 @@ export function UsersList({ users, role }: UsersListProps) {
       router.refresh();
     } catch (error) {
       toast.error("Xatolik", {
-        description: `${"Foydalanuvchini o'chirishda xatolik: " + error}`,
+        description: error instanceof Error ? error.message : "Foydalanuvchini o'chirishda xatolik yuz berdi",
       });
     } finally {
       setIsLoading(false);
