@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { AddDebtDialog } from "@/features/create-debt/ui";
@@ -13,13 +14,14 @@ import { StatsCards } from "./stats-cards";
 import { PaymentReminderDialog } from "./payment-reminder-dialog";
 import { ReminderStatusCard } from "./reminder-status-card";
 import { usePaymentReminder } from "@/hooks/use-payment-reminder";
-import { useDebtorDetail } from "@/features/view-debtor/hooks";
+import { useDebtorDetail, DEBTOR_QUERY_KEY } from "@/features/view-debtor/hooks";
 import { DebtorDomain } from "@/types/domain";
 import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { exportDebtorReceipt } from "@/lib/pdf";
 
 function DebtorDetailContent({ initialDebtor, overdueDays }: { initialDebtor: DebtorDomain; overdueDays: number }) {
+  const queryClient = useQueryClient();
   const detail = useDebtorDetail({
     debtorId: initialDebtor.id,
     overdueDays,
@@ -46,9 +48,11 @@ function DebtorDetailContent({ initialDebtor, overdueDays }: { initialDebtor: De
     enabled: !!debtor?.id,
   });
 
-  const handleDialogSuccess = React.useCallback(async () => {
-    await refresh();
-  }, [refresh]);
+  const handleDialogSuccess = React.useCallback(() => {
+    if (debtor?.id) {
+      queryClient.invalidateQueries({ queryKey: [DEBTOR_QUERY_KEY, debtor.id] });
+    }
+  }, [queryClient, debtor?.id]);
 
   const handleReminderSuccess = React.useCallback(async () => {
     await reminder.refreshReminders();

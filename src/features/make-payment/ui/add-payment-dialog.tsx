@@ -85,7 +85,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
 
       requestAnimationFrame(() => {
         setTimeout(() => {
-          router.refresh();
+          if (!onSuccess) router.refresh();
           onSuccess?.();
           refreshAfterCloseRef.current = false;
         }, 150);
