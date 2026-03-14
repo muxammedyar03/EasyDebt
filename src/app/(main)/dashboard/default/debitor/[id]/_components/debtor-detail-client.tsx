@@ -15,17 +15,27 @@ import { PaymentReminderDialog } from "./payment-reminder-dialog";
 import { ReminderStatusCard } from "./reminder-status-card";
 import { usePaymentReminder } from "@/hooks/use-payment-reminder";
 import { useDebtorDetail, DEBTOR_QUERY_KEY } from "@/features/view-debtor/hooks";
+import type { ViewDebtorComputed } from "@/features/view-debtor/model";
 import { DebtorDomain } from "@/types/domain";
 import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { exportDebtorReceipt } from "@/lib/pdf";
 
-function DebtorDetailContent({ initialDebtor, overdueDays }: { initialDebtor: DebtorDomain; overdueDays: number }) {
+function DebtorDetailContent({
+  initialDebtor,
+  overdueDays,
+  initialViewValue,
+}: {
+  initialDebtor: DebtorDomain;
+  overdueDays: number;
+  initialViewValue?: ViewDebtorComputed;
+}) {
   const queryClient = useQueryClient();
   const detail = useDebtorDetail({
     debtorId: initialDebtor.id,
     overdueDays,
     initialData: initialDebtor,
+    initialViewValue,
   });
 
   const { debtor, refresh, stats, rating, timeline, firstDebtDate, daysSinceFirstDebt } = detail;
@@ -176,9 +186,13 @@ function DebtorDetailContent({ initialDebtor, overdueDays }: { initialDebtor: De
 export function DebtorDetailClient({
   debtor: initialDebtor,
   overdueDays,
+  initialViewValue,
 }: {
   debtor: DebtorDomain;
   overdueDays: number;
+  initialViewValue?: ViewDebtorComputed;
 }) {
-  return <DebtorDetailContent initialDebtor={initialDebtor} overdueDays={overdueDays} />;
+  return (
+    <DebtorDetailContent initialDebtor={initialDebtor} overdueDays={overdueDays} initialViewValue={initialViewValue} />
+  );
 }

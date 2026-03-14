@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { DebtorDetailClient } from "./_components/debtor-detail-client";
 import { debtorService } from "@/lib/services/debtor.service";
+import { computeViewValueSync } from "@/features/view-debtor/model";
 
 interface PageProps {
   params: Promise<{
@@ -24,5 +25,6 @@ export default async function DebtorDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <DebtorDetailClient debtor={debtor} overdueDays={overdueDays} />;
+  const initialViewValue = computeViewValueSync(debtor, overdueDays);
+  return <DebtorDetailClient debtor={debtor} overdueDays={overdueDays} initialViewValue={initialViewValue} />;
 }
