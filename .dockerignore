@@ -5,6 +5,7 @@ docker-compose*
 .git
 .env
 README.md
+*.md
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -41,9 +42,6 @@ coverage
 # Misc
 *.log
 .husky
-README.md
-OPTIMIZATION.md
-SETUP.md
 media
 agent-transcripts
 *.md
