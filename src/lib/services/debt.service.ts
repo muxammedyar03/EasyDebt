@@ -1,8 +1,8 @@
 import type { Prisma } from "@prisma/client";
-import { debtRepository } from "@/lib/repositories/debt.repository";
+import { debtRepository } from "@/entities/debt/api";
+import { settingsRepository } from "@/entities/settings/api";
 import { getSession } from "../auth";
 import { getEffectiveShopId } from "../shop-context";
-import { settingsRepository } from "@/entities/settings";
 
 /** Debt with debtor for report */
 type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
