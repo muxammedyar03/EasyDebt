@@ -14,8 +14,8 @@ export async function fetchDebtorById(debtorId: number): Promise<DebtorDomain> {
   return normalizeDebtorFromApi(data);
 }
 
-/** Normalize API response (dates as strings) to DebtorDomain (Date objects where needed) */
-function normalizeDebtorFromApi(data: Record<string, unknown>): DebtorDomain {
+/** Normalize API response (dates as strings) to DebtorDomain (Date objects where needed). Exported for tests. */
+export function normalizeDebtorFromApi(data: Record<string, unknown>): DebtorDomain {
   const debtor = data as DebtorDomain & {
     debts?: Array<{ createdAt: string | Date }>;
     payments?: Array<{ createdAt: string | Date }>;

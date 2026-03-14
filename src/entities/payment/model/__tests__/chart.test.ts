@@ -2,7 +2,7 @@
  * Unit tests for payment entity model: aggregatePaymentsForChart, getEmptyChartPlaceholder.
  */
 
-import { aggregatePaymentsForChart, getEmptyChartPlaceholder, type PaymentChartPoint } from "../chart";
+import { aggregatePaymentsForChart, getEmptyChartPlaceholder } from "../chart";
 
 function row(amount: number, paymentType: string, created_at: Date) {
   return {
