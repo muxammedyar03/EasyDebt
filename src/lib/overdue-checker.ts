@@ -109,7 +109,7 @@ export async function checkOverdueDebtors() {
     return 0;
   }
 }
-
+/*
 export async function updateDebtorPaymentDate(debtorId: number) {
   try {
     await prisma.debtor.update({
@@ -133,7 +133,7 @@ export async function getOverdueDebtors() {
     orderBy: { last_payment_date: "asc" },
   });
 }
-
+**/
 export async function reEvaluateOverdueDebtors() {
   try {
     const settings = await loadOverdueSettings();

@@ -1,1 +1,1 @@
-// Payment entity API – repository will be added in later task
+export { PaymentRepository, paymentRepository } from "./payment.repository";

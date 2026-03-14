@@ -12,8 +12,8 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { debtorRepository } from "@/entities/debtor/api";
-import { debtRepository } from "@/lib/repositories/debt.repository";
-import { paymentRepository } from "@/lib/repositories/payment.repository";
+import { debtRepository } from "@/entities/debt/api";
+import { paymentRepository } from "@/entities/payment/api";
 
 /** Debtor with debts + payments + creator for findMany with include */
 type DebtorWithRelations = Prisma.DebtorGetPayload<{

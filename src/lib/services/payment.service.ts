@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
-import { paymentRepository } from "@/lib/repositories/payment.repository";
+import { paymentRepository } from "@/entities/payment/api";
+import { aggregatePaymentsForChart, getEmptyChartPlaceholder, type PaymentChartPoint } from "@/entities/payment/model";
 
 /** Payment with debtor for report */
 type PaymentWithDebtor = Prisma.PaymentGetPayload<{ include: { debtor: true } }>;
@@ -8,17 +9,12 @@ type PaymentWithDebtor = Prisma.PaymentGetPayload<{ include: { debtor: true } }>
  * SERVICE LAYER - Payments
  *
  * Rules:
- * - DB access only via paymentRepository (and other repos if needed)
+ * - DB access only via paymentRepository (entity)
+ * - Chart logic in payment entity model
  * - Returns plain objects tailored for callers (DTOs)
- * - Dashboard chart uses a simple DTO type (no Prisma in components)
  */
 
-export type PaymentChartPoint = {
-  date: string;
-  cash: number;
-  card: number;
-  click: number;
-};
+export type { PaymentChartPoint };
 
 export type PaymentReportItem = {
   id: number;
@@ -85,52 +81,8 @@ export class PaymentService {
    */
   async getPaymentsChartData(): Promise<PaymentChartPoint[]> {
     const allPayments = await paymentRepository.findMany({}, { orderBy: { created_at: "asc" } });
-
-    const paymentsByDate = new Map<string, { cash: number; card: number; click: number }>();
-
-    allPayments.forEach((payment) => {
-      const dateStr = payment.created_at.toISOString().split("T")[0];
-      const existing = paymentsByDate.get(dateStr) || { cash: 0, card: 0, click: 0 };
-
-      const amount = payment.amount.toNumber();
-      if (payment.payment_type === "CASH") {
-        existing.cash += amount;
-      } else if (payment.payment_type === "CARD") {
-        existing.card += amount;
-      } else if (payment.payment_type === "CLICK") {
-        existing.click += amount;
-      }
-
-      paymentsByDate.set(dateStr, existing);
-    });
-
-    let chartData: PaymentChartPoint[] = Array.from(paymentsByDate.entries())
-      .map(([date, amounts]) => ({
-        date,
-        cash: amounts.cash,
-        card: amounts.card,
-        click: amounts.click,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    // If no data, generate sample data for last 30 days
-    if (chartData.length === 0) {
-      const sampleData: PaymentChartPoint[] = [];
-      const today = new Date();
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        sampleData.push({
-          date: date.toISOString().split("T")[0],
-          cash: 0,
-          card: 0,
-          click: 0,
-        });
-      }
-      chartData = sampleData;
-    }
-
-    return chartData;
+    const chartData = aggregatePaymentsForChart(allPayments);
+    return chartData.length === 0 ? getEmptyChartPlaceholder(30) : chartData;
   }
 }
 

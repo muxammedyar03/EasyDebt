@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
-import { debtRepository } from "@/lib/repositories/debt.repository";
+import { debtRepository } from "@/entities/debt/api";
 import { getEffectiveShopId } from "../shop-context";
 import { getSession } from "../auth";
 
