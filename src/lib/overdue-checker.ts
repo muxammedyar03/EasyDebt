@@ -1,12 +1,18 @@
-import { prisma } from "@/lib/prisma";
 import { settingsRepository } from "@/entities/settings/api";
+import { debtorRepository } from "@/entities/debtor/api";
+import { paymentRepository } from "@/entities/payment/api";
 import { createNotification } from "@/lib/notifications";
+import type { Prisma } from "@prisma/client";
 import {
   calculateDebtorOverdueStatus,
   parseOverdueSettings,
   getDefaultOverdueSettings,
   type DebtWithPayments,
 } from "@/entities/debtor/model";
+
+type DebtorWithDebtsAndCreator = Prisma.DebtorGetPayload<{
+  include: { debts: true; creator: true };
+}>;
 
 /**
  * Load overdue settings from database
@@ -33,21 +39,14 @@ export async function checkOverdueDebtors() {
     const settings = await loadOverdueSettings();
     console.log("[overdue-checker] using settings:", settings);
 
-    // Get all debtors with debt and their payment history
-    const debtorsWithDebt = await prisma.debtor.findMany({
-      where: {
-        total_debt: { gt: 0 },
-      },
-      include: {
-        debts: true,
-        creator: true,
-      },
-    });
+    // Get all debtors with debt and their payment history (via entity repositories)
+    const debtorsWithDebt = (await debtorRepository.findMany(
+      { total_debt: { gt: 0 } },
+      { include: { debts: true, creator: true } },
+    )) as DebtorWithDebtsAndCreator[];
 
     // Get all payments separately (since Debt doesn't have direct payments relation in Prisma)
-    const allPayments = await prisma.payment.findMany({
-      select: { debtor_id: true, amount: true, created_at: true },
-    });
+    const allPayments = await paymentRepository.findMany({});
 
     const overdueDebtors = [];
 
@@ -80,10 +79,7 @@ export async function checkOverdueDebtors() {
     // Mark as overdue and create notifications
     for (const { debtor, status } of overdueDebtors) {
       try {
-        await prisma.debtor.update({
-          where: { id: debtor.id },
-          data: { is_overdue: true },
-        });
+        await debtorRepository.update(debtor.id, { is_overdue: true });
         console.log("[overdue-checker] set is_overdue=true for debtor", debtor.id);
 
         // Create notification
@@ -136,18 +132,13 @@ export async function reEvaluateOverdueDebtors() {
     const settings = await loadOverdueSettings();
     console.log("[reEvaluateOverdueDebtors] using settings:", settings);
 
-    const debtors = await prisma.debtor.findMany({
-      where: { total_debt: { gt: 0 } },
-      include: {
-        debts: true,
-        creator: true,
-      },
-    });
+    const debtors = (await debtorRepository.findMany(
+      { total_debt: { gt: 0 } },
+      { include: { debts: true, creator: true } },
+    )) as DebtorWithDebtsAndCreator[];
 
-    // Get all payments separately
-    const allPayments = await prisma.payment.findMany({
-      select: { debtor_id: true, amount: true, created_at: true },
-    });
+    // Get all payments separately (via entity repository)
+    const allPayments = await paymentRepository.findMany({});
 
     for (const d of debtors) {
       try {
@@ -169,7 +160,7 @@ export async function reEvaluateOverdueDebtors() {
 
         // Mark as overdue if should be but isn't
         if (overdueStatus.isOverdue && !d.is_overdue) {
-          await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: true } });
+          await debtorRepository.update(d.id, { is_overdue: true });
           await createNotification({
             userId: d.created_by,
             shopId: d.shop_id,
@@ -179,8 +170,7 @@ export async function reEvaluateOverdueDebtors() {
             message: `${d.first_name} ${d.last_name} ${overdueStatus.overdueDays} kundan beri to'lov qilmagan. Qarz: ${d.total_debt.toNumber()} so'm`,
           });
         } else if (!overdueStatus.isOverdue && d.is_overdue) {
-          // Mark as not overdue if status changed
-          await prisma.debtor.update({ where: { id: d.id }, data: { is_overdue: false } });
+          await debtorRepository.update(d.id, { is_overdue: false });
         }
       } catch (e) {
         console.error("[reEvaluateOverdueDebtors] failed for debtor", d.id, e);

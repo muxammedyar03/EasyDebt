@@ -30,7 +30,7 @@ import type {
   PaginatedResult,
   DebtorStats,
 } from "@/types/domain/debtor.domain";
-import { buildDebtorStats, calculatePaymentRating } from "@/entities/debtor/model";
+import { buildDebtorStats, calculatePaymentRating, calculateDebtorOverdueStatus } from "@/entities/debtor/model";
 import type {
   CustomerRatingDomain,
   CustomerRatingFilters,
@@ -89,6 +89,42 @@ export class DebtorService {
   public async getOverdueDays(): Promise<number> {
     const settings = await this.getSettings();
     return settings.overdueDays;
+  }
+
+  /**
+   * Get all debtors with debts/payments and computed is_overdue for API list (e.g. GET /api/debtors)
+   */
+  async getDebtorsWithOverdueForApi(): Promise<
+    (Omit<Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>, "total_debt"> & {
+      total_debt: number;
+      is_overdue: boolean;
+    })[]
+  > {
+    const { overdueDays } = await this.getSettings();
+    const debtorsRaw = (await debtorRepository.findMany(
+      { shop_id: await this.getShopId() },
+      { orderBy: { created_at: "desc" }, include: { debts: true, payments: true } },
+    )) as Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>[];
+
+    return debtorsRaw.map((debtor) => {
+      const debtsWithPayments = debtor.debts.map((debt) => ({
+        amount: debt.amount.toNumber(),
+        createdAt: debt.created_at,
+        payments: debtor.payments
+          .filter((p) => p.created_at >= debt.created_at)
+          .map((p) => ({ amount: p.amount.toNumber(), createdAt: p.created_at })),
+      }));
+      const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
+        goodUntilDays: overdueDays - 15,
+        mediumUntilDays: overdueDays,
+        minPaidPercent: 0.5,
+      });
+      return {
+        ...debtor,
+        total_debt: debtor.total_debt.toNumber(),
+        is_overdue: overdueStatus.isOverdue,
+      };
+    });
   }
 
   /**
