@@ -18,7 +18,7 @@
  *   0 * * * * curl -s "https://yoursite.com/api/cron/hosting-reminder?key=YOUR_CRON_SECRET" > /dev/null
  */
 
-import { prisma } from "@/lib/prisma";
+import { paymentReminderRepository } from "@/entities/payment-reminder/api";
 import { createNotification } from "@/lib/notifications";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { uz } from "date-fns/locale";
@@ -126,22 +126,13 @@ export async function getTodayReminders() {
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
   const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
 
-  return await prisma.paymentReminder.findMany({
-    where: {
+  return paymentReminderRepository.findMany(
+    {
       status: "PENDING",
-      reminder_at: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
+      reminder_at: { gte: startOfDay, lte: endOfDay },
     },
-    include: {
-      debtor: true,
-      creator: true,
-    },
-    orderBy: {
-      reminder_at: "asc",
-    },
-  });
+    { orderBy: { reminder_at: "asc" } },
+  );
 }
 
 /**
@@ -149,10 +140,10 @@ export async function getTodayReminders() {
  */
 export async function getReminderStats() {
   const [pending, notified, completed, cancelled] = await Promise.all([
-    prisma.paymentReminder.count({ where: { status: "PENDING" } }),
-    prisma.paymentReminder.count({ where: { status: "NOTIFIED" } }),
-    prisma.paymentReminder.count({ where: { status: "COMPLETED" } }),
-    prisma.paymentReminder.count({ where: { status: "CANCELLED" } }),
+    paymentReminderRepository.count({ status: "PENDING" }),
+    paymentReminderRepository.count({ status: "NOTIFIED" }),
+    paymentReminderRepository.count({ status: "COMPLETED" }),
+    paymentReminderRepository.count({ status: "CANCELLED" }),
   ]);
 
   return {
@@ -176,15 +167,9 @@ export async function cleanupOldReminders(daysOld = 90): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
-    const result = await prisma.paymentReminder.deleteMany({
-      where: {
-        status: {
-          in: ["COMPLETED", "CANCELLED"],
-        },
-        updated_at: {
-          lt: cutoffDate,
-        },
-      },
+    const result = await paymentReminderRepository.deleteMany({
+      status: { in: ["COMPLETED", "CANCELLED"] },
+      updated_at: { lt: cutoffDate },
     });
 
     console.log(`[cron/cleanup] Deleted ${result.count} old reminders`);
