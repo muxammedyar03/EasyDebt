@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getApiErrorMessage } from "@/lib/errors";
 import { Prisma } from "@prisma/client";
+import { debtorRepository } from "@/entities/debtor/api";
 import { settingsRepository } from "@/entities/settings/api";
 
 type ExportData = {
@@ -54,36 +55,21 @@ export async function GET(request: NextRequest) {
       where.total_debt = { lte: 0 };
     }
 
-    // Fetch all debtors (no pagination for export)
-    const debtors = await prisma.debtor.findMany({
-      where,
+    const debtors = await debtorRepository.findMany(where, {
       orderBy: { created_at: "desc" },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        phone_number: true,
-        address: true,
-        total_debt: true,
-        created_at: true,
-        debts: {
-          select: {
-            amount: true,
-          },
-        },
-        payments: {
-          select: {
-            amount: true,
-          },
-        },
-      },
+      include: { debts: true, payments: true },
     });
 
-    // Format data for export
     const exportData: ExportData[] = debtors.map((debtor) => {
-      const totalDebt = debtor.total_debt.toNumber();
-      const totalDebts = debtor.debts.reduce((sum, debt) => sum + debt.amount.toNumber(), 0);
-      const totalPayments = debtor.payments.reduce((sum, payment) => sum + payment.amount.toNumber(), 0);
+      const totalDebt = (debtor as { total_debt: { toNumber: () => number } }).total_debt.toNumber();
+      const totalDebts = (debtor.debts ?? []).reduce(
+        (sum, d) => sum + (d as { amount: { toNumber: () => number } }).amount.toNumber(),
+        0,
+      );
+      const totalPayments = (debtor.payments ?? []).reduce(
+        (sum, p) => sum + (p as { amount: { toNumber: () => number } }).amount.toNumber(),
+        0,
+      );
 
       let status = "To'langan";
       if (totalDebt > debtLimit) {
@@ -92,17 +78,25 @@ export async function GET(request: NextRequest) {
         status = "Qarzdor";
       }
 
+      const d = debtor as {
+        id: number;
+        first_name: string;
+        last_name: string;
+        phone_number: string | null;
+        address: string | null;
+        created_at: Date;
+      };
       return {
-        id: debtor.id,
-        first_name: debtor.first_name,
-        last_name: debtor.last_name,
-        phone_number: debtor.phone_number || "",
-        address: debtor.address || "",
+        id: d.id,
+        first_name: d.first_name,
+        last_name: d.last_name,
+        phone_number: d.phone_number || "",
+        address: d.address || "",
         total_debt: totalDebt,
         total_debts: totalDebts,
         total_payments: totalPayments,
         status,
-        created_at: debtor.created_at.toLocaleDateString("uz-UZ"),
+        created_at: d.created_at.toLocaleDateString("uz-UZ"),
       };
     });
 
@@ -122,6 +116,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ debtors: exportData });
   } catch (error) {
     console.error("Export error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

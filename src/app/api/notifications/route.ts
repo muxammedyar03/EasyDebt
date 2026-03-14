@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/errors";
 import { markAllNotificationsAsRead } from "@/lib/notifications";
-import { prisma } from "@/lib/prisma";
 import { NotificationType, Prisma } from "@prisma/client";
+import { debtorRepository } from "@/entities/debtor/api";
+import { notificationRepository } from "@/entities/notification/api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,22 +62,18 @@ export async function GET(request: NextRequest) {
     }
 
     const [itemsRaw, total] = await Promise.all([
-      prisma.notification.findMany({
-        where,
+      notificationRepository.findMany(where, {
         orderBy: { created_at: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.notification.count({ where }),
+      notificationRepository.count(where),
     ]);
 
     const debtorIds = [...new Set(itemsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
     const idToExternalId = new Map<number, string>();
     if (debtorIds.length > 0) {
-      const debtors = await prisma.debtor.findMany({
-        where: { id: { in: debtorIds } },
-        select: { id: true, external_id: true },
-      });
+      const debtors = await debtorRepository.findMany({ id: { in: debtorIds } }, { take: debtorIds.length });
       debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
     }
     const notifications = itemsRaw.map((n) => ({
@@ -86,7 +84,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ notifications, total, page, pageSize });
   } catch (error) {
     console.error("Error fetching notifications:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -108,6 +106,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Error updating notifications:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/errors";
+import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { debtorService } from "@/lib/services/debtor.service";
 
 const updateDebtorSchema = z.object({
   first_name: z.string().min(1).optional(),
@@ -25,77 +27,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const debtor = await prisma.debtor.findUnique({
-      where: { id: debtorId },
-      include: {
-        debts: {
-          orderBy: { created_at: "desc" },
-        },
-        payments: {
-          orderBy: { created_at: "desc" },
-        },
-      },
-    });
-
-    if (!debtor) {
+    const domain = await debtorService.findById(debtorId, true);
+    if (!domain) {
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
-    // Compute days overdue
-    const daysOverdue = debtor.last_payment_date
-      ? Math.floor((Date.now() - debtor.last_payment_date.getTime()) / (1000 * 60 * 60 * 24))
-      : null;
-
-    // Compute risk status (simple logic: high if overdue, medium if high debt, low otherwise)
-    const totalDebtNum = debtor.total_debt.toNumber();
-    const riskStatus = debtor.is_overdue ? "critical" : totalDebtNum > 5000000 ? "high" : "low";
-
-    // Compute status
-    const status = debtor.is_overdue ? "overdue" : totalDebtNum > 0 ? "active" : "settled";
-
-    // Convert to Domain format (camelCase)
-    const debtorData = {
-      id: debtor.id,
-      externalId: debtor.external_id,
-      firstName: debtor.first_name,
-      lastName: debtor.last_name,
-      phoneNumber: debtor.phone_number,
-      address: debtor.address,
-      totalDebt: totalDebtNum,
-      isOverdue: debtor.is_overdue,
-      lastPaymentDate: debtor.last_payment_date,
-      riskStatus,
-      status,
-      daysOverdue: daysOverdue && daysOverdue > 45 ? daysOverdue : null,
-      createdAt: debtor.created_at,
-      updatedAt: debtor.updated_at,
-      createdBy: debtor.created_by,
-      debts: debtor.debts.map((debt) => ({
-        id: debt.id,
-        externalId: debt.external_id,
-        debtorId: debt.debtor_id,
-        amount: debt.amount.toNumber(),
-        description: debt.description,
-        items: debt.items,
-        createdAt: debt.created_at,
-        createdBy: debt.created_by,
-      })),
-      payments: debtor.payments.map((payment) => ({
-        id: payment.id,
-        externalId: payment.external_id,
-        debtorId: payment.debtor_id,
-        amount: payment.amount.toNumber(),
-        paymentType: payment.payment_type,
-        note: payment.note,
-        createdAt: payment.created_at,
-        createdBy: payment.created_by,
-      })),
-    };
-
-    return NextResponse.json(debtorData);
+    return NextResponse.json(domain);
   } catch (error) {
     console.error("Error fetching debtor:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -116,48 +56,41 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validatedData = updateDebtorSchema.parse(body);
 
-    const updatedDebtor = await prisma.debtor.update({
-      where: { id: debtorId },
-      data: validatedData,
+    const updated = await debtorService.update(debtorId, {
+      firstName: validatedData.first_name,
+      lastName: validatedData.last_name,
+      phoneNumber: validatedData.phone_number,
+      address: validatedData.address,
     });
 
-    const debtorFullName = `${updatedDebtor.first_name} ${updatedDebtor.last_name}`;
-    const description = `Qarzdor ${debtorFullName} ma'lumotlari yangilandi`;
-
-    await prisma.auditLog.create({
-      data: {
-        user_id: session.userId,
-        action: "UPDATE",
-        entity_type: "DEBTOR",
-        new_value: {
-          debtor_id: debtorId,
-          first_name: validatedData.first_name,
-          last_name: validatedData.last_name,
-          phone_number: validatedData.phone_number,
-          address: validatedData.address,
-        },
-        description,
-        ip_address: request.headers.get("cf-connecting-ip") || "",
-        user_agent: request.headers.get("user-agent") || "",
+    await createAuditLog({
+      userId: session.userId,
+      action: "UPDATE",
+      entityType: "DEBTOR",
+      entityId: debtorId,
+      newValue: {
+        debtor_id: debtorId,
+        first_name: validatedData.first_name,
+        last_name: validatedData.last_name,
+        phone_number: validatedData.phone_number,
+        address: validatedData.address,
       },
+      description: `Qarzdor ${updated.firstName} ${updated.lastName} ma'lumotlari yangilandi`,
+      ipAddress: request.headers.get("cf-connecting-ip") || "",
+      userAgent: request.headers.get("user-agent") || "",
     });
 
-    // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
-    revalidatePath(`/dashboard/default/debitor/${updatedDebtor.external_id}`);
+    revalidatePath(`/dashboard/default/debitor/${updated.externalId}`);
 
-    return NextResponse.json({
-      ...updatedDebtor,
-      total_debt: updatedDebtor.total_debt.toNumber(),
-    });
+    return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }
-
     console.error("Error updating debtor:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -174,48 +107,38 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (isNaN(debtorId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
-    const debtor = await prisma.debtor.findUnique({
-      where: { id: debtorId },
-    });
 
+    const debtor = await debtorService.findById(debtorId, false);
     if (!debtor) {
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
-    const debtorFullName = `${debtor.first_name} ${debtor.last_name}`;
-    const description = `Qarzdor ${debtorFullName} o'chirildi`;
-
-    await prisma.auditLog.create({
-      data: {
-        user_id: session.userId,
-        action: "DELETE",
-        entity_type: "DEBTOR",
-        new_value: {
-          debtor_id: debtorId,
-          first_name: debtor.first_name,
-          last_name: debtor.last_name,
-          phone_number: debtor.phone_number,
-          address: debtor.address,
-        },
-        description,
-        ip_address: request.headers.get("cf-connecting-ip") || "",
-        user_agent: request.headers.get("user-agent") || "",
+    await createAuditLog({
+      userId: session.userId,
+      action: "DELETE",
+      entityType: "DEBTOR",
+      entityId: debtorId,
+      newValue: {
+        debtor_id: debtorId,
+        first_name: debtor.firstName,
+        last_name: debtor.lastName,
+        phone_number: debtor.phoneNumber,
+        address: debtor.address,
       },
+      description: `Qarzdor ${debtor.firstName} ${debtor.lastName} o'chirildi`,
+      ipAddress: request.headers.get("cf-connecting-ip") || "",
+      userAgent: request.headers.get("user-agent") || "",
     });
 
-    // Delete debtor (cascade will delete related debts and payments)
-    await prisma.debtor.delete({
-      where: { id: debtorId },
-    });
+    await debtorService.delete(debtorId);
 
-    // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
-    revalidatePath(`/dashboard/default/debitor/${debtor.external_id}`);
+    revalidatePath(`/dashboard/default/debitor/${debtor.externalId}`);
 
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {
     console.error("Error deleting debtor:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
