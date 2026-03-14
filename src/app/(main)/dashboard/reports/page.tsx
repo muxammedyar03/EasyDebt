@@ -3,8 +3,7 @@ import { reportsService } from "@/lib/services/reports.service";
 import CashClient from "./_components/cash-client";
 import { debtService } from "@/lib/services/debt.service";
 export default async function ReportsPage() {
-  const report = await reportsService.getDashboardReport();
-  const debtLimit = await debtService.debtLimit();
+  const [report, debtLimit] = await Promise.all([reportsService.getDashboardReport(), debtService.debtLimit()]);
 
   return (
     <div className="space-y-6">
