@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/errors";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { debtorService } from "@/lib/services/debtor.service";
 
