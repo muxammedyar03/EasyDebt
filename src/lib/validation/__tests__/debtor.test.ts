@@ -1,7 +1,7 @@
 /**
- * Validation tests for addDebtorSchema (create-debtor feature).
+ * Validation tests for addDebtorSchema (centralized in lib/validation).
  */
-import { addDebtorSchema } from "../schema";
+import { addDebtorSchema } from "../debtor";
 
 describe("addDebtorSchema", () => {
   describe("valid", () => {

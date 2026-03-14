@@ -1,7 +1,7 @@
 /**
- * Validation tests for addPaymentSchema and paymentSchema (make-payment feature).
+ * Validation tests for addPaymentSchema and paymentSchema (centralized in lib/validation).
  */
-import { addPaymentSchema, paymentSchema } from "../schema";
+import { addPaymentSchema, paymentSchema } from "../payment";
 
 describe("addPaymentSchema", () => {
   describe("valid", () => {

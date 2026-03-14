@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatNumber } from "@/lib/format";
-import { addDebtSchema, type AddDebtFormData } from "../model";
+import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
 import { createDebt } from "../api";
 
 export interface QuickAddDebtProps {

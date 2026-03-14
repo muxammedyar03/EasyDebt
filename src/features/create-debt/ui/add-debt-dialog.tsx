@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { addDebtSchema, type AddDebtFormData } from "../model";
+import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
 import { createDebt } from "../api";
 
 const formatNumber = (value: string) => {

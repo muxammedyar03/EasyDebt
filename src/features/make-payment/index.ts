@@ -1,3 +1,3 @@
 export * from "./ui";
-export * from "./model";
+export { addPaymentSchema, paymentSchema, type AddPaymentFormData, type PaymentFormValues } from "@/lib/validation";
 export * from "./api";
