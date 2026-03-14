@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getApiErrorMessage } from "@/lib/errors";
+import { createAuditLog } from "@/lib/audit";
+import { debtorRepository } from "@/entities/debtor/api";
 import { DebtItem } from "@/types/types";
 
 type ExportDebt = {
@@ -61,66 +63,69 @@ export async function GET(request: NextRequest) {
     let hasMore = true;
 
     while (hasMore) {
-      const debtors = await prisma.debtor.findMany({
-        take: BATCH_SIZE,
-        skip,
-        orderBy: { created_at: "desc" },
-        select: {
-          external_id: true,
-          first_name: true,
-          last_name: true,
-          phone_number: true,
-          address: true,
-          debts: {
-            select: {
-              external_id: true,
-              amount: true,
-              description: true,
-              items: true,
-              created_at: true,
-            },
-            orderBy: { created_at: "desc" },
-          },
-          payments: {
-            select: {
-              external_id: true,
-              amount: true,
-              payment_type: true,
-              note: true,
-              created_at: true,
-            },
-            orderBy: { created_at: "desc" },
+      const debtors = await debtorRepository.findMany(
+        {},
+        {
+          take: BATCH_SIZE,
+          skip,
+          orderBy: { created_at: "desc" },
+          include: {
+            debts: { orderBy: { created_at: "desc" } },
+            payments: { orderBy: { created_at: "desc" } },
           },
         },
-      });
+      );
 
       if (debtors.length === 0) {
         hasMore = false;
         break;
       }
 
-      // Format data
-      const formattedDebtors: ExportDebtor[] = debtors.map((debtor) => ({
-        external_id: debtor.external_id,
-        first_name: debtor.first_name,
-        last_name: debtor.last_name,
-        phone_number: debtor.phone_number,
-        address: debtor.address,
-        debts: debtor.debts.map((debt) => ({
-          external_id: debt.external_id,
-          amount: debt.amount.toNumber(),
-          description: debt.description,
-          items: debt.items as DebtItem[] | null,
-          created_at: debt.created_at.toISOString(),
-        })),
-        payments: debtor.payments.map((payment) => ({
-          external_id: payment.external_id,
-          amount: payment.amount.toNumber(),
-          payment_type: payment.payment_type,
-          note: payment.note,
-          created_at: payment.created_at.toISOString(),
-        })),
-      }));
+      type DebtorWithRelations = {
+        external_id: string;
+        first_name: string;
+        last_name: string;
+        phone_number: string | null;
+        address: string | null;
+        debts: {
+          external_id: string;
+          amount: { toNumber: () => number };
+          description: string | null;
+          items: unknown;
+          created_at: Date;
+        }[];
+        payments: {
+          external_id: string;
+          amount: { toNumber: () => number };
+          payment_type: string;
+          note: string | null;
+          created_at: Date;
+        }[];
+      };
+      const formattedDebtors: ExportDebtor[] = debtors.map((debtor) => {
+        const d = debtor as unknown as DebtorWithRelations;
+        return {
+          external_id: d.external_id,
+          first_name: d.first_name,
+          last_name: d.last_name,
+          phone_number: d.phone_number,
+          address: d.address,
+          debts: d.debts.map((debt) => ({
+            external_id: debt.external_id,
+            amount: debt.amount.toNumber(),
+            description: debt.description,
+            items: debt.items as DebtItem[] | null,
+            created_at: debt.created_at.toISOString(),
+          })),
+          payments: d.payments.map((payment) => ({
+            external_id: payment.external_id,
+            amount: payment.amount.toNumber(),
+            payment_type: payment.payment_type,
+            note: payment.note,
+            created_at: payment.created_at.toISOString(),
+          })),
+        };
+      });
 
       allDebtors.push(...formattedDebtors);
       skip += BATCH_SIZE;
@@ -146,24 +151,21 @@ export async function GET(request: NextRequest) {
       debtors: allDebtors,
     };
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        user_id: session.userId,
-        action: "EXPORT",
-        entity_type: "DEBTOR",
-        new_value: {
-          debtorsCount: allDebtors.length,
-          debtsCount: totalDebts,
-          paymentsCount: totalPayments,
-        },
-        description: `Qarzdorlar ro'yxati JSON formatida export qilindi.`,
+    await createAuditLog({
+      userId: session.userId,
+      action: "EXPORT",
+      entityType: "DEBTOR",
+      newValue: {
+        debtorsCount: allDebtors.length,
+        debtsCount: totalDebts,
+        paymentsCount: totalPayments,
       },
+      description: `Qarzdorlar ro'yxati JSON formatida export qilindi.`,
     });
 
     return NextResponse.json(exportData);
   } catch (error) {
     console.error("Export JSON error:", error);
-    return NextResponse.json({ error: "Export paytida xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
