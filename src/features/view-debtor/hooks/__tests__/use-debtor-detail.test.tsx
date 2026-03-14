@@ -1,14 +1,14 @@
-/**
- * @jest-environment jsdom
- * Unit tests for useDebtorDetail: initialData returns debtor, refetch called on refresh.
- */
-
+/** @jest-environment jsdom */
 import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useDebtorDetail, DEBTOR_QUERY_KEY } from "../use-debtor-detail";
 import * as fetchApi from "../../api/fetch-debtor";
 import type { DebtorDomain } from "@/types/domain";
+
+jest.mock("../../api/fetch-debtor", () => ({
+  fetchDebtorById: jest.fn(),
+}));
 
 const mockDebtor: DebtorDomain = {
   id: 1,
@@ -43,11 +43,11 @@ function createWrapper() {
 
 describe("useDebtorDetail", () => {
   beforeEach(() => {
-    jest.spyOn(fetchApi, "fetchDebtorById").mockResolvedValue(mockDebtor);
+    (fetchApi.fetchDebtorById as jest.Mock).mockResolvedValue(mockDebtor);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    jest.clearAllMocks();
   });
 
   it("returns debtor when initialData is provided", () => {
@@ -70,7 +70,7 @@ describe("useDebtorDetail", () => {
   });
 
   it("calls refetch when refresh is called", async () => {
-    const fetchSpy = jest.spyOn(fetchApi, "fetchDebtorById").mockResolvedValue(mockDebtor);
+    (fetchApi.fetchDebtorById as jest.Mock).mockResolvedValue(mockDebtor);
     const wrapper = createWrapper();
     const { result } = renderHook(
       () =>
@@ -81,11 +81,11 @@ describe("useDebtorDetail", () => {
         }),
       { wrapper },
     );
-    fetchSpy.mockClear();
+    (fetchApi.fetchDebtorById as jest.Mock).mockClear();
     await act(async () => {
       await result.current.refresh();
     });
-    expect(fetchSpy).toHaveBeenCalledWith(1);
+    expect(fetchApi.fetchDebtorById).toHaveBeenCalledWith(1);
   });
 });
 
