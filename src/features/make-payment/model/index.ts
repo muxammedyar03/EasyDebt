@@ -1,1 +1,1 @@
-// Make payment feature model – to be added in later task
+export { addPaymentSchema, paymentSchema, type AddPaymentFormData, type PaymentFormValues } from "./schema";

@@ -18,8 +18,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { DataTableColumnHeader } from "../../../../../components/data-table/data-table-column-header";
 
-import { AddDebtDialog } from "./add-debt-dialog";
-import { AddPaymentDialog } from "./add-payment-dialog";
+import { AddDebtDialog } from "@/features/create-debt/ui";
+import { AddPaymentDialog } from "@/features/make-payment/ui";
 import { EditDebtorDialog } from "./edit-debtor-dialog";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";

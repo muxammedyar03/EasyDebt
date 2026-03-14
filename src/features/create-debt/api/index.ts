@@ -1,1 +1,1 @@
-// Create debt feature API – to be added in later task
+export { createDebt, type CreateDebtPayload } from "./create-debt";

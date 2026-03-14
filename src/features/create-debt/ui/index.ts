@@ -1,1 +1,2 @@
-// Create debt feature UI – to be added in later task
+export { AddDebtDialog } from "./add-debt-dialog";
+export { QuickAddDebt } from "./quick-add-debt";
