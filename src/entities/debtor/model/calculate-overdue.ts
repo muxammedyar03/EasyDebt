@@ -1,6 +1,6 @@
 /**
  * Debtor entity – model: overdue calculation.
- * Re-exports from lib so service and cron use entity as single entry.
+ * Single source of truth; lib re-exports from here.
  */
 export {
   calculateDebtorOverdueStatus,
@@ -11,4 +11,4 @@ export {
   type DebtWithPayments,
   type OverdueSettings,
   type OverdueStatus,
-} from "@/lib/overdue-calculator";
+} from "./overdue";
