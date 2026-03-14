@@ -7,7 +7,8 @@ import { fetchDebtorById } from "../api";
 import { useComputedViewValue } from "../model/compute-view";
 import type { ViewDebtorValue } from "../model";
 
-const DEBTOR_QUERY_KEY = "debtor";
+/** Query key for debtor detail; use with queryClient.invalidateQueries({ queryKey: [DEBTOR_QUERY_KEY, debtorId] }) */
+export const DEBTOR_QUERY_KEY = "debtor";
 
 export interface UseDebtorDetailOptions {
   debtorId: number;
