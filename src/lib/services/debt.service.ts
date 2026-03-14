@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+import { debtRepository } from "@/lib/repositories/debt.repository";
+
+/** Debt with debtor for report */
+type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
 
 export type DebtReportItem = {
   id: number;
@@ -41,10 +46,10 @@ class DebtService {
   // }
 
   async getDebtsWithDebtorForReport(): Promise<DebtReportItem[]> {
-    const debts = await prisma.debt.findMany({
-      include: { debtor: true },
-      orderBy: { created_at: "desc" },
-    });
+    const debts = (await debtRepository.findMany(
+      {},
+      { include: { debtor: true }, orderBy: { created_at: "desc" } },
+    )) as DebtWithDebtor[];
     return debts.map((d) => ({
       id: d.id,
       debtor_id: d.debtor_id,
