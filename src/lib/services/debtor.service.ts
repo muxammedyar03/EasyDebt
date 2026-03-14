@@ -11,7 +11,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
-import { debtorRepository } from "@/lib/repositories/debtor.repository";
+import { debtorRepository } from "@/entities/debtor/api";
 import { debtRepository } from "@/lib/repositories/debt.repository";
 import { paymentRepository } from "@/lib/repositories/payment.repository";
 
@@ -32,6 +32,7 @@ import type {
   PaginatedResult,
   DebtorStats,
 } from "@/types/domain/debtor.domain";
+import { buildDebtorStats, calculatePaymentRating } from "@/entities/debtor/model";
 import type {
   CustomerRatingDomain,
   CustomerRatingFilters,
@@ -45,9 +46,8 @@ import {
 } from "@/lib/mappers/debtor.mapper";
 import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view";
 import { PaymentDomain } from "@/types/domain";
-import { calculatePaymentRating } from "@/lib/rating-calculator";
-import { getSession } from "../auth";
-import { getEffectiveShopId } from "../shop-context";
+import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 /**
  * Service class for Debtor operations
@@ -151,8 +151,7 @@ export class DebtorService {
     // Build orderBy
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
 
-    // Import calculateDebtorOverdueStatus for accurate overdue calculation
-    const { calculateDebtorOverdueStatus } = await import("@/lib/overdue-calculator");
+    const { calculateDebtorOverdueStatus } = await import("@/entities/debtor/model");
 
     // If isOverdue filter is set, we need to fetch ALL matching debtors and filter in memory
     if (isOverdueFilter !== undefined) {
@@ -325,7 +324,7 @@ export class DebtorService {
    * Get stats for debtors
    */
   async getStats(): Promise<DebtorStats> {
-    return {
+    return buildDebtorStats({
       totalDebtors: await this.debtorsCount(),
       totalDebt: await this.debtorsTotalDebt(),
       totalDebtsCount: await this.todayDebtsCount(),
@@ -333,7 +332,7 @@ export class DebtorService {
       todayDebtsCount: await this.todayDebtsCount(),
       todayPaymentsCount: await this.todayPaymentsCount(),
       todayPaymentsAmount: await this.todayPaymentsAmount(),
-    };
+    });
   }
 
   /**
