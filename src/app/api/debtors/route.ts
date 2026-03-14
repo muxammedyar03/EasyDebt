@@ -22,8 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Import overdue calculator for accurate is_overdue calculation
-    const { calculateDebtorOverdueStatus } = await import("@/lib/overdue-calculator");
+    const { calculateDebtorOverdueStatus } = await import("@/entities/debtor/model");
     const settings = await debtorService.getOverdueDays();
 
     const debtorsRaw = await prisma.debtor.findMany({
