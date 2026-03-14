@@ -58,6 +58,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
     }
 
+    const { calculateDebtorOverdueStatus } = await import("@/entities/debtor/model");
+    const settings = await debtorService.getOverdueDays();
+
     const search = request.nextUrl.searchParams.get("search")?.trim();
     if (search) {
       const result = await debtorService.findMany({ search }, { page: 1, limit: 250 });
