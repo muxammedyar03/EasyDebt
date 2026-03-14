@@ -37,7 +37,6 @@ async function loadOverdueSettings() {
 export async function checkOverdueDebtors() {
   try {
     const settings = await loadOverdueSettings();
-    console.log("[overdue-checker] using settings:", settings);
 
     // Get all debtors with debt and their payment history (via entity repositories)
     const debtorsWithDebt = (await debtorRepository.findMany(
@@ -80,7 +79,6 @@ export async function checkOverdueDebtors() {
     for (const { debtor, status } of overdueDebtors) {
       try {
         await debtorRepository.update(debtor.id, { is_overdue: true });
-        console.log("[overdue-checker] set is_overdue=true for debtor", debtor.id);
 
         // Create notification
         await createNotification({
@@ -129,7 +127,6 @@ export async function getOverdueDebtors() {
 export async function reEvaluateOverdueDebtors() {
   try {
     const settings = await loadOverdueSettings();
-    console.log("[reEvaluateOverdueDebtors] using settings:", settings);
 
     const debtors = (await debtorRepository.findMany(
       { total_debt: { gt: 0 } },

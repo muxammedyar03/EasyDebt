@@ -21,9 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log("[cron/check-overdue] invoked");
     const count = await checkOverdueDebtors();
-    console.log("[cron/check-overdue] updated count:", count);
     return NextResponse.json({
       success: true,
       message: `${count} ta qarzdor muddati o'tgan deb belgilandi`,
