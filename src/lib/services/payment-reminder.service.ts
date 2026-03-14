@@ -2,14 +2,13 @@
  * SERVICE LAYER - Payment Reminder Business Logic + Data Access
  *
  * Rules:
- * - Prisma queries ONLY in this layer
+ * - DB access only via paymentReminderRepository (entity api)
  * - Returns Domain types, NEVER Prisma types
  * - Handles business logic (calculations, validations)
- * - Components/Pages receive Domain or View types
  */
 
-import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { paymentReminderRepository } from "@/entities/payment-reminder/api";
 import type {
   PaymentReminderDomain,
   CreatePaymentReminderInput,
@@ -122,14 +121,7 @@ export class PaymentReminderService {
    * Find reminder by ID
    */
   async findById(id: number): Promise<PaymentReminderDomain | null> {
-    const reminder = await prisma.paymentReminder.findUnique({
-      where: { id },
-      include: {
-        debtor: true,
-        creator: true,
-      },
-    });
-
+    const reminder = await paymentReminderRepository.findById(id);
     if (!reminder) return null;
     return prismaToDomainReminder(reminder);
   }
@@ -144,21 +136,16 @@ export class PaymentReminderService {
     const where = this.buildWhereClause(filters);
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
 
-    const total = await prisma.paymentReminder.count({ where });
+    const total = await paymentReminderRepository.count(where);
 
     const page = pagination?.page ?? 1;
     const limit = pagination?.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const reminders = await prisma.paymentReminder.findMany({
-      where,
+    const reminders = await paymentReminderRepository.findMany(where, {
       orderBy,
       skip,
       take: limit,
-      include: {
-        debtor: true,
-        creator: true,
-      },
     });
 
     return {
@@ -174,15 +161,10 @@ export class PaymentReminderService {
    * Find reminders for a specific debtor
    */
   async findByDebtorId(debtorId: number): Promise<PaymentReminderDomain[]> {
-    const reminders = await prisma.paymentReminder.findMany({
-      where: { debtor_id: debtorId },
-      orderBy: { reminder_at: "asc" },
-      include: {
-        debtor: true,
-        creator: true,
-      },
-    });
-
+    const reminders = await paymentReminderRepository.findMany(
+      { debtor_id: debtorId },
+      { orderBy: { reminder_at: "asc" } },
+    );
     return reminders.map(prismaToDomainReminder);
   }
 
@@ -191,20 +173,10 @@ export class PaymentReminderService {
    */
   async findDueReminders(): Promise<PaymentReminderDomain[]> {
     const now = new Date();
-
-    const reminders = await prisma.paymentReminder.findMany({
-      where: {
-        status: "PENDING",
-        reminder_at: {
-          lte: now,
-        },
-      },
-      include: {
-        debtor: true,
-        creator: true,
-      },
+    const reminders = await paymentReminderRepository.findMany({
+      status: "PENDING",
+      reminder_at: { lte: now },
     });
-
     return reminders.map(prismaToDomainReminder);
   }
 
@@ -212,20 +184,13 @@ export class PaymentReminderService {
    * Create a new payment reminder
    */
   async create(input: CreatePaymentReminderInput): Promise<PaymentReminderDomain> {
-    const reminder = await prisma.paymentReminder.create({
-      data: {
-        debtor_id: input.debtorId,
-        created_by: input.createdBy,
-        reminder_at: input.reminderAt,
-        note: input.note,
-        status: "PENDING",
-      },
-      include: {
-        debtor: true,
-        creator: true,
-      },
+    const reminder = await paymentReminderRepository.create({
+      debtor: { connect: { id: input.debtorId } },
+      creator: { connect: { id: input.createdBy } },
+      reminder_at: input.reminderAt,
+      note: input.note,
+      status: "PENDING",
     });
-
     return prismaToDomainReminder(reminder);
   }
 
@@ -234,26 +199,11 @@ export class PaymentReminderService {
    */
   async update(id: number, input: UpdatePaymentReminderInput): Promise<PaymentReminderDomain> {
     const data: Prisma.PaymentReminderUpdateInput = {};
+    if (input.reminderAt !== undefined) data.reminder_at = input.reminderAt;
+    if (input.note !== undefined) data.note = input.note;
+    if (input.status !== undefined) data.status = input.status;
 
-    if (input.reminderAt !== undefined) {
-      data.reminder_at = input.reminderAt;
-    }
-    if (input.note !== undefined) {
-      data.note = input.note;
-    }
-    if (input.status !== undefined) {
-      data.status = input.status;
-    }
-
-    const reminder = await prisma.paymentReminder.update({
-      where: { id },
-      data,
-      include: {
-        debtor: true,
-        creator: true,
-      },
-    });
-
+    const reminder = await paymentReminderRepository.update(id, data);
     return prismaToDomainReminder(reminder);
   }
 
@@ -261,18 +211,10 @@ export class PaymentReminderService {
    * Mark reminder as notified
    */
   async markAsNotified(id: number): Promise<PaymentReminderDomain> {
-    const reminder = await prisma.paymentReminder.update({
-      where: { id },
-      data: {
-        status: "NOTIFIED",
-        notified_at: new Date(),
-      },
-      include: {
-        debtor: true,
-        creator: true,
-      },
+    const reminder = await paymentReminderRepository.update(id, {
+      status: "NOTIFIED",
+      notified_at: new Date(),
     });
-
     return prismaToDomainReminder(reminder);
   }
 
@@ -280,17 +222,7 @@ export class PaymentReminderService {
    * Mark reminder as completed
    */
   async markAsCompleted(id: number): Promise<PaymentReminderDomain> {
-    const reminder = await prisma.paymentReminder.update({
-      where: { id },
-      data: {
-        status: "COMPLETED",
-      },
-      include: {
-        debtor: true,
-        creator: true,
-      },
-    });
-
+    const reminder = await paymentReminderRepository.update(id, { status: "COMPLETED" });
     return prismaToDomainReminder(reminder);
   }
 
@@ -298,17 +230,7 @@ export class PaymentReminderService {
    * Cancel a reminder
    */
   async cancel(id: number): Promise<PaymentReminderDomain> {
-    const reminder = await prisma.paymentReminder.update({
-      where: { id },
-      data: {
-        status: "CANCELLED",
-      },
-      include: {
-        debtor: true,
-        creator: true,
-      },
-    });
-
+    const reminder = await paymentReminderRepository.update(id, { status: "CANCELLED" });
     return prismaToDomainReminder(reminder);
   }
 
@@ -316,9 +238,7 @@ export class PaymentReminderService {
    * Delete a reminder
    */
   async delete(id: number): Promise<void> {
-    await prisma.paymentReminder.delete({
-      where: { id },
-    });
+    await paymentReminderRepository.delete(id);
   }
 
   /**
@@ -342,18 +262,10 @@ export class PaymentReminderService {
    * Get active (pending) reminder for debtor
    */
   async getActiveReminderForDebtor(debtorId: number): Promise<PaymentReminderDomain | null> {
-    const reminder = await prisma.paymentReminder.findFirst({
-      where: {
-        debtor_id: debtorId,
-        status: "PENDING",
-      },
-      orderBy: { reminder_at: "asc" },
-      include: {
-        debtor: true,
-        creator: true,
-      },
-    });
-
+    const reminder = await paymentReminderRepository.findFirst(
+      { debtor_id: debtorId, status: "PENDING" },
+      { orderBy: { reminder_at: "asc" } },
+    );
     if (!reminder) return null;
     return prismaToDomainReminder(reminder);
   }
@@ -414,30 +326,16 @@ export class PaymentReminderService {
    * Used for dashboard display
    */
   async getActiveRemindersByDebtor(): Promise<Map<number, PaymentReminderDomain>> {
-    const reminders = await prisma.paymentReminder.findMany({
-      where: {
-        status: {
-          in: ["PENDING", "NOTIFIED"],
-        },
-      },
-      include: {
-        debtor: true,
-        creator: true,
-      },
-      orderBy: {
-        reminder_at: "asc",
-      },
-    });
-
+    const reminders = await paymentReminderRepository.findMany(
+      { status: { in: ["PENDING", "NOTIFIED"] } },
+      { orderBy: { reminder_at: "asc" } },
+    );
     const reminderMap = new Map<number, PaymentReminderDomain>();
-
     for (const reminder of reminders) {
-      // Only keep the first (earliest) reminder per debtor
       if (!reminderMap.has(reminder.debtor_id)) {
         reminderMap.set(reminder.debtor_id, prismaToDomainReminder(reminder));
       }
     }
-
     return reminderMap;
   }
 }
