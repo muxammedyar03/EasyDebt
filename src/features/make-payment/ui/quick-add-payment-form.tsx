@@ -1,22 +1,23 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Textarea } from "../ui/textarea";
-import { Button } from "../ui/button";
-import { UseFormReturn } from "react-hook-form";
-import { z } from "zod";
-import { paymentSchema } from "@/app/(main)/dashboard/default/_components/schema";
-import { formatCurrencyUzs, formatNumber } from "@/lib/format";
+"use client";
 
-interface QuickAddPaymentFormProps {
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { UseFormReturn } from "react-hook-form";
+import { formatCurrencyUzs, formatNumber } from "@/lib/format";
+import type { PaymentFormValues } from "../model";
+
+export interface QuickAddPaymentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   debtorName: string;
   totalDebt: number;
-  form: UseFormReturn<z.infer<typeof paymentSchema>>;
+  form: UseFormReturn<PaymentFormValues>;
   isLoading: boolean;
-  onSubmit: (data: z.infer<typeof paymentSchema>) => void;
+  onSubmit: (data: PaymentFormValues) => void;
 }
 
 export function QuickAddPaymentForm({
@@ -37,7 +38,6 @@ export function QuickAddPaymentForm({
             Jami qarz: <span className="font-semibold">{formatCurrencyUzs(totalDebt)}</span>
           </p>
         </DialogHeader>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -51,10 +51,7 @@ export function QuickAddPaymentForm({
                       type="text"
                       placeholder="0"
                       {...field}
-                      onChange={(e) => {
-                        const formatted = formatNumber(e.target.value);
-                        field.onChange(formatted);
-                      }}
+                      onChange={(e) => field.onChange(formatNumber(e.target.value))}
                       autoFocus
                       inputMode="numeric"
                     />
@@ -63,7 +60,6 @@ export function QuickAddPaymentForm({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="payment_type"
@@ -86,7 +82,6 @@ export function QuickAddPaymentForm({
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="note"
@@ -105,7 +100,6 @@ export function QuickAddPaymentForm({
                 </FormItem>
               )}
             />
-
             <div className="flex gap-2">
               <Button
                 type="button"

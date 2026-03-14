@@ -5,13 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 import { Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { uz } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DEV_MODE } from "@/lib/dev-mode";
-
 import {
   Dialog,
   DialogContent,
@@ -24,21 +22,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { formatNumber } from "@/lib/format";
+import { addDebtSchema, type AddDebtFormData } from "../model";
+import { createDebt } from "../api";
 
-const addPaymentSchema = z.object({
-  amount: z.string().min(1, "To'lov miqdorini kiriting"),
-  payment_type: z.enum(["CASH", "CLICK", "CARD"]),
-  note: z.string().optional(),
-  createdAt: z.date().optional(),
-});
+const formatNumber = (value: string) => {
+  const numbers = value.replace(/\D/g, "");
+  return numbers.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
+};
 
-type AddPaymentFormData = z.infer<typeof addPaymentSchema>;
-
-interface AddPaymentDialogProps {
+export interface AddDebtDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   debtorId: number;
@@ -46,12 +40,11 @@ interface AddPaymentDialogProps {
   onSuccess?: () => void;
 }
 
-export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddPaymentDialogProps) {
+export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-  // Use ref to track if we need to refresh after dialog closes
   const refreshAfterCloseRef = React.useRef(false);
 
   const {
@@ -60,15 +53,9 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     formState: { errors },
     reset,
     setValue,
-    watch,
-  } = useForm<AddPaymentFormData>({
-    resolver: zodResolver(addPaymentSchema),
-    defaultValues: {
-      payment_type: "CASH",
-    },
+  } = useForm<AddDebtFormData>({
+    resolver: zodResolver(addDebtSchema),
   });
-
-  const paymentType = watch("payment_type");
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatNumber(e.target.value);
@@ -76,50 +63,34 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     setValue("amount", formatted);
   };
 
-  const onSubmit = async (data: AddPaymentFormData) => {
+  const onSubmit = async (data: AddDebtFormData) => {
     setIsLoading(true);
     try {
-      // Remove spaces before parsing
       const cleanAmount = data.amount.replace(/\s/g, "");
-      const response = await fetch("/api/payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          debtor_id: debtorId,
-          amount: parseFloat(cleanAmount),
-          payment_type: data.payment_type,
-          note: data.note || null,
-          created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
-        }),
+      await createDebt({
+        debtor_id: debtorId,
+        amount: parseFloat(cleanAmount),
+        description: data.description || null,
+        created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "To'lov qo'shishda xatolik yuz berdi");
-      }
-
-      toast.success("To'lov muvaffaqiyatli qo'shildi");
+      toast.success("Qarz muvaffaqiyatli qo'shildi");
       reset();
       setAmount("");
       setSelectedDate(undefined);
       refreshAfterCloseRef.current = true;
       onOpenChange(false);
 
-      // Refresh after dialog animation completes
       requestAnimationFrame(() => {
         setTimeout(() => {
           router.refresh();
-          if (onSuccess) {
-            onSuccess();
-          }
+          onSuccess?.();
           refreshAfterCloseRef.current = false;
         }, 150);
       });
     } catch (error) {
-      console.error("Error adding payment:", error);
-      toast.error(error instanceof Error ? error.message : "To'lov qo'shishda xatolik yuz berdi");
+      console.error("Error adding debt:", error);
+      toast.error(error instanceof Error ? error.message : "Qarz qo'shishda xatolik yuz berdi");
     } finally {
       setIsLoading(false);
     }
@@ -129,22 +100,19 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>To&apos;lov qo&apos;shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi to&apos;lov qo&apos;shish</DialogDescription>
+          <DialogTitle>Qarz qo&apos;shish</DialogTitle>
+          <DialogDescription>{debtorName} uchun yangi qarz qo&apos;shish</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
           onKeyDown={(e) => {
-            // Allow Enter to submit form, but prevent it in textarea
-            if (e.key === "Enter" && e.target instanceof HTMLTextAreaElement) {
-              e.preventDefault();
-            }
+            if (e.key === "Enter" && e.target instanceof HTMLTextAreaElement) e.preventDefault();
           }}
         >
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                To&apos;lov miqdori <span className="text-destructive">*</span>
+                Qarz miqdori <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -154,58 +122,19 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 onChange={handleAmountChange}
                 disabled={isLoading}
                 inputMode="numeric"
-                className="border-border h-11 border"
               />
               {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
-
             <div className="grid gap-2">
-              <Label htmlFor="payment_type">
-                To&apos;lov turi <span className="text-destructive">*</span>
-              </Label>
-              <Tabs
-                value={paymentType}
-                onValueChange={(value) => setValue("payment_type", value as "CASH" | "CLICK" | "CARD")}
-                className="w-full"
-              >
-                <TabsList className="dark:bg-input/30 border-border grid h-11 w-full grid-cols-3 gap-1 bg-zinc-200 p-1 dark:border">
-                  <TabsTrigger
-                    value="CASH"
-                    disabled={isLoading}
-                    className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-orange-500 data-[state=active]:text-white dark:data-[state=active]:bg-orange-500"
-                  >
-                    Naqd
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="CLICK"
-                    disabled={isLoading}
-                    className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-indigo-500 data-[state=active]:text-white dark:data-[state=active]:bg-indigo-500"
-                  >
-                    Click
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="CARD"
-                    disabled={isLoading}
-                    className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-emerald-500 data-[state=active]:text-white dark:data-[state=active]:bg-emerald-500"
-                  >
-                    Karta
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="note">Izoh</Label>
+              <Label htmlFor="description">Tavsif</Label>
               <Textarea
-                id="note"
-                placeholder="To'lov haqida ma'lumot"
-                {...register("note")}
+                id="description"
+                placeholder="Qarz haqida ma'lumot"
+                {...register("description")}
                 disabled={isLoading}
                 rows={3}
-                className="border-border border"
               />
             </div>
-
             {DEV_MODE && (
               <div className="grid gap-2">
                 <Label>Sana (Dev Mode)</Label>
@@ -229,7 +158,6 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
               </div>
             )}
           </div>
-
           <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Bekor qilish

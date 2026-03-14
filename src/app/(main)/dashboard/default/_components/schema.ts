@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-export const paymentSchema = z.object({
-  amount: z.string().min(1, "Summani kiriting"),
-  payment_type: z.enum(["CASH", "CLICK", "CARD"]),
-  note: z.string().optional(),
-});
+/** Payment schema moved to @/features/make-payment/model */
 
 export const debtorSchema = z.object({
   id: z.number(),

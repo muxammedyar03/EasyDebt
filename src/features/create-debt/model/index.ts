@@ -1,1 +1,1 @@
-// Create debt feature model – to be added in later task
+export { addDebtSchema, type AddDebtFormData } from "./schema";

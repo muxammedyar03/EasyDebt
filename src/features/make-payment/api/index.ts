@@ -1,1 +1,1 @@
-// Make payment feature API – to be added in later task
+export { createPayment, type CreatePaymentPayload } from "./create-payment";

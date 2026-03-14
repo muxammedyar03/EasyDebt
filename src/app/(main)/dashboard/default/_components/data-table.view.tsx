@@ -11,8 +11,8 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { AddDebtorDialog } from "@/features/create-debtor/ui";
 import { Input } from "@/components/ui/input";
 import { DebtorCard } from "@/components/mobile/debtor-card";
-import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
-import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
+import { QuickAddDebt } from "@/features/create-debt/ui";
+import { QuickAddPayment } from "@/features/make-payment/ui";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDashboardDebtorsTable } from "./use-dashboard-debtors-table";
 import { DebtorView } from "@/types/view";

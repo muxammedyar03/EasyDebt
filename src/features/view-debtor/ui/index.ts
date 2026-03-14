@@ -1,1 +1,3 @@
-// View debtor feature UI – to be added in later task
+export { ViewDebtorHeader } from "./debtor-header";
+export { ViewStatsCards } from "./stats-cards";
+export { ViewDebtorTimeline } from "./debtor-timeline";

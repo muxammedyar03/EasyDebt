@@ -5,8 +5,8 @@ import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
-import { AddDebtDialog } from "../../../_components/add-debt-dialog";
-import { AddPaymentDialog } from "../../../_components/add-payment-dialog";
+import { AddDebtDialog } from "@/features/create-debt/ui";
+import { AddPaymentDialog } from "@/features/make-payment/ui";
 import { DebtHistoryTable } from "./debt-history-table";
 import { PaymentHistoryTable } from "./payment-history-table";
 import { DebtorProvider, useDebtor } from "./context/debtor-context";
