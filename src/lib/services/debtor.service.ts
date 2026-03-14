@@ -353,17 +353,26 @@ export class DebtorService {
   }
 
   /**
-   * Get stats for debtors
+   * Get stats for debtors (Task 4.1b: parallel queries instead of sequential).
    */
   async getStats(): Promise<DebtorStats> {
+    const [totalDebtors, totalDebt, todayDebtsCount, todayDebtsAmount, todayPaymentsCount, todayPaymentsAmount] =
+      await Promise.all([
+        this.debtorsCount(),
+        this.debtorsTotalDebt(),
+        this.todayDebtsCount(),
+        this.todayDebtsAmount(),
+        this.todayPaymentsCount(),
+        this.todayPaymentsAmount(),
+      ]);
     return buildDebtorStats({
-      totalDebtors: await this.debtorsCount(),
-      totalDebt: await this.debtorsTotalDebt(),
-      totalDebtsCount: await this.todayDebtsCount(),
-      todayDebtsAmount: await this.todayDebtsAmount(),
-      todayDebtsCount: await this.todayDebtsCount(),
-      todayPaymentsCount: await this.todayPaymentsCount(),
-      todayPaymentsAmount: await this.todayPaymentsAmount(),
+      totalDebtors,
+      totalDebt,
+      totalDebtsCount: todayDebtsCount,
+      todayDebtsAmount,
+      todayDebtsCount,
+      todayPaymentsCount,
+      todayPaymentsAmount,
     });
   }
 

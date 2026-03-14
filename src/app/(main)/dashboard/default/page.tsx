@@ -14,6 +14,9 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+/** Initial debtor list size for dashboard default; full list with server pagination at /dashboard/debtors (Task 4.1a). */
+const DASHBOARD_DEFAULT_DEBTOR_LIMIT = 100;
+
 export default async function Page() {
   const session = await getSession();
 
@@ -24,7 +27,7 @@ export default async function Page() {
 
   // Fetch ALL debtors for the dashboard table (client-side search/pagination)
   const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
-    debtorService.findMany(undefined, { page: 1, limit: 10000 }), // Barcha debtorlar
+    debtorService.findMany(undefined, { page: 1, limit: DASHBOARD_DEFAULT_DEBTOR_LIMIT }),
     debtorService.getStats(),
     debtService.debtLimit(),
     paymentService.getPaymentsChartData(),
