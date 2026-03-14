@@ -21,6 +21,10 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: process.env.CI
-    ? { command: "npm run build && npm run start", url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000", reuseExistingServer: false }
+    ? {
+        command: "npm run build && npm run start",
+        url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
+        reuseExistingServer: false,
+      }
     : undefined,
 });
