@@ -3,8 +3,8 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { PaymentType, Prisma } from "@prisma/client";
-import { DebtItem } from "@/types/types";
 import { getEffectiveShopId } from "@/lib/shop-context";
+import type { DebtItem } from "@/types/domain";
 
 type ImportDebt = {
   external_id: string;
