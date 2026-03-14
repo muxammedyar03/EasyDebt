@@ -7,8 +7,6 @@ export default async function ReportsPage() {
   const report = await reportsService.getDashboardReport();
   const debtLimit = await debtService.debtLimit();
 
-  console.log(debtLimit);
-
   return (
     <div className="space-y-6">
       <Tabs defaultValue="payments">
