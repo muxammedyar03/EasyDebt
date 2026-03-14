@@ -6,6 +6,27 @@ import { Prisma } from "@prisma/client";
 import { debtorRepository } from "@/entities/debtor/api";
 import { settingsRepository } from "@/entities/settings/api";
 
+/** Safely convert Prisma Decimal or number to number (works in all build/runtime envs). */
+function toNum(value: unknown): number {
+  if (typeof value === "number") return value;
+  const v = value as { toNumber?: () => number } | null | undefined;
+  return typeof v?.toNumber === "function" ? v.toNumber() : 0;
+}
+
+type DebtWithAmount = { amount: unknown };
+type PaymentWithAmount = { amount: unknown };
+type DebtorForExport = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  address: string | null;
+  total_debt: unknown;
+  created_at: Date;
+  debts?: DebtWithAmount[];
+  payments?: PaymentWithAmount[];
+};
+
 type ExportData = {
   id: number | string;
   first_name: string;
@@ -60,14 +81,11 @@ export async function GET(request: NextRequest) {
       include: { debts: true, payments: true },
     });
 
-    const exportData: ExportData[] = debtors.map((debtor) => {
-      const totalDebt = (debtor as { total_debt: { toNumber: () => number } }).total_debt.toNumber();
-      const totalDebts = (debtor.debts ?? []).reduce(
-        (sum, d) => sum + (d as { amount: { toNumber: () => number } }).amount.toNumber(),
-        0,
-      );
+    const exportData: ExportData[] = debtors.map((debtor: DebtorForExport) => {
+      const totalDebt = toNum(debtor.total_debt);
+      const totalDebts = (debtor.debts ?? []).reduce((sum: number, d: DebtWithAmount) => sum + toNum(d.amount), 0);
       const totalPayments = (debtor.payments ?? []).reduce(
-        (sum, p) => sum + (p as { amount: { toNumber: () => number } }).amount.toNumber(),
+        (sum: number, p: PaymentWithAmount) => sum + toNum(p.amount),
         0,
       );
 
@@ -78,25 +96,17 @@ export async function GET(request: NextRequest) {
         status = "Qarzdor";
       }
 
-      const d = debtor as {
-        id: number;
-        first_name: string;
-        last_name: string;
-        phone_number: string | null;
-        address: string | null;
-        created_at: Date;
-      };
       return {
-        id: d.id,
-        first_name: d.first_name,
-        last_name: d.last_name,
-        phone_number: d.phone_number || "",
-        address: d.address || "",
+        id: debtor.id,
+        first_name: debtor.first_name,
+        last_name: debtor.last_name,
+        phone_number: debtor.phone_number || "",
+        address: debtor.address || "",
         total_debt: totalDebt,
         total_debts: totalDebts,
         total_payments: totalPayments,
         status,
-        created_at: d.created_at.toLocaleDateString("uz-UZ"),
+        created_at: debtor.created_at.toLocaleDateString("uz-UZ"),
       };
     });
 
