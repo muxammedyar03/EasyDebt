@@ -72,6 +72,10 @@ export class DebtorRepository {
     return prisma.debtor.deleteMany({ where });
   }
 
+  async deleteMany(where: Prisma.DebtorWhereInput) {
+    return prisma.debtor.deleteMany({ where });
+  }
+
   async aggregate(where: Prisma.DebtorWhereInput) {
     return prisma.debtor.aggregate({
       where,

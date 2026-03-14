@@ -96,17 +96,25 @@ export async function GET(request: NextRequest) {
         status = "Qarzdor";
       }
 
+      const d = debtor as {
+        id: number;
+        first_name: string;
+        last_name: string;
+        phone_number: string | null;
+        address: string | null;
+        created_at: Date;
+      };
       return {
-        id: debtor.id,
-        first_name: debtor.first_name,
-        last_name: debtor.last_name,
-        phone_number: debtor.phone_number || "",
-        address: debtor.address || "",
+        id: d.id,
+        first_name: d.first_name,
+        last_name: d.last_name,
+        phone_number: d.phone_number || "",
+        address: d.address || "",
         total_debt: totalDebt,
         total_debts: totalDebts,
         total_payments: totalPayments,
         status,
-        created_at: debtor.created_at.toLocaleDateString("uz-UZ"),
+        created_at: d.created_at.toLocaleDateString("uz-UZ"),
       };
     });
 
