@@ -51,10 +51,11 @@ export class PaymentService {
   //   };
   // }
 
-  async getPaymentsWithDebtorForReport(): Promise<PaymentReportItem[]> {
+  /** Task 4.2a: limit to avoid loading unbounded rows (default 2000). */
+  async getPaymentsWithDebtorForReport(limit = 2000): Promise<PaymentReportItem[]> {
     const payments = (await paymentRepository.findMany(
       {},
-      { include: { debtor: true }, orderBy: { created_at: "desc" } },
+      { include: { debtor: true }, orderBy: { created_at: "desc" }, take: limit },
     )) as PaymentWithDebtor[];
     return payments.map((p) => ({
       id: p.id,

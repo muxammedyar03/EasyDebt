@@ -56,10 +56,11 @@ class DebtService {
   //   };
   // }
 
-  async getDebtsWithDebtorForReport(): Promise<DebtReportItem[]> {
+  /** Task 4.2a: limit to avoid loading unbounded rows (default 2000). */
+  async getDebtsWithDebtorForReport(limit = 2000): Promise<DebtReportItem[]> {
     const debts = (await debtRepository.findMany(
       { shop_id: await this.getShopId() },
-      { include: { debtor: true }, orderBy: { created_at: "desc" } },
+      { include: { debtor: true }, orderBy: { created_at: "desc" }, take: limit as number },
     )) as DebtWithDebtor[];
     return debts.map((d) => ({
       id: d.id,
