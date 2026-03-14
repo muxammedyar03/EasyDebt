@@ -22,44 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { calculateDebtorOverdueStatus } = await import("@/entities/debtor/model");
-    const settings = await debtorService.getOverdueDays();
-
-    const debtorsRaw = await prisma.debtor.findMany({
-      orderBy: { created_at: "desc" },
-      include: {
-        debts: true,
-        payments: true,
-      },
-    });
-
-    // Convert Decimal to number and calculate accurate is_overdue
-    const debtors = debtorsRaw.map((debtor) => {
-      // Calculate isOverdue using the accurate function
-      const debtsWithPayments = debtor.debts.map((debt) => ({
-        amount: debt.amount.toNumber(),
-        createdAt: debt.created_at,
-        payments: debtor.payments
-          .filter((p) => p.created_at >= debt.created_at)
-          .map((p) => ({
-            amount: p.amount.toNumber(),
-            createdAt: p.created_at,
-          })),
-      }));
-
-      const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
-        goodUntilDays: settings - 15,
-        mediumUntilDays: settings,
-        minPaidPercent: 0.5,
-      });
-
-      return {
-        ...debtor,
-        total_debt: debtor.total_debt.toNumber(),
-        is_overdue: overdueStatus.isOverdue,
-      };
-    });
-
+    const debtors = await debtorService.getDebtorsWithOverdueForApi();
     return NextResponse.json(debtors);
   } catch (error) {
     console.error("Error fetching debtors:", error);
