@@ -9,11 +9,11 @@
  * - Components/Pages receive Domain or View types
  */
 
-import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { debtorRepository } from "@/entities/debtor/api";
 import { debtRepository } from "@/entities/debt/api";
 import { paymentRepository } from "@/entities/payment/api";
+import { settingsRepository } from "@/entities/settings/api";
 
 /** Debtor with debts + payments + creator for findMany with include */
 type DebtorWithRelations = Prisma.DebtorGetPayload<{
@@ -58,15 +58,11 @@ export class DebtorService {
    * Get settings needed for domain calculations
    */
   private async getSettings() {
-    const [debtLimitSetting, overdueDaysSetting] = await Promise.all([
-      prisma.settings.findUnique({ where: { key: "debt_limit" } }),
-      prisma.settings.findUnique({ where: { key: "overdue_days" } }),
+    const [debtLimit, overdueDays] = await Promise.all([
+      settingsRepository.getDebtLimit(),
+      settingsRepository.getOverdueDays(),
     ]);
-
-    return {
-      debtLimit: debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000,
-      overdueDays: overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45,
-    };
+    return { debtLimit, overdueDays };
   }
 
   public async getOverdueDays(): Promise<number> {

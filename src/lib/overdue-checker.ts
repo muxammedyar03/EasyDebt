@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { settingsRepository } from "@/entities/settings/api";
 import { createNotification } from "@/lib/notifications";
 import {
   calculateDebtorOverdueStatus,
@@ -12,12 +13,8 @@ import {
  * Returns parsed settings or defaults if not found
  */
 async function loadOverdueSettings() {
-  const settings = await prisma.settings.findMany({
-    where: {
-      key: {
-        in: ["good_until_days", "medium_until_days", "min_paid_percent"],
-      },
-    },
+  const settings = await settingsRepository.findMany({
+    key: { in: ["good_until_days", "medium_until_days", "min_paid_percent"] },
   });
 
   const settingsRecord = settings.reduce(

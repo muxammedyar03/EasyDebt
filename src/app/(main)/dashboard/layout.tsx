@@ -19,6 +19,7 @@ import {
   type NavbarStyle,
 } from "@/types/preferences/layout";
 import { prisma } from "@/lib/prisma";
+import { settingsRepository } from "@/entities/settings/api";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
@@ -40,11 +41,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
 
   // Get debt limit and notifications - Optimized with Promise.all
-  const [debtLimitSetting, activeUser] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "debt_limit" },
-      select: { value: true },
-    }),
+  const [debtLimit, overdueDays, activeUser] = await Promise.all([
+    settingsRepository.getDebtLimit(),
+    settingsRepository.getOverdueDays(),
     session
       ? prisma.user.findUnique({
           where: { id: session.userId },
@@ -59,15 +58,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         })
       : null,
   ]);
-  const [overdueDaysSetting] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "overdue_days" },
-      select: { value: true },
-    }),
-  ]);
-
-  const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
-  const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
 
   const notificationsRaw = await prisma.notification.findMany({
     where: { is_read: false },

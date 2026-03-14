@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { settingsRepository } from "@/entities/settings/api";
 import { reEvaluateOverdueDebtors } from "@/lib/overdue-checker";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
@@ -16,15 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Key and value are required" }, { status: 400 });
     }
 
-    const oldSettings = await prisma.settings.findUnique({
-      where: { key },
-    });
-
-    const setting = await prisma.settings.upsert({
-      where: { key },
-      update: { value },
-      create: { key, value },
-    });
+    const oldSettings = await settingsRepository.findByKey(key);
+    const setting = await settingsRepository.upsert(key, value);
 
     const oldValue = oldSettings?.value || "mavjud emas";
     const keyName = key === "debt_limit" ? "Qarz limiti" : key === "overdue_days" ? "Muddati o'tish kuni" : key;
@@ -68,13 +62,11 @@ export async function GET(request: NextRequest) {
     const key = searchParams.get("key");
 
     if (key) {
-      const setting = await prisma.settings.findUnique({
-        where: { key },
-      });
+      const setting = await settingsRepository.findByKey(key);
       return NextResponse.json(setting);
     }
 
-    const settings = await prisma.settings.findMany();
+    const settings = await settingsRepository.findMany();
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);

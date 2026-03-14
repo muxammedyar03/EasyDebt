@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { debtRepository } from "@/entities/debt/api";
+import { settingsRepository } from "@/entities/settings/api";
 
 /** Debt with debtor for report */
 type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
@@ -19,10 +19,7 @@ export type DebtReportItem = {
 
 class DebtService {
   async debtLimit(): Promise<number> {
-    const settings = await prisma.settings.findUnique({
-      where: { key: "debt_limit" },
-    });
-    return settings ? parseFloat(settings.value) : 2000000;
+    return settingsRepository.getDebtLimit();
   }
 
   // async getTotalCount(): Promise<number> {

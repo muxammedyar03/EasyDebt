@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { settingsRepository } from "@/entities/settings/api";
 
 const createDebtSchema = z.object({
   debtor_id: z.number(),
@@ -51,11 +52,8 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Get debt limit from settings
-      const debtLimitSetting = await tx.settings.findUnique({
-        where: { key: "debt_limit" },
-      });
-      const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
+      // Get debt limit from settings (inside transaction)
+      const debtLimit = await settingsRepository.getDebtLimit(tx);
 
       // Update debtor's total_debt
       const updatedDebtor = await tx.debtor.update({
