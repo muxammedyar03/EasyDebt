@@ -134,7 +134,7 @@ export async function getOverdueDebtors() {
   });
 }
 **/
-export async function reEvaluateOverdueDebtors(shopId: number | null = null) {
+export async function reEvaluateOverdueDebtors(shopId: number | null) {
   try {
     const settings = await loadOverdueSettings(shopId ?? null);
 

@@ -1,8 +1,11 @@
+import type { Prisma } from "@prisma/client";
+import { debtRepository } from "@/lib/repositories/debt.repository";
 import { getSession } from "../auth";
 import { getEffectiveShopId } from "../shop-context";
 import { settingsRepository } from "@/entities/settings";
-import { debtRepository } from "@/entities";
-import type { Prisma } from "@prisma/client";
+
+/** Debt with debtor for report */
+type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
 
 export type DebtReportItem = {
   id: number;
@@ -15,8 +18,6 @@ export type DebtReportItem = {
   description: string | null;
   created_at: string;
 };
-
-type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
 
 class DebtService {
   async debtLimit(): Promise<number> {
