@@ -11,6 +11,18 @@
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { debtorRepository } from "@/lib/repositories/debtor.repository";
+import { debtRepository } from "@/lib/repositories/debt.repository";
+import { paymentRepository } from "@/lib/repositories/payment.repository";
+
+/** Debtor with debts + payments + creator for findMany with include */
+type DebtorWithRelations = Prisma.DebtorGetPayload<{
+  include: { debts: true; payments: true; creator: true };
+}>;
+/** Debt with debtor for getCustomerRatings */
+type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
+/** Payment with debtor for getCustomerRatings */
+type PaymentWithDebtor = Prisma.PaymentGetPayload<{ include: { debtor: true } }>;
 import type {
   DebtorDomain,
   CreateDebtorDomainInput,
@@ -89,16 +101,10 @@ export class DebtorService {
   async findById(id: number, includeRelations = false): Promise<DebtorDomain | null> {
     const settings = await this.getSettings();
 
-    const debtor = await prisma.debtor.findUnique({
-      where: {
-        id,
-        shop_id: await this.getShopId(),
-      },
-      include: {
-        debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
-        payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
-        creator: includeRelations,
-      },
+    const debtor = await debtorRepository.findById(id, await this.getShopId(), {
+      debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+      payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+      creator: includeRelations,
     });
 
     if (!debtor) return null;
@@ -112,16 +118,14 @@ export class DebtorService {
   async findByExternalId(externalId: string, includeRelations = false): Promise<DebtorDomain | null> {
     const settings = await this.getSettings();
 
-    const debtor = await prisma.debtor.findFirst({
-      where: {
-        external_id: externalId,
-      },
-      include: {
+    const debtor = await debtorRepository.findFirst(
+      { external_id: externalId },
+      {
         debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
         payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
         creator: includeRelations,
       },
-    });
+    );
 
     if (!debtor) return null;
 
@@ -152,15 +156,14 @@ export class DebtorService {
 
     // If isOverdue filter is set, we need to fetch ALL matching debtors and filter in memory
     if (isOverdueFilter !== undefined) {
-      const allDebtors = await prisma.debtor.findMany({
-        where,
+      const allDebtors = (await debtorRepository.findMany(where, {
         orderBy,
         include: {
           debts: true,
           payments: true,
           creator: true,
         },
-      });
+      })) as DebtorWithRelations[];
 
       // Convert to domain types and calculate overdue status for all debtors
       const domainDebtors = allDebtors
@@ -208,14 +211,13 @@ export class DebtorService {
     }
 
     // Normal flow without isOverdue filter - but still calculate overdue status correctly
-    const total = await prisma.debtor.count({ where });
+    const total = await debtorRepository.count(where);
 
     const page = pagination?.page ?? 1;
     const limit = pagination?.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const debtors = await prisma.debtor.findMany({
-      where,
+    const debtors = (await debtorRepository.findMany(where, {
       orderBy,
       skip,
       take: limit,
@@ -224,7 +226,7 @@ export class DebtorService {
         payments: true,
         creator: true,
       },
-    });
+    })) as DebtorWithRelations[];
 
     // Convert to domain types and calculate overdue status for all debtors
     const domainDebtors = debtors.map((d) => {
@@ -264,83 +266,57 @@ export class DebtorService {
   }
 
   async debtorsCount(): Promise<number> {
-    return await prisma.debtor.count({ where: { shop_id: await this.getShopId() } });
+    return debtorRepository.count({ shop_id: await this.getShopId() });
   }
 
   async debtorsTotalDebt(): Promise<number> {
-    const result = await prisma.debtor.aggregate({
-      _sum: { total_debt: true },
-      where: { shop_id: await this.getShopId() },
-    });
+    const result = await debtorRepository.aggregate({ shop_id: await this.getShopId() });
     return result._sum.total_debt?.toNumber() ?? 0;
   }
 
   async debtorsTotalPayments(): Promise<number> {
-    const result = await prisma.payment.aggregate({
-      _sum: { amount: true },
-      where: { shop_id: await this.getShopId() },
-    });
+    const result = await paymentRepository.aggregate({ shop_id: await this.getShopId() });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
   async debtorsTotalDebts(): Promise<number> {
-    const result = await prisma.debt.aggregate({
-      _sum: { amount: true },
-      where: { shop_id: await this.getShopId() },
-    });
+    const result = await debtRepository.aggregate({ shop_id: await this.getShopId() });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
+  private getTodayDateRange() {
+    return {
+      gte: new Date(new Date().setHours(0, 0, 0, 0)),
+      lte: new Date(new Date().setHours(23, 59, 59, 999)),
+    };
+  }
+
   async todayDebtsCount(): Promise<number> {
-    return await prisma.debt.count({
-      where: {
-        shop_id: await this.getShopId(),
-        created_at: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      },
+    return debtRepository.count({
+      shop_id: await this.getShopId(),
+      created_at: this.getTodayDateRange(),
     });
   }
 
   async todayDebtsAmount(): Promise<number> {
-    const result = await prisma.debt.aggregate({
-      _sum: { amount: true },
-      where: {
-        shop_id: await this.getShopId(),
-        created_at: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      },
+    const result = await debtRepository.aggregate({
+      shop_id: await this.getShopId(),
+      created_at: this.getTodayDateRange(),
     });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
   async todayPaymentsCount(): Promise<number> {
-    const result = await prisma.payment.count({
-      where: {
-        shop_id: await this.getShopId(),
-        created_at: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      },
+    return paymentRepository.count({
+      shop_id: await this.getShopId(),
+      created_at: this.getTodayDateRange(),
     });
-
-    return result;
   }
 
   async todayPaymentsAmount(): Promise<number> {
-    const result = await prisma.payment.aggregate({
-      _sum: { amount: true },
-      where: {
-        shop_id: await this.getShopId(),
-        created_at: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          lte: new Date(new Date().setHours(23, 59, 59, 999)),
-        },
-      },
+    const result = await paymentRepository.aggregate({
+      shop_id: await this.getShopId(),
+      created_at: this.getTodayDateRange(),
     });
     return result._sum.amount?.toNumber() ?? 0;
   }
@@ -366,20 +342,17 @@ export class DebtorService {
   async create(input: CreateDebtorDomainInput): Promise<DebtorDomain> {
     const settings = await this.getSettings();
 
-    // Create in database
-    const debtor = await prisma.debtor.create({
-      data: {
-        shop_id: await this.getShopId(),
+    const debtor = await debtorRepository.create(
+      {
+        shop: { connect: { id: await this.getShopId() } },
         first_name: input.firstName,
         last_name: input.lastName,
         phone_number: input.phoneNumber,
         address: input.address,
-        created_by: input.createdBy,
+        creator: { connect: { id: input.createdBy } },
       },
-      include: {
-        creator: true,
-      },
-    });
+      { creator: true },
+    );
 
     return prismaToDomainDebtor(debtor, settings);
   }
@@ -390,18 +363,17 @@ export class DebtorService {
   async update(id: number, input: UpdateDebtorDomainInput): Promise<DebtorDomain> {
     const settings = await this.getSettings();
 
-    const debtor = await prisma.debtor.update({
-      where: { id, shop_id: await this.getShopId() },
-      data: {
+    const debtor = await debtorRepository.update(
+      id,
+      {
+        shop: { connect: { id: await this.getShopId() } },
         first_name: input.firstName,
         last_name: input.lastName,
         phone_number: input.phoneNumber,
         address: input.address,
       },
-      include: {
-        creator: true,
-      },
-    });
+      { creator: true },
+    );
 
     return prismaToDomainDebtor(debtor, settings);
   }
@@ -410,9 +382,7 @@ export class DebtorService {
    * Delete a debtor
    */
   async delete(id: number): Promise<void> {
-    await prisma.debtor.delete({
-      where: { id, shop_id: await this.getShopId() },
-    });
+    await debtorRepository.delete(id, await this.getShopId());
   }
 
   /**
@@ -451,22 +421,14 @@ export class DebtorService {
     const overdueDays = settings.overdueDays;
 
     // Get all debts and payments
-    const [debtsRaw, paymentsRaw] = await Promise.all([
-      prisma.debt.findMany({
-        where: { shop_id: await this.getShopId() },
-        include: { debtor: true },
-        orderBy: { created_at: "asc" },
-      }),
-      prisma.payment.findMany({
-        where: { shop_id: await this.getShopId() },
-        include: { debtor: true },
-        orderBy: { created_at: "asc" },
-      }),
-    ]);
+    const [debtsRaw, paymentsRaw] = (await Promise.all([
+      debtRepository.findMany({ shop_id: await this.getShopId() }, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
+      paymentRepository.findMany({ shop_id: await this.getShopId() }, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
+    ])) as [DebtWithDebtor[], PaymentWithDebtor[]];
 
     // Group debts and payments by debtor
-    const debtsByDebtor = new Map<number, typeof debtsRaw>();
-    const paymentsByDebtor = new Map<number, typeof paymentsRaw>();
+    const debtsByDebtor = new Map<number, DebtWithDebtor[]>();
+    const paymentsByDebtor = new Map<number, PaymentWithDebtor[]>();
 
     debtsRaw.forEach((debt) => {
       const existing = debtsByDebtor.get(debt.debtor_id) || [];

@@ -19,6 +19,7 @@ export class DebtRepository {
       skip?: number;
       take?: number;
       orderBy?: Prisma.DebtOrderByWithRelationInput;
+      include?: Prisma.DebtInclude;
     },
   ) {
     return prisma.debt.findMany({

@@ -6,9 +6,16 @@ import type { Prisma } from "@prisma/client";
  * Faqat Prisma querylar, hech qanday business logic yoki domain conversion yo'q.
  */
 export class DebtorRepository {
-  async findById(id: number, include?: Prisma.DebtorInclude) {
+  async findById(id: number, shop_id: number, include?: Prisma.DebtorInclude) {
     return prisma.debtor.findUnique({
-      where: { id },
+      where: { id, shop_id },
+      include,
+    });
+  }
+
+  async findFirst(where: Prisma.DebtorWhereInput, include?: Prisma.DebtorInclude) {
+    return prisma.debtor.findFirst({
+      where,
       include,
     });
   }
@@ -19,6 +26,7 @@ export class DebtorRepository {
       skip?: number;
       take?: number;
       orderBy?: Prisma.DebtorOrderByWithRelationInput;
+      include?: Prisma.DebtorInclude;
     },
   ) {
     return prisma.debtor.findMany({
@@ -31,19 +39,20 @@ export class DebtorRepository {
     return prisma.debtor.count({ where });
   }
 
-  async create(data: Prisma.DebtorCreateInput) {
-    return prisma.debtor.create({ data });
+  async create(data: Prisma.DebtorCreateInput, include?: Prisma.DebtorInclude) {
+    return prisma.debtor.create({ data, include });
   }
 
-  async update(id: number, data: Prisma.DebtorUpdateInput) {
+  async update(id: number, data: Prisma.DebtorUpdateInput, include?: Prisma.DebtorInclude) {
     return prisma.debtor.update({
       where: { id },
       data,
+      include,
     });
   }
 
-  async delete(id: number) {
-    return prisma.debtor.delete({ where: { id } });
+  async delete(id: number, shop_id: number) {
+    return prisma.debtor.delete({ where: { id, shop_id } });
   }
 
   async aggregate(where: Prisma.DebtorWhereInput) {
