@@ -30,6 +30,9 @@ export function useDebtorDetail({ debtorId, overdueDays, initialData }: UseDebto
     queryFn: () => fetchDebtorById(debtorId),
     initialData: initialData ?? undefined,
     enabled: debtorId > 0,
+    // Avoid double request: server already passed data; no refetch on mount when we have initialData
+    staleTime: initialData ? 60 * 1000 : 0,
+    refetchOnMount: !initialData,
   });
 
   const { stats, rating, timeline, firstDebtDate, daysSinceFirstDebt } = useComputedViewValue(debtor, overdueDays);
