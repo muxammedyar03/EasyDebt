@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
 import { settingsRepository } from "@/entities/settings/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import { reEvaluateOverdueDebtors } from "@/lib/overdue-checker";
 import { revalidatePath } from "next/cache";
 
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(setting);
   } catch (error) {
     console.error("Error saving setting:", error);
-    return NextResponse.json({ error: "Failed to save setting" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -86,6 +87,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);
-    return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

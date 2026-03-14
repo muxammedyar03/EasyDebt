@@ -4,6 +4,10 @@ import type { Prisma } from "@prisma/client";
 /**
  * Debtor entity – API (repository).
  * Data access for Debtor; only Prisma queries, no business logic.
+ *
+ * Return types: findById, findFirst, findMany return Prisma payloads. When using `include`,
+ * TypeScript may not narrow the return type; callers can assert e.g.
+ * `as Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>[]` when needed.
  */
 export class DebtorRepository {
   async findById(id: number, shop_id: number, include?: Prisma.DebtorInclude) {
@@ -20,6 +24,10 @@ export class DebtorRepository {
     });
   }
 
+  /**
+   * When options.include is set, consider asserting the result type to the matching
+   * Prisma.DebtorGetPayload<{ include: ... }> for accurate typing downstream.
+   */
   async findMany(
     where: Prisma.DebtorWhereInput,
     options?: {

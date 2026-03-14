@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { uz } from "date-fns/locale";
+import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 import { DEV_MODE } from "@/lib/dev-mode";
 import {
@@ -90,7 +91,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       });
     } catch (error) {
       console.error("Error adding debt:", error);
-      toast.error(error instanceof Error ? error.message : "Qarz qo'shishda xatolik yuz berdi");
+      toast.error(getErrorMessage(error, "Qarz qo'shishda xatolik yuz berdi"));
     } finally {
       setIsLoading(false);
     }

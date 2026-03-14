@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { getApiErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { settingsRepository } from "@/entities/settings/api";
 
@@ -132,13 +133,12 @@ export async function POST(request: NextRequest) {
     console.error("Error creating debt:", error);
 
     if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string; meta?: Prisma.PrismaClientKnownRequestError };
-
+      const prismaError = error as { code: string };
       if (prismaError.code === "P2003") {
         return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
       }
     }
 
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
