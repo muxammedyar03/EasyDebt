@@ -5,7 +5,7 @@ import {
   parseOverdueSettings,
   getDefaultOverdueSettings,
   type DebtWithPayments,
-} from "@/lib/overdue-calculator";
+} from "@/entities/debtor/model";
 
 /**
  * Load overdue settings from database

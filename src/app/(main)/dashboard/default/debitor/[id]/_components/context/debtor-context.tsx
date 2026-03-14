@@ -1,7 +1,7 @@
 "use client";
 
 import { DebtorDomain } from "@/types/domain";
-import { calculatePaymentRating, type PaymentRating } from "@/lib/rating-calculator";
+import { calculatePaymentRating, type PaymentRating } from "@/entities/debtor/model";
 import * as React from "react";
 
 interface TimelineEvent {
