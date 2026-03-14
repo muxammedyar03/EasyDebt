@@ -13,12 +13,20 @@ export class DebtorRepository {
     });
   }
 
+  async findFirst(where: Prisma.DebtorWhereInput, include?: Prisma.DebtorInclude) {
+    return prisma.debtor.findFirst({
+      where,
+      include,
+    });
+  }
+
   async findMany(
     where: Prisma.DebtorWhereInput,
     options?: {
       skip?: number;
       take?: number;
       orderBy?: Prisma.DebtorOrderByWithRelationInput;
+      include?: Prisma.DebtorInclude;
     },
   ) {
     return prisma.debtor.findMany({
@@ -31,14 +39,15 @@ export class DebtorRepository {
     return prisma.debtor.count({ where });
   }
 
-  async create(data: Prisma.DebtorCreateInput) {
-    return prisma.debtor.create({ data });
+  async create(data: Prisma.DebtorCreateInput, include?: Prisma.DebtorInclude) {
+    return prisma.debtor.create({ data, include });
   }
 
-  async update(id: number, data: Prisma.DebtorUpdateInput) {
+  async update(id: number, data: Prisma.DebtorUpdateInput, include?: Prisma.DebtorInclude) {
     return prisma.debtor.update({
       where: { id },
       data,
+      include,
     });
   }
 
