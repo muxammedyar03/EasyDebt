@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable as DataTableNew } from "../../../../../components/data-table/data-table";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { AddDebtorDialog } from "./add-debtor-dialog";
+import { AddDebtorDialog } from "@/features/create-debtor/ui";
 import { Input } from "@/components/ui/input";
 import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
