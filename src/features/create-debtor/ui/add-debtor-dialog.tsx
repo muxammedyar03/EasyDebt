@@ -5,10 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { formatNumber, formatUzPhone } from "@/lib/format";
-
 import {
   Dialog,
   DialogContent,
@@ -20,19 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { addDebtorSchema, type AddDebtorFormData } from "../model";
+import { createDebtor } from "../api";
 
-const addDebtorSchema = z.object({
-  first_name: z.string().min(1, "Ism kiritish shart"),
-  last_name: z.string().min(1, "Familiya kiritish shart"),
-  phone_number: z.string().optional(),
-  address: z.string().optional(),
-  debt_amount: z.string().optional(),
-  debt_description: z.string().optional(),
-});
-
-type AddDebtorFormData = z.infer<typeof addDebtorSchema>;
-
-interface AddDebtorDialogProps {
+export interface AddDebtorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -43,7 +32,6 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
   const [isLoading, setIsLoading] = React.useState(false);
   const [debtAmount, setDebtAmount] = React.useState("");
   const [phone, setPhone] = React.useState("");
-  // Use ref to track if we need to refresh after dialog closes
   const refreshAfterCloseRef = React.useRef(false);
 
   const {
@@ -67,27 +55,15 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
   const onSubmit = async (data: AddDebtorFormData) => {
     setIsLoading(true);
     try {
-      // Remove spaces before parsing
       const cleanAmount = data.debt_amount ? data.debt_amount.replace(/\s/g, "") : null;
-      const response = await fetch("/api/debtors", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone_number: data.phone_number || null,
-          address: data.address || null,
-          debt_amount: cleanAmount ? parseFloat(cleanAmount) : null,
-          debt_description: data.debt_description || null,
-        }),
+      await createDebtor({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        phone_number: data.phone_number || null,
+        address: data.address || null,
+        debt_amount: cleanAmount ? parseFloat(cleanAmount) : null,
+        debt_description: data.debt_description || null,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Qarzdor qo'shishda xatolik yuz berdi");
-      }
 
       toast.success("Qarzdor muvaffaqiyatli qo'shildi");
       reset();
@@ -96,13 +72,10 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       refreshAfterCloseRef.current = true;
       onOpenChange(false);
 
-      // Refresh after dialog animation completes
       requestAnimationFrame(() => {
         setTimeout(() => {
           router.refresh();
-          if (onSuccess) {
-            onSuccess();
-          }
+          onSuccess?.();
           refreshAfterCloseRef.current = false;
         }, 150);
       });
