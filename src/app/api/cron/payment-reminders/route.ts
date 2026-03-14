@@ -21,9 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log("[cron/payment-reminders] invoked");
     const count = await checkPaymentReminders();
-    console.log("[cron/payment-reminders] processed count:", count);
 
     return NextResponse.json({
       success: true,

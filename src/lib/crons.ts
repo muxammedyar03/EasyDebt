@@ -60,17 +60,11 @@ export async function checkPaymentReminders(): Promise<number> {
   }
 
   try {
-    console.log("[cron/payment-reminders] Starting check...");
-
-    // Find all pending reminders that are due
     const dueReminders = await paymentReminderService.findDueReminders();
 
     if (dueReminders.length === 0) {
-      console.log("[cron/payment-reminders] No due reminders found");
       return 0;
     }
-
-    console.log(`[cron/payment-reminders] Found ${dueReminders.length} due reminders`);
 
     let processedCount = 0;
 
@@ -103,13 +97,11 @@ export async function checkPaymentReminders(): Promise<number> {
         await paymentReminderService.markAsNotified(reminder.id);
 
         processedCount++;
-        console.log(`[cron/payment-reminders] Processed reminder ${reminder.id} for debtor ${reminder.debtorId}`);
       } catch (error) {
         console.error(`[cron/payment-reminders] Failed to process reminder ${reminder.id}:`, error);
       }
     }
 
-    console.log(`[cron/payment-reminders] Completed. Processed ${processedCount} reminders`);
     return processedCount;
   } catch (error) {
     console.error("[cron/payment-reminders] Error:", error);
@@ -172,7 +164,6 @@ export async function cleanupOldReminders(daysOld = 90): Promise<number> {
       updated_at: { lt: cutoffDate },
     });
 
-    console.log(`[cron/cleanup] Deleted ${result.count} old reminders`);
     return result.count;
   } catch (error) {
     console.error("[cron/cleanup] Error:", error);

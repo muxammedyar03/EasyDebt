@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log("[cron/hosting-reminder] invoked");
     const count = await checkHostingReminder();
 
     return NextResponse.json({
