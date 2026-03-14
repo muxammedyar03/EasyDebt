@@ -6,7 +6,7 @@
  * - overdue-checker (cron)
  */
 
-import { calculateDebtorOverdueStatus, type DebtWithPayments, type OverdueSettings } from "../overdue-calculator";
+import { calculateDebtorOverdueStatus, type DebtWithPayments, type OverdueSettings } from "@/entities/debtor/model";
 
 describe("Overdue Calculator - Critical Bug Fix", () => {
   const settings: OverdueSettings = {

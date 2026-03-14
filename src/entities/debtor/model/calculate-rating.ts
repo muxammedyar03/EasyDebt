@@ -1,6 +1,6 @@
 /**
  * Debtor entity – model: payment/customer rating calculation.
- * Re-exports from lib so service uses entity as single entry.
+ * Single source of truth; lib re-exports from here.
  */
 export {
   calculatePaymentRating,
@@ -9,4 +9,4 @@ export {
   calculatePaymentPercentage,
   isDebtorOverdue,
   type PaymentRating,
-} from "@/lib/rating-calculator";
+} from "./rating";
