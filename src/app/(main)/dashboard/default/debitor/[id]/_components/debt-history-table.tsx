@@ -9,20 +9,19 @@ import { Edit } from "lucide-react";
 import { DebtDomain } from "@/types/domain";
 import { DEV_MODE } from "@/lib/dev-mode";
 import { EditDebtDialog } from "./edit-debt-dialog";
-import { useDebtor } from "./context/debtor-context";
 import { formatDateUz } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DebtHistoryTableProps {
   debts: DebtDomain[];
+  onRefresh?: () => Promise<void>;
 }
 
-export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
+export function DebtHistoryTable({ debts, onRefresh }: DebtHistoryTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [selectedDebt, setSelectedDebt] = React.useState<DebtDomain | null>(null);
-  const { refresh } = useDebtor();
   const isMobile = useIsMobile();
 
   const handleEdit = (debt: DebtDomain) => {
@@ -31,7 +30,7 @@ export function DebtHistoryTable({ debts }: DebtHistoryTableProps) {
   };
 
   const handleEditSuccess = async () => {
-    await refresh();
+    await onRefresh?.();
   };
 
   const totalPages = Math.ceil(debts.length / itemsPerPage);

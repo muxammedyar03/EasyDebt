@@ -1,1 +1,1 @@
-// View debtor feature API – to be added in later task
+export { fetchDebtorById } from "./fetch-debtor";

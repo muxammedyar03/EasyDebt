@@ -10,20 +10,19 @@ import { PaymentDomain } from "@/types/domain";
 import { getPaymentTypeClass } from "@/lib/utils";
 import { DEV_MODE } from "@/lib/dev-mode";
 import { EditPaymentDialog } from "./edit-payment-dialog";
-import { useDebtor } from "./context/debtor-context";
 import { formatDateUz } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PaymentHistoryTableProps {
   payments: PaymentDomain[];
+  onRefresh?: () => Promise<void>;
 }
 
-export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
+export function PaymentHistoryTable({ payments, onRefresh }: PaymentHistoryTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [selectedPayment, setSelectedPayment] = React.useState<PaymentDomain | null>(null);
-  const { refresh } = useDebtor();
   const isMobile = useIsMobile();
 
   const handleEdit = (payment: PaymentDomain) => {
@@ -32,7 +31,7 @@ export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
   };
 
   const handleEditSuccess = async () => {
-    await refresh();
+    await onRefresh?.();
   };
 
   const totalPages = Math.ceil(payments.length / itemsPerPage);

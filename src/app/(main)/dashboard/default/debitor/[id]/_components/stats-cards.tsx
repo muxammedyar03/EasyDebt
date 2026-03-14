@@ -1,9 +1,12 @@
 "use client";
 
-import { useDebtor } from "./context/debtor-context";
+import type { ViewDebtorValue } from "@/features/view-debtor/model";
 import { ViewStatsCards } from "@/features/view-debtor/ui";
 
-export function StatsCards() {
-  const value = useDebtor();
+interface StatsCardsProps {
+  value: ViewDebtorValue;
+}
+
+export function StatsCards({ value }: StatsCardsProps) {
   return <ViewStatsCards value={value} />;
 }
