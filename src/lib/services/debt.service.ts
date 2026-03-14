@@ -1,6 +1,11 @@
-import { prisma } from "../prisma";
+import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+import { debtRepository } from "@/lib/repositories/debt.repository";
 import { getEffectiveShopId } from "../shop-context";
 import { getSession } from "../auth";
+
+/** Debt with debtor for report */
+type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
 
 export type DebtReportItem = {
   id: number;
@@ -31,6 +36,15 @@ class DebtService {
     return settings ? parseFloat(settings.value) : 2000000;
   }
 
+  private async getShopId(): Promise<number> {
+    const session = await getSession();
+    const shopId = getEffectiveShopId(session);
+    if (!shopId) {
+      throw new Error("Shop context not found");
+    }
+    return shopId;
+  }
+
   // async getTotalCount(): Promise<number> {
   //   return prisma.debt.count();
   // }
@@ -52,10 +66,10 @@ class DebtService {
   // }
 
   async getDebtsWithDebtorForReport(): Promise<DebtReportItem[]> {
-    const debts = await prisma.debt.findMany({
-      include: { debtor: true },
-      orderBy: { created_at: "desc" },
-    });
+    const debts = (await debtRepository.findMany(
+      { shop_id: await this.getShopId() },
+      { include: { debtor: true }, orderBy: { created_at: "desc" } },
+    )) as DebtWithDebtor[];
     return debts.map((d) => ({
       id: d.id,
       debtor_id: d.debtor_id,

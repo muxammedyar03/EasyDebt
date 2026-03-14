@@ -1,10 +1,14 @@
-import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+import { paymentRepository } from "@/lib/repositories/payment.repository";
+
+/** Payment with debtor for report */
+type PaymentWithDebtor = Prisma.PaymentGetPayload<{ include: { debtor: true } }>;
 
 /**
  * SERVICE LAYER - Payments
  *
  * Rules:
- * - Prisma queries are allowed here
+ * - DB access only via paymentRepository (and other repos if needed)
  * - Returns plain objects tailored for callers (DTOs)
  * - Dashboard chart uses a simple DTO type (no Prisma in components)
  */
@@ -52,10 +56,10 @@ export class PaymentService {
   // }
 
   async getPaymentsWithDebtorForReport(): Promise<PaymentReportItem[]> {
-    const payments = await prisma.payment.findMany({
-      include: { debtor: true },
-      orderBy: { created_at: "desc" },
-    });
+    const payments = (await paymentRepository.findMany(
+      {},
+      { include: { debtor: true }, orderBy: { created_at: "desc" } },
+    )) as PaymentWithDebtor[];
     return payments.map((p) => ({
       id: p.id,
       debtor_id: p.debtor_id,
@@ -80,11 +84,7 @@ export class PaymentService {
    * - If no data, returns last 30 days with zeros (for stable chart)
    */
   async getPaymentsChartData(): Promise<PaymentChartPoint[]> {
-    const allPayments = await prisma.payment.findMany({
-      orderBy: {
-        created_at: "asc",
-      },
-    });
+    const allPayments = await paymentRepository.findMany({}, { orderBy: { created_at: "asc" } });
 
     const paymentsByDate = new Map<string, { cash: number; card: number; click: number }>();
 
