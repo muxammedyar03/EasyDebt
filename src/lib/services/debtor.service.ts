@@ -451,7 +451,7 @@ export class DebtorService {
     const settings = await this.getSettings();
     const overdueDays = settings.overdueDays;
 
-    // Get all debts and payments
+    // Get all debts and payments in 2 queries (include debtor to avoid N+1); then group in memory
     const [debtsRaw, paymentsRaw] = (await Promise.all([
       debtRepository.findMany(
         { shop_id: await this.getShopId() },
