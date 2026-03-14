@@ -18,79 +18,38 @@ import {
   type ContentLayout,
   type NavbarStyle,
 } from "@/types/preferences/layout";
-import { prisma } from "@/lib/prisma";
-import { settingsRepository } from "@/entities/settings/api";
+import { getDashboardLayoutData } from "@/lib/dashboard-layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
-import { getSession } from "@/lib/auth";
-import { getEffectiveShopId } from "@/lib/shop-context";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
 import { ShopSwitcher } from "./_components/sidebar/shop-switcher";
+import { prisma } from "@/lib/prisma";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
-  const session = await getSession();
-  const effectiveShopId = getEffectiveShopId(session);
-
-  // Get current shop info for display
-  const currentShop = effectiveShopId
-    ? await prisma.shop.findUnique({
-        where: { id: effectiveShopId },
-        select: { id: true, name: true },
-      })
-    : null;
-  const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
+  const [layoutData, sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
+    getDashboardLayoutData(),
     getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "inset"),
     getPreference<SidebarCollapsible>("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),
     getPreference<ContentLayout>("content_layout", CONTENT_LAYOUT_VALUES, "centered"),
     getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
   ]);
+  
+  const { session, shopId, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
 
-  // Get debt limit and notifications - Optimized with Promise.all
-  const [debtLimit, overdueDays, activeUser] = await Promise.all([
-    settingsRepository.getDebtLimit(effectiveShopId),
-    settingsRepository.getOverdueDays(effectiveShopId),
-    session
-      ? prisma.user.findUnique({
-          where: { id: session.userId },
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            first_name: true,
-            last_name: true,
-            role: true,
-            shop_id: true,
-            status: true,
-          },
-        })
-      : null,
-  ]);
+  // Get current shop info for display
+  const currentShop = shopId
+    ? await prisma.shop.findUnique({
+        where: { id: shopId },
+        select: { id: true, name: true },
+      })
+    : null;
 
-  const notificationsRaw = await prisma.notification.findMany({
-    where: { is_read: false, shop_id: effectiveShopId ?? (undefined as number | undefined) },
-    orderBy: { created_at: "desc" },
-    take: 3,
-  });
-
-  const debtorIds = [...new Set(notificationsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
-  const idToExternalId = new Map<number, string>();
-  if (debtorIds.length > 0) {
-    const debtors = await prisma.debtor.findMany({
-      where: { id: { in: debtorIds } },
-      select: { id: true, external_id: true },
-    });
-    debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
-  }
-  const notifications = notificationsRaw.map((n) => ({
-    ...n,
-    debtor_external_id: n.debtor_id ? (idToExternalId.get(n.debtor_id) ?? null) : null,
-  }));
 
   const layoutPreferences = {
     contentLayout,
@@ -98,28 +57,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     collapsible: sidebarCollapsible,
     navbarStyle,
   };
-
-  // Format active user for AccountSwitcher
-  const formattedActiveUser = activeUser
-    ? {
-        id: activeUser.id.toString(),
-        name:
-          activeUser.first_name && activeUser.last_name
-            ? `${activeUser.first_name} ${activeUser.last_name}`
-            : activeUser.username,
-        username: activeUser.username,
-        email: activeUser.email || "",
-        avatar: `/avatars/${activeUser.username}.png`,
-        role: activeUser.role,
-      }
-    : {
-        id: "1",
-        name: "",
-        username: "",
-        email: "",
-        avatar: "/avatars/user.png",
-        role: "SUPER_ADMIN",
-      };
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>

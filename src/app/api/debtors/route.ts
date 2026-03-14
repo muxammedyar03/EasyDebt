@@ -4,7 +4,6 @@ import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
 import { getApiErrorMessage } from "@/lib/errors";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { debtorService } from "@/lib/services/debtor.service";
 
