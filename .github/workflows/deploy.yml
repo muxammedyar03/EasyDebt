@@ -127,12 +127,12 @@ jobs:
 
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
-            
+
             # Docker pull optimizatsiyasi
             echo "⚙️  Docker pull optimizatsiyasi sozlanmoqda..."
             # Max connections oshirish (default 6)
             export DOCKER_CLI_PLUGINS_PATH=/usr/libexec/docker/cli-plugins:$DOCKER_CLI_PLUGINS_PATH || true
-            
+
             # Docker daemon status tekshirish
             echo "🔍 Docker daemon status:"
             docker info | grep -E "(Server Version|Storage Driver|Logging Driver)" || true
@@ -142,13 +142,13 @@ jobs:
 
             echo "📦 Pulling image (commit $IMAGE_TAG)..."
             IMAGE_FULL="ghcr.io/muxammedyar03/easydebt:$IMAGE_TAG"
-            
+
             echo "📊 Image hajmini tekshirish..."
             docker images $IMAGE_FULL 2>/dev/null || echo "Image hali pull qilinmagan"
-            
+
             echo "⬇️  Image pull qilinmoqda (progress ko'rsatiladi)..."
             echo "💡 Tip: Agar pull sekin bo'lsa, network yoki registry muammosi bo'lishi mumkin"
-            
+
             # Variant 1: To'g'ridan-to'g'ri docker pull (tezroq, progress ko'rsatadi)
             echo "🔄 Variant 1: docker pull (tezroq, progress ko'rsatadi)..."
             if timeout 900 docker pull $IMAGE_FULL 2>&1 | tee /tmp/docker-pull.log; then
@@ -169,7 +169,7 @@ jobs:
                 fi
               fi
             fi
-            
+
             echo "✅ Image muvaffaqiyatli pull qilindi!"
             docker images $IMAGE_FULL --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
