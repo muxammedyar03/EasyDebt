@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { memo } from "react";
 
 import { Command } from "lucide-react";
 
@@ -56,7 +57,7 @@ import { NavUser } from "./nav-user";
 //   ],
 // };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -82,3 +83,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+
+/** Memoized so layout re-renders (e.g. on route change) don't re-render sidebar when its props are unchanged (Task 3.1). */
+export const AppSidebar = memo(AppSidebarInner);
