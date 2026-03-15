@@ -24,13 +24,13 @@ export function normalizeDebtorFromApi(data: Record<string, unknown>): DebtorDom
     ...d,
     createdAt: typeof d.createdAt === "string" ? new Date(d.createdAt) : d.createdAt,
   }));
-  const payments = (debtor.payments ?? []).map((p) => ({
-    ...p,
-    createdAt:
-      typeof (p as { createdAt: string | Date }).createdAt === "string"
-        ? new Date((p as { createdAt: string }).createdAt)
-        : (p as { createdAt: Date }).createdAt,
-  }));
+  const payments = (debtor.payments ?? []).map((p) => {
+    const raw = p as unknown as { createdAt: string | Date };
+    return {
+      ...p,
+      createdAt: typeof raw.createdAt === "string" ? new Date(raw.createdAt) : raw.createdAt,
+    };
+  });
   return {
     ...debtor,
     createdAt: typeof debtor.createdAt === "string" ? new Date(debtor.createdAt) : debtor.createdAt,
