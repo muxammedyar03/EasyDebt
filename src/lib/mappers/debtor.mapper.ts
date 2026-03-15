@@ -330,6 +330,7 @@ function getStatusBadge(status: DebtorStatus): DebtorView["statusBadge"] {
 export function rowToViewDebtor(
   row: {
     id: number;
+    external_id?: string;
     first_name: string;
     last_name: string;
     phone_number: string | null;
@@ -375,7 +376,7 @@ export function rowToViewDebtor(
 
   return {
     id: row.id,
-    externalId: `DEBTOR-${row.id}`,
+    externalId: row.external_id ?? `DEBTOR-${row.id}`,
     fullName,
     firstName: row.first_name,
     lastName: row.last_name,
