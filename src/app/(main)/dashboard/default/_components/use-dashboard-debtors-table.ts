@@ -10,6 +10,8 @@ type UseDashboardDebtorsTableParams = {
   data: DebtorView[];
   columns: ColumnDef<DebtorView>[];
   onDeleteDebtor: (debtorId: number) => void | Promise<void>;
+  /** When set, search is server-driven (no client-side filter). */
+  serverSearch?: { value: string; setValue: (v: string) => void };
 };
 
 // Cache - debtor uchun searchable text bir marta yaratiladi
@@ -57,9 +59,17 @@ function filterDebtors(data: DebtorView[], searchQuery: string): DebtorView[] {
   });
 }
 
-export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseDashboardDebtorsTableParams) {
+export function useDashboardDebtorsTable({
+  data,
+  columns,
+  onDeleteDebtor,
+  serverSearch,
+}: UseDashboardDebtorsTableParams) {
+  const [internalFilter, setInternalFilter] = React.useState("");
+  const globalFilter = serverSearch?.value ?? internalFilter;
+  const setGlobalFilter = serverSearch?.setValue ?? setInternalFilter;
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [globalFilter, setGlobalFilter] = React.useState("");
   const [quickDebtDialog, setQuickDebtDialog] = React.useState<{
     open: boolean;
     debtorId: number;
@@ -81,13 +91,14 @@ export function useDashboardDebtorsTable({ data, columns, onDeleteDebtor }: UseD
     totalDebt: 0,
   });
 
-  // useDeferredValue - input instant, filter deferred (React 18)
   const deferredFilter = React.useDeferredValue(globalFilter);
 
-  // Filterlangan data - deferred filter bilan (UI bloklanmaydi)
-  const filteredData = React.useMemo(() => filterDebtors(data, deferredFilter), [data, deferredFilter]);
+  // Server qidiruv bo'lsa data allaqachon filterlangan; client filter ishlatmaymiz
+  const filteredData = React.useMemo(
+    () => (serverSearch ? data : filterDebtors(data, deferredFilter)),
+    [data, deferredFilter, serverSearch],
+  );
 
-  // Filter ishlayotganini ko'rsatish uchun
   const isSearching = globalFilter !== deferredFilter;
 
   // Table filterlangan data bilan ishlaydi

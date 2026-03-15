@@ -15,11 +15,45 @@ const createDebtorSchema = z.object({
   debt_description: z.string().nullable().optional(),
 });
 
-export async function GET() {
+/** Map DebtorDomain to API response shape (snake_case) for dashboard client (rowToViewDebtor). */
+function domainToApiRow(domain: {
+  id: number;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string | null;
+  address: string | null;
+  totalDebt: number;
+  isOverdue: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: number;
+}) {
+  return {
+    id: domain.id,
+    first_name: domain.firstName,
+    last_name: domain.lastName,
+    phone_number: domain.phoneNumber,
+    address: domain.address,
+    total_debt: domain.totalDebt,
+    is_overdue: domain.isOverdue,
+    created_at: domain.createdAt,
+    updated_at: domain.updatedAt,
+    created_by: domain.createdBy,
+  };
+}
+
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const search = request.nextUrl.searchParams.get("search")?.trim();
+    if (search) {
+      const result = await debtorService.findMany({ search }, { page: 1, limit: 250 });
+      const debtors = result.data.map(domainToApiRow);
+      return NextResponse.json(debtors);
     }
 
     const debtors = await debtorService.getDebtorsWithOverdueForApi();

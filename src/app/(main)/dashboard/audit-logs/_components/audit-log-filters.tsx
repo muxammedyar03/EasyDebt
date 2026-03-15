@@ -19,14 +19,14 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
   const searchParams = useSearchParams();
   const [open, setOpen] = React.useState(false);
 
-  const [dateFrom, setDateFrom] = React.useState(searchParams.get("dateFrom") || "");
-  const [dateTo, setDateTo] = React.useState(searchParams.get("dateTo") || "");
+  const [dateFrom, setDateFrom] = React.useState(searchParams?.get("dateFrom") || "");
+  const [dateTo, setDateTo] = React.useState(searchParams?.get("dateTo") || "");
 
   const [selectedActions, setSelectedActions] = React.useState<string[]>(
-    searchParams.get("action")?.split(",").filter(Boolean) || [],
+    searchParams?.get("action")?.split(",").filter(Boolean) || [],
   );
   const [selectedEntityTypes, setSelectedEntityTypes] = React.useState<string[]>(
-    searchParams.get("entityType")?.split(",").filter(Boolean) || [],
+    searchParams?.get("entityType")?.split(",").filter(Boolean) || [],
   );
 
   const handleActionToggle = (action: string) => {
@@ -40,7 +40,7 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
   };
 
   const applyFilters = () => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
 
     if (selectedActions.length > 0) {
       params.set("action", selectedActions.join(","));

@@ -164,6 +164,45 @@ export class DebtorService {
 
     const { calculateDebtorOverdueStatus } = await import("@/entities/debtor/model");
 
+    // Search path: substring match on name/address, phone by digits only (any part)
+    if (filters?.search?.trim()) {
+      const searchTerms = filters.search.trim().split(/\s+/).filter(Boolean);
+      const searchLimit = Math.min(pagination?.limit ?? 250, 250);
+      const ids = await debtorRepository.searchIds(searchTerms, searchLimit);
+      if (ids.length === 0) {
+        return { data: [], total: 0, page: 1, limit: searchLimit, totalPages: 0 };
+      }
+      const debtors = (await debtorRepository.findMany(
+        { id: { in: ids } },
+        { include: { debts: true, payments: true, creator: true }, take: ids.length },
+      )) as DebtorWithRelations[];
+      const orderMap = new Map(ids.map((id, i) => [id, i]));
+      debtors.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
+      const domainDebtors = debtors.map((d) => {
+        const domainDebtor = prismaToDomainDebtor(d, settings);
+        const debtsWithPayments = d.debts.map((debt) => ({
+          amount: debt.amount.toNumber(),
+          createdAt: debt.created_at,
+          payments: d.payments
+            .filter((p) => p.created_at >= debt.created_at)
+            .map((p) => ({ amount: p.amount.toNumber(), createdAt: p.created_at })),
+        }));
+        const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
+          goodUntilDays: settings.overdueDays - 15,
+          mediumUntilDays: settings.overdueDays,
+          minPaidPercent: 0.5,
+        });
+        return { ...domainDebtor, isOverdue: overdueStatus.isOverdue };
+      });
+      return {
+        data: domainDebtors,
+        total: domainDebtors.length,
+        page: 1,
+        limit: domainDebtors.length,
+        totalPages: 1,
+      };
+    }
+
     // If isOverdue filter is set, we need to fetch ALL matching debtors and filter in memory
     if (isOverdueFilter !== undefined) {
       const allDebtors = (await debtorRepository.findMany(where, {

@@ -36,12 +36,12 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
   const searchParams = useSearchParams();
   const { getActionBadge, getEntityTypeName, formatDate } = useTableUtils();
 
-  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = React.useState(searchParams?.get("search") || "");
   const [isExporting, setIsExporting] = React.useState(false);
 
   // Search handler
   const handleSearch = React.useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     if (searchValue) {
       params.set("search", searchValue);
     } else {
@@ -53,7 +53,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
 
   // Pagination handler
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", page.toString());
     router.push(`?${params.toString()}`);
   };
@@ -64,7 +64,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
       setIsExporting(true);
       toast.loading("Excel fayl tayyorlanmoqda...");
 
-      const params = searchParams.toString();
+      const params = searchParams?.toString() ?? "";
       const response = await fetch(`/api/audit-logs/export?${params}`);
 
       if (!response.ok) {

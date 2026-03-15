@@ -13,60 +13,104 @@ type DataTableContainerProps = {
   debtLimit: number;
 };
 
+type ApiDebtorRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  address: string | null;
+  total_debt: number;
+  is_overdue: boolean;
+  created_at: string | Date;
+  updated_at: string | Date;
+  created_by: number;
+};
+
+function parseDebtorsFromApi(json: ApiDebtorRow[], debtLimit: number): DebtorView[] {
+  return json.map((debtor) =>
+    rowToViewDebtor(
+      {
+        ...debtor,
+        created_at: typeof debtor.created_at === "string" ? new Date(debtor.created_at) : debtor.created_at,
+        updated_at: typeof debtor.updated_at === "string" ? new Date(debtor.updated_at) : debtor.updated_at,
+      },
+      { debtLimit },
+    ),
+  );
+}
+
 /**
  * Smart container component.
  *
  * - Owns data state
  * - Handles fetching / refreshing
+ * - Search: server-side (all debtors), debounced
  * - Handles delete actions
  * - Builds table columns with business callbacks
  */
 export function DataTable({ data: initialData, debtLimit }: DataTableContainerProps) {
   const [data, setData] = React.useState<DebtorView[]>(() => initialData);
+  const [search, setSearch] = React.useState("");
+  const [searchResults, setSearchResults] = React.useState<DebtorView[] | null>(null);
+
+  React.useEffect(() => {
+    if (!search.trim()) setData(initialData);
+  }, [initialData, search]);
+
+  // Qidiruv ketyotganda bo'sh o'rniga avvalgi ro'yxatni ko'rsatamiz (miltillash bo'lmasin)
+  const displayedData = search.trim() ? (searchResults ?? data) : data;
+
+  const fetchDebtors = React.useCallback(
+    async (searchQuery?: string) => {
+      const url = searchQuery?.trim()
+        ? `/api/debtors?search=${encodeURIComponent(searchQuery.trim())}`
+        : "/api/debtors";
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch debtors");
+      const json = await response.json();
+      return parseDebtorsFromApi(json, debtLimit);
+    },
+    [debtLimit],
+  );
 
   const refreshDebtors = React.useCallback(async () => {
     try {
-      const response = await fetch("/api/debtors");
-      if (!response.ok) {
-        throw new Error("Failed to fetch debtors");
-      }
-      const json = await response.json();
-      // API returns array directly, not wrapped in { data: [...] }
-      // API already converts Decimal to number, but we need to ensure Date objects are properly handled
-      const parsed = json.map(
-        (debtor: {
-          id: number;
-          first_name: string;
-          last_name: string;
-          phone_number: string | null;
-          address: string | null;
-          total_debt: number; // Already converted to number in API
-          is_overdue: boolean;
-          created_at: string | Date;
-          updated_at: string | Date;
-          created_by: number;
-        }) =>
-          rowToViewDebtor(
-            {
-              id: debtor.id,
-              first_name: debtor.first_name,
-              last_name: debtor.last_name,
-              phone_number: debtor.phone_number,
-              address: debtor.address,
-              total_debt: debtor.total_debt,
-              is_overdue: debtor.is_overdue,
-              created_at: typeof debtor.created_at === "string" ? new Date(debtor.created_at) : debtor.created_at,
-              updated_at: typeof debtor.updated_at === "string" ? new Date(debtor.updated_at) : debtor.updated_at,
-              created_by: debtor.created_by,
-            },
-            { debtLimit },
-          ),
-      );
+      const parsed = await fetchDebtors();
       setData(parsed);
+      setSearchResults(null);
     } catch (error) {
       console.error("Error refreshing debtors:", error);
     }
-  }, [debtLimit]);
+  }, [fetchDebtors]);
+
+  const [searchLoading, setSearchLoading] = React.useState(false);
+  React.useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    void fetchDebtors(search)
+      .then(
+        (parsed) => {
+          if (!cancelled) setSearchResults(parsed);
+        },
+        (err) => {
+          if (!cancelled) {
+            console.error("Error searching debtors:", err);
+            setSearchResults([]);
+          }
+        },
+      )
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, fetchDebtors]);
 
   const handleDeleteDebtor = React.useCallback(
     async (debtorId: number) => {
@@ -90,9 +134,13 @@ export function DataTable({ data: initialData, debtLimit }: DataTableContainerPr
     [refreshDebtors],
   );
 
-  const handleReorder = React.useCallback((rows: DebtorView[]) => {
-    setData(rows);
-  }, []);
+  const handleReorder = React.useCallback(
+    (rows: DebtorView[]) => {
+      if (search.trim()) setSearchResults(rows);
+      else setData(rows);
+    },
+    [search],
+  );
 
   const columns = React.useMemo<ColumnDef<DebtorView>[]>(
     () =>
@@ -105,12 +153,15 @@ export function DataTable({ data: initialData, debtLimit }: DataTableContainerPr
 
   return (
     <DataTableView
-      data={data}
+      data={displayedData}
       debtLimit={debtLimit}
       columns={columns}
       onReorder={handleReorder}
       onDeleteDebtor={handleDeleteDebtor}
       onRefresh={refreshDebtors}
+      search={search}
+      onSearchChange={setSearch}
+      searchLoading={searchLoading}
     />
   );
 }

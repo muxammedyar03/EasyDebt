@@ -36,17 +36,17 @@ export function CustomersTable({
 }: CustomersTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = React.useState(searchParams?.get("search") || "");
   const [isSearching, setIsSearching] = React.useState(false);
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
-  const currentRating = searchParams.get("rating") || "all";
-  const currentSortField = searchParams.get("sortField") || null;
-  const currentSortOrder = (searchParams.get("sortOrder") as "asc" | "desc" | null) || null;
+  const currentRating = searchParams?.get("rating") || "all";
+  const currentSortField = searchParams?.get("sortField") || null;
+  const currentSortOrder = (searchParams?.get("sortOrder") as "asc" | "desc" | null) || null;
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
       if (value) {
         params.set("search", value);
       } else {
@@ -59,7 +59,7 @@ export function CustomersTable({
   );
 
   const handleRatingChange = (rating: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     if (rating === "all") {
       params.delete("rating");
     } else {
@@ -70,13 +70,13 @@ export function CustomersTable({
   };
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", page.toString());
     router.push(`/dashboard/customers?${params.toString()}`);
   };
 
   const handleSortToggle = (field: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
 
     // 1) boshqa field bosilsa -> shu field ASC
     if (currentSortField !== field) {

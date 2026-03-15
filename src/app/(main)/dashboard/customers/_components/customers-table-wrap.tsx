@@ -26,18 +26,18 @@ export function CustomersTableWrap({
 }: CustomersTableWrapProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = React.useState(searchParams?.get("search") || "");
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
-  const currentRating = searchParams.get("rating") || "all";
-  const currentSortField = searchParams.get("sortField") || null;
-  const currentSortOrder = (searchParams.get("sortOrder") as "asc" | "desc" | null) || null;
+  const currentRating = searchParams?.get("rating") || "all";
+  const currentSortField = searchParams?.get("sortField") || null;
+  const currentSortOrder = (searchParams?.get("sortOrder") as "asc" | "desc" | null) || null;
 
   const handleSearch = React.useCallback(
     (value: string) => {
       setSearchValue(value);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams(searchParams?.toString() ?? "");
         if (value) {
           params.set("search", value);
         } else {
@@ -51,7 +51,7 @@ export function CustomersTableWrap({
   );
 
   const handleRatingChange = (rating: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     if (rating === "all") {
       params.delete("rating");
     } else {
@@ -62,13 +62,13 @@ export function CustomersTableWrap({
   };
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", page.toString());
     router.push(`/dashboard/customers?${params.toString()}`);
   };
 
   const handleSortToggle = (field: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
 
     if (currentSortField !== field) {
       params.set("sortField", field);

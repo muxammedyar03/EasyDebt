@@ -78,7 +78,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
-  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = React.useState(searchParams?.get("search") || "");
   const [isSearching, setIsSearching] = React.useState(false);
   const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
   const [selectedDebtorId, setSelectedDebtorId] = React.useState<number | null>(null);
@@ -133,7 +133,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
       const currentSearch = params.get("search") || "";
       if (value) {
         params.set("search", value);
@@ -156,7 +156,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       return;
     }
     // If URL already contains the same search value, do nothing
-    const urlSearch = searchParams.get("search") || "";
+    const urlSearch = searchParams?.get("search") || "";
     if (urlSearch === searchValue) {
       setIsSearching(false);
       return;
@@ -173,12 +173,12 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   // Keep input in sync with URL search param without forcing page reset
   React.useEffect(() => {
-    const urlSearch = searchParams.get("search") || "";
+    const urlSearch = searchParams?.get("search") || "";
     setSearchValue((prev) => (prev === urlSearch ? prev : urlSearch));
   }, [searchParams]);
 
   const handleSort = (sortBy: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     const currentSortBy = params.get("sortBy");
     const currentSortOrder = params.get("sortOrder") || "desc";
 
@@ -193,7 +193,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   };
 
   const handleStatusFilter = (status: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     const current = params.get("status") || "all";
     // If status is the same, do nothing to avoid resetting page
     if (status === current) return;
@@ -207,7 +207,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   };
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", page.toString());
     router.push(`?${params.toString()}`);
   };
@@ -270,7 +270,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       toast.loading("Excel fayl tayyorlanmoqda...");
 
       // Get current filters
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
       const search = params.get("search") || "";
       const status = params.get("status") || "all";
 
@@ -391,7 +391,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           {isMobile ? (
-            <Select value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+            <Select value={searchParams?.get("status") || "all"} onValueChange={handleStatusFilter}>
               <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -404,7 +404,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
               </SelectContent>
             </Select>
           ) : (
-            <Tabs value={searchParams.get("status") || "all"} onValueChange={handleStatusFilter}>
+            <Tabs value={searchParams?.get("status") || "all"} onValueChange={handleStatusFilter}>
               <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
                 <TabsTrigger value="all">Barchasi</TabsTrigger>
                 <TabsTrigger value="qarzdor">Qarzdor</TabsTrigger>
@@ -474,16 +474,17 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
                 </TableHead>
                 <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("name")}>
                   Ism Familiya{" "}
-                  {searchParams.get("sortBy") === "name" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
+                  {searchParams?.get("sortBy") === "name" && (searchParams?.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Telefon</TableHead>
                 <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("debt")}>
                   Qarz summasi{" "}
-                  {searchParams.get("sortBy") === "debt" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
+                  {searchParams?.get("sortBy") === "debt" && (searchParams?.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => handleSort("date")}>
-                  Sana {searchParams.get("sortBy") === "date" && (searchParams.get("sortOrder") === "asc" ? "↑" : "↓")}
+                  Sana{" "}
+                  {searchParams?.get("sortBy") === "date" && (searchParams?.get("sortOrder") === "asc" ? "↑" : "↓")}
                 </TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
