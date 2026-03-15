@@ -75,13 +75,18 @@ export function DataTable({ data: initialData, debtLimit }: DataTableContainerPr
 
   const refreshDebtors = React.useCallback(async () => {
     try {
-      const parsed = await fetchDebtors();
-      setData(parsed);
-      setSearchResults(null);
+      if (search.trim()) {
+        const parsed = await fetchDebtors(search);
+        setSearchResults(parsed);
+      } else {
+        const parsed = await fetchDebtors();
+        setData(parsed);
+        setSearchResults(null);
+      }
     } catch (error) {
       console.error("Error refreshing debtors:", error);
     }
-  }, [fetchDebtors]);
+  }, [fetchDebtors, search]);
 
   const [searchLoading, setSearchLoading] = React.useState(false);
   React.useEffect(() => {

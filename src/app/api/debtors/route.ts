@@ -18,6 +18,7 @@ const createDebtorSchema = z.object({
 /** Map DebtorDomain to API response shape (snake_case) for dashboard client (rowToViewDebtor). */
 function domainToApiRow(domain: {
   id: number;
+  externalId: string;
   firstName: string;
   lastName: string;
   phoneNumber: string | null;
@@ -30,6 +31,7 @@ function domainToApiRow(domain: {
 }) {
   return {
     id: domain.id,
+    external_id: domain.externalId,
     first_name: domain.firstName,
     last_name: domain.lastName,
     phone_number: domain.phoneNumber,

@@ -180,7 +180,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
 
   const debtorView: DebtorView = {
     id: row.original.id,
-    externalId: String(row.original.id),
+    externalId: row.original.externalId,
     fullName: `${row.original.firstName} ${row.original.lastName}`,
     firstName: row.original.firstName,
     lastName: row.original.lastName,
