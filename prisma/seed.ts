@@ -7,7 +7,7 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Test userlarini tekshirish (seed tomonidan yaratiladigan)
-  const seedUsernames = ["superadmin", "admin_chilonzor", "kassir_chilonzor", "admin_yunusobod", "blocked_user"];
+  const seedUsernames = ["superadmin", "admin1", "kassir1", "admin2", "blocked_user"];
 
   const existingSeedUsers = await prisma.user.findMany({
     where: { username: { in: seedUsernames } },
@@ -30,23 +30,23 @@ async function main() {
   // 1. Shoplar yaratish
   const shop1 = await prisma.shop.create({
     data: {
-      name: "Chilonzor Filiali",
+      name: "Shop 1",
       is_active: true,
-      address: "Chilonzor tumani, 15-kvartal",
+      address: "Shop 1 address",
     },
   });
 
   const shop2 = await prisma.shop.create({
     data: {
-      name: "Yunusobod Filiali",
+      name: "Shop 2",
       is_active: true,
-      address: "Yunusobod tumani, 7-kvartal",
+      address: "Shop 2 address",
     },
   });
 
   const shop3 = await prisma.shop.create({
     data: {
-      name: "Test Shop (Inactive)",
+      name: "Shop 3",
       is_active: false,
       address: "Test manzil",
     },
@@ -120,7 +120,7 @@ async function main() {
   // Shop 2 - Blocked User (test uchun)
   const blockedUser = await prisma.user.create({
     data: {
-      username: "blocked_user",
+      username: "user2",
       email: "blocked@test.com",
       password: hashedPassword,
       role: UserRole.USER,
@@ -137,10 +137,10 @@ async function main() {
   const debtor1 = await prisma.debtor.create({
     data: {
       shop_id: shop1.id,
-      first_name: "Alisher",
-      last_name: "Navoiy",
+      first_name: "Debtor 1",
+      last_name: "Debtor 1",
       phone_number: "+998901234567",
-      address: "Chilonzor, 5-kvartal",
+      address: "Debtor 1 address",
       total_debt: 2500000,
       created_by: admin1.id,
     },
@@ -149,10 +149,10 @@ async function main() {
   const debtor2 = await prisma.debtor.create({
     data: {
       shop_id: shop1.id,
-      first_name: "Zulfiya",
-      last_name: "Karimova",
+      first_name: "Debtor 2",
+      last_name: "Debtor 2",
       phone_number: "+998907654321",
-      address: "Chilonzor, 10-kvartal",
+      address: "Debtor 2 address",
       total_debt: 1800000,
       created_by: user1.id,
     },
@@ -164,7 +164,7 @@ async function main() {
       shop_id: shop1.id,
       debtor_id: debtor1.id,
       amount: 1500000,
-      description: "Telefon Samsung A54",
+      description: "Debt 1",
       items: JSON.stringify([{ name: "Samsung A54", price: 1500000, quantity: 1 }]),
       created_by: admin1.id,
     },
@@ -175,11 +175,11 @@ async function main() {
       shop_id: shop1.id,
       debtor_id: debtor1.id,
       amount: 1000000,
-      description: "Noutbuk aksessuarlari",
+      description: "Debt 2",
       items: JSON.stringify([
-        { name: "Sumka", price: 300000, quantity: 1 },
-        { name: "Sichqoncha", price: 200000, quantity: 1 },
-        { name: "Klaviatura", price: 500000, quantity: 1 },
+        { name: "Debt 2 item 1", price: 300000, quantity: 1 },
+        { name: "Debt 2 item 2", price: 200000, quantity: 1 },
+        { name: "Debt 2 item 3", price: 500000, quantity: 1 },
       ]),
       created_by: user1.id,
     },
@@ -201,10 +201,10 @@ async function main() {
   const debtor3 = await prisma.debtor.create({
     data: {
       shop_id: shop2.id,
-      first_name: "Rustam",
-      last_name: "Sobirov",
+      first_name: "Debtor 3",
+      last_name: "Debtor 3",
       phone_number: "+998911234567",
-      address: "Yunusobod, 3-kvartal",
+      address: "Debtor 3 address",
       total_debt: 3200000,
       is_overdue: true,
       created_by: admin2.id,

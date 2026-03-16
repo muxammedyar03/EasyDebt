@@ -6,12 +6,22 @@ import { debtService } from "@/lib/services/debt.service";
 import { paymentService } from "@/lib/services/payment.service";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { domainToViewDebtor } from "@/lib/mappers";
+import { getSession } from "@/lib/auth";
+import { needsShopSelection } from "@/lib/shop-context";
+import { redirect } from "next/navigation";
 
 // Ensure this page is always rendered dynamically so changes to is_overdue are reflected immediately
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function Page() {
+  const session = await getSession();
+
+  // SUPER_ADMIN uchun: agar active shop tanlanmagan bo'lsa, shop tanlash sahifasiga yuboramiz
+  if (needsShopSelection(session)) {
+    redirect("/dashboard/change-shop");
+  }
+
   // Fetch ALL debtors for the dashboard table (client-side search/pagination)
   const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
     debtorService.findMany(undefined, { page: 1, limit: 10000 }), // Barcha debtorlar
