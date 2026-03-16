@@ -8,9 +8,7 @@ import type { Prisma } from "@prisma/client";
 export class SettingsRepository {
   async findByKey(key: string, shopId: number, tx?: Prisma.TransactionClient) {
     const client = tx ?? prisma;
-    return client.settings.findUnique({
-      where: { shop_id_key: { shop_id: shopId, key } },
-    });
+    return client.settings.findFirst({ where: { key, shop_id: shopId ?? 0 } });
   }
 
   async findMany(where?: Prisma.SettingsWhereInput, tx?: Prisma.TransactionClient) {

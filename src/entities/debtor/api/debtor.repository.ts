@@ -22,9 +22,9 @@ export class DebtorRepository {
     });
   }
 
-  async findFirst(where: Prisma.DebtorWhereInput, include?: Prisma.DebtorInclude) {
+  async findFirst(shop_id: number, where: Prisma.DebtorWhereInput, include?: Prisma.DebtorInclude) {
     return prisma.debtor.findFirst({
-      where,
+      where: { shop_id, ...where },
       include,
     });
   }
