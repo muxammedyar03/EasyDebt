@@ -132,25 +132,25 @@ export function DataTableView({
         </Button>
       </div>
 
-      {/* Mobile Card View */}
+      {/* Mobile Card View: faqat qidiruv bo'lganda ro'yxat ko'rsatilsin */}
       <div className="grid gap-4 md:hidden">
-        {filteredData.length === 0 ? (
-          (controlledSearch ?? "").trim() ? (
+        {(controlledSearch ?? "").trim() ? (
+          filteredData.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
           ) : (
-            <div className="text-muted-foreground py-5 text-center" />
+            filteredData.map((debtor) => (
+              <DebtorCard
+                key={debtor.id}
+                debtor={debtor}
+                debtLimit={debtLimit}
+                onAddDebt={handleAddDebt}
+                onAddPayment={handleAddPayment}
+                onDelete={handleDelete}
+              />
+            ))
           )
         ) : (
-          filteredData.map((debtor) => (
-            <DebtorCard
-              key={debtor.id}
-              debtor={debtor}
-              debtLimit={debtLimit}
-              onAddDebt={handleAddDebt}
-              onAddPayment={handleAddPayment}
-              onDelete={handleDelete}
-            />
-          ))
+          <div className="text-muted-foreground py-5 text-center" />
         )}
       </div>
 
