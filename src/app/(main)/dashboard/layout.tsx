@@ -19,6 +19,7 @@ import {
   type NavbarStyle,
 } from "@/types/preferences/layout";
 import { prisma } from "@/lib/prisma";
+import { settingsRepository } from "@/entities/settings/api";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
@@ -51,17 +52,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
 
   // Get debt limit and notifications - Optimized with Promise.all
-  const [debtLimitSetting, activeUser] = await Promise.all([
-    prisma.settings.findFirst({
-      where: {
-        OR: [
-          { shop_id: effectiveShopId, key: "debt_limit" }, // Shop-specific
-          { shop_id: null, key: "debt_limit" }, // Global fallback
-        ],
-      },
-      orderBy: { shop_id: "desc" }, // Shop-specific first
-      select: { value: true },
-    }),
+  const [debtLimit, overdueDays, activeUser] = await Promise.all([
+    settingsRepository.getDebtLimit(effectiveShopId),
+    settingsRepository.getOverdueDays(effectiveShopId),
     session
       ? prisma.user.findUnique({
           where: { id: session.userId },
@@ -78,24 +71,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         })
       : null,
   ]);
-  const [overdueDaysSetting] = await Promise.all([
-    prisma.settings.findFirst({
-      where: {
-        OR: [
-          { shop_id: effectiveShopId, key: "overdue_days" }, // Shop-specific
-          { shop_id: null, key: "overdue_days" }, // Global fallback
-        ],
-      },
-      orderBy: { shop_id: "desc" }, // Shop-specific first
-      select: { value: true },
-    }),
-  ]);
-
-  const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
-  const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
 
   const notificationsRaw = await prisma.notification.findMany({
-    where: { is_read: false, shop_id: effectiveShopId ?? undefined as number | undefined},
+    where: { is_read: false, shop_id: effectiveShopId ?? (undefined as number | undefined) },
     orderBy: { created_at: "desc" },
     take: 3,
   });

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { settingsRepository } from "@/entities/settings/api";
 
 type ExportData = {
   id: number | string;
@@ -31,16 +32,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "all";
 
     // Get debt limit from settings
-    const debtLimitSetting = await prisma.settings.findFirst({
-      where: {
-        OR: [
-          { shop_id: session?.shopId, key: "debt_limit" },
-          { shop_id: null, key: "debt_limit" },
-        ],
-      },
-      orderBy: { shop_id: "desc" },
-    });
-    const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
+    const debtLimit = await settingsRepository.getDebtLimit(session.shopId ?? null);
 
     // Build where clause
     const where: Prisma.DebtorWhereInput = {};

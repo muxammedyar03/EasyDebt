@@ -9,11 +9,9 @@
  * - Components/Pages receive Domain or View types
  */
 
-import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { debtorRepository } from "@/entities/debtor/api";
-import { debtRepository } from "@/entities/debt/api";
-import { paymentRepository } from "@/entities/payment/api";
+import { settingsRepository } from "@/entities/settings/api";
 
 /** Debtor with debts + payments + creator for findMany with include */
 type DebtorWithRelations = Prisma.DebtorGetPayload<{
@@ -48,6 +46,8 @@ import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view
 import { PaymentDomain } from "@/types/domain";
 import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
+import { paymentRepository } from "@/entities/payment/api/payment.repository";
+import { debtRepository } from "@/entities/debt/api/debt.repository";
 
 /**
  * Service class for Debtor operations
@@ -70,15 +70,11 @@ export class DebtorService {
       };
     }
 
-    const [debtLimitSetting, overdueDaysSetting] = await Promise.all([
-      prisma.settings.findUnique({ where: { shop_id_key: { shop_id: shopId, key: "debt_limit" } } }),
-      prisma.settings.findUnique({ where: { shop_id_key: { shop_id: shopId, key: "overdue_days" } } }),
+    const [debtLimit, overdueDays] = await Promise.all([
+      settingsRepository.getDebtLimit(shopId ?? null),
+      settingsRepository.getOverdueDays(shopId ?? null),
     ]);
-
-    return {
-      debtLimit: debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000,
-      overdueDays: overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45,
-    };
+    return { debtLimit, overdueDays };
   }
 
   private async getShopId(): Promise<number> {
@@ -421,8 +417,14 @@ export class DebtorService {
 
     // Get all debts and payments
     const [debtsRaw, paymentsRaw] = (await Promise.all([
-      debtRepository.findMany({ shop_id: await this.getShopId() }, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
-      paymentRepository.findMany({ shop_id: await this.getShopId() }, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
+      debtRepository.findMany(
+        { shop_id: await this.getShopId() },
+        { include: { debtor: true }, orderBy: { created_at: "asc" } },
+      ),
+      paymentRepository.findMany(
+        { shop_id: await this.getShopId() },
+        { include: { debtor: true }, orderBy: { created_at: "asc" } },
+      ),
     ])) as [DebtWithDebtor[], PaymentWithDebtor[]];
 
     // Group debts and payments by debtor

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getEffectiveShopId } from "@/lib/shop-context";
+import { settingsRepository } from "@/entities/settings/api";
 import { reEvaluateOverdueDebtors } from "@/lib/overdue-checker";
 import { revalidatePath } from "next/cache";
 
@@ -22,15 +23,8 @@ export async function POST(request: NextRequest) {
     if (!shopId) {
       return NextResponse.json({ error: "Shop context not found" }, { status: 400 });
     }
-    const oldSettings = await prisma.settings.findUnique({
-      where: { shop_id_key: { shop_id: shopId, key } },
-    });
-
-    const setting = await prisma.settings.upsert({
-      where: { shop_id_key: { shop_id: shopId, key } },
-      update: { value },
-      create: { shop_id: shopId, key, value },
-    });
+    const oldSettings = await settingsRepository.findByKey(key, shopId);
+    const setting = await settingsRepository.upsert(shopId, key, value);
 
     const oldValue = oldSettings?.value || "mavjud emas";
     const keyName = key === "debt_limit" ? "Qarz limiti" : key === "overdue_days" ? "Muddati o'tish kuni" : key;
@@ -84,15 +78,11 @@ export async function GET(request: NextRequest) {
     const key = searchParams.get("key");
 
     if (key) {
-      const setting = await prisma.settings.findUnique({
-        where: { shop_id_key: { shop_id: shopId, key } },
-      });
+      const setting = await settingsRepository.findByKey(key, shopId);
       return NextResponse.json(setting);
     }
 
-    const settings = await prisma.settings.findMany({
-      where: { shop_id: shopId },
-    });
+    const settings = await settingsRepository.findMany();
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);

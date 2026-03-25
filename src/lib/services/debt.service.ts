@@ -1,8 +1,8 @@
-import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
-import { debtRepository } from "@/entities/debt/api";
 import { getEffectiveShopId } from "../shop-context";
 import { getSession } from "../auth";
+import { settingsRepository } from "@/entities/settings/api";
+import { debtRepository } from "@/entities/debt/api/debt.repository";
 
 /** Debt with debtor for report */
 type DebtWithDebtor = Prisma.DebtGetPayload<{ include: { debtor: true } }>;
@@ -24,16 +24,7 @@ class DebtService {
     const session = await getSession();
     const shopId = getEffectiveShopId(session);
 
-    const settings = await prisma.settings.findFirst({
-      where: {
-        OR: [
-          { shop_id: shopId, key: "debt_limit" },
-          { shop_id: null, key: "debt_limit" },
-        ],
-      },
-      orderBy: { shop_id: "desc" },
-    });
-    return settings ? parseFloat(settings.value) : 2000000;
+    return settingsRepository.getDebtLimit(shopId ?? null);
   }
 
   private async getShopId(): Promise<number> {
