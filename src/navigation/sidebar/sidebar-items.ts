@@ -70,26 +70,27 @@ export const sidebarItems: NavGroup[] = [
         title: "Qarzdorlar",
         url: "/dashboard/debtors",
         icon: UserCog,
-        isNew: true,
       },
       {
         title: "Mijozlar Reytingi",
         url: "/dashboard/customers",
         icon: Users,
-        isNew: true,
       },
       {
         title: "Hisobotlar",
         url: "/dashboard/reports",
         icon: BarChart3,
-        isNew: true,
+      },
+      {
+        title: "Audit Log",
+        url: "/dashboard/audit-logs",
+        icon: FileText,
       },
       {
         title: "Users",
         url: "/dashboard/users",
         icon: Users,
-        isNew: true,
-        roles: ["SUPER_ADMIN"],
+        roles: ["SUPER_ADMIN", "ADMIN"],
       },
       {
         title: "Audit Log",
