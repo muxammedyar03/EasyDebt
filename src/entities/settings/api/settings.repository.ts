@@ -42,7 +42,7 @@ export class SettingsRepository {
   }
 
   /** Default 45 if not set */
-  async getOverdueDays(shopId: number, tx?: Prisma.TransactionClient): Promise<number> {
+  async getOverdueDays(shopId: number | null, tx?: Prisma.TransactionClient): Promise<number> {
     if (!shopId) {
       return 0;
     }
