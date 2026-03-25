@@ -37,14 +37,7 @@ export async function createNotification(data: CreateNotificationData) {
 
     // Push: yaratilgan foydalanuvchi (userId) ning barcha push yoqilgan qurilmalariga yuboriladi
     if (data.userId) {
-      let url = "/dashboard/notifications";
-      if (data.debtorId) {
-        const debtor = await prisma.debtor.findUnique({
-          where: { id: data.debtorId },
-          select: { external_id: true },
-        });
-        url = debtor ? `/dashboard/default/debitor/${debtor.external_id}` : url;
-      }
+      const url = data.debtorId ? `/dashboard/default/debitor/${data.debtorId}` : "/dashboard/notifications";
       sendPushForNotification(data.userId, data.type, data.title, data.message, notification.id, url).catch((err) =>
         console.error("[notifications] Push send failed:", err),
       );

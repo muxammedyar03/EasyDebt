@@ -36,6 +36,7 @@ yarn-error.log*
 archetecture_guidlines.md
 ARCHITECTURE_REFACTOR_TASKS.md
 PROJECT_STRUCTURE.md
+push-notifications.md
 
 # vercel
 .vercel
