@@ -17,6 +17,44 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useDashboardDebtorsTable } from "./use-dashboard-debtors-table";
 import { DebtorView } from "@/types/view";
 
+const SEARCH_DEBOUNCE_MS = 120;
+
+/** Input darhol yangilanadi; parentga faqat debounce (120ms) dan keyin yuboriladi. */
+function SearchInput({
+  value,
+  onChange,
+  loading,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  loading?: boolean;
+}) {
+  const [local, setLocal] = React.useState(value);
+  React.useEffect(() => {
+    setLocal(value);
+  }, [value]);
+  React.useEffect(() => {
+    const t = setTimeout(() => onChange(local), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [local, onChange]);
+  return (
+    <div className="relative w-full xl:w-1/2">
+      <Input
+        type="text"
+        className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
+        placeholder="Ism, telefon va manzil bo'yicha qidirish..."
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+      />
+      {(loading || local !== value) && (
+        <div className="absolute top-1/2 right-3 -translate-y-1/2">
+          <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 type DataTableViewProps = {
   data: DebtorView[];
   debtLimit: number;
@@ -24,6 +62,9 @@ type DataTableViewProps = {
   onReorder: (rows: DebtorView[]) => void;
   onDeleteDebtor: (debtorId: number) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
+  search?: string;
+  onSearchChange?: (value: string) => void;
+  searchLoading?: boolean;
 };
 
 /**
@@ -34,19 +75,31 @@ type DataTableViewProps = {
  * - Receives data and callbacks from the container
  * - Does NOT perform any data fetching or global mutations
  */
-export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDebtor, onRefresh }: DataTableViewProps) {
+export function DataTableView({
+  data,
+  debtLimit,
+  columns,
+  onReorder,
+  onDeleteDebtor,
+  onRefresh,
+  search: controlledSearch,
+  onSearchChange,
+  searchLoading = false,
+}: DataTableViewProps) {
   const isMobile = useIsMobile();
-  const { table, state, handlers, filteredData, isSearching } = useDashboardDebtorsTable({
+  const { table, state, handlers, filteredData } = useDashboardDebtorsTable({
     data,
     columns,
     onDeleteDebtor,
+    serverSearch:
+      controlledSearch !== undefined && onSearchChange
+        ? { value: controlledSearch, setValue: onSearchChange }
+        : undefined,
   });
 
   const {
     isDialogOpen,
     setIsDialogOpen,
-    globalFilter,
-    setGlobalFilter,
     quickDebtDialog,
     setQuickDebtDialog,
     quickPaymentDialog,
@@ -60,20 +113,18 @@ export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDeb
       className={`bg-card flex flex-col gap-y-4 rounded-xl p-4 shadow-sm ${isMobile ? "bg-card dark:bg-card rounded-xl border px-2 pb-4" : ""}`}
     >
       <div className="mt-6 mb-3 flex items-center gap-2 md:m-0">
-        <div className="relative w-full xl:w-1/2">
-          <Input
-            type="text"
-            className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
-            placeholder="Ism, telefon va manzil bo'yicha qidirish..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-          />
-          {isSearching && (
-            <div className="absolute top-1/2 right-3 -translate-y-1/2">
-              <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-            </div>
-          )}
-        </div>
+        {onSearchChange ? (
+          <SearchInput value={controlledSearch ?? ""} onChange={onSearchChange} loading={searchLoading} />
+        ) : (
+          <div className="relative w-full xl:w-1/2">
+            <Input
+              type="text"
+              className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
+              placeholder="Ism, telefon va manzil bo'yicha qidirish..."
+              disabled
+            />
+          </div>
+        )}
         <DataTableViewOptions table={table} />
         <Button variant="outline" size="sm" className="h-14 w-14 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
           <Plus />
@@ -83,10 +134,12 @@ export function DataTableView({ data, debtLimit, columns, onReorder, onDeleteDeb
 
       {/* Mobile Card View */}
       <div className="grid gap-4 md:hidden">
-        {!globalFilter ? (
-          <div className="text-muted-foreground py-5 text-center"></div>
-        ) : filteredData.length === 0 ? (
-          <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+        {filteredData.length === 0 ? (
+          (controlledSearch ?? "").trim() ? (
+            <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+          ) : (
+            <div className="text-muted-foreground py-5 text-center" />
+          )
         ) : (
           filteredData.map((debtor) => (
             <DebtorCard

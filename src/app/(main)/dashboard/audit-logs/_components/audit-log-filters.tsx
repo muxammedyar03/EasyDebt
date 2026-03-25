@@ -26,10 +26,10 @@ export function AuditLogFilters({ isMobile, role }: AuditLogFiltersProps) {
   const [allShops, setAllShops] = React.useState(searchParams.get("allShops") === "true");
 
   const [selectedActions, setSelectedActions] = React.useState<string[]>(
-    searchParams.get("action")?.split(",").filter(Boolean) || [],
+    searchParams?.get("action")?.split(",").filter(Boolean) || [],
   );
   const [selectedEntityTypes, setSelectedEntityTypes] = React.useState<string[]>(
-    searchParams.get("entityType")?.split(",").filter(Boolean) || [],
+    searchParams?.get("entityType")?.split(",").filter(Boolean) || [],
   );
 
   const handleActionToggle = (action: string) => {
@@ -43,7 +43,7 @@ export function AuditLogFilters({ isMobile, role }: AuditLogFiltersProps) {
   };
 
   const applyFilters = () => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
 
     if (selectedActions.length > 0) {
       params.set("action", selectedActions.join(","));

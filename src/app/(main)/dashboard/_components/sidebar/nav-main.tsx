@@ -167,15 +167,16 @@ export function NavMain({ items }: NavMainProps) {
   const [quickCreateOpen, setQuickCreateOpen] = React.useState(false);
   const { user } = useCurrentUser();
 
+  const path = pathname ?? "";
   const isItemActive = (url: string, subItems?: NavMainItem["subItems"]) => {
     if (subItems?.length) {
-      return subItems.some((sub) => pathname.startsWith(sub.url));
+      return subItems.some((sub) => path.startsWith(sub.url));
     }
-    return pathname === url;
+    return path === url;
   };
 
   const isSubmenuOpen = (subItems?: NavMainItem["subItems"]) => {
-    return subItems?.some((sub) => pathname.startsWith(sub.url)) ?? false;
+    return subItems?.some((sub) => path.startsWith(sub.url)) ?? false;
   };
 
   // Show all items; role-restricted items stay visible but disabled when user has no access
