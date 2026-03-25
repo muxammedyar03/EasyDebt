@@ -92,12 +92,6 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN"],
       },
-      {
-        title: "Audit Log",
-        url: "/dashboard/audit-logs",
-        icon: FileText,
-        isNew: true,
-      },
       // {
       //   title: "Sozlamalar",
       //   url: "/dashboard/settings",
