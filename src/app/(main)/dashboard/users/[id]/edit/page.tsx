@@ -28,7 +28,8 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
       role: true,
       first_name: true,
       last_name: true,
-      is_active: true,
+      status: true,
+      shop_id: true,
     },
   });
 
@@ -41,7 +42,9 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
     role: user.role,
     first_name: user.first_name ?? "",
     last_name: user.last_name ?? "",
-    is_active: user.is_active,
+    is_active: user.status === "ACTIVE",
+    status: user.status,
+    shop_id: user.shop_id,
   };
 
   return (

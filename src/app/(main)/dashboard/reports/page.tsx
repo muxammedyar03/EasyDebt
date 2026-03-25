@@ -2,9 +2,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { reportsService } from "@/lib/services/reports.service";
 import CashClient from "./_components/cash-client";
 import { debtService } from "@/lib/services/debt.service";
+import { getSession } from "@/lib/auth";
+import { getEffectiveShopId } from "@/lib/shop-context";
 
 export default async function ReportsPage() {
-  const [report, debtLimit] = await Promise.all([reportsService.getDashboardReport(), debtService.debtLimit()]);
+  const session = await getSession();
+  const shopId = getEffectiveShopId(session);
+  const [report, debtLimit] = await Promise.all([
+    reportsService.getDashboardReport(shopId ?? 0),
+    debtService.debtLimit(),
+  ]);
 
   return (
     <div className="space-y-6">

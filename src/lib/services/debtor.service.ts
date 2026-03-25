@@ -151,6 +151,7 @@ export class DebtorService {
     const settings = await this.getSettings();
 
     const debtor = await debtorRepository.findFirst(
+      await this.getShopId(),
       { external_id: externalId },
       {
         debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
