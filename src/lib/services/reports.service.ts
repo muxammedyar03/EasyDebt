@@ -8,8 +8,6 @@
 // import { debtorService } from "@/lib/services/debtor.service";
 import { type PaymentReportItem, paymentService } from "@/lib/services/payment.service";
 import { debtService, type DebtReportItem } from "@/lib/services/debt.service";
-import { debtorRepository } from "@/entities";
-import { getEffectiveShopId } from "../shop-context";
 
 // export type TrendItem = {
 //   label: string;

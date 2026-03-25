@@ -39,7 +39,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference<ContentLayout>("content_layout", CONTENT_LAYOUT_VALUES, "centered"),
     getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
   ]);
-  
+
   const { session, shopId, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
 
   // Get current shop info for display
@@ -49,7 +49,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         select: { id: true, name: true },
       })
     : null;
-
 
   const layoutPreferences = {
     contentLayout,
