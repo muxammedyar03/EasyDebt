@@ -1,0 +1,111 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: test_debt_db
+    environment:
+      POSTGRES_DB: debt_management_test
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    command: postgres -c max_connections=150
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    networks:
+      - test-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d debt_management_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  migrate:
+    image: ghcr.io/muxammedyar03/easydebt:migrate-test
+    container_name: test_debt_migrate
+    working_dir: /app
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management_test?schema=public&connection_limit=5
+      NODE_ENV: production
+    command: sh -c "./node_modules/.bin/prisma migrate deploy && npm run migrate:prod"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - test-app-network
+    restart: "no"
+
+  app:
+    image: ghcr.io/muxammedyar03/easydebt:test
+    container_name: test_debt_app
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management_test?schema=public&connection_limit=30&pool_timeout=20
+      JWT_SECRET: ${JWT_SECRET}
+      CRON_SECRET: ${CRON_SECRET}
+      N8N_API_KEY: ${N8N_API_KEY}
+      NODE_ENV: production
+      OPENSSL_CONF: /dev/null
+      VIRTUAL_HOST: ${DOMAIN:-test.easydebt.uz}
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: ${DOMAIN:-test.easydebt.uz}
+      LETSENCRYPT_EMAIL: ${SSL_EMAIL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - test-app-network
+      - nginx-proxy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: test_nginx_proxy
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - test_nginx_certs:/etc/nginx/certs
+      - test_nginx_vhost:/etc/nginx/vhost.d
+      - test_nginx_html:/usr/share/nginx/html
+    networks:
+      - nginx-proxy
+    restart: unless-stopped
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+
+  letsencrypt:
+    image: nginxproxy/acme-companion:latest
+    container_name: test_letsencrypt
+    depends_on:
+      - nginx-proxy
+    environment:
+      DEFAULT_EMAIL: ${SSL_EMAIL}
+      NGINX_PROXY_CONTAINER: test_nginx_proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - test_nginx_certs:/etc/nginx/certs
+      - test_nginx_vhost:/etc/nginx/vhost.d
+      - test_nginx_html:/usr/share/nginx/html
+      - test_acme_state:/etc/acme.sh
+    networks:
+      - nginx-proxy
+    restart: unless-stopped
+
+volumes:
+  test_postgres_data:
+  test_nginx_certs:
+  test_nginx_vhost:
+  test_nginx_html:
+  test_acme_state:
+
+networks:
+  test-app-network:
+    driver: bridge
+  nginx-proxy:
+    driver: bridge

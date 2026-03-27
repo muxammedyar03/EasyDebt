@@ -47,10 +47,10 @@ services:
       N8N_API_KEY: ${N8N_API_KEY}
       NODE_ENV: production
       OPENSSL_CONF: /dev/null
-      VIRTUAL_HOST: ${DOMAIN}
+      VIRTUAL_HOST: ${DOMAIN:-test.easydebt.uz}
       VIRTUAL_PORT: 3000
-      LETSENCRYPT_HOST: ${DOMAIN}
-      LETSENCRYPT_EMAIL: ${SSL_EMAIL}
+      LETSENCRYPT_HOST: ${DOMAIN:-test.easydebt.uz}
+      LETSENCRYPT_EMAIL: ${SSL_EMAIL:-admin@test.easydebt.uz}
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,7 +89,7 @@ services:
     depends_on:
       - nginx-proxy
     environment:
-      DEFAULT_EMAIL: ${SSL_EMAIL}
+      DEFAULT_EMAIL: ${SSL_EMAIL:-admin@test.easydebt.uz}
       NGINX_PROXY_CONTAINER: nginx-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
