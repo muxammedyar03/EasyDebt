@@ -1,11 +1,14 @@
 import { prisma } from "./src/lib/prisma";
 import { reEvaluateOverdueDebtors } from "./src/lib/overdue-checker";
-
+import { getEffectiveShopId } from "@/lib/shop-context";
+import { getSession } from "@/lib/auth";
 async function main() {
+  const session = await getSession();
+  const shopId = getEffectiveShopId(session);
   console.log("🔍 Testing overdue checker...\n");
 
   // Run the checker
-  await reEvaluateOverdueDebtors();
+  await reEvaluateOverdueDebtors(shopId);
 
   // Get all debtors with their status
   const debtors = await prisma.debtor.findMany({
