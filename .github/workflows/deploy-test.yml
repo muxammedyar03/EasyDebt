@@ -75,13 +75,36 @@ jobs:
     needs: build
 
     steps:
+      - name: Verify SSH deploy secrets
+        env:
+          TEST_HOST: ${{ secrets.TEST_DEPLOY_HOST }}
+          PROD_HOST: ${{ secrets.DEPLOY_HOST }}
+          TEST_USER: ${{ secrets.TEST_DEPLOY_USER }}
+          PROD_USER: ${{ secrets.DEPLOY_USER }}
+          TEST_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+          PROD_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          set -e
+          if [ -z "$TEST_HOST" ] && [ -z "$PROD_HOST" ]; then
+            echo "::error::Missing host: set repository secret TEST_DEPLOY_HOST (recommended) or reuse DEPLOY_HOST for the same VPS."
+            exit 1
+          fi
+          if [ -z "$TEST_USER" ] && [ -z "$PROD_USER" ]; then
+            echo "::error::Missing SSH user: set TEST_DEPLOY_USER or DEPLOY_USER."
+            exit 1
+          fi
+          if [ -z "$TEST_KEY" ] && [ -z "$PROD_KEY" ]; then
+            echo "::error::Missing SSH private key: set TEST_SSH_PRIVATE_KEY or SSH_PRIVATE_KEY."
+            exit 1
+          fi
+
       - name: Deploy to test server via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.TEST_DEPLOY_HOST }}
-          username: ${{ secrets.TEST_DEPLOY_USER }}
-          key: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.TEST_DEPLOY_PORT || 22 }}
+          host: ${{ secrets.TEST_DEPLOY_HOST || secrets.DEPLOY_HOST }}
+          username: ${{ secrets.TEST_DEPLOY_USER || secrets.DEPLOY_USER }}
+          key: ${{ secrets.TEST_SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.TEST_DEPLOY_PORT || secrets.DEPLOY_PORT || 22 }}
           command_timeout: 20m
           script: |
             set -e
