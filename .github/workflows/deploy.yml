@@ -161,8 +161,11 @@ jobs:
             echo "✅ Image muvaffaqiyatli pull qilindi!"
             docker images $IMAGE_FULL --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
 
-            echo "🚀 Containerni yangi image bilan qayta yaratish..."
-            docker compose -f docker-compose.prod.yml up -d --force-recreate app
+            echo "📦 Pulling migrate image (:migrate)..."
+            docker compose -f docker-compose.prod.yml pull migrate || docker pull ghcr.io/muxammedyar03/easydebt:migrate
+
+            echo "🚀 Migrate + app qayta yaratiladi (Prisma + custom migrations)..."
+            docker compose -f docker-compose.prod.yml up -d --force-recreate migrate app
 
             echo "⏳ Waiting for app (5s)..."
             sleep 5

@@ -1,10 +1,11 @@
+# Bir VPS da bir nechta EasyDebt stack bo'lsa .env da COMPOSE_PROJECT_NAME ni har xil qiling (masalan feat_easydebt).
+# container_name global — prefiksiz debt_db boshqa loyiha bilan to'qnashadi.
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: debt_db
+    container_name: feat_debt_db
     environment:
-      POSTGRES_DB: debt_management
-      N8N_API_KEY: ${N8N_API_KEY}
+      POSTGRES_DB: ${POSTGRES_DB:-debt_management}
       POSTGRES_USER: ${DB_USER:-admin}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     command: postgres -c max_connections=150
@@ -13,7 +14,11 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d debt_management"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-admin} -d ${POSTGRES_DB:-debt_management}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,13 +26,12 @@ services:
 
   migrate:
     image: ghcr.io/muxammedyar03/easydebt:migrate
-    container_name: debt_migrate
+    container_name: feat_debt_migrate
     working_dir: /app
     environment:
-      # Migrate needs few connections; app uses connection_limit=30
-      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public&connection_limit=5
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public
       NODE_ENV: production
-    command: sh -c "./node_modules/.bin/prisma migrate deploy && npm run migrate:prod"
+    command: sh -c "set -e; ./node_modules/.bin/prisma migrate deploy; npm run migrate:prod"
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,19 +42,19 @@ services:
   app:
     # IMAGE_TAG deploy vaqtida commit SHA bilan beriladi (workflow); yo'q bo'lsa latest
     image: ghcr.io/muxammedyar03/easydebt:${IMAGE_TAG:-latest}
-    container_name: debt_app
+    container_name: feat_debt_app
     environment:
       # Production: katta connection pool – sekinlikni kamaytirish (Prisma connection_limit, pool_timeout)
-      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public&connection_limit=30&pool_timeout=20
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public&connection_limit=30&pool_timeout=20
       JWT_SECRET: ${JWT_SECRET}
       CRON_SECRET: ${CRON_SECRET}
       N8N_API_KEY: ${N8N_API_KEY}
       NODE_ENV: production
       OPENSSL_CONF: /dev/null
-      VIRTUAL_HOST: ${DOMAIN}
+      VIRTUAL_HOST: ${DOMAIN:?Set DOMAIN in .env}
       VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: ${DOMAIN}
-      LETSENCRYPT_EMAIL: ${SSL_EMAIL}
+      LETSENCRYPT_EMAIL: ${SSL_EMAIL:?Set SSL_EMAIL in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,14 +65,19 @@ services:
       - nginx-proxy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      # Runner image da wget yo'q; Node 20 da fetch bor
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(\"http://127.0.0.1:3000/api/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
 
   nginx-proxy:
     image: nginxproxy/nginx-proxy:alpine
-    container_name: nginx-proxy
+    container_name: feat_nginx_proxy
     ports:
       - "80:80"
       - "443:443"
@@ -85,12 +94,12 @@ services:
 
   letsencrypt:
     image: nginxproxy/acme-companion:latest
-    container_name: letsencrypt
+    container_name: feat_letsencrypt
     depends_on:
       - nginx-proxy
     environment:
-      DEFAULT_EMAIL: ${SSL_EMAIL}
-      NGINX_PROXY_CONTAINER: nginx-proxy
+      DEFAULT_EMAIL: ${SSL_EMAIL:?Set SSL_EMAIL in .env}
+      NGINX_PROXY_CONTAINER: feat_nginx_proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - nginx_certs:/etc/nginx/certs
