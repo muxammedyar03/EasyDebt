@@ -34,6 +34,8 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
     exportedAt?: string;
   } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  /** Bir marta o‘qilgan JSON matn — importda qayta file.text() qilmaymiz */
+  const importJsonTextRef = React.useRef<string | null>(null);
 
   const handleExport = async () => {
     setLoading(true);
@@ -92,23 +94,34 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
 
     setSelectedFile(file);
 
-    // Faylni o'qish va preview ko'rsatish
+    // Faylni bir marta o'qish va preview ko'rsatish
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      importJsonTextRef.current = text;
+      const data = JSON.parse(text) as {
+        meta?: {
+          debtorsCount?: number;
+          debtsCount?: number;
+          paymentsCount?: number;
+          exportedBy?: string;
+          exportedAt?: string;
+        };
+        debtors?: unknown[];
+      };
 
       if (!data.meta || !data.debtors) {
         throw new Error("Noto'g'ri fayl formati");
       }
 
       setPreviewData({
-        debtorsCount: data.meta.debtorsCount || data.debtors.length,
-        debtsCount: data.meta.debtsCount || 0,
-        paymentsCount: data.meta.paymentsCount || 0,
+        debtorsCount: data.meta.debtorsCount ?? data.debtors.length,
+        debtsCount: data.meta.debtsCount ?? 0,
+        paymentsCount: data.meta.paymentsCount ?? 0,
         exportedBy: data.meta.exportedBy,
         exportedAt: data.meta.exportedAt,
       });
     } catch (error) {
+      importJsonTextRef.current = null;
       toast.error("Faylni o'qishda xatolik", {
         description: error instanceof Error ? error.message : "Noma'lum xatolik",
       });
@@ -127,16 +140,29 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
     setProgress(10);
 
     try {
-      const text = await selectedFile.text();
-      const data = JSON.parse(text);
-      setProgress(30);
+      const text = importJsonTextRef.current;
+      if (!text) {
+        throw new Error("Fayl matni yo‘q — qayta tanlang");
+      }
+      setProgress(25);
+
+      // Gzip: JSON tarmoqda kichrayadi (nginx 1m limitidan oson chetlashadi). Stream emas, lekin hajm kamayadi.
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      let body: BodyInit = text;
+
+      if (typeof CompressionStream !== "undefined") {
+        const blob = new Blob([text]);
+        const compressed = await new Response(blob.stream().pipeThrough(new CompressionStream("gzip"))).blob();
+        if (compressed.size < text.length) {
+          headers["Content-Encoding"] = "gzip";
+          body = compressed;
+        }
+      }
 
       const response = await fetch("/api/debtors/import", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        headers,
+        body,
       });
 
       setProgress(70);
@@ -153,7 +179,7 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
       } catch {
         if (response.status === 413) {
           throw new Error(
-            "Fayl juda katta (413). Serverda nginx body limiti oshirilgan bo‘lishi kerak — deploy qayta ishga tushiring.",
+            "Fayl juda katta (413). Agar yangi versiya bo‘lsa, avvalo yangilang (import gzip bilan yuboriladi). Aks holda nginx’da client_max_body_size oshiring.",
           );
         }
         throw new Error(
@@ -192,6 +218,7 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
   const resetDialog = () => {
     setSelectedFile(null);
     setPreviewData(null);
+    importJsonTextRef.current = null;
     setProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";

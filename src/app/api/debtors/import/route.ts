@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { gunzipSync } from "zlib";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
@@ -43,6 +44,19 @@ type ImportData = {
   debtors: ImportDebtor[];
 };
 
+/** Brauzer gzip yuborsa (katta JSON uchun nginx limitidan yengil). */
+const MAX_IMPORT_JSON_BYTES = 60 * 1024 * 1024;
+
+async function parseImportJsonBody(request: NextRequest): Promise<ImportData> {
+  const encoding = request.headers.get("content-encoding")?.toLowerCase();
+  if (encoding === "gzip" || encoding === "x-gzip") {
+    const raw = Buffer.from(await request.arrayBuffer());
+    const json = gunzipSync(raw, { maxOutputLength: MAX_IMPORT_JSON_BYTES }).toString("utf8");
+    return JSON.parse(json) as ImportData;
+  }
+  return (await request.json()) as ImportData;
+}
+
 export async function POST(request: NextRequest) {
   let requestBody: ImportData | null = null;
   let fileHash = "";
@@ -59,9 +73,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Faqat admin foydalanuvchilar import qila oladi" }, { status: 403 });
     }
 
-    // Request body'ni bir marta o'qib saqlaymiz
-    const body = await request.json();
-    requestBody = body as ImportData;
+    // Request body'ni bir marta o'qib saqlaymiz (ixcham gzip qabul qilinadi)
+    const body = await parseImportJsonBody(request);
+    requestBody = body;
     const importData = requestBody;
 
     // 1. Validation
