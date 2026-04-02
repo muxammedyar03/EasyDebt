@@ -55,9 +55,9 @@ export async function runCustomMigrations(prisma: PrismaClient) {
     .run('CREATE INDEX IF NOT EXISTS "ImportHistory_imported_by_idx" ON "ImportHistory"("imported_by")')
     .commit();
 
-  // Example: Add description to audit_log
+  // @@map("audit_logs") — jadval nomi audit_logs
   await createMigrationBuilder("2024-12-25-add-audit-log-description", adapter)
-    .addColumn("audit_log", "description", "TEXT")
+    .addColumn("audit_logs", "description", "TEXT")
     .commit();
 
   await createMigrationBuilder("2026-01-28-add-shop-id-to-debtors", adapter)
