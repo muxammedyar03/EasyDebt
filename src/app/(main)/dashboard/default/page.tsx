@@ -22,7 +22,7 @@ export default async function Page() {
 
   // SUPER_ADMIN uchun: agar active shop tanlanmagan bo'lsa, shop tanlash sahifasiga yuboramiz
   if (needsShopSelection(session)) {
-    redirect("/dashboard/change-shop");
+    redirect("/dashboard/manage-shops/shops");
   }
 
   // Fetch ALL debtors for the dashboard table (client-side search/pagination)

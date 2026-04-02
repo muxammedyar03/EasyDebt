@@ -35,7 +35,8 @@ export default function ChangeShopPage() {
   }, [fetchShops]);
 
   if (shops.length === 0) {
-    redirect("/dashboard");
+    redirect("/dashboard/manage-shops/shops");
+    return;
   }
 
   async function fetchShops() {
