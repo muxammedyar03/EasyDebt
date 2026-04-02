@@ -3,7 +3,7 @@ services:
     image: postgres:15-alpine
     container_name: debt_db
     environment:
-      POSTGRES_DB: debt_management
+      POSTGRES_DB: ${POSTGRES_DB:-debt_management}
       N8N_API_KEY: ${N8N_API_KEY}
       POSTGRES_USER: ${DB_USER:-admin}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
@@ -13,19 +13,22 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d debt_management"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-admin} -d ${POSTGRES_DB:-debt_management}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   migrate:
-    image: ghcr.io/muxammedyar03/easydebt:migrate
+    image: ghcr.io/muxammedyar03/easydebt:${MIGRATE_IMAGE_TAG:-migrate}
     container_name: debt_migrate
     working_dir: /app
     environment:
-      # Migrate needs few connections; app uses connection_limit=30
-      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public&connection_limit=5
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public&connection_limit=5
       NODE_ENV: production
     command: sh -c "./node_modules/.bin/prisma migrate deploy && npm run migrate:prod"
     depends_on:
@@ -36,12 +39,10 @@ services:
     restart: "no"
 
   app:
-    # IMAGE_TAG deploy vaqtida commit SHA bilan beriladi (workflow); yo'q bo'lsa latest
     image: ghcr.io/muxammedyar03/easydebt:${IMAGE_TAG:-latest}
     container_name: debt_app
     environment:
-      # Production: katta connection pool – sekinlikni kamaytirish (Prisma connection_limit, pool_timeout)
-      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/debt_management?schema=public&connection_limit=30&pool_timeout=20
+      DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public&connection_limit=30&pool_timeout=20
       JWT_SECRET: ${JWT_SECRET}
       CRON_SECRET: ${CRON_SECRET}
       N8N_API_KEY: ${N8N_API_KEY}

@@ -2,16 +2,14 @@ name: Docker Build and Deploy
 
 on:
   push:
-    branches: ["main"]
+    branches: ["test"]
     tags: ["v*"]
   pull_request:
-    branches: ["main"]
+    branches: ["test"]
 
 env:
   REGISTRY: ghcr.io
-  # Docker image names must be lowercase (e.g. EasyDebt -> easydebt)
   IMAGE_NAME: muxammedyar03/easydebt
-  # Force GitHub Actions JavaScript actions to use Node.js 24
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -41,8 +39,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set build cache buster
+        run: echo "${{ github.sha }}" > .build-sha
+
+      - name: Build and push Docker image (app:test)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+          cache-from: |
+            type=gha,scope=build-cache-test
+          cache-to: type=gha,mode=max,scope=build-cache-test
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            COMMIT_SHA=${{ github.sha }}
+          platforms: linux/amd64
+
+      - name: Build and push Docker image (migrate:migrate-test)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: migration
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate-test
+          cache-from: |
+            type=gha,scope=build-cache-test
+          cache-to: type=gha,mode=max,scope=build-cache-test
+          platforms: linux/amd64
+
       - name: Extract metadata (tags, labels)
         id: meta
+        if: github.event_name != 'push' || github.ref != 'refs/heads/test'
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -53,11 +87,8 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ github.sha }}
 
-      # Har commitda build konteksti o'zgaradi — COPY cache ishlanmaydi, yangi kod image'ga kiradi
-      - name: Set build cache buster
-        run: echo "${{ github.sha }}" > .build-sha
-
       - name: Build and push Docker image (app)
+        if: github.event_name != 'push' || github.ref != 'refs/heads/test'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -75,7 +106,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Build and push Docker image (migrate)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/test'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -85,26 +116,15 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
           cache-from: |
             type=gha,scope=build-cache
-
-      - name: Build and push Docker image (migrate)
-        if: github.event_name == 'push'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          target: migration
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
-          cache-from: |
-            type=gha,scope=build-cache
+          cache-to: type=gha,mode=max,scope=build-cache
           platforms: linux/amd64
 
-  deploy:
+  deploy-prod:
     name: Deploy to Production
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: build
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref != 'refs/heads/test'
 
     steps:
       - name: Deploy to production server via SSH
@@ -119,21 +139,14 @@ jobs:
             set -e
             cd /var/www/EasyDebt
 
-            # Tag nomi (v1.0.1) = image tag, server shu versiyani tortadi
-            # export IMAGE_TAG=${{ github.ref_name }}
-
-            # Hozirgi build ning aniq image'ini tortish (latest emas — eski versiya tushmasin)
             export IMAGE_TAG=${{ github.sha }}
 
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
 
-            # Docker pull optimizatsiyasi
             echo "⚙️  Docker pull optimizatsiyasi sozlanmoqda..."
-            # Max connections oshirish (default 6)
             export DOCKER_CLI_PLUGINS_PATH=/usr/libexec/docker/cli-plugins:$DOCKER_CLI_PLUGINS_PATH || true
 
-            # Docker daemon status tekshirish
             echo "🔍 Docker daemon status:"
             docker info | grep -E "(Server Version|Storage Driver|Logging Driver)" || true
 
@@ -147,23 +160,16 @@ jobs:
             docker images $IMAGE_FULL 2>/dev/null || echo "Image hali pull qilinmagan"
 
             echo "⬇️  Image pull qilinmoqda (progress ko'rsatiladi)..."
-            echo "💡 Tip: Agar pull sekin bo'lsa, network yoki registry muammosi bo'lishi mumkin"
-
-            # Variant 1: To'g'ridan-to'g'ri docker pull (tezroq, progress ko'rsatadi)
-            echo "🔄 Variant 1: docker pull (tezroq, progress ko'rsatadi)..."
             if timeout 900 docker pull $IMAGE_FULL 2>&1 | tee /tmp/docker-pull.log; then
               echo "✅ docker pull muvaffaqiyatli!"
             else
               echo "⚠️  docker pull muvaffaqiyatsiz, docker compose pull bilan urinib ko'ramiz..."
-              # Variant 2: docker compose pull (fallback)
               if ! timeout 900 docker compose -f docker-compose.prod.yml pull app 2>&1 | tee -a /tmp/docker-pull.log; then
                 echo "❌ Pull timeout yoki xatolik! Qayta urinib ko'ramiz..."
                 sleep 5
                 if ! timeout 900 docker pull $IMAGE_FULL; then
                   echo "❌ Ikkinchi urinish ham muvaffaqiyatsiz."
-                  echo "📋 Pull loglari:"
                   tail -50 /tmp/docker-pull.log || true
-                  echo "📊 Mavjud imagelar:"
                   docker images ghcr.io/muxammedyar03/easydebt --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | head -10
                   exit 1
                 fi
@@ -189,3 +195,72 @@ jobs:
 
             echo "🧹 Cleanup in background (non-blocking)..."
             (docker container prune -f && docker image prune -af --filter "until=24h" && docker builder prune -af) &
+
+  deploy-test:
+    name: Deploy to Test VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
+
+    steps:
+      - name: Verify SSH deploy secrets
+        env:
+          TEST_HOST: ${{ secrets.TEST_DEPLOY_HOST }}
+          TEST_USER: ${{ secrets.TEST_DEPLOY_USER }}
+          TEST_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+        run: |
+          set -e
+          if [ -z "$TEST_HOST" ]; then
+            echo "::error::Set repository secret TEST_DEPLOY_HOST."
+            exit 1
+          fi
+          if [ -z "$TEST_USER" ]; then
+            echo "::error::Set repository secret TEST_DEPLOY_USER."
+            exit 1
+          fi
+          if [ -z "$TEST_KEY" ]; then
+            echo "::error::Set repository secret TEST_SSH_PRIVATE_KEY."
+            exit 1
+          fi
+
+      - name: Deploy to test server via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          TEST_DEPLOY_PATH: ${{ secrets.TEST_DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.TEST_DEPLOY_HOST }}
+          username: ${{ secrets.TEST_DEPLOY_USER }}
+          key: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.TEST_DEPLOY_PORT || 22 }}
+          command_timeout: 20m
+          envs: TEST_DEPLOY_PATH
+          script: |
+            set -e
+            DEPLOY_DIR="${TEST_DEPLOY_PATH:-/home/admin/apps/test_easydebt}"
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "ERROR: Deploy directory missing: $DEPLOY_DIR"
+              exit 1
+            fi
+            cd "$DEPLOY_DIR"
+
+            echo "🔐 Logging in to GHCR..."
+            docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
+
+            echo "📥 Pulling compose/env..."
+            git pull origin test --no-edit || true
+
+            export IMAGE_TAG=test
+            export MIGRATE_IMAGE_TAG=migrate-test
+
+            echo "📦 Pulling images (docker-compose.prod.yml)..."
+            docker compose -f docker-compose.prod.yml pull
+
+            echo "🚀 Starting stack..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "📊 Status:"
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "🧹 Cleanup in background..."
+            (docker image prune -af --filter "until=24h" && docker builder prune -af) &
