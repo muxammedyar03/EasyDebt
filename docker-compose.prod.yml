@@ -1,5 +1,11 @@
-# Bir VPS da bir nechta EasyDebt stack bo'lsa .env da COMPOSE_PROJECT_NAME ni har xil qiling (masalan feat_easydebt).
-# container_name global — prefiksiz debt_db boshqa loyiha bilan to'qnashadi.
+# Postgres + migrate + app. Bu faylda nginx/letsencrypt yo'q — ular test_easydebt stackda.
+#
+# Test stack konteyner nomlari: nginx-proxy, letsencrypt (NGINX_PROXY_CONTAINER=nginx-proxy).
+# Docker tarmoq nomi (external): test_easydebt_nginx-proxy — app shu tarmoqqa ulanadi.
+# Alohida VPSda bu tarmoq bo'lmasa: avval test stackni ko'taring yoki mos nom bilan yarating.
+#
+# Bir VPSda bir nechta DB/app: konteyner nomlari feat_debt_* (yoki keyinroq STACK_NAME).
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -40,11 +46,9 @@ services:
     restart: "no"
 
   app:
-    # IMAGE_TAG deploy vaqtida commit SHA bilan beriladi (workflow); yo'q bo'lsa latest
     image: ghcr.io/muxammedyar03/easydebt:${IMAGE_TAG:-latest}
     container_name: feat_debt_app
     environment:
-      # Production: katta connection pool – sekinlikni kamaytirish (Prisma connection_limit, pool_timeout)
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public&connection_limit=30&pool_timeout=20
       JWT_SECRET: ${JWT_SECRET}
       CRON_SECRET: ${CRON_SECRET}
@@ -65,7 +69,6 @@ services:
       - nginx-proxy
     restart: unless-stopped
     healthcheck:
-      # Runner image da wget yo'q; Node 20 da fetch bor
       test:
         [
           "CMD-SHELL",
@@ -75,50 +78,12 @@ services:
       timeout: 10s
       retries: 3
 
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy:alpine
-    container_name: feat_nginx_proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - nginx_certs:/etc/nginx/certs
-      - nginx_vhost:/etc/nginx/vhost.d
-      - nginx_html:/usr/share/nginx/html
-    networks:
-      - nginx-proxy
-    restart: unless-stopped
-    labels:
-      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-
-  letsencrypt:
-    image: nginxproxy/acme-companion:latest
-    container_name: feat_letsencrypt
-    depends_on:
-      - nginx-proxy
-    environment:
-      DEFAULT_EMAIL: ${SSL_EMAIL:?Set SSL_EMAIL in .env}
-      NGINX_PROXY_CONTAINER: feat_nginx_proxy
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - nginx_certs:/etc/nginx/certs
-      - nginx_vhost:/etc/nginx/vhost.d
-      - nginx_html:/usr/share/nginx/html
-      - acme_state:/etc/acme.sh
-    networks:
-      - nginx-proxy
-    restart: unless-stopped
-
 networks:
   app-network:
     driver: bridge
   nginx-proxy:
-    driver: bridge
+    external: true
+    name: test_easydebt_nginx-proxy
 
 volumes:
   postgres_data:
-  nginx_certs:
-  nginx_vhost:
-  nginx_html:
-  acme_state:
