@@ -100,15 +100,23 @@ jobs:
 
       - name: Deploy to test server via SSH
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          TEST_DEPLOY_PATH: ${{ secrets.TEST_DEPLOY_PATH }}
         with:
           host: ${{ secrets.TEST_DEPLOY_HOST || secrets.DEPLOY_HOST }}
           username: ${{ secrets.TEST_DEPLOY_USER || secrets.DEPLOY_USER }}
           key: ${{ secrets.TEST_SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.TEST_DEPLOY_PORT || secrets.DEPLOY_PORT || 22 }}
           command_timeout: 20m
+          envs: TEST_DEPLOY_PATH
           script: |
             set -e
-            cd /home/admin/apps/test_easydebt
+            DEPLOY_DIR="${TEST_DEPLOY_PATH:-/home/admin/apps/test_easydebt}"
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "ERROR: Deploy directory missing: $DEPLOY_DIR — on the server: mkdir -p ... && git clone (branch test), or set GitHub secret TEST_DEPLOY_PATH."
+              exit 1
+            fi
+            cd "$DEPLOY_DIR"
 
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
