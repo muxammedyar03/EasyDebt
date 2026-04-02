@@ -59,8 +59,9 @@ services:
       VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: ${DOMAIN}
       LETSENCRYPT_EMAIL: ${SSL_EMAIL:?Set SSL_EMAIL in .env}
-      # nginx-proxy default 1m — katta JSON import (413) oldini olish
-      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-100m}
+      # 413 (Content Too Large): upstream nginx-proxy/main nginx.tmpl CLIENT_MAX_BODY_SIZE ni o‘qimaydi.
+      # Proxy serverda: /etc/nginx/vhost.d/$DOMAIN ichiga "client_max_body_size 100m;" qo‘shing va nginx-proxy ni reload qiling.
+      # Namuna: deploy/nginx-proxy/vhost-snippet-client-max-body.conf
     depends_on:
       postgres:
         condition: service_healthy
