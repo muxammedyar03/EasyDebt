@@ -1,0 +1,163 @@
+# `main` / prod bilan aralashmaydi — faqat `test` branch (deploy.yml alohida).
+# Push test → :test / :migrate-test + test VPS: git pull origin test
+
+name: Test — Docker build & deploy
+
+on:
+  push:
+    branches: ["test"]
+    tags: ["v*"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: muxammedyar03/easydebt
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set build cache buster
+        run: echo "${{ github.sha }}" > .build-sha
+
+      - name: Build and push Docker image (app:test)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test
+          cache-from: |
+            type=gha,scope=build-cache-test
+          cache-to: type=gha,mode=max,scope=build-cache-test
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            COMMIT_SHA=${{ github.sha }}
+          platforms: linux/amd64
+
+      - name: Build and push Docker image (migrate:migrate-test)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: migration
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate-test
+          cache-from: |
+            type=gha,scope=build-cache-test
+          cache-to: type=gha,mode=max,scope=build-cache-test
+          platforms: linux/amd64
+
+  deploy:
+    name: Deploy to Test VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+
+    steps:
+      - name: Verify SSH deploy secrets
+        env:
+          TEST_HOST: ${{ secrets.TEST_DEPLOY_HOST }}
+          TEST_USER: ${{ secrets.TEST_DEPLOY_USER }}
+          TEST_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+        run: |
+          set -e
+          if [ -z "$TEST_HOST" ]; then
+            echo "::error::TEST_DEPLOY_HOST — hostname yoki IP (https:// qo'shmang)."
+            exit 1
+          fi
+          if [ -z "$TEST_USER" ]; then
+            echo "::error::TEST_DEPLOY_USER ni o'rnating."
+            exit 1
+          fi
+          if [ -z "$TEST_KEY" ]; then
+            echo "::error::TEST_SSH_PRIVATE_KEY ni o'rnating."
+            exit 1
+          fi
+
+      - name: Normalize SSH host and port
+        id: ssh_test
+        env:
+          RAW_HOST: ${{ secrets.TEST_DEPLOY_HOST }}
+          RAW_PORT: ${{ secrets.TEST_DEPLOY_PORT }}
+        run: |
+          set -e
+          H="$RAW_HOST"
+          H="${H#https://}"
+          H="${H#http://}"
+          H="${H%%/*}"
+          H="${H%/}"
+          H="${H#//}"
+          if [ -z "$H" ]; then
+            echo "::error::TEST_DEPLOY_HOST noto'g'ri."
+            exit 1
+          fi
+          P="${RAW_PORT:-22}"
+          [ -z "$P" ] && P=22
+          echo "host=$H" >> "$GITHUB_OUTPUT"
+          echo "port=$P" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to test server via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          TEST_DEPLOY_PATH: ${{ secrets.TEST_DEPLOY_PATH }}
+        with:
+          host: ${{ steps.ssh_test.outputs.host }}
+          username: ${{ secrets.TEST_DEPLOY_USER }}
+          key: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+          port: ${{ steps.ssh_test.outputs.port }}
+          command_timeout: 20m
+          envs: TEST_DEPLOY_PATH
+          script: |
+            set -e
+            DEPLOY_DIR="${TEST_DEPLOY_PATH:-/home/admin/apps/test_easydebt}"
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "ERROR: Deploy directory missing: $DEPLOY_DIR"
+              exit 1
+            fi
+            cd "$DEPLOY_DIR"
+
+            echo "🔐 Logging in to GHCR..."
+            docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
+
+            echo "📥 git pull origin test..."
+            git pull origin test --no-edit || true
+
+            export IMAGE_TAG=test
+            export MIGRATE_IMAGE_TAG=migrate-test
+
+            echo "📦 docker compose pull..."
+            docker compose -f docker-compose.prod.yml pull
+
+            echo "🚀 docker compose up..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "📊 Status:"
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "🧹 Cleanup in background..."
+            (docker image prune -af --filter "until=24h" && docker builder prune -af) &
