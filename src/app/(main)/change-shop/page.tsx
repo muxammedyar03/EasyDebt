@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,10 @@ export default function ChangeShopPage() {
   useEffect(() => {
     fetchShops();
   }, [fetchShops]);
+
+  if (shops.length === 0) {
+    redirect("/dashboard");
+  }
 
   async function fetchShops() {
     try {
