@@ -141,7 +141,27 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
 
       setProgress(70);
 
-      const result = await response.json();
+      const raw = await response.text();
+      let result: {
+        error?: string;
+        debtorsCount?: number;
+        debtsCount?: number;
+        paymentsCount?: number;
+      };
+      try {
+        result = JSON.parse(raw) as typeof result;
+      } catch {
+        if (response.status === 413) {
+          throw new Error(
+            "Fayl juda katta (413). Serverda nginx body limiti oshirilgan bo‘lishi kerak — deploy qayta ishga tushiring.",
+          );
+        }
+        throw new Error(
+          response.status >= 500
+            ? `Server xatosi (${response.status})`
+            : "Server JSON emas qaytardi — ehtimol proxy/nginx xatosi.",
+        );
+      }
 
       if (!response.ok) {
         throw new Error(result.error || "Import muvaffaqiyatsiz");
@@ -159,7 +179,7 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
         window.location.reload();
       }, 1000);
     } catch (error) {
-      console.error("Import error:", error);
+      console.error("Import error:", error instanceof Error ? error.message : "Noma'lum xatolik");
       toast.error("Import paytida xatolik", {
         description: error instanceof Error ? error.message : "Noma'lum xatolik",
       });
