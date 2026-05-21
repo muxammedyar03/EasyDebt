@@ -20,11 +20,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DB_USER:-admin} -d ${POSTGRES_DB:-debt_management}",
-        ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d ${POSTGRES_DB:-debt_management}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -72,11 +68,7 @@ services:
       - nginx-proxy
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'node -e "fetch(\"http://127.0.0.1:3000/api/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
-        ]
+      test: [ "CMD-SHELL", 'node -e "fetch(\"http://127.0.0.1:3000/api/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"' ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,7 +78,8 @@ networks:
     driver: bridge
   nginx-proxy:
     external: true
-    name: test_easydebt_nginx-proxy
+    # name: test_easydebt_nginx-proxy
+    name: easydebt_nginx-proxy
 
 volumes:
   postgres_data:
