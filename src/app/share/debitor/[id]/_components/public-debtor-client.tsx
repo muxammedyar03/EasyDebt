@@ -59,7 +59,7 @@ export function PublicDebtorClient({ debtor, overdueDays, initialViewValue }: Pu
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center gap-2 md:justify-start">
               <Landmark className="text-primary h-6 w-6 animate-pulse" />
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Easy Debt</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Feat Market</span>
             </div>
             <p className="text-muted-foreground mt-1 text-sm">Mijozlar qarzlari va to&apos;lovlari monitoringi</p>
           </div>
