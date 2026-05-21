@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Update debtor's total_debt (decrease) and payment date
-      await tx.debtor.update({
+      const updatedDebtor = await tx.debtor.update({
         where: { id: validatedData.debtor_id },
         data: {
           total_debt: {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return { payment, debtor };
+      return { payment, debtor, updatedDebtor };
     });
 
     // Get user info for description
@@ -99,7 +99,23 @@ export async function POST(request: NextRequest) {
     revalidatePath("/dashboard/default");
     revalidatePath(`/dashboard/default/debitor/${result.debtor.external_id}`);
 
-    return NextResponse.json(result.payment, { status: 201 });
+    return NextResponse.json(
+      {
+        ...JSON.parse(
+          JSON.stringify(result.payment, (_key, value) =>
+            typeof value === "bigint" || (value && typeof value === "object" && "toNumber" in value)
+              ? Number(value)
+              : value,
+          ),
+        ),
+        previousBalance: result.debtor.total_debt.toNumber(),
+        newBalance: result.updatedDebtor.total_debt.toNumber(),
+        debtorName: `${result.debtor.first_name} ${result.debtor.last_name}`,
+        debtorPhone: result.debtor.phone_number,
+        employeeName: userFullName,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });

@@ -25,6 +25,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DebtorView } from "@/types/view";
 import { formatDateUz } from "@/lib/format";
+import {
+  PrintConfirmDialog,
+  SingleReceiptTemplate,
+  printReceipt,
+  type SingleReceiptData,
+} from "@/features/receipt-printer";
 
 interface ColumnsContext {
   onDataChange?: () => void;
@@ -51,6 +57,44 @@ const FirstNameCell = ({ row }: { row: Row<DebtorView> }) => {
 const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: ColumnsContext }) => {
   const [debtDialogOpen, setDebtDialogOpen] = React.useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
+  const [printConfirmOpen, setPrintConfirmOpen] = React.useState(false);
+  const [pendingReceiptData, setPendingReceiptData] = React.useState<SingleReceiptData | null>(null);
+  const [activeReceiptData, setActiveReceiptData] = React.useState<SingleReceiptData | null>(null);
+
+  const handleSuccess = React.useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (receiptInfo?: any) => {
+      context?.onDataChange?.();
+
+      if (receiptInfo?.previousBalance !== undefined) {
+        const receiptData: SingleReceiptData = {
+          type: receiptInfo.type,
+          docNumber: receiptInfo.docNumber,
+          date: new Date(),
+          debtorName: receiptInfo.debtorName || `${row.original.firstName} ${row.original.lastName}`,
+          debtorPhone: receiptInfo.debtorPhone || row.original.phoneNumber,
+          employeeName: receiptInfo.employeeName,
+          amount: receiptInfo.amount,
+          paymentType: receiptInfo.paymentType,
+          description: receiptInfo.description,
+          previousBalance: receiptInfo.previousBalance,
+          newBalance: receiptInfo.newBalance,
+        };
+        setPendingReceiptData(receiptData);
+        setPrintConfirmOpen(true);
+      }
+    },
+    [context, row.original],
+  );
+
+  const handlePrintConfirm = React.useCallback(() => {
+    if (pendingReceiptData) {
+      setActiveReceiptData(pendingReceiptData);
+      printReceipt(pendingReceiptData, () => {
+        setPendingReceiptData(null);
+      });
+    }
+  }, [pendingReceiptData]);
 
   return (
     <>
@@ -74,7 +118,7 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onOpenChange={setDebtDialogOpen}
         debtorId={row.original.id}
         debtorName={`${row.original.firstName} ${row.original.lastName}`}
-        onSuccess={context?.onDataChange}
+        onSuccess={handleSuccess}
       />
 
       <AddPaymentDialog
@@ -82,8 +126,17 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onOpenChange={setPaymentDialogOpen}
         debtorId={row.original.id}
         debtorName={`${row.original.firstName} ${row.original.lastName}`}
-        onSuccess={context?.onDataChange}
+        onSuccess={handleSuccess}
       />
+
+      <PrintConfirmDialog
+        open={printConfirmOpen}
+        onOpenChange={setPrintConfirmOpen}
+        onConfirm={handlePrintConfirm}
+        receiptData={pendingReceiptData}
+      />
+
+      {activeReceiptData && <SingleReceiptTemplate data={activeReceiptData} />}
     </>
   );
 };

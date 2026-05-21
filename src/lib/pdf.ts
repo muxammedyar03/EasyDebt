@@ -1,6 +1,20 @@
 "use client";
 import type { jsPDF as JsPDFConstructor } from "jspdf";
 
+function downloadPdf(pdf: InstanceType<typeof JsPDFConstructor>, filename: string) {
+  const blob = pdf.output("blob");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 5000);
+}
+
 export async function exportElementToPdf(opts: {
   element: HTMLElement;
   filename: string;
@@ -87,7 +101,7 @@ export async function exportElementToPdf(opts: {
       }
     }
 
-    pdf.save(filename);
+    downloadPdf(pdf, filename);
   } catch (err) {
     console.error("PDF export failed, falling back to print", err);
     window.print();
@@ -350,6 +364,6 @@ export async function exportDebtorReceipt(args: {
   pdf.setFontSize(9);
   pdf.text(footer, margin, pageHeight - margin);
 
-  pdf.save(`debtor-${args.debtor.id}.pdf`);
+  downloadPdf(pdf, `debtor-${args.debtor.id}.pdf`);
   return;
 }

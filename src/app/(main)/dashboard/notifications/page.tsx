@@ -3,7 +3,6 @@ import { headers as getHeaders, cookies as getCookies } from "next/headers";
 import { format } from "date-fns";
 import { uz } from "date-fns/locale";
 import NotificationsClient from "./_components/notifications-client";
-import { Settings } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -62,13 +61,6 @@ export default async function NotificationsPage({ searchParams }: { searchParams
 
   return (
     <Suspense>
-      <div className="mb-4 flex items-center gap-x-4 rounded-xl border-1 border-green-300 bg-green-100 p-4">
-        <Settings className="h-8 w-8 rounded-full border border-green-300 bg-green-500/20 p-1.5 text-xl text-green-600" />
-        <div>
-          <h1 className="text-base text-green-700">Test</h1>
-          <p className="text-xs text-green-700/50">Bu productionni test qilish uchun qoshildi</p>
-        </div>
-      </div>
       <NotificationsClient
         items={serialized}
         total={data.total}

@@ -12,18 +12,32 @@ import { DEV_MODE } from "@/lib/dev-mode";
 import { EditPaymentDialog } from "./edit-payment-dialog";
 import { formatDateUz } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PrintReceiptButton, type SingleReceiptData } from "@/features/receipt-printer";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface PaymentHistoryTableProps {
   payments: PaymentDomain[];
   onRefresh?: () => Promise<void>;
+  debtorName?: string;
+  debtorPhone?: string | null;
+  totalDebt?: number;
+  onPrintReceipt?: (data: SingleReceiptData) => void;
 }
 
-export function PaymentHistoryTable({ payments, onRefresh }: PaymentHistoryTableProps) {
+export function PaymentHistoryTable({
+  payments,
+  onRefresh,
+  debtorName,
+  debtorPhone,
+  totalDebt,
+  onPrintReceipt,
+}: PaymentHistoryTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [selectedPayment, setSelectedPayment] = React.useState<PaymentDomain | null>(null);
   const isMobile = useIsMobile();
+  const { user } = useCurrentUser();
 
   const handleEdit = (payment: PaymentDomain) => {
     setSelectedPayment(payment);
@@ -33,6 +47,35 @@ export function PaymentHistoryTable({ payments, onRefresh }: PaymentHistoryTable
   const handleEditSuccess = async () => {
     await onRefresh?.();
   };
+
+  const handlePrintPaymentReceipt = React.useCallback(
+    (payment: PaymentDomain) => {
+      if (!onPrintReceipt || !debtorName) return;
+
+      const employeeName = user
+        ? (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username) || null
+        : null;
+
+      const currentBalance = totalDebt ?? 0;
+
+      const receiptData: SingleReceiptData = {
+        type: "PAYMENT",
+        docNumber: payment.id,
+        date: payment.createdAt,
+        debtorName: debtorName,
+        debtorPhone: debtorPhone ?? null,
+        employeeName,
+        amount: payment.amount,
+        paymentType: payment.paymentType,
+        description: payment.note,
+        previousBalance: currentBalance + payment.amount,
+        newBalance: currentBalance,
+      };
+
+      onPrintReceipt(receiptData);
+    },
+    [onPrintReceipt, debtorName, debtorPhone, totalDebt, user],
+  );
 
   const totalPages = Math.ceil(payments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -64,7 +107,7 @@ export function PaymentHistoryTable({ payments, onRefresh }: PaymentHistoryTable
                 <TableHead>Miqdor</TableHead>
                 {!isMobile && <TableHead>To&apos;lov turi</TableHead>}
                 {!isMobile && <TableHead>Izoh</TableHead>}
-                {DEV_MODE && !isMobile && <TableHead className="w-[100px]">Amallar</TableHead>}
+                <TableHead className="w-[100px]">Amallar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,13 +138,16 @@ export function PaymentHistoryTable({ payments, onRefresh }: PaymentHistoryTable
                     </TableCell>
                   )}
                   {!isMobile && <TableCell className="text-muted-foreground">{payment.note || "—"}</TableCell>}
-                  {DEV_MODE && !isMobile && (
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {onPrintReceipt && <PrintReceiptButton onClick={() => handlePrintPaymentReceipt(payment)} />}
+                      {DEV_MODE && !isMobile && (
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(payment)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

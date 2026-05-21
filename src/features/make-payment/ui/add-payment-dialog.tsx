@@ -35,7 +35,8 @@ export interface AddPaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   debtorId: number;
   debtorName: string;
-  onSuccess?: () => void;
+
+  onSuccess?: (receiptInfo?: unknown) => void;
 }
 
 export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddPaymentDialogProps) {
@@ -68,13 +69,31 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     setIsLoading(true);
     try {
       const cleanAmount = data.amount.replace(/\s/g, "");
-      await createPayment({
+      const result = await createPayment({
         debtor_id: debtorId,
         amount: parseFloat(cleanAmount),
         payment_type: data.payment_type,
         note: data.note || null,
         created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
       });
+
+      // Receipt info ni API response dan olish
+      const response = result as Record<string, unknown> | undefined;
+      const receiptInfo =
+        response?.previousBalance !== undefined
+          ? {
+              type: "PAYMENT" as const,
+              amount: parseFloat(cleanAmount),
+              docNumber: (response.id as number) || 0,
+              description: data.note || null,
+              paymentType: data.payment_type,
+              previousBalance: response.previousBalance as number,
+              newBalance: response.newBalance as number,
+              debtorName: (response.debtorName as string) || debtorName,
+              debtorPhone: (response.debtorPhone as string) || null,
+              employeeName: (response.employeeName as string) || null,
+            }
+          : undefined;
 
       toast.success("To'lov muvaffaqiyatli qo'shildi");
       reset();
@@ -86,7 +105,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
       requestAnimationFrame(() => {
         setTimeout(() => {
           if (!onSuccess) router.refresh();
-          onSuccess?.();
+          onSuccess?.(receiptInfo);
           refreshAfterCloseRef.current = false;
         }, 150);
       });

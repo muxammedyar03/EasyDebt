@@ -33,8 +33,12 @@ export async function exportToExcel(data: ExportData): Promise<void> {
   const link = document.createElement("a");
   link.href = url;
   link.download = `${data.filename}.xlsx`;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(link);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 5000);
 }
 
 // Format date for Excel

@@ -2,8 +2,14 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Minus, Plus, Download } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Download, FileText, Printer, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { ViewDebtorValue } from "../model";
 
 export interface ViewDebtorHeaderProps {
@@ -11,9 +17,10 @@ export interface ViewDebtorHeaderProps {
   onAddDebt: () => void;
   onAddPayment: () => void;
   onExport: () => Promise<void>;
+  onPrintReceipt?: () => void;
 }
 
-export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport }: ViewDebtorHeaderProps) {
+export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport, onPrintReceipt }: ViewDebtorHeaderProps) {
   const router = useRouter();
   const { debtor } = value;
 
@@ -30,6 +37,7 @@ export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport }: V
           <p className="text-muted-foreground text-sm">{debtor.phoneNumber || "Telefon raqami yo'q"}</p>
         </div>
       </div>
+      {/* Desktop buttons */}
       <div className="mt-5 hidden justify-end gap-2 md:mt-0 md:flex">
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
@@ -39,11 +47,39 @@ export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport }: V
           <Minus className="h-4 w-4" />
           To&apos;lov qo&apos;shish
         </Button>
-        <Button variant="default" className="h-12" onClick={onExport}>
-          <Download className="h-4 w-4" />
-          PDF Export
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" className="h-12">
+              <Download className="h-4 w-4" />
+              Export
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={async (e) => {
+                e.preventDefault();
+                await onExport();
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              PDF Export
+            </DropdownMenuItem>
+            {onPrintReceipt && (
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onPrintReceipt();
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Chek chiqarish
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      {/* Mobile buttons */}
       <div className="mt-5 grid grid-cols-3 gap-2 md:hidden">
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
@@ -53,10 +89,36 @@ export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport }: V
           <Minus className="h-4 w-4" />
           To&apos;lov
         </Button>
-        <Button variant="default" className="h-12" onClick={onExport}>
-          <Download className="h-4 w-4" />
-          PDF
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" className="h-12">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={async (e) => {
+                e.preventDefault();
+                await onExport();
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              PDF
+            </DropdownMenuItem>
+            {onPrintReceipt && (
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onPrintReceipt();
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Chek
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

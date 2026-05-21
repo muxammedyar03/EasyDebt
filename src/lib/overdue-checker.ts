@@ -24,7 +24,7 @@ async function loadOverdueSettings() {
   });
 
   const settingsRecord = settings.reduce(
-    (acc, s) => {
+    (acc: Record<string, string>, s: { key: string; value: string }) => {
       acc[s.key] = s.value;
       return acc;
     },

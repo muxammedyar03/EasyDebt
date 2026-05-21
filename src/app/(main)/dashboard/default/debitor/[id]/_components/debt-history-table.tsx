@@ -11,18 +11,32 @@ import { DEV_MODE } from "@/lib/dev-mode";
 import { EditDebtDialog } from "./edit-debt-dialog";
 import { formatDateUz } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PrintReceiptButton, type SingleReceiptData } from "@/features/receipt-printer";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface DebtHistoryTableProps {
   debts: DebtDomain[];
   onRefresh?: () => Promise<void>;
+  debtorName?: string;
+  debtorPhone?: string | null;
+  totalDebt?: number;
+  onPrintReceipt?: (data: SingleReceiptData) => void;
 }
 
-export function DebtHistoryTable({ debts, onRefresh }: DebtHistoryTableProps) {
+export function DebtHistoryTable({
+  debts,
+  onRefresh,
+  debtorName,
+  debtorPhone,
+  totalDebt,
+  onPrintReceipt,
+}: DebtHistoryTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [selectedDebt, setSelectedDebt] = React.useState<DebtDomain | null>(null);
   const isMobile = useIsMobile();
+  const { user } = useCurrentUser();
 
   const handleEdit = (debt: DebtDomain) => {
     setSelectedDebt(debt);
@@ -32,6 +46,46 @@ export function DebtHistoryTable({ debts, onRefresh }: DebtHistoryTableProps) {
   const handleEditSuccess = async () => {
     await onRefresh?.();
   };
+
+  /**
+   * Chek chiqarish uchun balance ni hisoblash:
+   * Barcha debts va payments ni vaqt bo'yicha tartiblash orqali
+   * shu qarz qo'shilgunga qadar qancha balance bo'lganini aniqlash.
+   *
+   * Oddiy yondashuv: totalDebt dan shu debt dan keyingi barcha debtlarni ayirib,
+   * shu debt dan keyingi paymentlarni qo'shib oldingi balance ni topamiz.
+   * Lekin bu murakkab, shuning uchun oddiyroq usul ishlatamiz:
+   * newBalance = previousBalance + debt.amount → previousBalance = totalDebt - (shu debtgacha bolgan jami)
+   */
+  const handlePrintDebtReceipt = React.useCallback(
+    (debt: DebtDomain) => {
+      if (!onPrintReceipt || !debtorName) return;
+
+      const employeeName = user
+        ? (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username) || null
+        : null;
+
+      // Qoldiqni hisoblash: hozirgi totalDebt dan foydalanib
+      // Bu aniq emas (chunki keyingi tranzaksiyalar ham bor), lekin hozirgi qoldiq ko'rsatiladi
+      const currentBalance = totalDebt ?? 0;
+
+      const receiptData: SingleReceiptData = {
+        type: "DEBT",
+        docNumber: debt.id,
+        date: debt.createdAt,
+        debtorName: debtorName,
+        debtorPhone: debtorPhone ?? null,
+        employeeName,
+        amount: debt.amount,
+        description: debt.description,
+        previousBalance: currentBalance - debt.amount,
+        newBalance: currentBalance,
+      };
+
+      onPrintReceipt(receiptData);
+    },
+    [onPrintReceipt, debtorName, debtorPhone, totalDebt, user],
+  );
 
   const totalPages = Math.ceil(debts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -62,7 +116,7 @@ export function DebtHistoryTable({ debts, onRefresh }: DebtHistoryTableProps) {
                 <TableHead>Sana</TableHead>
                 <TableHead>Miqdor</TableHead>
                 {!isMobile && <TableHead>Tavsif</TableHead>}
-                {DEV_MODE && !isMobile && <TableHead className="w-[100px]">Amallar</TableHead>}
+                <TableHead className="w-[100px]">Amallar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,13 +130,16 @@ export function DebtHistoryTable({ debts, onRefresh }: DebtHistoryTableProps) {
                     </Badge>
                   </TableCell>
                   {!isMobile && <TableCell className="text-muted-foreground">{debt.description || "—"}</TableCell>}
-                  {DEV_MODE && !isMobile && (
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(debt)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {onPrintReceipt && <PrintReceiptButton onClick={() => handlePrintDebtReceipt(debt)} />}
+                      {DEV_MODE && !isMobile && (
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(debt)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

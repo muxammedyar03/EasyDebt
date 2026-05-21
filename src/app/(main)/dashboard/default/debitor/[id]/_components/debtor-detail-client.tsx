@@ -20,6 +20,15 @@ import { DebtorDomain } from "@/types/domain";
 import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { exportDebtorReceipt } from "@/lib/pdf";
+import {
+  SingleReceiptTemplate,
+  TimelineReceiptTemplate,
+  PrintConfirmDialog,
+  printReceipt,
+  type SingleReceiptData,
+  type TimelineReceiptData,
+} from "@/features/receipt-printer";
+import { toast } from "sonner";
 
 function DebtorDetailContent({
   initialDebtor,
@@ -53,16 +62,45 @@ function DebtorDetailContent({
   const [reminderDialogOpen, setReminderDialogOpen] = React.useState(false);
   const { user } = useCurrentUser();
 
+  // ─── Receipt State ──────────────────────────────────────────
+  const [printConfirmOpen, setPrintConfirmOpen] = React.useState(false);
+  const [singleReceiptData, setSingleReceiptData] = React.useState<SingleReceiptData | null>(null);
+  const [timelineReceiptData, setTimelineReceiptData] = React.useState<TimelineReceiptData | null>(null);
+  const [pendingReceiptData, setPendingReceiptData] = React.useState<SingleReceiptData | null>(null);
+
   const reminder = usePaymentReminder({
     debtorId: debtor?.id ?? 0,
     enabled: !!debtor?.id,
   });
 
-  const handleDialogSuccess = React.useCallback(() => {
-    if (debtor?.id) {
-      queryClient.invalidateQueries({ queryKey: [DEBTOR_QUERY_KEY, debtor.id] });
-    }
-  }, [queryClient, debtor?.id]);
+  const handleDialogSuccess = React.useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (receiptInfo?: any) => {
+      if (debtor?.id) {
+        queryClient.invalidateQueries({ queryKey: [DEBTOR_QUERY_KEY, debtor.id] });
+      }
+
+      // Agar receipt info mavjud bo'lsa — chek dialog ko'rsat
+      if (receiptInfo) {
+        const receiptData: SingleReceiptData = {
+          type: receiptInfo.type,
+          docNumber: receiptInfo.docNumber,
+          date: new Date(),
+          debtorName: receiptInfo.debtorName,
+          debtorPhone: receiptInfo.debtorPhone,
+          employeeName: receiptInfo.employeeName,
+          amount: receiptInfo.amount,
+          paymentType: receiptInfo.paymentType,
+          description: receiptInfo.description,
+          previousBalance: receiptInfo.previousBalance,
+          newBalance: receiptInfo.newBalance,
+        };
+        setPendingReceiptData(receiptData);
+        setPrintConfirmOpen(true);
+      }
+    },
+    [queryClient, debtor?.id],
+  );
 
   const handleReminderSuccess = React.useCallback(async () => {
     await reminder.refreshReminders();
@@ -70,31 +108,84 @@ function DebtorDetailContent({
 
   const handleExport = React.useCallback(async () => {
     if (!debtor) return;
-    const timelineForExport = detail.timeline.map((event) => ({
-      ...event,
-      created_at: event.createdAt,
-    }));
-    await exportDebtorReceipt({
-      appName: APP_CONFIG.name,
-      logoUrl: "/favicon.ico",
-      debtor: {
-        id: debtor.id,
-        first_name: debtor.firstName,
-        last_name: debtor.lastName,
-        phone_number: debtor.phoneNumber,
-        address: debtor.address,
-        total_debt: debtor.totalDebt,
-        created_at: debtor.createdAt,
-      },
-      totals: detail.stats,
-      rating: { label: detail.rating.label, score: detail.rating.score },
-      timeline: timelineForExport,
-      generatedBy: user
-        ? { id: user.id, username: user.username, first_name: user.first_name, last_name: user.last_name }
-        : null,
-      generatedAt: new Date(),
-    });
+    try {
+      const timelineForExport = detail.timeline.map((event) => ({
+        ...event,
+        created_at: event.createdAt,
+      }));
+      await exportDebtorReceipt({
+        appName: APP_CONFIG.name,
+        logoUrl: "/favicon.ico",
+        debtor: {
+          id: debtor.id,
+          first_name: debtor.firstName,
+          last_name: debtor.lastName,
+          phone_number: debtor.phoneNumber,
+          address: debtor.address,
+          total_debt: debtor.totalDebt,
+          created_at: debtor.createdAt,
+        },
+        totals: detail.stats,
+        rating: { label: detail.rating.label, score: detail.rating.score },
+        timeline: timelineForExport,
+        generatedBy: user
+          ? { id: user.id, username: user.username, first_name: user.first_name, last_name: user.last_name }
+          : null,
+        generatedAt: new Date(),
+      });
+      toast.success("PDF hisobot muvaffaqiyatli yuklab olindi");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("PDF hisobot yuklashda xatolik yuz berdi");
+    }
   }, [debtor, detail.stats, detail.rating, detail.timeline, user]);
+
+  // ─── Timeline Receipt Print Handler ─────────────────────────
+  const handlePrintTimelineReceipt = React.useCallback(() => {
+    if (!debtor) return;
+    const employeeName = user
+      ? (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username) || null
+      : null;
+
+    const data: TimelineReceiptData = {
+      debtorName: `${debtor.firstName} ${debtor.lastName}`,
+      debtorPhone: debtor.phoneNumber,
+      debtorAddress: debtor.address,
+      employeeName,
+      timeline: detail.timeline.map((ev) => ({
+        type: ev.type,
+        amount: ev.amount,
+        date: ev.createdAt,
+        description: ev.subtitle,
+      })),
+      totalDebt: detail.stats.totalDebtAdded,
+      totalPaid: detail.stats.totalPaid,
+      remaining: detail.stats.remaining,
+      generatedAt: new Date(),
+    };
+
+    setSingleReceiptData(null);
+    setTimelineReceiptData(data);
+    printReceipt(data);
+  }, [debtor, detail.timeline, detail.stats, user]);
+
+  // ─── Single Receipt Print (from history tables) ─────────────
+  const handlePrintSingleReceipt = React.useCallback((receiptData: SingleReceiptData) => {
+    setTimelineReceiptData(null);
+    setSingleReceiptData(receiptData);
+    printReceipt(receiptData);
+  }, []);
+
+  // ─── Print Confirm Handler (after debt/payment creation) ────
+  const handlePrintConfirm = React.useCallback(() => {
+    if (pendingReceiptData) {
+      setTimelineReceiptData(null);
+      setSingleReceiptData(pendingReceiptData);
+      printReceipt(pendingReceiptData, () => {
+        setPendingReceiptData(null);
+      });
+    }
+  }, [pendingReceiptData]);
 
   if (!debtor) {
     return detail.isLoading ? <div className="text-muted-foreground p-4">Yuklanmoqda...</div> : <>Qarzdor topilmadi</>;
@@ -109,6 +200,7 @@ function DebtorDetailContent({
         onAddDebt={() => setDebtDialogOpen(true)}
         onAddPayment={() => setPaymentDialogOpen(true)}
         onExport={handleExport}
+        onPrintReceipt={handlePrintTimelineReceipt}
       />
       <ReminderStatusCard
         activeReminder={reminder.activeReminder}
@@ -136,10 +228,28 @@ function DebtorDetailContent({
           <TabsTrigger value="timeline">Vaqt chizig&apos;i</TabsTrigger>
         </TabsList>
         <TabsContent value="debts" className="mt-4">
-          {debtor.debts && <DebtHistoryTable debts={debtor.debts} onRefresh={refresh} />}
+          {debtor.debts && (
+            <DebtHistoryTable
+              debts={debtor.debts}
+              onRefresh={refresh}
+              debtorName={`${debtor.firstName} ${debtor.lastName}`}
+              debtorPhone={debtor.phoneNumber}
+              totalDebt={debtor.totalDebt}
+              onPrintReceipt={handlePrintSingleReceipt}
+            />
+          )}
         </TabsContent>
         <TabsContent value="payments" className="mt-4">
-          {debtor.payments && <PaymentHistoryTable payments={debtor.payments} onRefresh={refresh} />}
+          {debtor.payments && (
+            <PaymentHistoryTable
+              payments={debtor.payments}
+              onRefresh={refresh}
+              debtorName={`${debtor.firstName} ${debtor.lastName}`}
+              debtorPhone={debtor.phoneNumber}
+              totalDebt={debtor.totalDebt}
+              onPrintReceipt={handlePrintSingleReceipt}
+            />
+          )}
         </TabsContent>
         <TabsContent value="timeline" className="mt-4">
           <DebtorTimeline timeline={detail.timeline} />
@@ -179,6 +289,18 @@ function DebtorDetailContent({
         deleteReminder={reminder.deleteReminder}
         onSuccess={handleReminderSuccess}
       />
+
+      {/* Print Confirm Dialog */}
+      <PrintConfirmDialog
+        open={printConfirmOpen}
+        onOpenChange={setPrintConfirmOpen}
+        onConfirm={handlePrintConfirm}
+        receiptData={pendingReceiptData}
+      />
+
+      {/* Hidden Receipt Templates (faqat @media print da ko'rinadi) */}
+      {singleReceiptData && <SingleReceiptTemplate data={singleReceiptData} />}
+      {timelineReceiptData && <TimelineReceiptTemplate data={timelineReceiptData} />}
     </div>
   );
 }

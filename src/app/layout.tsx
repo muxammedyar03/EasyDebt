@@ -10,6 +10,7 @@ import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provi
 import { THEME_MODE_VALUES, THEME_PRESET_VALUES, type ThemePreset, type ThemeMode } from "@/types/preferences/theme";
 
 import "./globals.css";
+import "@/styles/receipt-print.css";
 import { Inter } from "next/font/google";
 
 const inter = Inter({

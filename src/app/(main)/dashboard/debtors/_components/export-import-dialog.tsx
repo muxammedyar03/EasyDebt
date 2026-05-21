@@ -64,7 +64,9 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 5000);
 
       setProgress(100);
       toast.success("Ma'lumotlar muvaffaqiyatli export qilindi", {
