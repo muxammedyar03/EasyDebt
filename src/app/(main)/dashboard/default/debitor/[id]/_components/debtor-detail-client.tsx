@@ -82,8 +82,8 @@ function DebtorDetailContent({
         queryClient.invalidateQueries({ queryKey: [DEBTOR_QUERY_KEY, debtor.id] });
       }
 
-      // Agar receipt info mavjud bo'lsa — chek dialog ko'rsat
-      if (receiptInfo) {
+      // Agar receipt info mavjud bo'lsa va turi to'lov bo'lsa — chek dialog ko'rsat
+      if (receiptInfo && receiptInfo.type === "PAYMENT") {
         const receiptData: SingleReceiptData = {
           type: receiptInfo.type,
           docNumber: receiptInfo.docNumber,

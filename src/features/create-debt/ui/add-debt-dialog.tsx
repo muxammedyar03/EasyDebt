@@ -38,8 +38,7 @@ export interface AddDebtDialogProps {
   onOpenChange: (open: boolean) => void;
   debtorId: number;
   debtorName: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSuccess?: (receiptInfo?: any) => void;
+  onSuccess?: () => void;
 }
 
 export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
@@ -69,29 +68,12 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
     setIsLoading(true);
     try {
       const cleanAmount = data.amount.replace(/\s/g, "");
-      const result = await createDebt({
+      await createDebt({
         debtor_id: debtorId,
         amount: parseFloat(cleanAmount),
         description: data.description || null,
         created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
       });
-
-      // Receipt info ni API response dan olish
-      const response = result as Record<string, unknown> | undefined;
-      const receiptInfo =
-        response?.previousBalance !== undefined
-          ? {
-              type: "DEBT" as const,
-              amount: parseFloat(cleanAmount),
-              docNumber: (response.id as number) || 0,
-              description: data.description || null,
-              previousBalance: response.previousBalance as number,
-              newBalance: response.newBalance as number,
-              debtorName: (response.debtorName as string) || debtorName,
-              debtorPhone: (response.debtorPhone as string) || null,
-              employeeName: (response.employeeName as string) || null,
-            }
-          : undefined;
 
       toast.success("Qarz muvaffaqiyatli qo'shildi");
       reset();
@@ -103,7 +85,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       requestAnimationFrame(() => {
         setTimeout(() => {
           if (!onSuccess) router.refresh();
-          onSuccess?.(receiptInfo);
+          onSuccess?.();
           refreshAfterCloseRef.current = false;
         }, 150);
       });

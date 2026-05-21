@@ -66,7 +66,7 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
     (receiptInfo?: any) => {
       context?.onDataChange?.();
 
-      if (receiptInfo?.previousBalance !== undefined) {
+      if (receiptInfo?.previousBalance !== undefined && receiptInfo.type === "PAYMENT") {
         const receiptData: SingleReceiptData = {
           type: receiptInfo.type,
           docNumber: receiptInfo.docNumber,
