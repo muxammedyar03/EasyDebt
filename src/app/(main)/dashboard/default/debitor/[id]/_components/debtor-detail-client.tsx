@@ -9,6 +9,7 @@ import { AddPaymentDialog } from "@/features/make-payment/ui";
 import { DebtHistoryTable } from "./debt-history-table";
 import { PaymentHistoryTable } from "./payment-history-table";
 import { DebtorHeader } from "./header";
+import { ShareProfileDialog } from "./share-profile-dialog";
 import { DebtorTimeline } from "./timeline";
 import { StatsCards } from "./stats-cards";
 import { PaymentReminderDialog } from "./payment-reminder-dialog";
@@ -60,6 +61,7 @@ function DebtorDetailContent({
   const [debtDialogOpen, setDebtDialogOpen] = React.useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
   const [reminderDialogOpen, setReminderDialogOpen] = React.useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
   const { user } = useCurrentUser();
 
   // ─── Receipt State ──────────────────────────────────────────
@@ -201,6 +203,7 @@ function DebtorDetailContent({
         onAddPayment={() => setPaymentDialogOpen(true)}
         onExport={handleExport}
         onPrintReceipt={handlePrintTimelineReceipt}
+        onShareProfile={() => setShareDialogOpen(true)}
       />
       <ReminderStatusCard
         activeReminder={reminder.activeReminder}
@@ -296,6 +299,14 @@ function DebtorDetailContent({
         onOpenChange={setPrintConfirmOpen}
         onConfirm={handlePrintConfirm}
         receiptData={pendingReceiptData}
+      />
+
+      {/* Share Profile Dialog */}
+      <ShareProfileDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        externalId={debtor.externalId}
+        debtorName={`${debtor.firstName} ${debtor.lastName}`}
       />
 
       {/* Hidden Receipt Templates (faqat @media print da ko'rinadi) */}

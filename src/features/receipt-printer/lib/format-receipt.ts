@@ -57,7 +57,7 @@ export function generateSingleReceiptHtml(data: SingleReceiptData): string {
   return `
     <div class="receipt">
       <div class="receipt-header">
-        <h1 class="receipt-app-name">${APP_CONFIG.name}</h1>
+        <h1 class="receipt-app-name">FEAT MARKET</h1>
         <div class="receipt-divider">─── ✦ ───</div>
       </div>
       <div class="receipt-section">
@@ -169,7 +169,7 @@ export function generateTimelineReceiptHtml(data: TimelineReceiptData): string {
   return `
     <div class="receipt">
       <div class="receipt-header">
-        <h1 class="receipt-app-name">${APP_CONFIG.name}</h1>
+        <h1 class="receipt-app-name">FEAT MARKET</h1>
         <div class="receipt-divider">─── ✦ ───</div>
         <h2 class="receipt-type">HISOBOT</h2>
       </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Minus, Plus, Download, FileText, Printer, ChevronDown } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Download, FileText, Printer, ChevronDown, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,9 +18,17 @@ export interface ViewDebtorHeaderProps {
   onAddPayment: () => void;
   onExport: () => Promise<void>;
   onPrintReceipt?: () => void;
+  onShareProfile?: () => void;
 }
 
-export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport, onPrintReceipt }: ViewDebtorHeaderProps) {
+export function ViewDebtorHeader({
+  value,
+  onAddDebt,
+  onAddPayment,
+  onExport,
+  onPrintReceipt,
+  onShareProfile,
+}: ViewDebtorHeaderProps) {
   const router = useRouter();
   const { debtor } = value;
 
@@ -39,6 +47,12 @@ export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport, onP
       </div>
       {/* Desktop buttons */}
       <div className="mt-5 hidden justify-end gap-2 md:mt-0 md:flex">
+        {onShareProfile && (
+          <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
+            <Share2 className="h-4 w-4 text-slate-500" />
+            Profilni ulash
+          </Button>
+        )}
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
           Qarz qo&apos;shish
@@ -80,7 +94,7 @@ export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport, onP
         </DropdownMenu>
       </div>
       {/* Mobile buttons */}
-      <div className="mt-5 grid grid-cols-3 gap-2 md:hidden">
+      <div className="mt-5 grid grid-cols-2 gap-2 md:hidden">
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
           Qarz
@@ -89,6 +103,12 @@ export function ViewDebtorHeader({ value, onAddDebt, onAddPayment, onExport, onP
           <Minus className="h-4 w-4" />
           To&apos;lov
         </Button>
+        {onShareProfile && (
+          <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
+            <Share2 className="h-4 w-4 text-slate-500" />
+            Ulashish
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="default" className="h-12">

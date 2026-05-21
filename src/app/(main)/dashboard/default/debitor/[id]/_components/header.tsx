@@ -9,9 +9,17 @@ interface DebtorHeaderProps {
   onAddPayment: () => void;
   onExport: () => Promise<void>;
   onPrintReceipt?: () => void;
+  onShareProfile?: () => void;
 }
 
-export function DebtorHeader({ value, onAddDebt, onAddPayment, onExport, onPrintReceipt }: DebtorHeaderProps) {
+export function DebtorHeader({
+  value,
+  onAddDebt,
+  onAddPayment,
+  onExport,
+  onPrintReceipt,
+  onShareProfile,
+}: DebtorHeaderProps) {
   return (
     <ViewDebtorHeader
       value={value}
@@ -19,6 +27,7 @@ export function DebtorHeader({ value, onAddDebt, onAddPayment, onExport, onPrint
       onAddPayment={onAddPayment}
       onExport={onExport}
       onPrintReceipt={onPrintReceipt}
+      onShareProfile={onShareProfile}
     />
   );
 }

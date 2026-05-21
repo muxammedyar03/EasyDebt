@@ -21,7 +21,7 @@ function SingleReceiptContent({ data }: { data: SingleReceiptData }) {
     <div className="receipt">
       {/* Header */}
       <div className="receipt-header">
-        <h1 className="receipt-app-name">{APP_CONFIG.name}</h1>
+        <h1 className="receipt-app-name">FEAT MARKET</h1>
         <div className="receipt-divider">─── ✦ ───</div>
       </div>
 
@@ -118,7 +118,7 @@ function TimelineReceiptContent({ data }: { data: TimelineReceiptData }) {
     <div className="receipt">
       {/* Header */}
       <div className="receipt-header">
-        <h1 className="receipt-app-name">{APP_CONFIG.name}</h1>
+        <h1 className="receipt-app-name">FEAT MARKET</h1>
         <div className="receipt-divider">─── ✦ ───</div>
         <h2 className="receipt-type">HISOBOT</h2>
       </div>
