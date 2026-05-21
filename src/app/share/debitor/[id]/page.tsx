@@ -3,8 +3,7 @@ import { PublicDebtorClient } from "./_components/public-debtor-client";
 import { debtorService } from "@/lib/services/debtor.service";
 import { computeViewValueSync } from "@/features/view-debtor/model";
 import { verifyShareToken } from "@/lib/share-token";
-import { Clock, Landmark, ShieldAlert } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Clock, Landmark } from "lucide-react";
 
 interface PageProps {
   params: Promise<{
@@ -75,5 +74,5 @@ export default async function PublicDebtorPage({ params, searchParams }: PagePro
   }
 
   const initialViewValue = computeViewValueSync(debtor, overdueDays);
-  return <PublicDebtorClient debtor={debtor} overdueDays={overdueDays} initialViewValue={initialViewValue} />;
+  return <PublicDebtorClient debtor={debtor} initialViewValue={initialViewValue} />;
 }

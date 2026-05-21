@@ -15,11 +15,10 @@ import type { DebtorDomain } from "@/types/domain";
 
 interface PublicDebtorClientProps {
   debtor: DebtorDomain;
-  overdueDays: number;
   initialViewValue: ViewDebtorComputed;
 }
 
-export function PublicDebtorClient({ debtor, overdueDays, initialViewValue }: PublicDebtorClientProps) {
+export function PublicDebtorClient({ debtor, initialViewValue }: PublicDebtorClientProps) {
   const { stats, rating, timeline, firstDebtDate, daysSinceFirstDebt } = initialViewValue;
 
   const viewValue = {
