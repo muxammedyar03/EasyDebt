@@ -1,7 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { auditLogRepository } from "@/entities/audit/api";
+import { debtorRepository } from "@/entities/debtor/api";
+import { isMockMode, getMockStore } from "@/lib/mock";
 import { AuditLogsTable } from "./_components/audit-logs-table";
-import { AuditLog, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { AuditLogTableProps } from "@/types/types";
+import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 
 export const dynamic = "force-dynamic";
@@ -62,35 +65,40 @@ export default async function AuditLogsPage({
   }
 
   // Get total count
-  const totalCount = await prisma.auditLog.count({ where });
+  const totalCount = await auditLogRepository.count(where);
   const totalPages = Math.ceil(totalCount / limit);
 
-  // Get paginated logs
-  const auditLogs = await prisma.auditLog.findMany({
-    where,
-    orderBy: {
-      created_at: "desc",
-    },
+  const auditLogs = await auditLogRepository.findMany(where, {
+    orderBy: { created_at: "desc" },
     skip: (page - 1) * limit,
     take: limit,
   });
 
-  // Get user names
-  const userIds = [...new Set(auditLogs.map((log: AuditLog) => log.user_id).filter((id): id is number => id !== null))];
-  const users = await prisma.user.findMany({
-    where: {
-      id: {
-        in: userIds,
-      },
-    },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      first_name: true,
-      last_name: true,
-    },
-  });
+  const userIds = [...new Set(auditLogs.map((log) => log.user_id).filter((id): id is number => id !== null))];
+
+  const users = isMockMode()
+    ? getMockStore()
+        .users.filter((u) => userIds.includes(u.id))
+        .map((u) => ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          first_name: u.first_name,
+          last_name: u.last_name,
+        }))
+    : await (async () => {
+        const { prisma } = await import("@/lib/prisma");
+        return prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            first_name: true,
+            last_name: true,
+          },
+        });
+      })();
 
   const userMap = new Map(users.map((user) => [user.id, user]));
 
@@ -113,24 +121,16 @@ export default async function AuditLogsPage({
       } catch (e) {
         // Ignore parse errors
         console.error(e);
-        toast("Xatolik yuz berdi", { description: String(e) });
+        toast(t("common.error"), { description: String(e) });
       }
     }
   });
 
   // Fetch debtor names in one query
-  const debtors = await prisma.debtor.findMany({
-    where: {
-      id: {
-        in: Array.from(debtorIds),
-      },
-    },
-    select: {
-      id: true,
-      first_name: true,
-      last_name: true,
-    },
-  });
+  const debtors = await debtorRepository.findMany(
+    { id: { in: Array.from(debtorIds) } },
+    { take: debtorIds.size || undefined },
+  );
 
   const debtorMap = new Map(debtors.map((debtor) => [debtor.id, `${debtor.first_name} ${debtor.last_name}`]));
 
@@ -152,7 +152,7 @@ export default async function AuditLogsPage({
             return debtorMap.get(value.debtor_id as number) || null;
           }
         } catch (e) {
-          toast("Xatolik yuz berdi", { description: String(e) });
+          toast(t("common.error"), { description: String(e) });
           return null;
         }
       }
@@ -163,8 +163,8 @@ export default async function AuditLogsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Audit Log</h1>
-        <p className="text-muted-foreground">Barcha harakatlar tarixi</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("auditLogs.title")}</h1>
+        <p className="text-muted-foreground">{t("auditLogs.subtitle")}</p>
       </div>
 
       <AuditLogsTable

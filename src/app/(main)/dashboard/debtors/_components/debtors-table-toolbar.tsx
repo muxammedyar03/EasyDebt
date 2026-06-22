@@ -1,9 +1,16 @@
 "use client";
 
-import { Search, Trash2, FileDown, Download, Upload } from "lucide-react";
+import { Search, Trash2, FileDown, Download, Upload, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { t } from "@/lib/i18n";
 
 type DebtorsTableToolbarProps = {
   searchValue: string;
@@ -32,7 +39,7 @@ export function DebtorsTableToolbar({
         <div className="relative flex-1 lg:max-w-xl">
           <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
           <Input
-            placeholder="Ism, familiya yoki telefon..."
+            placeholder={t("debtorsTable.searchPlaceholder")}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="h-12 w-full pr-10 pl-8"
@@ -47,26 +54,32 @@ export function DebtorsTableToolbar({
           {selectedCount > 0 && (
             <Button variant="destructive" size="sm" onClick={onBulkDelete} className="hidden md:flex">
               <Trash2 className="mr-2 h-4 w-4" />
-              O&apos;chirish ({selectedCount})
+              {t("debtorsTable.deleteSelected", { count: selectedCount })}
             </Button>
           )}
-          <Button variant="outline" className="h-12 gap-2" size="sm" onClick={onImportClick}>
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Import</span>
-          </Button>
-          <Button variant="outline" className="h-12 gap-2" size="sm" onClick={onExportDialogClick}>
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-12 w-12 gap-2 bg-blue-500 text-white sm:w-auto dark:bg-blue-600"
-            size="sm"
-            onClick={onExcelExport}
-          >
-            <FileDown className="h-4 w-4" />
-            <span className="hidden sm:inline">Excel</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-12 gap-2" size="sm">
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("common.export")}</span>
+                <ChevronDown className="h-4 w-4 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={onImportClick}>
+                <Upload className="mr-2 h-4 w-4" />
+                {t("common.import")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onExportDialogClick}>
+                <Download className="mr-2 h-4 w-4" />
+                {t("debtorsTable.exportJson")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onExcelExport}>
+                <FileDown className="mr-2 h-4 w-4" />
+                {t("debtorsTable.exportExcel")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

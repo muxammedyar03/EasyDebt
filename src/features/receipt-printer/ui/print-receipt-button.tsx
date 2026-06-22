@@ -11,6 +11,7 @@ import * as React from "react";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { t } from "@/lib/i18n";
 
 interface PrintReceiptButtonProps {
   onClick: () => void;
@@ -37,7 +38,7 @@ export function PrintReceiptButton({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Chek chiqarish</p>
+          <p>{t("receiptPrinter.printButtonLabel", { ns: "receiptPrinter" })}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

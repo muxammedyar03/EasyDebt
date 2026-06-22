@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DebtorView } from "@/types/view";
+import { t } from "@/lib/i18n";
 
 interface DebtorCardProps {
   debtor: DebtorView;
@@ -116,7 +117,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
                 onClick={() => onDelete(debtor.id)}
                 className="text-red-600"
               >
-                O&apos;chirish
+                {t("common.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

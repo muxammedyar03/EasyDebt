@@ -12,26 +12,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 export const description = "An interactive area chart";
-
-const chartConfig = {
-  visitors: {
-    label: "To'lovlar",
-  },
-  cash: {
-    label: "Naqd",
-    color: "var(--chart-1)",
-  },
-  card: {
-    label: "Karta",
-    color: "var(--chart-2)",
-  },
-  click: {
-    label: "Click",
-    color: "var(--chart-3)",
-  },
-} satisfies ChartConfig;
 
 interface ChartAreaInteractiveProps {
   chartData: Array<{
@@ -46,6 +29,28 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const [timeRange, setTimeRange] = React.useState("90d");
+
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        visitors: {
+          label: t("chart.paymentsLabel"),
+        },
+        cash: {
+          label: t("chart.cash"),
+          color: "var(--chart-1)",
+        },
+        card: {
+          label: t("chart.card"),
+          color: "var(--chart-2)",
+        },
+        click: {
+          label: "Click",
+          color: "var(--chart-3)",
+        },
+      }) satisfies ChartConfig,
+    [],
+  );
 
   React.useEffect(() => {
     if (isMobile) {
@@ -73,10 +78,10 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>To&apos;lov Usullari</CardTitle>
+        <CardTitle>{t("chart.title")}</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">Oxirgi 3 oylik to&apos;lovlar statistikasi</span>
-          <span className="@[540px]/card:hidden">Oxirgi 3 oy</span>
+          <span className="hidden @[540px]/card:block">{t("chart.descriptionFull")}</span>
+          <span className="@[540px]/card:hidden">{t("chart.descriptionShort")}</span>
         </CardDescription>
         <CardAction>
           <ToggleGroup
@@ -86,34 +91,34 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">Oxirgi 3 oy</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Oxirgi 30 kun</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Oxirgi 7 kun</ToggleGroupItem>
+            <ToggleGroupItem value="90d">{t("chart.period3Months")}</ToggleGroupItem>
+            <ToggleGroupItem value="30d">{t("chart.period30Days")}</ToggleGroupItem>
+            <ToggleGroupItem value="7d">{t("chart.period7Days")}</ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label="Select a value"
+              aria-label={t("chart.selectPeriod")}
             >
-              <SelectValue placeholder="Oxirgi 3 oy" />
+              <SelectValue placeholder={t("chart.period3Months")} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                Oxirgi 3 oy
+                {t("chart.period3Months")}
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
-                Oxirgi 30 kun
+                {t("chart.period30Days")}
               </SelectItem>
               <SelectItem value="7d" className="rounded-lg">
-                Oxirgi 7 kun
+                {t("chart.period7Days")}
               </SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
         <CardTitle>
           <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/reports")}>
-            Barchasini ko&apos;rish <ArrowRight className="ml-2 h-4 w-4" />
+            {t("chart.viewAll")} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardTitle>
       </CardHeader>
@@ -143,7 +148,7 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
+                return date.toLocaleDateString("ru-RU", {
                   month: "short",
                   day: "numeric",
                 });
@@ -155,7 +160,7 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                    return new Date(value).toLocaleDateString("ru-RU", {
                       month: "short",
                       day: "numeric",
                     });

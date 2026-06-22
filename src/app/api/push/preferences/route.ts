@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { NotificationType } from "@/lib/notifications";
+import { PUSH_NOTIFICATIONS_DISABLED } from "@/lib/push/disabled";
 
 const notificationTypes: NotificationType[] = [
   "OVERDUE_PAYMENT",
@@ -23,6 +24,9 @@ const updatePreferencesSchema = z.object({
  * Get user's push notification preferences
  */
 export async function GET(_request: NextRequest) {
+  if (PUSH_NOTIFICATIONS_DISABLED) {
+    return NextResponse.json({ error: "Push notifications disabled" }, { status: 503 });
+  }
   try {
     const session = await getSession();
     if (!session || !session.userId) {
@@ -62,6 +66,9 @@ export async function GET(_request: NextRequest) {
  * Update user's push notification preferences
  */
 export async function POST(request: NextRequest) {
+  if (PUSH_NOTIFICATIONS_DISABLED) {
+    return NextResponse.json({ error: "Push notifications disabled" }, { status: 503 });
+  }
   try {
     const session = await getSession();
     if (!session || !session.userId) {

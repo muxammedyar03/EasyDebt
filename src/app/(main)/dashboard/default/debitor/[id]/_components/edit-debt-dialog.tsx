@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { DebtDomain } from "@/types/domain";
+import { t } from "@/lib/i18n";
 
 const editDebtSchema = z.object({
   amount: z.string().min(1, "Qarz miqdorini kiriting"),
@@ -119,8 +120,8 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Qarzni tahrirlash</DialogTitle>
-          <DialogDescription>Qarz ma&apos;lumotlarini o&apos;zgartirish</DialogDescription>
+          <DialogTitle>{t("debtors.editDebt")}</DialogTitle>
+          <DialogDescription>{t("debtors.editDebtDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -170,7 +171,7 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">Qarzning yaratilgan sanasini o&apos;zgartirish</p>
+                <p className="text-muted-foreground text-xs">{t("debtors.editDebtCreatedAtDescription")}</p>
               </div>
             )}
           </div>

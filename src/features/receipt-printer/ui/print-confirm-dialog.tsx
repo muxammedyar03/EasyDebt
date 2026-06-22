@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SingleReceiptPreview } from "./receipt-template";
 import type { SingleReceiptData } from "../model/types";
+import { t } from "@/lib/i18n";
 
 interface PrintConfirmDialogProps {
   open: boolean;
@@ -36,8 +37,8 @@ export function PrintConfirmDialog({
   open,
   onOpenChange,
   onConfirm,
-  title = "Chek chiqarish",
-  description = "Chek chiqarishni xohlaysizmi?",
+  title = t("receiptPrinter.printConfirmDialogTitle", { ns: "receiptPrinter" }),
+  description = t("receiptPrinter.printConfirmDialogDescription", { ns: "receiptPrinter" }),
   receiptData,
 }: PrintConfirmDialogProps) {
   const handleConfirm = () => {
@@ -59,7 +60,7 @@ export function PrintConfirmDialog({
         {receiptData && (
           <div className="bg-muted/40 my-2 overflow-hidden rounded-md border p-2">
             <p className="text-muted-foreground mb-2 text-center text-xs font-medium">
-              Chek ko&apos;rinishi (Preview):
+              {t("receiptPrinter.printConfirmDialogPreviewTitle", { ns: "receiptPrinter" })}
             </p>
             <ScrollArea className="max-h-[300px] w-full rounded-md border bg-white p-1">
               <SingleReceiptPreview data={receiptData} />

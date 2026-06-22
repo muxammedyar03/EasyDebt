@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
 import { SortToggleGroup } from "../../customers/_components/sort-toggle-group";
+import { t } from "@/lib/i18n";
 
 interface NotificationsFiltersProps {
   search: string;
@@ -72,11 +73,11 @@ export function NotificationsFilters(props: NotificationsFiltersProps) {
             className="h-10 border border-blue-600/20 bg-blue-600/10 text-xs text-blue-600 hover:bg-blue-600/15 md:text-sm dark:border-blue-500/20 dark:bg-blue-500/15 dark:text-blue-500 dark:hover:bg-blue-500/20"
           >
             <Search />
-            Qidirish
+            {t("common.search")}
           </Button>
           <Button
-            variant="outline"
-            className="h-10 w-10 border-red-600/20 bg-red-600/10 text-xs text-red-600 hover:bg-red-600/20 hover:text-red-600 md:text-sm"
+            variant="destructive"
+            className="h-10 w-14"
             onClick={() => {
               setSearch("");
               updateParams({ q: undefined, type: undefined, read: undefined, page: "1" });
@@ -95,10 +96,10 @@ export function NotificationsFilters(props: NotificationsFiltersProps) {
             <SelectValue placeholder="Turi" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__ALL__">Hammasi</SelectItem>
-            <SelectItem value="OVERDUE_PAYMENT">Muddati o&apos;tgan</SelectItem>
-            <SelectItem value="DEBT_LIMIT_EXCEEDED">Limitdan oshdi</SelectItem>
-            <SelectItem value="HOSTING_REMINDER">Hosting eslatma</SelectItem>
+            <SelectItem value="__ALL__">{t("common.all")}</SelectItem>
+            <SelectItem value="OVERDUE_PAYMENT">{t("notifications.overduePayment")}</SelectItem>
+            <SelectItem value="DEBT_LIMIT_EXCEEDED">{t("notifications.debtLimitExceeded")}</SelectItem>
+            <SelectItem value="HOSTING_REMINDER">{t("notifications.hostingReminder")}</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -114,12 +115,12 @@ export function NotificationsFilters(props: NotificationsFiltersProps) {
           }}
         >
           <SelectTrigger className="border-border w-32 border text-xs md:w-[160px] md:text-sm">
-            <SelectValue placeholder="Holati" />
+            <SelectValue placeholder={t("common.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Hammasi</SelectItem>
-            <SelectItem value="unread">O&apos;qilmagan</SelectItem>
-            <SelectItem value="read">O&apos;qilgan</SelectItem>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="unread">{t("notifications.unread")}</SelectItem>
+            <SelectItem value="read">{t("notifications.read")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -129,13 +130,13 @@ export function NotificationsFilters(props: NotificationsFiltersProps) {
           onToggle={handleFilterChange}
           sortOptions={[
             // Read filters
-            { key: "read:all", label: "Hammasi" },
-            { key: "read:unread", label: "O'qilmagan" },
-            { key: "read:read", label: "O'qilgan" },
+            { key: "read:all", label: t("common.all") },
+            { key: "read:unread", label: t("notifications.unread") },
+            { key: "read:read", label: t("notifications.read") },
             // Type filters
-            { key: "type:OVERDUE_PAYMENT", label: "Muddati o'tgan" },
-            { key: "type:DEBT_LIMIT_EXCEEDED", label: "Limitdan oshdi" },
-            { key: "type:HOSTING_REMINDER", label: "Hosting eslatma" },
+            { key: "type:OVERDUE_PAYMENT", label: t("notifications.overduePayment") },
+            { key: "type:DEBT_LIMIT_EXCEEDED", label: t("notifications.debtLimitExceeded") },
+            { key: "type:HOSTING_REMINDER", label: t("notifications.hostingReminder") },
           ]}
           currentSortField={getCurrentFilterValue()}
           currentSortOrder={null}

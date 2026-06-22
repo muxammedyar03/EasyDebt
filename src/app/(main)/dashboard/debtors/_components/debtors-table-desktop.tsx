@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getDebtorDebtLimitBandPresentation } from "@/lib/debtors";
 import type { DebtorView } from "@/types/view";
 import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
+import { t } from "@/lib/i18n";
 
 type DebtorsTableDesktopProps = {
   debtors: DebtorView[];
@@ -60,15 +61,15 @@ export function DebtorsTableDesktop({
               />
             </TableHead>
             <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => onSort("name")}>
-              Ism Familiya {sortIndicator(sortBy === "name", sortOrder)}
+              {t("debtorsTable.fullName")} {sortIndicator(sortBy === "name", sortOrder)}
             </TableHead>
-            <TableHead>Telefon</TableHead>
+            <TableHead>{t("debtors.phone")}</TableHead>
             <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => onSort("debt")}>
-              Qarz summasi {sortIndicator(sortBy === "debt", sortOrder)}
+              {t("debtorsTable.debtAmount")} {sortIndicator(sortBy === "debt", sortOrder)}
             </TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>{t("common.status")}</TableHead>
             <TableHead className="hover:bg-muted/50 cursor-pointer select-none" onClick={() => onSort("date")}>
-              Sana {sortIndicator(sortBy === "date", sortOrder)}
+              {t("debtorsTable.date")} {sortIndicator(sortBy === "date", sortOrder)}
             </TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
@@ -77,7 +78,7 @@ export function DebtorsTableDesktop({
           {debtors.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center">
-                Ma&apos;lumot topilmadi
+                {t("debtors.noData")}
               </TableCell>
             </TableRow>
           ) : (
@@ -119,11 +120,11 @@ export function DebtorsTableDesktop({
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onEdit(debtor.id)}>
                           <Edit className="mr-2 h-4 w-4" />
-                          Tahrirlash
+                          {t("common.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onDelete(debtor.id)} className="text-red-600">
                           <Trash2 className="mr-2 h-4 w-4" />
-                          O&apos;chirish
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

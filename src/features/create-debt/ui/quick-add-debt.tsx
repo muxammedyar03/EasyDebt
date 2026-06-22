@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatNumber } from "@/lib/format";
 import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
+import { t } from "@/lib/i18n";
 import { createDebt } from "../api";
 
 export interface QuickAddDebtProps {
@@ -56,7 +57,7 @@ export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSucce
       });
     } catch (error) {
       console.error(error);
-      toast.error("Qarz qo'shishda xatolik yuz berdi");
+      toast.error("Ошибка при создании долга");
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +67,7 @@ export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSucce
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Qarz qo&apos;shish - {debtorName}</DialogTitle>
+          <DialogTitle>{t("debtors.addDebtDialogDescription", { debtorName })}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

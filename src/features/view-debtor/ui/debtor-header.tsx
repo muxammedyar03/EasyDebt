@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ViewDebtorValue } from "../model";
+import { t } from "@/lib/i18n";
 
 export interface ViewDebtorHeaderProps {
   value: ViewDebtorValue;
@@ -50,16 +51,16 @@ export function ViewDebtorHeader({
         {onShareProfile && (
           <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
             <Share2 className="h-4 w-4 text-slate-500" />
-            Profilni ulash
+            Ссылка на профиль
           </Button>
         )}
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
-          Qarz qo&apos;shish
+          {t("debtors.addDebt")}
         </Button>
         <Button variant="outline" className="h-12" onClick={onAddPayment}>
           <Minus className="h-4 w-4" />
-          To&apos;lov qo&apos;shish
+          {t("debtors.addPayment")}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -87,7 +88,7 @@ export function ViewDebtorHeader({
                 }}
               >
                 <Printer className="mr-2 h-4 w-4" />
-                Chek chiqarish
+                {t("receiptPrinter.printButtonLabel", { ns: "receiptPrinter" })}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

@@ -12,6 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { t } from "@/lib/i18n";
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
@@ -32,7 +33,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="ml-auto hidden h-14 lg:flex">
           <Settings2 />
-          Ustunlar
+          {t("dataTable.viewOptions")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[180px]">

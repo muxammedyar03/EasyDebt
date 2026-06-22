@@ -30,6 +30,7 @@ import {
   type TimelineReceiptData,
 } from "@/features/receipt-printer";
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 
 function DebtorDetailContent({
   initialDebtor,
@@ -135,10 +136,10 @@ function DebtorDetailContent({
           : null,
         generatedAt: new Date(),
       });
-      toast.success("PDF hisobot muvaffaqiyatli yuklab olindi");
+      toast.success(t("debtorDetail.pdfExportSuccess"));
     } catch (error) {
       console.error("PDF export error:", error);
-      toast.error("PDF hisobot yuklashda xatolik yuz berdi");
+      toast.error(t("debtorDetail.pdfExportError"));
     }
   }, [debtor, detail.stats, detail.rating, detail.timeline, user]);
 
@@ -190,7 +191,11 @@ function DebtorDetailContent({
   }, [pendingReceiptData]);
 
   if (!debtor) {
-    return detail.isLoading ? <div className="text-muted-foreground p-4">Yuklanmoqda...</div> : <>Qarzdor topilmadi</>;
+    return detail.isLoading ? (
+      <div className="text-muted-foreground p-4">{t("common.loading")}</div>
+    ) : (
+      <>{t("common.debtorNotFound")}</>
+    );
   }
 
   const value = { ...viewValue, debtor };
@@ -214,13 +219,13 @@ function DebtorDetailContent({
       <Tabs defaultValue="debts" className="w-full">
         <TabsList className="grid h-10 w-full grid-cols-3 md:w-1/2 lg:w-1/2">
           <TabsTrigger value="debts">
-            Qarzlar
+            {t("debtorDetail.debtsTab")}
             <Badge variant="secondary" className="border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-500">
               {debtor.debts?.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
-            To&apos;lovlar
+            {t("debtorDetail.paymentsTab")}
             <Badge
               variant="secondary"
               className="border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-500"
@@ -228,7 +233,7 @@ function DebtorDetailContent({
               {debtor.payments?.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="timeline">Vaqt chizig&apos;i</TabsTrigger>
+          <TabsTrigger value="timeline">{t("debtorDetail.timelineTab")}</TabsTrigger>
         </TabsList>
         <TabsContent value="debts" className="mt-4">
           {debtor.debts && (

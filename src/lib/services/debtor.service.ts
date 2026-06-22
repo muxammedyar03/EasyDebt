@@ -46,6 +46,7 @@ import {
 } from "@/lib/mappers/debtor.mapper";
 import type { DebtorTableView, DebtorDetailView } from "@/types/view/debtor.view";
 import { PaymentDomain } from "@/types/domain";
+import { type DebtorListOptions, matchesDebtorListStatus } from "@/lib/debtors/debtors-list-filters";
 
 /**
  * Service class for Debtor operations
@@ -149,7 +150,12 @@ export class DebtorService {
   async findMany(
     filters?: DebtorDomainFilters,
     pagination?: PaginationOptions,
+    listOptions?: DebtorListOptions,
   ): Promise<PaginatedResult<DebtorDomain>> {
+    if ((listOptions?.statuses?.length ?? 0) > 0) {
+      return this.findManyWithStatusFilter(filters, pagination, listOptions!);
+    }
+
     const settings = await this.getSettings();
 
     // Special handling for isOverdue filter - need to compute it runtime
@@ -326,6 +332,141 @@ export class DebtorService {
   async debtorsTotalPayments(): Promise<number> {
     const result = await paymentRepository.aggregate({});
     return result._sum.amount?.toNumber() ?? 0;
+  }
+
+  async getFilteredAggregates(
+    filters?: DebtorDomainFilters,
+    listOptions?: DebtorListOptions,
+  ): Promise<{ totalDebt: number; totalPayments: number }> {
+    const hasFilters =
+      (listOptions?.statuses?.length ?? 0) > 0 ||
+      !!filters?.search ||
+      filters?.dateFrom != null ||
+      filters?.dateTo != null ||
+      filters?.minDebt != null ||
+      filters?.maxDebt != null;
+
+    if (!hasFilters) {
+      const [totalDebt, totalPayments] = await Promise.all([this.debtorsTotalDebt(), this.debtorsTotalPayments()]);
+      return { totalDebt, totalPayments };
+    }
+
+    const all = await this.fetchAllDomainDebtors(filters, listOptions);
+    const ids = all.map((d) => d.id);
+    const totalDebt = all.reduce((sum, d) => sum + d.totalDebt, 0);
+
+    if (ids.length === 0) {
+      return { totalDebt: 0, totalPayments: 0 };
+    }
+
+    const paymentsResult = await paymentRepository.aggregate({ debtor_id: { in: ids } });
+
+    return {
+      totalDebt,
+      totalPayments: paymentsResult._sum.amount?.toNumber() ?? 0,
+    };
+  }
+
+  private async mapDebtorWithOverdue(
+    debtor: DebtorWithRelations,
+    settings: Awaited<ReturnType<DebtorService["getSettings"]>>,
+  ): Promise<DebtorDomain> {
+    const domainDebtor = prismaToDomainDebtor(debtor, settings);
+    const debtsWithPayments = debtor.debts.map((debt) => ({
+      amount: debt.amount.toNumber(),
+      createdAt: debt.created_at,
+      payments: debtor.payments
+        .filter((p) => p.created_at >= debt.created_at)
+        .map((p) => ({
+          amount: p.amount.toNumber(),
+          createdAt: p.created_at,
+        })),
+    }));
+
+    const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
+      goodUntilDays: settings.overdueDays - 15,
+      mediumUntilDays: settings.overdueDays,
+      minPaidPercent: 0.5,
+    });
+
+    return { ...domainDebtor, isOverdue: overdueStatus.isOverdue };
+  }
+
+  private async fetchAllDomainDebtors(
+    filters?: DebtorDomainFilters,
+    listOptions?: DebtorListOptions,
+  ): Promise<DebtorDomain[]> {
+    const settings = await this.getSettings();
+    const debtLimit = listOptions?.debtLimit ?? settings.debtLimit;
+    const statuses = listOptions?.statuses ?? [];
+    const where = this.buildWhereClause(filters);
+    const orderBy = this.buildOrderBy(undefined, "desc");
+
+    let domainDebtors: DebtorDomain[];
+
+    if (filters?.search?.trim()) {
+      const searchTerms = filters.search.trim().split(/\s+/).filter(Boolean);
+      const ids = await debtorRepository.searchIds(searchTerms, 10_000);
+      if (ids.length === 0) return [];
+
+      const debtors = (await debtorRepository.findMany(
+        { id: { in: ids } },
+        { include: { debts: true, payments: true, creator: true }, take: ids.length },
+      )) as DebtorWithRelations[];
+
+      const orderMap = new Map(ids.map((id, i) => [id, i]));
+      debtors.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
+      domainDebtors = await Promise.all(debtors.map((d) => this.mapDebtorWithOverdue(d, settings)));
+    } else {
+      const debtors = (await debtorRepository.findMany(where, {
+        orderBy,
+        include: { debts: true, payments: true, creator: true },
+      })) as DebtorWithRelations[];
+      domainDebtors = await Promise.all(debtors.map((d) => this.mapDebtorWithOverdue(d, settings)));
+    }
+
+    if (statuses.length === 0) return domainDebtors;
+
+    return domainDebtors.filter((d) => statuses.some((status) => matchesDebtorListStatus(d, status, debtLimit)));
+  }
+
+  async findAllFiltered(filters?: DebtorDomainFilters, listOptions?: DebtorListOptions): Promise<DebtorDomain[]> {
+    return this.fetchAllDomainDebtors(filters, listOptions);
+  }
+
+  private async findManyWithStatusFilter(
+    filters: DebtorDomainFilters | undefined,
+    pagination: PaginationOptions | undefined,
+    listOptions: DebtorListOptions,
+  ): Promise<PaginatedResult<DebtorDomain>> {
+    const all = await this.fetchAllDomainDebtors(filters, listOptions);
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 10;
+    const skip = (page - 1) * limit;
+    const sortBy = pagination?.sortBy ?? "created_at";
+    const sortOrder = pagination?.sortOrder ?? "desc";
+
+    const sorted = [...all].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "name" || sortBy === "first_name") {
+        cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      } else if (sortBy === "debt" || sortBy === "total_debt") {
+        cmp = a.totalDebt - b.totalDebt;
+      } else {
+        cmp = a.createdAt.getTime() - b.createdAt.getTime();
+      }
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+
+    const paginatedData = sorted.slice(skip, skip + limit);
+
+    return {
+      data: paginatedData,
+      total: all.length,
+      page,
+      limit,
+      totalPages: Math.ceil(all.length / limit),
+    };
   }
 
   async debtorsTotalDebts(): Promise<number> {
@@ -673,6 +814,16 @@ export class DebtorService {
 
     if (filters?.createdBy) {
       where.created_by = filters.createdBy;
+    }
+
+    if (filters?.dateFrom || filters?.dateTo) {
+      where.created_at = {};
+      if (filters.dateFrom) {
+        where.created_at.gte = filters.dateFrom;
+      }
+      if (filters.dateTo) {
+        where.created_at.lte = filters.dateTo;
+      }
     }
 
     // Status filter (business logic)

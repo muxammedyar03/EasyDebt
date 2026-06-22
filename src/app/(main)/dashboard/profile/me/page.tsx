@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { t } from "@/lib/i18n";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -163,65 +164,63 @@ export default function ProfilePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Profil sozlamalari</h1>
-          <p className="text-muted-foreground">Shaxsiy ma&apos;lumotlaringizni boshqaring</p>
+          <h1 className="text-3xl font-bold">{t("profile.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("profile.subtitle")}</p>
         </div>
       </div>
-
-      <Separator />
 
       {/* Profile Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Shaxsiy ma&apos;lumotlar</CardTitle>
-          <CardDescription>Ism, familiya, username va email manzilni tahrirlash</CardDescription>
+          <CardTitle>{t("profile.profileInformation")}</CardTitle>
+          <CardDescription>{t("profile.profileDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleProfileUpdate} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="first_name">Ism</Label>
+                <Label htmlFor="first_name">{t("profile.firstName")}</Label>
                 <Input
                   id="first_name"
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleInputChange}
-                  placeholder="Ismingizni kiriting"
+                  placeholder={t("profile.firstNamePlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="last_name">Familiya</Label>
+                <Label htmlFor="last_name">{t("profile.lastName")}</Label>
                 <Input
                   id="last_name"
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleInputChange}
-                  placeholder="Familiyangizni kiriting"
+                  placeholder={t("profile.lastNamePlaceholder")}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("profile.username")}</Label>
               <Input
                 id="username"
                 name="username"
                 value={formData.username}
                 onChange={handleInputChange}
-                placeholder="Username kiriting"
+                placeholder={t("profile.usernamePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("profile.email")}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="email@example.com"
+                placeholder={t("profile.emailPlaceholder")}
               />
             </div>
 
@@ -230,12 +229,12 @@ export default function ProfilePage() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saqlanmoqda...
+                    {t("profile.saving")}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Saqlash
+                    {t("profile.save")}
                   </>
                 )}
               </Button>
@@ -247,44 +246,44 @@ export default function ProfilePage() {
       {/* Password Change */}
       <Card>
         <CardHeader>
-          <CardTitle>Parolni o&apos;zgartirish</CardTitle>
-          <CardDescription>Xavfsizlik uchun parolingizni yangilang</CardDescription>
+          <CardTitle>{t("profile.passwordChange")}</CardTitle>
+          <CardDescription>{t("profile.passwordChangeDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordUpdate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="current_password">Joriy parol</Label>
+              <Label htmlFor="current_password">{t("profile.currentPassword")}</Label>
               <Input
                 id="current_password"
                 name="current_password"
                 type="password"
                 value={formData.current_password}
                 onChange={handleInputChange}
-                placeholder="Joriy parolingizni kiriting"
+                placeholder={t("profile.currentPasswordPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="new_password">Yangi parol</Label>
+              <Label htmlFor="new_password">{t("profile.newPassword")}</Label>
               <Input
                 id="new_password"
                 name="new_password"
                 type="password"
                 value={formData.new_password}
                 onChange={handleInputChange}
-                placeholder="Yangi parolni kiriting"
+                placeholder={t("profile.newPasswordPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm_password">Parolni tasdiqlash</Label>
+              <Label htmlFor="confirm_password">{t("profile.confirmPassword")}</Label>
               <Input
                 id="confirm_password"
                 name="confirm_password"
                 type="password"
                 value={formData.confirm_password}
                 onChange={handleInputChange}
-                placeholder="Yangi parolni qayta kiriting"
+                placeholder={t("profile.confirmPasswordPlaceholder")}
               />
             </div>
 
@@ -293,12 +292,12 @@ export default function ProfilePage() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    O&apos;zgartirilmoqda...
+                    {t("profile.saving")}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Parolni o&apos;zgartirish
+                    {t("profile.save")}
                   </>
                 )}
               </Button>

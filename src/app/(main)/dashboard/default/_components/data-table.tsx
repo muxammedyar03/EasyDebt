@@ -6,6 +6,7 @@ import { createDashboardColumns } from "./columns";
 import { DataTableView } from "./data-table.view";
 import { DebtorView } from "@/types/view";
 import { rowToViewDebtor } from "@/lib/mappers/debtor.mapper";
+import { t } from "@/lib/i18n";
 
 type DataTableContainerProps = {
   data: DebtorView[];
@@ -120,7 +121,7 @@ export function DataTable({ data: initialData, debtLimit }: DataTableContainerPr
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "Qarzdorni o'chirishda xatolik yuz berdi");
+          throw new Error(errorData.error || t("debtors.deleteError"));
         }
 
         await refreshDebtors();

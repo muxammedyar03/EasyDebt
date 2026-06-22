@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 export const useDebtorRatingStatus = () => {
   const getRatingBadge = (rating: "high" | "medium" | "critical") => {
@@ -8,21 +9,21 @@ export const useDebtorRatingStatus = () => {
         return (
           <Badge className="bg-green-500">
             <TrendingUp className="mr-1 h-3 w-3" />
-            Yaxshi
+            {t("customers.good")}
           </Badge>
         );
       case "medium":
         return (
           <Badge className="bg-yellow-500">
             <Minus className="mr-1 h-3 w-3" />
-            O&apos;rtacha
+            {t("customers.average")}
           </Badge>
         );
       case "critical":
         return (
           <Badge variant="destructive">
             <TrendingDown className="mr-1 h-3 w-3" />
-            Yomon
+            {t("customers.bad")}
           </Badge>
         );
     }

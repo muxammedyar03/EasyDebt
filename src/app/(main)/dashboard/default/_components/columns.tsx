@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DebtorView } from "@/types/view";
 import { formatDateUz } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import {
   PrintConfirmDialog,
   SingleReceiptTemplate,
@@ -106,10 +107,10 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onMouseUpCapture={(e) => e.stopPropagation()}
       >
         <Button variant="outline" size="lg" onClick={() => setDebtDialogOpen(true)}>
-          <Plus className="h-4 w-4" /> Qarz
+          <Plus className="h-4 w-4" /> {t("debtors.addDebt")}
         </Button>
         <Button variant="outline" size="lg" onClick={() => setPaymentDialogOpen(true)}>
-          <Minus className="h-4 w-4" /> To&apos;lov
+          <Minus className="h-4 w-4" /> {t("debtors.addPayment")}
         </Button>
       </div>
 
@@ -269,12 +270,12 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
   };
 
   const handleDelete = async () => {
-    if (!confirm(`${row.original.firstName} ${row.original.lastName} ni o'chirishni xohlaysizmi?`)) {
-      return toast.error("Qarzdorni o'chirishni bekor qilindi");
+    if (!confirm(`${t("debtors.deleteConfirmName", { name: `${row.original.firstName} ${row.original.lastName}` })}`)) {
+      return toast.error(t("debtors.deleteCancelled"));
     }
 
     if (process.env.NODE_ENV === "production") {
-      toast.error("Demo modda, qarzorni o'chirish imkoni yo'q");
+      toast.error(t("debtors.deleteDemoLocked"));
       return;
     }
 
@@ -286,17 +287,17 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Qarzdorni o&apos;chirishda xatolik yuz berdi");
+        throw new Error(errorData.error || t("debtors.deleteError"));
       }
 
-      toast.success("Qarzdor muvaffaqiyatli o'chirildi");
+      toast.success(t("debtors.deleteSuccess"));
 
       if (context?.onDataChange) {
         context.onDataChange();
       }
     } catch (error) {
       console.error("Error deleting debtor:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzdorni o'chirishda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : t("debtors.deleteError"));
     } finally {
       setIsDeleting(false);
     }
@@ -325,7 +326,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
               setEditDialogOpen(true);
             }}
           >
-            O&apos;zgartirish
+            {t("debtors.edit")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={async (e) => {
@@ -336,7 +337,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
             className="text-destructive"
             disabled={process.env.NODE_ENV === "production"}
           >
-            {isDeleting ? "O'chirilmoqda..." : "O'chirish"}
+            {isDeleting ? t("common.loading") : t("common.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -361,14 +362,14 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   },
   {
     accessorKey: "firstName",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Qarzdor" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t("debtors.debtor")} />,
     cell: ({ row }) => <FirstNameCell row={row} />,
     enableSorting: true,
     enableHiding: false,
   },
   {
     accessorKey: "phoneNumber",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Telefon" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t("debtors.phone")} />,
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="text-muted-foreground px-1.5">
@@ -381,7 +382,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   },
   {
     accessorKey: "address",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Manzil" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t("debtors.address")} />,
     cell: ({ row }) => (
       <Badge variant="outline" className="text-muted-foreground px-1.5">
         {row.original.address || "—"}
@@ -393,23 +394,25 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   {
     accessorKey: "totalDebt",
     header: ({ column }) => (
-      <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />
+      <DataTableColumnHeader className="w-full text-right" column={column} title={t("debtors.debtAmount")} />
     ),
     cell: ({ row }) => (
-      <div className="text-base font-semibold">{row.original.totalDebt.toLocaleString()} so&apos;m</div>
+      <div className="text-base font-semibold">
+        {row.original.totalDebt.toLocaleString()} {t("debtors.currency")}
+      </div>
     ),
     enableSorting: true,
     enableHiding: false,
   },
   {
     accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t("debtors.status")} />,
     cell: ({ row }) => {
       const debtLimit = context?.debtLimit || 2000000;
       const totalDebt = row.original.totalDebt;
 
       let variant: "default" | "destructive" | "secondary" = "secondary";
-      let label = "Qarzdor";
+      let label = t("debtors.debtorStatus");
       const redColor = "font-medium bg-red-600/15 text-red-700 dark:text-red-500";
       const greenColor = "font-medium bg-green-600/20 text-green-700 dark:text-green-500";
       const defaultColor = "font-semibold bg-gray-600/15 text-gray-700 dark:text-gray-300 ";
@@ -417,15 +420,15 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
 
       if (totalDebt <= 0) {
         variant = "default";
-        label = "To'langan";
+        label = t("debtors.paid");
         color = greenColor;
       } else if (totalDebt > debtLimit) {
         variant = "default";
-        label = "Limitdan oshgan";
+        label = t("debtors.overLimit");
         color = redColor;
       } else {
         variant = "default";
-        label = "Qarzdor";
+        label = t("debtors.debtorStatus");
         color = defaultColor;
       }
 
@@ -446,7 +449,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   },
   {
     id: "actions-buttons",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Amallar" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title={t("debtors.actions")} />,
     cell: ({ row }) => <ActionButtonsCell row={row} context={context} />,
     enableHiding: false,
   },

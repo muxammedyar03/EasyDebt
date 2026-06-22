@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { sendPushForNotification } from "@/lib/push/push-service";
 import { isMockMode } from "@/lib/mock/is-mock-mode";
+import { mockMarkAllNotificationsRead, mockMarkNotificationRead } from "@/lib/mock";
+import { notificationRepository } from "@/entities/notification/api";
 
 export type NotificationType =
   | "OVERDUE_PAYMENT"
@@ -30,21 +31,6 @@ export async function createNotification(data: CreateNotificationData) {
         message: data.message,
       },
     });
-
-    // Push: yaratilgan foydalanuvchi (userId) ning barcha push yoqilgan qurilmalariga yuboriladi
-    if (data.userId) {
-      let url = "/dashboard/notifications";
-      if (data.debtorId) {
-        const debtor = await prisma.debtor.findUnique({
-          where: { id: data.debtorId },
-          select: { external_id: true },
-        });
-        url = debtor ? `/dashboard/default/debitor/${debtor.external_id}` : url;
-      }
-      sendPushForNotification(data.userId, data.type, data.title, data.message, notification.id, url).catch((err) =>
-        console.error("[notifications] Push send failed:", err),
-      );
-    }
   } catch (error) {
     console.error("Failed to create notification:", error);
   }
@@ -65,27 +51,29 @@ export async function getUnreadNotifications(userId?: number) {
 }
 
 export async function markNotificationAsRead(notificationId: number) {
+  if (isMockMode()) {
+    mockMarkNotificationRead(notificationId);
+    return;
+  }
   try {
-    await prisma.notification.update({
-      where: { id: notificationId },
-      data: { is_read: true },
-    });
+    await notificationRepository.update(notificationId, { is_read: true });
   } catch (error) {
     console.error("Failed to mark notification as read:", error);
   }
 }
 
 export async function markAllNotificationsAsRead(userId?: number) {
+  if (isMockMode()) {
+    mockMarkAllNotificationsRead(userId);
+    return;
+  }
   try {
     const where: { user_id?: number } = {};
     if (userId) {
       where.user_id = userId;
     }
 
-    await prisma.notification.updateMany({
-      where,
-      data: { is_read: true },
-    });
+    await notificationRepository.updateMany(where, { is_read: true });
   } catch (error) {
     console.error("Failed to mark all notifications as read:", error);
   }

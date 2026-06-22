@@ -105,9 +105,9 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
         <DialogHeader className="space-y-1">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <Share2 className="text-primary h-5 w-5" />
-            Profilni ulash
+            Ссылка на профиль
           </DialogTitle>
-          <DialogDescription>{debtorName} profili uchun ochiq monitoring havolasi va QR kod</DialogDescription>
+          <DialogDescription>{debtorName} профиля для отслеживания</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center justify-center gap-6 py-4">

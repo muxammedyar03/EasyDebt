@@ -16,6 +16,7 @@ import { QuickAddPayment } from "@/features/make-payment/ui";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDashboardDebtorsTable } from "./use-dashboard-debtors-table";
 import { DebtorView } from "@/types/view";
+import { t } from "@/lib/i18n";
 
 const SEARCH_DEBOUNCE_MS = 120;
 
@@ -42,7 +43,7 @@ function SearchInput({
       <Input
         type="text"
         className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
-        placeholder="Ism, telefon va manzil bo'yicha qidirish..."
+        placeholder={t("debtors.search")}
         value={local}
         onChange={(e) => setLocal(e.target.value)}
       />
@@ -120,7 +121,7 @@ export function DataTableView({
             <Input
               type="text"
               className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
-              placeholder="Ism, telefon va manzil bo'yicha qidirish..."
+              placeholder={t("debtors.search")}
               disabled
             />
           </div>
@@ -128,7 +129,7 @@ export function DataTableView({
         <DataTableViewOptions table={table} />
         <Button variant="outline" size="sm" className="h-14 w-14 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
           <Plus />
-          <span className="hidden lg:inline">Qarzdor qo&apos;shish</span>
+          <span className="hidden lg:inline">{t("debtors.addDebtor")}</span>
         </Button>
       </div>
 
@@ -136,7 +137,7 @@ export function DataTableView({
       <div className="grid gap-4 md:hidden">
         {(controlledSearch ?? "").trim() ? (
           filteredData.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+            <div className="text-muted-foreground py-8 text-center">{t("debtors.noData")}</div>
           ) : (
             filteredData.map((debtor) => (
               <DebtorCard

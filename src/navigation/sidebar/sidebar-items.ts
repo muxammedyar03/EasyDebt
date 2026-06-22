@@ -29,47 +29,35 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "Dashboards",
+    label: "Панели",
     items: [
       {
-        title: "Bosh sahifa",
+        title: "Главная",
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
-      // {
-      //   title: "CRM",
-      //   url: "/dashboard/crm",
-      //   icon: ChartBar,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Finance",
-      //   url: "/dashboard/finance",
-      //   icon: Banknote,
-      //   comingSoon: true,
-      // },
       {
-        title: "Qarzdorlar",
+        title: "Должники",
         url: "/dashboard/debtors",
         icon: UserCog,
       },
       {
-        title: "Mijozlar Reytingi",
+        title: "Рейтинг клиентов",
         url: "/dashboard/customers",
         icon: Users,
       },
       {
-        title: "Hisobotlar",
+        title: "Отчёты",
         url: "/dashboard/reports",
         icon: BarChart3,
       },
       {
-        title: "Audit Log",
+        title: "Журнал аудита",
         url: "/dashboard/audit-logs",
         icon: FileText,
       },
       {
-        title: "Users",
+        title: "Пользователи",
         url: "/dashboard/users",
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN"],

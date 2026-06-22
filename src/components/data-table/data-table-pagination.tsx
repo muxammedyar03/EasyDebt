@@ -4,6 +4,7 @@ import { ChevronRight, ChevronsRight, ChevronLeft, ChevronsLeft } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { t } from "@/lib/i18n";
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
@@ -13,12 +14,13 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
   return (
     <div className="flex items-center justify-between px-4">
       <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-        {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+        {table.getFilteredSelectedRowModel().rows.length} {t("common.of")} {table.getFilteredRowModel().rows.length}{" "}
+        {t("common.selectedRows")}
       </div>
       <div className="flex w-full items-center gap-8 lg:w-fit">
         <div className="hidden items-center gap-2 lg:flex">
           <Label htmlFor="rows-per-page" className="text-sm font-medium">
-            Rows per page
+            {t("dataTable.rowsPerPage")}
           </Label>
           <Select
             value={`${table.getState().pagination.pageSize}`}
@@ -39,7 +41,7 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
           </Select>
         </div>
         <div className="flex w-fit items-center justify-center text-sm font-medium">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          Страница {table.getState().pagination.pageIndex + 1} {t("common.of")} {table.getPageCount()}
         </div>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <Button

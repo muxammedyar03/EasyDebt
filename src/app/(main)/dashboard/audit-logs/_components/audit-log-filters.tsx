@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { t } from "@/lib/i18n";
 
 interface AuditLogFiltersProps {
   isMobile?: boolean;
@@ -84,28 +85,28 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
     <div className="space-y-4">
       {/* Date From */}
       <div className="space-y-2">
-        <Label htmlFor="dateFrom">Boshlanish sanasi</Label>
+        <Label htmlFor="dateFrom">{t("auditLogs.dateFrom")}</Label>
         <Input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
       </div>
 
       {/* Date To */}
       <div className="space-y-2">
-        <Label htmlFor="dateTo">Tugash sanasi</Label>
+        <Label htmlFor="dateTo">{t("auditLogs.dateTo")}</Label>
         <Input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
       </div>
 
       {/* Action Filter */}
       <div className="space-y-3">
-        <Label>Harakat turi</Label>
+        <Label>{t("auditLogs.actionType")}</Label>
         <div className="border-border h-32 overflow-y-scroll rounded-md border">
           {[
-            { value: "CREATE", label: "Yaratish" },
-            { value: "UPDATE", label: "Yangilash" },
-            { value: "DELETE", label: "O'chirish" },
-            { value: "LOGIN", label: "Kirish" },
-            { value: "LOGOUT", label: "Chiqish" },
-            { value: "EXPORT", label: "Export" },
-            { value: "IMPORT", label: "Import" },
+            { value: "CREATE", label: t("auditLogs.actionCreate") },
+            { value: "UPDATE", label: t("auditLogs.actionUpdate") },
+            { value: "DELETE", label: t("auditLogs.actionDelete") },
+            { value: "LOGIN", label: t("auditLogs.actionLogin") },
+            { value: "LOGOUT", label: t("auditLogs.actionLogout") },
+            { value: "EXPORT", label: t("common.export") },
+            { value: "IMPORT", label: t("common.import") },
           ].map((action) => (
             <div key={action.value} className="flex h-8 items-center space-x-2 border-b px-2">
               <Checkbox
@@ -126,14 +127,14 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
 
       {/* Entity Type Filter */}
       <div className="space-y-3">
-        <Label>Entity turi</Label>
+        <Label>{t("auditLogs.entityType")}</Label>
         <div className="border-border h-32 overflow-y-scroll rounded-md border">
           {[
-            { value: "DEBTOR", label: "Qarzdor" },
-            { value: "DEBT", label: "Qarz" },
-            { value: "PAYMENT", label: "To'lov" },
-            { value: "USER", label: "Foydalanuvchi" },
-            { value: "SETTINGS", label: "Sozlamalar" },
+            { value: "DEBTOR", label: t("debtors.debtor") },
+            { value: "DEBT", label: t("auditLogs.entityDebt") },
+            { value: "PAYMENT", label: t("auditLogs.entityPayment") },
+            { value: "USER", label: t("nav.users") },
+            { value: "SETTINGS", label: t("userMenu.settings") },
           ].map((entityType) => (
             <div key={entityType.value} className="flex h-8 items-center space-x-2 border-b px-2">
               <Checkbox
@@ -155,11 +156,11 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
       {/* Action Buttons */}
       <div className="flex flex-col gap-2 pt-2">
         <Button onClick={applyFilters} className="w-full">
-          Filterni qo&apos;llash
+          {t("auditLogs.applyFilter")}
         </Button>
         <Button onClick={handleClearFilters} variant="outline" className="w-full">
           <X className="mr-2 h-4 w-4" />
-          Tozalash
+          {t("auditLogs.clear")}
         </Button>
       </div>
     </div>
@@ -172,12 +173,12 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
         <DialogTrigger asChild>
           <Button variant="default" size="sm" className="bg-primary h-12">
             <Filter className="mr-2 h-4 w-4" />
-            Filter
+            {t("auditLogs.filter")}
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Filterlar</DialogTitle>
+            <DialogTitle>{t("auditLogs.filters")}</DialogTitle>
           </DialogHeader>
           <FilterContent />
         </DialogContent>
@@ -191,7 +192,7 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
       <CardHeader className="p-0">
         <CardTitle className="flex items-center gap-2 p-0 pt-2">
           <Filter className="h-5 w-5" />
-          Filterlar
+          {t("auditLogs.filters")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">

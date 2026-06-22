@@ -9,6 +9,7 @@ import { PaymentType } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 import { getPaymentTypeClass } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 type PaymentData = {
   id: number;
@@ -162,17 +163,17 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
     if (data.amount > debtLimit) {
       return {
         className: "bg-red-600/15 text-red-700 dark:text-red-500 hover:bg-red-600/15",
-        label: "Limitdan oshgan",
+        label: t("debtors.overLimit"),
       };
     } else if (data.amount <= 0) {
       return {
         className: "bg-green-600/15 text-green-700 dark:text-green-500 hover:bg-green-600/15",
-        label: "To'langan",
+        label: t("debtors.paid"),
       };
     } else {
       return {
         className: "bg-gray-500/20 dark:bg-gray-500/30 text-gray-900 dark:text-white hover:bg-gray-700/20",
-        label: "Qarzdor",
+        label: t("debtors.debtorStatus"),
       };
     }
   }
@@ -183,7 +184,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <div className="rounded-xl border p-4 shadow-sm">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Jami Qarz</h3>
+            <h3 className="text-sm font-medium">{t("reports.totalDebt")}</h3>
             <HandCoinsIcon className="h-5 w-5 text-red-500" />
           </div>
           <div>
@@ -193,7 +194,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
 
         <div className="rounded-xl border p-4 shadow-sm">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Jami To&apos;lov</h3>
+            <h3 className="text-sm font-medium">{t("reports.totalPayment")}</h3>
             <Banknote className="h-5 w-5 text-green-500" />
           </div>
           <div>
@@ -213,21 +214,21 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
               onClick={() => setTimeRange("daily")}
               className="flex-1"
             >
-              Kunlik
+              {t("reports.daily")}
             </Button>
             <Button
               variant={timeRange === "week" ? "default" : "outline"}
               onClick={() => setTimeRange("week")}
               className="flex-1"
             >
-              Haftalik
+              {t("reports.weekly")}
             </Button>
             <Button
               variant={timeRange === "month" ? "default" : "outline"}
               onClick={() => setTimeRange("month")}
               className="flex-1"
             >
-              Oylik
+              {t("reports.monthly")}
             </Button>
           </div>
 
@@ -251,7 +252,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
         {/* Summary Cards */}
         <div className="bg-card rounded-lg border p-4">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Naqd</h3>
+            <h3 className="text-sm font-medium">{t("reports.cash")}</h3>
             <Wallet className="text-muted-foreground h-4 w-4" />
           </div>
           <div>
@@ -260,7 +261,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
         </div>
         <div className="bg-card rounded-lg border p-4">
           <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <h3 className="text-sm font-medium">Karta</h3>
+            <h3 className="text-sm font-medium">{t("reports.card")}</h3>
             <CreditCard className="text-muted-foreground h-4 w-4" />
           </div>
           <div>
@@ -282,19 +283,21 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
       {/* Payments / Debts Tabs */}
       <Tabs defaultValue="payments" className="space-y-4">
         <TabsList className="grid h-10 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
-          <TabsTrigger value="payments">To&apos;lovlar ({filteredPayments.length})</TabsTrigger>
-          <TabsTrigger value="debts">Qarzlar ({filteredDebts.length})</TabsTrigger>
+          <TabsTrigger value="payments">{t("reports.paymentsTab", { count: filteredPayments.length })}</TabsTrigger>
+          <TabsTrigger value="debts">{t("reports.debtsTab", { count: filteredDebts.length })}</TabsTrigger>
         </TabsList>
 
         {/* Payments List */}
         <TabsContent value="payments" className="space-y-4">
           <div>
-            <h1 className="text-2xl font-bold">To&apos;lovlar ro&apos;yxati</h1>
-            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrencyUzs(totals.totalPayments)}</p>
+            <h1 className="text-2xl font-bold">{t("reports.paymentsList")}</h1>
+            <p className="text-muted-foreground pb-4 text-base">
+              {t("reports.total")}: {formatCurrencyUzs(totals.totalPayments)}
+            </p>
             <div>
               <div className="space-y-1">
                 {filteredPayments.length === 0 ? (
-                  <p className="text-muted-foreground py-8 text-center">To&apos;lovlar topilmadi</p>
+                  <p className="text-muted-foreground py-8 text-center">{t("reports.paymentsNotFound")}</p>
                 ) : (
                   filteredPayments.map((payment) => (
                     <div
@@ -305,14 +308,16 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
                       <div className="space-y-1">
                         <p className="font-medium">{payment.debtor_name}</p>
                         <p className="text-muted-foreground text-sm">
-                          {new Date(payment.created_at).toLocaleString("uz-UZ")}
+                          {new Date(payment.created_at).toLocaleString("ru-RU")}
                         </p>
                         {payment.note && (
-                          <p className="text-muted-foreground text-sm italic">{"Izoh: " + payment.note}</p>
+                          <p className="text-muted-foreground text-sm italic">
+                            {t("reports.note")}: {payment.note}
+                          </p>
                         )}
                       </div>
                       <div className="space-y-2">
-                        <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
+                        <p className="text-muted-foreground text-sm">{t("reports.totalDebtLabel")}:</p>
                         <p className="text-red-600">{formatCurrencyUzs(payment.debitor_total_debt)}</p>
                       </div>
                       <Badge
@@ -330,9 +335,9 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
                         </Badge>
                         <Badge variant="default" className={`h-8 px-3 ${getPaymentTypeClass(payment.payment_type)}`}>
                           {payment.payment_type === "CASH"
-                            ? "Naqd"
+                            ? t("reports.cash")
                             : payment.payment_type === "CARD"
-                              ? "Karta"
+                              ? t("reports.card")
                               : "Click"}
                         </Badge>
                         <span className="w-full text-end font-bold text-green-600 lg:w-36">
@@ -350,12 +355,14 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
         {/* Debts List */}
         <TabsContent value="debts" className="space-y-4">
           <div>
-            <h1 className="text-2xl font-bold">Qarzlar ro&apos;yxati</h1>
-            <p className="text-muted-foreground pb-4 text-base">Jami: {formatCurrencyUzs(totals.totalDebts)}</p>
+            <h1 className="text-2xl font-bold">{t("reports.debtsList")}</h1>
+            <p className="text-muted-foreground pb-4 text-base">
+              {t("reports.total")}: {formatCurrencyUzs(totals.totalDebts)}
+            </p>
             <div>
               <div className="space-y-3">
                 {filteredDebts.length === 0 ? (
-                  <p className="text-muted-foreground py-8 text-center">Qarzlar topilmadi</p>
+                  <p className="text-muted-foreground py-8 text-center">{t("reports.debtsNotFound")}</p>
                 ) : (
                   filteredDebts.map((debt) => {
                     return (
@@ -368,7 +375,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
                           <div className="space-y-1">
                             <p className="font-medium">{debt.debtor_name}</p>
                             <p className="text-muted-foreground text-sm">
-                              {new Date(debt.created_at).toLocaleString("uz-UZ")}
+                              {new Date(debt.created_at).toLocaleString("ru-RU")}
                             </p>
                             {debt.description && (
                               <p className="text-muted-foreground text-sm italic">{debt.description}</p>
@@ -383,7 +390,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
                         </div>
                         <div className="flex items-center justify-between space-y-2">
                           <div>
-                            <p className="text-muted-foreground text-sm">Umumiy qarz:</p>
+                            <p className="text-muted-foreground text-sm">{t("reports.totalDebtLabel")}:</p>
                             <p className="text-red-600">{formatCurrencyUzs(debt.debitor_total_debt)}</p>
                           </div>
                           <span className="flex font-bold text-red-600 lg:hidden lg:justify-end lg:text-end">

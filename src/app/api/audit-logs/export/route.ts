@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { auditLogRepository } from "@/entities/audit/api";
+import { isMockMode, getMockStore } from "@/lib/mock";
+import { t } from "@/lib/i18n";
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,27 +57,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all audit logs
-    const auditLogs = await prisma.auditLog.findMany({
-      where,
-      orderBy: { created_at: "desc" },
-    });
+    const auditLogs = await auditLogRepository.findMany(where, { orderBy: { created_at: "desc" } });
 
-    // Get user names
     const userIds = [...new Set(auditLogs.map((log) => log.user_id).filter((id): id is number => id !== null))];
-    const users = await prisma.user.findMany({
-      where: {
-        id: {
-          in: userIds,
-        },
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        first_name: true,
-        last_name: true,
-      },
-    });
+    const users = isMockMode()
+      ? getMockStore().users.filter((u) => userIds.includes(u.id))
+      : await (async () => {
+          const { prisma } = await import("@/lib/prisma");
+          return prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              first_name: true,
+              last_name: true,
+            },
+          });
+        })();
 
     const userMap = new Map(users.map((user) => [user.id, user]));
 
@@ -89,7 +88,7 @@ export async function GET(request: NextRequest) {
           ? user.first_name && user.last_name
             ? `${user.first_name} ${user.last_name}`
             : user.username
-          : "Tizim",
+          : t("common.system"),
         email: user?.email || "-",
         harakat: log.action,
         entity_turi: log.entity_type,

@@ -1,5 +1,6 @@
 import { debtorService } from "@/lib/services/debtor.service";
 import { CustomersTableWrap } from "./_components/customers-table-wrap";
+import { t } from "@/lib/i18n";
 
 export default async function CustomersPage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -48,8 +49,8 @@ export default async function CustomersPage(props: {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mijozlar Reytingi</h1>
-        <p className="text-muted-foreground">Oxirgi 3 oy ichidagi to&apos;lov tarixi asosida</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("customers.title")}</h1>
+        <p className="text-muted-foreground">{t("customers.subtitle")}</p>
       </div>
 
       <CustomersTableWrap

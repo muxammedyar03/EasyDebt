@@ -23,6 +23,14 @@ export class NotificationRepository {
   async count(where: Prisma.NotificationWhereInput) {
     return prisma.notification.count({ where });
   }
+
+  async update(id: number, data: Prisma.NotificationUpdateInput) {
+    return prisma.notification.update({ where: { id }, data });
+  }
+
+  async updateMany(where: Prisma.NotificationWhereInput, data: Prisma.NotificationUpdateManyMutationInput) {
+    return prisma.notification.updateMany({ where, data });
+  }
 }
 
 export const notificationRepository = new NotificationRepository();

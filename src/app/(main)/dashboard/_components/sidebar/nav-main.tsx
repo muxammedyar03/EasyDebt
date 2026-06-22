@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { type NavGroup, type NavMainItem } from "@/navigation/sidebar/sidebar-items";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { t } from "@/lib/i18n";
 
 interface NavMainProps {
   readonly items: readonly NavGroup[];
@@ -196,11 +197,11 @@ export function NavMain({ items }: NavMainProps) {
               <DropdownMenu open={quickCreateOpen} onOpenChange={setQuickCreateOpen}>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
-                    tooltip="Quick Create"
+                    tooltip={t("sidebar.quickCreate")}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
                   >
                     <PlusCircleIcon />
-                    <span>Quick Create</span>
+                    <span>{t("sidebar.quickCreate")}</span>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
@@ -213,7 +214,7 @@ export function NavMain({ items }: NavMainProps) {
                       }}
                     >
                       <UserPlus className="h-4 w-4" />
-                      <span>Qarzdor qo&apos;shish</span>
+                      <span>{t("sidebar.addDebtor")}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -226,7 +227,7 @@ export function NavMain({ items }: NavMainProps) {
                       }}
                     >
                       <Banknote className="h-4 w-4" />
-                      <span>Qarz qo&apos;shish</span>
+                      <span>{t("sidebar.addDebt")}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -238,7 +239,7 @@ export function NavMain({ items }: NavMainProps) {
                       }}
                     >
                       <CreditCard className="h-4 w-4" />
-                      <span>To&apos;lov qo&apos;shish</span>
+                      <span>{t("sidebar.addPayment")}</span>
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

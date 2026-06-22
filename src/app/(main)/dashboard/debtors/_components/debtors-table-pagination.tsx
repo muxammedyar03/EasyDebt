@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { t } from "@/lib/i18n";
 
 type DebtorsTablePaginationProps = {
   currentPage: number;
@@ -19,11 +20,11 @@ export function DebtorsTablePagination({
   return (
     <div className={`flex items-center justify-between ${className}`}>
       <div className="text-muted-foreground text-sm">
-        {currentPage} / {totalPages} sahifa
+        {t("common.pageOf", { current: currentPage, total: totalPages })}
       </div>
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
-          Oldingi
+          {t("common.previous")}
         </Button>
         <Button
           variant="outline"
@@ -31,7 +32,7 @@ export function DebtorsTablePagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          Keyingi
+          {t("common.next")}
         </Button>
       </div>
     </div>

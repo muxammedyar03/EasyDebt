@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DebtorView } from "@/types/view";
+import { t } from "@/lib/i18n";
 
 const editDebtorSchema = z.object({
   first_name: z.string().min(1, "Ism kiritish shart"),
@@ -109,8 +110,8 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>Qarzdor ma&apos;lumotlarini o&apos;zgartirish</DialogTitle>
-          <DialogDescription>Qarzdor ma&apos;lumotlarini tahrirlang</DialogDescription>
+          <DialogTitle>{t("debtors.editDebtor")}</DialogTitle>
+          <DialogDescription>{t("debtors.editDebtorDescription")}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}

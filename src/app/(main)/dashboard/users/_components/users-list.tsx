@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 
 interface User {
   id: number;
@@ -123,17 +124,17 @@ export function UsersList({ users, role }: UsersListProps) {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || "Foydalanuvchini o'chirishda xatolik yuz berdi");
+        throw new Error(data.error || t("users.deleteError"));
       }
 
-      toast.success("Muvaffaqiyatli", {
-        description: "Foydalanuvchi o'chirildi",
+      toast.success(t("users.deleteSuccess"), {
+        description: t("users.deleteSuccessDescription"),
       });
 
       router.refresh();
     } catch (error) {
       toast.error("Xatolik", {
-        description: error instanceof Error ? error.message : "Foydalanuvchini o'chirishda xatolik yuz berdi",
+        description: error instanceof Error ? error.message : t("users.deleteError"),
       });
     } finally {
       setIsLoading(false);
@@ -278,7 +279,7 @@ export function UsersList({ users, role }: UsersListProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isLoading}
             >
-              O&apos;chirish
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

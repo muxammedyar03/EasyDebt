@@ -21,11 +21,10 @@ import {
 import { getDashboardLayoutData } from "@/lib/dashboard-layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
-import { LayoutControls } from "./_components/sidebar/layout-controls";
-import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
+import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -74,9 +73,13 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-2">
               <NotificationsDropdown notifications={notifications} />
               <div>{session?.userId && <HeaderLockButton />}</div>
-              <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
-              <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
+              <AccountSwitcher
+                activeUser={formattedActiveUser}
+                debtLimit={debtLimit}
+                overdueDays={overdueDays}
+                layoutPreferences={layoutPreferences}
+              />
             </div>
           </div>
         </header>

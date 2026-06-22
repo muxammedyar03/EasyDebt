@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { t } from "@/lib/i18n";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -30,7 +31,7 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
     e.preventDefault();
 
     if (process.env.NODE_ENV === "production") {
-      toast.error("Demo modda, sozlamalar o'zgartirish imkoni yo'q");
+      toast.error(t("settings.demoLocked"));
       return;
     }
     setIsLoading(true);
@@ -43,10 +44,7 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
           fetch("/api/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              key: "debt_limit",
-              value: debtLimit,
-            }),
+            body: JSON.stringify({ key: "debt_limit", value: debtLimit }),
           }),
         );
       }
@@ -56,16 +54,13 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
           fetch("/api/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              key: "overdue_days",
-              value: overdueDays,
-            }),
+            body: JSON.stringify({ key: "overdue_days", value: overdueDays }),
           }),
         );
       }
 
       if (requests.length === 0) {
-        toast.info("Hech qanday o'zgarish yo'q");
+        toast.info(t("settings.noChanges"));
         onOpenChange(false);
         return;
       }
@@ -73,15 +68,15 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
       const responses = await Promise.all(requests);
 
       if (responses.every((res) => res.ok)) {
-        toast.success(`${requests.length} ta sozlama saqlandi`);
+        toast.success(t("settings.saved"));
         router.refresh();
         onOpenChange(false);
       } else {
-        toast.error("Xatolik yuz berdi");
+        toast.error(t("settings.error"));
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error("Xatolik yuz berdi");
+      toast.error(t("settings.error"));
     } finally {
       setIsLoading(false);
     }
@@ -89,36 +84,33 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
 
   const formatNumber = (value: string) => {
     const number = value.replace(/\D/g, "");
-    return new Intl.NumberFormat("uz-UZ").format(Number(number));
+    return new Intl.NumberFormat("ru-RU").format(Number(number));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Sozlamalar</DialogTitle>
-          <DialogDescription>Qarzdorlar uchun maksimal qarz limitini belgilang</DialogDescription>
+          <DialogTitle>{t("settings.title")}</DialogTitle>
+          <DialogDescription>{t("settings.description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="debt_limit">{"Qarz limiti (so'm)"}</Label>
+            <Label htmlFor="debt_limit">{t("settings.debtLimit")}</Label>
             <Input
               id="debt_limit"
               type="text"
               value={formatNumber(debtLimit)}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "");
-                setDebtLimit(value);
-              }}
+              onChange={(e) => setDebtLimit(e.target.value.replace(/\D/g, ""))}
               placeholder="2000000"
               required
             />
             <p className="text-muted-foreground text-sm">
-              Joriy limit: {formatNumber(debtLimit)} {"so'm"}
+              {t("settings.currentLimit")}: {formatNumber(debtLimit)} {t("settings.currency")}
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="overdue_days">Muddati o&apos;tish kuni (kun)</Label>
+            <Label htmlFor="overdue_days">{t("settings.overdueDays")}</Label>
             <Input
               id="overdue_days"
               type="number"
@@ -128,15 +120,17 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
               placeholder="45"
               required
             />
-            <p className="text-muted-foreground text-sm">Joriy muddat: {overdueDays} kun</p>
+            <p className="text-muted-foreground text-sm">
+              {t("settings.currentDays")}: {overdueDays} {t("settings.days")}
+            </p>
           </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Bekor qilish
+              {t("settings.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading || process.env.NODE_ENV === "production"}>
-              {isLoading ? "Saqlanmoqda..." : "Saqlash"}
+              {isLoading ? t("settings.saving") : t("settings.save")}
             </Button>
           </div>
         </form>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PUSH_NOTIFICATIONS_DISABLED } from "@/lib/push/disabled";
 
 const subscribeSchema = z.object({
   endpoint: z.string().url(),
@@ -16,6 +17,9 @@ const subscribeSchema = z.object({
  * Subscribe user to push notifications
  */
 export async function POST(request: NextRequest) {
+  if (PUSH_NOTIFICATIONS_DISABLED) {
+    return NextResponse.json({ error: "Push notifications disabled" }, { status: 503 });
+  }
   try {
     const session = await getSession();
     if (!session || !session.userId) {
@@ -75,6 +79,9 @@ export async function POST(request: NextRequest) {
  * Unsubscribe user from push notifications
  */
 export async function DELETE(request: NextRequest) {
+  if (PUSH_NOTIFICATIONS_DISABLED) {
+    return NextResponse.json({ error: "Push notifications disabled" }, { status: 503 });
+  }
   try {
     const session = await getSession();
     if (!session || !session.userId) {
@@ -111,6 +118,9 @@ export async function DELETE(request: NextRequest) {
  * Get user's subscription status
  */
 export async function GET(_request: NextRequest) {
+  if (PUSH_NOTIFICATIONS_DISABLED) {
+    return NextResponse.json({ error: "Push notifications disabled" }, { status: 503 });
+  }
   try {
     const session = await getSession();
     if (!session || !session.userId) {

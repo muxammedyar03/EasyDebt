@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import type { PaymentReminderDomain } from "@/types/domain/payment-reminder.domain";
+import { t } from "@/lib/i18n";
 
 /**
  * Form state for payment reminder dialog
@@ -286,7 +287,7 @@ export function usePaymentReminder(
         });
 
         if (!response.ok) {
-          throw new Error("Eslatmani o'chirishda xatolik");
+          throw new Error(t("paymentReminders.deleteError"));
         }
 
         await refreshReminders();

@@ -27,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
 import { createDebt } from "../api";
+import { t } from "@/lib/i18n";
 
 const formatNumber = (value: string) => {
   const numbers = value.replace(/\D/g, "");
@@ -91,7 +92,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       });
     } catch (error) {
       console.error("Error adding debt:", error);
-      toast.error(getErrorMessage(error, "Qarz qo'shishda xatolik yuz berdi"));
+      toast.error(getErrorMessage(error, "Ошибка при создании долга"));
     } finally {
       setIsLoading(false);
     }
@@ -101,8 +102,8 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>Qarz qo&apos;shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi qarz qo&apos;shish</DialogDescription>
+          <DialogTitle>{t("debtors.addDebtDialogTitle")}</DialogTitle>
+          <DialogDescription>{t("debtors.addDebtDialogDescription", { debtorName })}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}

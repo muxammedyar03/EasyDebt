@@ -1,4 +1,4 @@
-import { PaymentType, Prisma, UserRole } from "@prisma/client";
+import { PaymentType, Prisma, UserRole, NotificationType } from "@prisma/client";
 import { randomUUID } from "crypto";
 
 const FIRST_NAMES = [
@@ -91,6 +91,8 @@ const STREETS = [
 ];
 
 const DEBTOR_COUNT = 35;
+const MOCK_AUDIT_COUNT = 30;
+const MOCK_NOTIFICATION_COUNT = 30;
 const MIN_DEBT = 10_000;
 const MAX_DEBT = 2_000_000;
 
@@ -177,6 +179,31 @@ export type MockPaymentReminderRow = {
   updated_at: Date;
 };
 
+export type MockAuditLogRow = {
+  id: number;
+  user_id: number | null;
+  action: string;
+  entity_type: string;
+  entity_id: number | null;
+  old_value: Prisma.JsonValue | null;
+  new_value: Prisma.JsonValue | null;
+  description: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: Date;
+};
+
+export type MockNotificationRow = {
+  id: number;
+  user_id: number | null;
+  debtor_id: number | null;
+  type: NotificationType;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: Date;
+};
+
 export type MockStoreData = {
   users: MockUserRow[];
   debtors: MockDebtorRow[];
@@ -184,7 +211,17 @@ export type MockStoreData = {
   payments: MockPaymentRow[];
   settings: MockSettingRow[];
   paymentReminders: MockPaymentReminderRow[];
-  nextId: { debtor: number; debt: number; payment: number; reminder: number; user: number };
+  auditLogs: MockAuditLogRow[];
+  notifications: MockNotificationRow[];
+  nextId: {
+    debtor: number;
+    debt: number;
+    payment: number;
+    reminder: number;
+    user: number;
+    auditLog: number;
+    notification: number;
+  };
 };
 
 export function createDemoMockStore(): MockStoreData {
@@ -304,6 +341,96 @@ export function createDemoMockStore(): MockStoreData {
     updated_at: now,
   }));
 
+  const auditTemplates = [
+    { action: "CREATE", entity_type: "DEBTOR", description: "Должник создан" },
+    { action: "UPDATE", entity_type: "DEBTOR", description: "Должник обновлён" },
+    { action: "DELETE", entity_type: "DEBTOR", description: "Должник удалён" },
+    { action: "DEBT_ADDED", entity_type: "DEBT", description: "Долг добавлен" },
+    { action: "PAYMENT_ADDED", entity_type: "PAYMENT", description: "Платёж добавлен" },
+    { action: "LOGIN", entity_type: "USER", description: "Вход в систему" },
+    { action: "LOGOUT", entity_type: "USER", description: "Выход из системы" },
+    { action: "EXPORT", entity_type: "DEBTOR", description: "Экспорт данных" },
+    { action: "IMPORT", entity_type: "DEBTOR", description: "Импорт данных" },
+    { action: "UPDATE", entity_type: "SETTINGS", description: "Настройки изменены" },
+  ] as const;
+
+  const auditLogs: MockAuditLogRow[] = Array.from({ length: MOCK_AUDIT_COUNT }, (_, i) => {
+    const debtor = debtors[i % debtors.length];
+    const template = auditTemplates[i % auditTemplates.length];
+    const debt = debts.find((d) => d.debtor_id === debtor.id);
+    const payment = payments.find((p) => p.debtor_id === debtor.id);
+    const entityId =
+      template.entity_type === "DEBTOR"
+        ? debtor.id
+        : template.entity_type === "DEBT"
+          ? (debt?.id ?? debtor.id)
+          : template.entity_type === "PAYMENT"
+            ? (payment?.id ?? debtor.id)
+            : template.entity_type === "USER"
+              ? 1
+              : 1;
+
+    return {
+      id: i + 1,
+      user_id: template.action === "LOGIN" || template.action === "LOGOUT" ? 1 : i % 7 === 0 ? null : 1,
+      action: template.action,
+      entity_type: template.entity_type,
+      entity_id: entityId,
+      old_value: template.action === "UPDATE" ? { total_debt: debtor.total_debt.toNumber() } : null,
+      new_value:
+        template.entity_type === "DEBTOR" || template.entity_type === "DEBT" || template.entity_type === "PAYMENT"
+          ? { debtor_id: debtor.id, amount: randInt(10_000, 500_000) }
+          : null,
+      description: `${template.description}: ${debtor.first_name} ${debtor.last_name}`,
+      ip_address: `192.168.${(i % 10) + 1}.${(i % 200) + 10}`,
+      user_agent: "Mozilla/5.0 (Demo)",
+      created_at: randDate(90),
+    };
+  });
+
+  const notificationTemplates: {
+    type: NotificationType;
+    title: string;
+    message: (name: string, debt: number) => string;
+  }[] = [
+    {
+      type: "OVERDUE_PAYMENT",
+      title: "Просроченный",
+      message: (name, debt) => `${name} — просрочка. Долг: ${debt.toLocaleString()} сум`,
+    },
+    {
+      type: "DEBT_LIMIT_EXCEEDED",
+      title: "Превышен лимит",
+      message: (name, debt) => `${name} превысил лимит долга (${debt.toLocaleString()} сум)`,
+    },
+    {
+      type: "HOSTING_REMINDER",
+      title: "Напоминание",
+      message: (name) => `Проверьте данные должника ${name}`,
+    },
+    {
+      type: "PAYMENT_REMINDER",
+      title: "Напоминание об оплате",
+      message: (name, debt) => `Напомните ${name} об оплате (${debt.toLocaleString()} сум)`,
+    },
+  ];
+
+  const notifications: MockNotificationRow[] = Array.from({ length: MOCK_NOTIFICATION_COUNT }, (_, i) => {
+    const debtor = debtors[i % debtors.length];
+    const template = notificationTemplates[i % notificationTemplates.length];
+    const debt = debtor.total_debt.toNumber();
+    return {
+      id: i + 1,
+      user_id: i % 4 === 0 ? null : 1,
+      debtor_id: debtor.id,
+      type: template.type,
+      title: template.title,
+      message: template.message(`${debtor.first_name} ${debtor.last_name}`, debt),
+      is_read: i % 5 === 0,
+      created_at: randDate(45),
+    };
+  });
+
   return {
     users,
     debtors,
@@ -311,12 +438,16 @@ export function createDemoMockStore(): MockStoreData {
     payments,
     settings,
     paymentReminders,
+    auditLogs,
+    notifications,
     nextId: {
       debtor: debtors.length + 1,
       debt: debtId,
       payment: paymentId,
       reminder: paymentReminders.length + 1,
       user: users.length + 1,
+      auditLog: auditLogs.length + 1,
+      notification: notifications.length + 1,
     },
   };
 }

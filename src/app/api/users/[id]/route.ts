@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
+import { t } from "@/lib/i18n";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -230,6 +231,6 @@ export async function DELETE(
       }
     }
 
-    return NextResponse.json({ error: "Foydalanuvchini o'chirishda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: t("users.deleteError") }, { status: 500 });
   }
 }

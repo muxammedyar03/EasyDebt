@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { REMINDER_STATUS_BADGES } from "@/types/view/payment-reminder.view";
 import type { PaymentReminderDomain } from "@/types/domain/payment-reminder.domain";
 import { Input } from "@/components/ui/input";
+import { t } from "@/lib/i18n";
 
 interface PaymentReminderFormState {
   date: Date | undefined;
@@ -187,7 +188,7 @@ export function PaymentReminderDialog({
                 className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/20"
               >
                 <Trash2 className="mr-1 h-4 w-4" />
-                O&apos;chirish
+                {t("debtors.delete")}
               </Button>
             </div>
 
@@ -325,7 +326,7 @@ export function PaymentReminderDialog({
                       className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/10 dark:border-red-500/15 dark:bg-red-500/10 dark:hover:bg-red-600/20"
                     >
                       <Trash2 className="mr-1 h-4 w-4" />
-                      O&apos;chirish
+                      {t("debtors.delete")}
                     </Button>
                   </div>
                 )}
@@ -338,11 +339,11 @@ export function PaymentReminderDialog({
                     disabled={isSubmitting}
                     className="h-12"
                   >
-                    Yopish
+                    {t("common.close")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting || !formState.date} className="h-12">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {activeReminder ? "Yangilash" : "Saqlash"}
+                    {activeReminder ? t("common.update") : t("common.save")}
                   </Button>
                 </div>
               </div>

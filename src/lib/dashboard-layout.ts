@@ -1,7 +1,7 @@
 import type { NotificationType } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { settingsRepository } from "@/entities/settings/api";
+import { isMockMode, getMockStore } from "@/lib/mock";
 
 export type DashboardLayoutUser = {
   id: string;
@@ -41,30 +41,71 @@ const DEFAULT_ACTIVE_USER: DashboardLayoutUser = {
   role: "SUPER_ADMIN",
 };
 
-/**
- * Single data fetch for dashboard layout: session, settings, user, notifications with debtor external IDs.
- * Use this in dashboard layout instead of multiple separate prisma/settings calls.
- */
+function mapUserToActiveUser(user: {
+  id: number;
+  username: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+}): DashboardLayoutUser {
+  return {
+    id: user.id.toString(),
+    name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username,
+    username: user.username,
+    email: user.email || "",
+    avatar: `/avatars/${user.username}.png`,
+    role: user.role,
+  };
+}
+
 export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
   const session = await getSession();
-
-  const [debtLimit, overdueDays, user] = await Promise.all([
+  const [debtLimit, overdueDays] = await Promise.all([
     settingsRepository.getDebtLimit(),
     settingsRepository.getOverdueDays(),
-    session
-      ? prisma.user.findUnique({
-          where: { id: session.userId },
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            first_name: true,
-            last_name: true,
-            role: true,
-          },
-        })
-      : null,
   ]);
+
+  if (isMockMode()) {
+    const store = getMockStore();
+    const user = session ? store.users.find((u) => u.id === session.userId) : null;
+    const unread = store.notifications
+      .filter((n) => !n.is_read)
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .slice(0, 3);
+
+    const notifications: DashboardLayoutNotification[] = unread.map((n) => {
+      const debtor = n.debtor_id ? store.debtors.find((d) => d.id === n.debtor_id) : null;
+      return {
+        ...n,
+        debtor_external_id: debtor?.external_id ?? null,
+      };
+    });
+
+    return {
+      session,
+      debtLimit,
+      overdueDays,
+      activeUser: user ? mapUserToActiveUser(user) : DEFAULT_ACTIVE_USER,
+      notifications,
+    };
+  }
+
+  const { prisma } = await import("@/lib/prisma");
+
+  const user = session
+    ? await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          first_name: true,
+          last_name: true,
+          role: true,
+        },
+      })
+    : null;
 
   const notificationsRaw = await prisma.notification.findMany({
     where: { is_read: false },
@@ -87,22 +128,11 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
     debtor_external_id: n.debtor_id ? (idToExternalId.get(n.debtor_id) ?? null) : null,
   }));
 
-  const activeUser: DashboardLayoutUser = user
-    ? {
-        id: user.id.toString(),
-        name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username,
-        username: user.username,
-        email: user.email || "",
-        avatar: `/avatars/${user.username}.png`,
-        role: user.role,
-      }
-    : DEFAULT_ACTIVE_USER;
-
   return {
     session,
     debtLimit,
     overdueDays,
-    activeUser,
+    activeUser: user ? mapUserToActiveUser(user) : DEFAULT_ACTIVE_USER,
     notifications,
   };
 }

@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { PaymentDomain } from "@/types/domain";
+import { t } from "@/lib/i18n";
 
 const editPaymentSchema = z.object({
   amount: z.string().min(1, "To'lov miqdorini kiriting"),
@@ -127,8 +128,8 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>To&apos;lovni tahrirlash</DialogTitle>
-          <DialogDescription>To&apos;lov ma&apos;lumotlarini o&apos;zgartirish</DialogDescription>
+          <DialogTitle>{t("debtors.editPayment")}</DialogTitle>
+          <DialogDescription>{t("debtors.editPaymentDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
@@ -198,7 +199,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">To&apos;lovning yaratilgan sanasini o&apos;zgartirish</p>
+                <p className="text-muted-foreground text-xs">{t("debtors.editPaymentCreatedAtDescription")}</p>
               </div>
             )}
           </div>

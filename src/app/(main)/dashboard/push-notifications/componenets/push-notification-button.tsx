@@ -13,6 +13,7 @@ import {
 import { usePushNotification } from "@/hooks/use-push-notification";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { t } from "@/lib/i18n";
 
 export function PushNotificationButton() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export function PushNotificationButton() {
         <DropdownMenuLabel>Push Notificationlar</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleToggle} disabled={isLoading}>
-          {isSubscribed ? "O'chirish" : "Yoqish"}
+          {isSubscribed ? t("common.delete") : t("common.save")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/dashboard/settings/push-notifications")}>
           Sozlamalar

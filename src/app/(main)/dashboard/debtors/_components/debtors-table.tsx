@@ -24,6 +24,8 @@ import { DebtorsTableFilters } from "./debtors-table-filters";
 import { DebtorsTablePagination } from "./debtors-table-pagination";
 import { DebtorsTableToolbar } from "./debtors-table-toolbar";
 import type { DebtorView } from "@/types/view";
+import { t } from "@/lib/i18n";
+import { hasActiveDebtorsFilters } from "@/lib/debtors/debtors-list-filters";
 
 interface DebtorsTableProps {
   debtors: DebtorView[];
@@ -35,8 +37,16 @@ interface DebtorsTableProps {
 export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: DebtorsTableProps) {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { searchParams, searchValue, setSearchValue, isSearching, handleSort, handleStatusFilter, handlePageChange } =
-    useDebtorsTableUrl();
+  const {
+    searchParams,
+    searchValue,
+    setSearchValue,
+    isSearching,
+    handleSort,
+    handleStatusFilter,
+    handlePageChange,
+    handleClearAllFilters,
+  } = useDebtorsTableUrl();
 
   const [selectedIds, setSelectedIds] = React.useState<number[]>([]);
   const [openEditDebtDialog, setOpenEditDebtDialog] = React.useState(false);
@@ -63,7 +73,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const handleBulkDelete = React.useCallback(async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`${selectedIds.length} ta qarzdorni o'chirmoqchimisiz?`)) return;
+    if (!confirm(t("debtorsTable.deleteBulkConfirm", { count: selectedIds.length }))) return;
     try {
       const ok = await bulkDeleteDebtors(selectedIds);
       if (ok) {
@@ -77,7 +87,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const handleDelete = React.useCallback(
     async (id: number) => {
-      if (!confirm("Qarzdorni o'chirmoqchimisiz?")) return;
+      if (!confirm(t("debtorsTable.deleteConfirm"))) return;
       try {
         const ok = await deleteDebtorById(id);
         if (ok) router.refresh();
@@ -90,17 +100,18 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const handleExcelExport = React.useCallback(async () => {
     try {
-      toast.loading("Excel fayl tayyorlanmoqda...");
-      const params = new URLSearchParams(searchParams?.toString() ?? "");
-      const search = params.get("search") || "";
-      const status = params.get("status") || "all";
-      const { rowCount } = await exportDebtorsListToExcel({ search, status });
+      toast.loading(t("debtorsTable.excelPreparing"));
+      const params: Record<string, string> = {};
+      searchParams?.forEach((value, key) => {
+        params[key] = value;
+      });
+      const { rowCount } = await exportDebtorsListToExcel(params);
       toast.dismiss();
-      toast.success(`${rowCount} ta qarzdor Excel fayliga yuklandi`);
+      toast.success(t("debtorsTable.excelExportSuccess", { count: rowCount }));
     } catch (error) {
       console.error("Export error:", error);
       toast.dismiss();
-      toast.error("Excel fayliga yuklashda xatolik yuz berdi");
+      toast.error(t("debtorsTable.excelExportError"));
     }
   }, [searchParams]);
 
@@ -143,6 +154,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const sortBy = searchParams?.get("sortBy") ?? null;
   const sortOrder = searchParams?.get("sortOrder") ?? null;
   const statusFilter = searchParams?.get("status") || "all";
+  const hasActiveFilters = hasActiveDebtorsFilters(searchParams);
 
   return (
     <>
@@ -158,7 +170,13 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
           onExcelExport={() => void handleExcelExport()}
         />
 
-        <DebtorsTableFilters isMobile={isMobile} statusValue={statusFilter} onStatusChange={handleStatusFilter} />
+        <DebtorsTableFilters
+          isMobile={isMobile}
+          statusValue={statusFilter}
+          onStatusChange={handleStatusFilter}
+          onClearAllFilters={handleClearAllFilters}
+          hasActiveFilters={hasActiveFilters}
+        />
 
         <DebtorsTablePagination
           className="md:hidden"
@@ -169,7 +187,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
         <div className="grid gap-4 md:hidden">
           {debtors.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+            <div className="text-muted-foreground py-8 text-center">{t("debtors.noData")}</div>
           ) : (
             debtors.map((debtor) => (
               <DebtorCard

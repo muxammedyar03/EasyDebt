@@ -12,6 +12,7 @@ import { AuditLogTableProps } from "@/types/types";
 import { useTableUtils } from "../utils/useTableUtils";
 import { AuditLogFilters } from "./audit-log-filters";
 import { exportToExcel } from "@/lib/excel-export";
+import { t } from "@/lib/i18n";
 
 interface ExportedAuditLog {
   id: number;
@@ -62,7 +63,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      toast.loading("Excel fayl tayyorlanmoqda...");
+      toast.loading(t("auditLogs.excelPreparing"));
 
       const params = searchParams?.toString() ?? "";
       const response = await fetch(`/api/audit-logs/export?${params}`);
@@ -76,7 +77,16 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
 
       // Prepare export data
       const exportData = {
-        headers: ["ID", "Sana", "Foydalanuvchi", "Email", "Harakat", "Entity turi", "Entity ID", "IP Address"],
+        headers: [
+          "ID",
+          t("auditLogs.exportHeaderDate"),
+          t("auditLogs.exportHeaderUser"),
+          "Email",
+          t("auditLogs.exportHeaderAction"),
+          t("auditLogs.entityType"),
+          "Entity ID",
+          "IP Address",
+        ],
         rows: logs.map((log) => [
           log.id,
           log.sana,
@@ -92,11 +102,11 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
 
       await exportToExcel(exportData);
       toast.dismiss();
-      toast.success(`${logs.length} ta yozuv Excel fayliga yuklandi`);
+      toast.success(t("auditLogs.excelExportSuccess", { count: logs.length }));
     } catch (error) {
       console.error("Export error:", error);
       toast.dismiss();
-      toast.error("Excel fayliga yuklashda xatolik yuz berdi");
+      toast.error(t("auditLogs.excelExportError"));
     } finally {
       setIsExporting(false);
     }
@@ -109,7 +119,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
         <Card className="py-0 pt-6">
           <CardHeader className="px-2 md:px-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-lg md:text-xl">Audit Log ({totalCount} ta yozuv)</CardTitle>
+              <CardTitle className="text-lg md:text-xl">{t("auditLogs.recordsCount", { count: totalCount })}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-2 md:px-4">
@@ -118,7 +128,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
               <div className="relative flex-1">
                 <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
                 <Input
-                  placeholder="Harakat yoki entity bo'yicha qidirish..."
+                  placeholder={t("auditLogs.searchPlaceholder")}
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -129,7 +139,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                 {/* Filter button for mobile/tablet */}
                 <Button onClick={handleSearch} variant="outline" size="sm" className="h-12">
                   <Search className="mr-2 h-4 w-4" />
-                  Qidirish
+                  {t("auditLogs.search")}
                 </Button>
                 <div className="2xl:hidden">
                   <AuditLogFilters isMobile />
@@ -142,7 +152,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   className="h-12 bg-blue-500 text-white hover:bg-blue-600"
                 >
                   <FileDown className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
+                  <span className="hidden sm:inline">{t("common.export")}</span>
                 </Button>
               </div>
             </div>
@@ -162,7 +172,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                       </div>
                       <div>
                         <p className="text-sm font-medium">
-                          {log.user ? `${log.user.username} (${log.user.email})` : "Tizim"}
+                          {log.user ? `${log.user.username} (${log.user.email})` : t("common.system")}
                         </p>
                         <p className="text-muted-foreground text-xs">
                           {getEntityTypeName(log.entity_type)}
@@ -187,10 +197,10 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                 <TableHeader>
                   <TableRow>
                     {/* <TableHead>Sana</TableHead> */}
-                    <TableHead>Foydalanuvchi</TableHead>
-                    <TableHead>Harakat</TableHead>
+                    <TableHead>{t("auditLogs.user")}</TableHead>
+                    <TableHead>{t("auditLogs.action")}</TableHead>
                     {/* <TableHead>Entity</TableHead> */}
-                    <TableHead>Tafsilotlar</TableHead>
+                    <TableHead>{t("auditLogs.details")}</TableHead>
                     {/* <TableHead>IP Address</TableHead> */}
                   </TableRow>
                 </TableHeader>
@@ -198,7 +208,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   {logs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center">
-                        Ma&apos;lumot topilmadi
+                        {t("debtors.noData")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -217,7 +227,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                             </div>
                           ) : (
                             <div>
-                              <p className="font-medium">Tizim</p>
+                              <p className="font-medium">{t("common.system")}</p>
                               <p className="text-muted-foreground text-xs">{formatDate(log.created_at)}</p>
                             </div>
                           )}
@@ -249,7 +259,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
             {totalPages > 1 && (
               <div className="mt-6 mb-3 flex items-center justify-between">
                 <div className="text-muted-foreground text-sm">
-                  {currentPage} / {totalPages} sahifa
+                  {t("common.pageOf", { current: currentPage, total: totalPages })}
                 </div>
                 <div className="flex items-center gap-4">
                   <Button
@@ -260,7 +270,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Oldingi
+                    {t("common.previous")}
                   </Button>
                   <Button
                     variant="outline"
@@ -269,7 +279,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                     disabled={currentPage === totalPages}
                     className="h-12 px-6"
                   >
-                    Keyingi
+                    {t("common.next")}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

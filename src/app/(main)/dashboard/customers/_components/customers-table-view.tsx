@@ -15,6 +15,7 @@ import { SortToggleGroup } from "./sort-toggle-group";
 import { useDebtorRatingStatus } from "@/hooks/useDebtorRatingStatus";
 import { formatCurrencyUzs } from "@/lib/format";
 import { PaginatedCustomerRatingsView } from "@/types/domain/customer-rating.domain";
+import { t } from "@/lib/i18n";
 
 interface CustomersTableDumbProps {
   customers: PaginatedCustomerRatingsView["data"];
@@ -64,7 +65,7 @@ export function CustomersTableDumb({
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
             <Input
-              placeholder="Ism, familiya yoki telefon..."
+              placeholder={t("customers.searchPlaceholder")}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
               className="h-12 pl-8"
@@ -72,10 +73,10 @@ export function CustomersTableDumb({
           </div>
           <SortToggleGroup
             sortOptions={[
-              { key: "date", label: "Sana" },
-              { key: "days", label: "Kunlar" },
-              { key: "payments", label: "To'lovlar" },
-              { key: "debt", label: "Qarz" },
+              { key: "date", label: t("customers.date") },
+              { key: "days", label: t("customers.days") },
+              { key: "payments", label: t("customers.payments") },
+              { key: "debt", label: t("customers.debt") },
             ]}
             currentSortField={currentSortField}
             currentSortOrder={currentSortOrder}
@@ -89,22 +90,22 @@ export function CustomersTableDumb({
           <Tabs value={currentRating} onValueChange={onRatingChange} className="w-full xl:w-1/2">
             <TabsList className="grid h-12 w-full grid-cols-4">
               <TabsTrigger value="all">
-                Barchasi
+                {t("common.all")}
                 <span className="ml-2 text-xs">({totalDebtorsCount})</span>
               </TabsTrigger>
               <TabsTrigger value="high">
                 <TrendingUp className="mr-1 h-4 w-4" />
-                Yaxshi
+                {t("customers.good")}
                 <span className="ml-2 text-xs">({goodCount})</span>
               </TabsTrigger>
               <TabsTrigger value="medium">
                 <Minus className="mr-1 h-4 w-4" />
-                O&apos;rtacha
+                {t("customers.average")}
                 <span className="ml-2 text-xs">({averageCount})</span>
               </TabsTrigger>
               <TabsTrigger value="critical">
                 <TrendingDown className="mr-1 h-4 w-4" />
-                Yomon
+                {t("customers.bad")}
                 <span className="ml-2 text-xs">({badCount})</span>
               </TabsTrigger>
             </TabsList>
@@ -112,13 +113,13 @@ export function CustomersTableDumb({
         ) : (
           <Select value={currentRating} onValueChange={onRatingChange}>
             <SelectTrigger className="!h-12 w-32">
-              <SelectValue placeholder="Select a rating" />
+              <SelectValue placeholder={t("customers.selectRating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Barchasi</SelectItem>
-              <SelectItem value="high">Yaxshi</SelectItem>
-              <SelectItem value="medium">O&apos;rtacha</SelectItem>
-              <SelectItem value="critical">Yomon</SelectItem>
+              <SelectItem value="all">{t("common.all")}</SelectItem>
+              <SelectItem value="high">{t("customers.good")}</SelectItem>
+              <SelectItem value="medium">{t("customers.average")}</SelectItem>
+              <SelectItem value="critical">{t("customers.bad")}</SelectItem>
             </SelectContent>
           </Select>
         )}
@@ -127,7 +128,7 @@ export function CustomersTableDumb({
       {/* Mobile Card View */}
       <div className="grid gap-4 md:hidden">
         {customers.length === 0 ? (
-          <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+          <div className="text-muted-foreground py-8 text-center">{t("debtors.noData")}</div>
         ) : (
           customers.map((customer) => (
             <Card
@@ -148,11 +149,13 @@ export function CustomersTableDumb({
                   )}
                   <div className="flex items-center justify-between pt-2">
                     <div>
-                      <p className="text-muted-foreground text-xs">O&apos;rtacha kunlar</p>
-                      <p className="text-lg font-bold">{customer.rating.score} kun</p>
+                      <p className="text-muted-foreground text-xs">{t("customers.avgDays")}</p>
+                      <p className="text-lg font-bold">
+                        {customer.rating.score} {t("customers.daysUnit")}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground text-xs">To&apos;lovlar</p>
+                      <p className="text-muted-foreground text-xs">{t("customers.payments")}</p>
                       <p className="text-lg font-bold">{customer.payments.length}</p>
                     </div>
                   </div>
@@ -168,19 +171,19 @@ export function CustomersTableDumb({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Mijoz</TableHead>
-              <TableHead>Telefon</TableHead>
-              <TableHead>Reyting</TableHead>
-              <TableHead>O&apos;rtacha kunlar</TableHead>
-              <TableHead>To&apos;lovlar soni</TableHead>
-              <TableHead>Qarz</TableHead>
+              <TableHead>{t("customers.customer")}</TableHead>
+              <TableHead>{t("customers.phone")}</TableHead>
+              <TableHead>{t("customers.rating")}</TableHead>
+              <TableHead>{t("customers.avgDays")}</TableHead>
+              <TableHead>{t("customers.paymentCount")}</TableHead>
+              <TableHead>{t("customers.debt")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center">
-                  Ma&apos;lumot topilmadi
+                  {t("debtors.noData")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -195,7 +198,9 @@ export function CustomersTableDumb({
                   </TableCell>
                   <TableCell>{customer.debtor.phoneNumber || "-"}</TableCell>
                   <TableCell>{rating(customer.rating.label)}</TableCell>
-                  <TableCell>{customer.rating.score} kun</TableCell>
+                  <TableCell>
+                    {customer.rating.score} {t("customers.daysUnit")}
+                  </TableCell>
                   <TableCell>{customer.payments.length}</TableCell>
                   <TableCell className={customer.debtor.totalDebt > 0 ? "text-red-600" : "text-green-600"}>
                     {formatCurrencyUzs(customer.debtor.totalDebt)}
@@ -211,7 +216,7 @@ export function CustomersTableDumb({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-sm">
-            {currentPage} / {totalPages} sahifa
+            {t("common.pageOf", { current: currentPage, total: totalPages })}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -221,7 +226,7 @@ export function CustomersTableDumb({
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              Oldingi
+              {t("common.previous")}
             </Button>
             <Button
               type="button"
@@ -230,7 +235,7 @@ export function CustomersTableDumb({
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Keyingi
+              {t("common.next")}
             </Button>
           </div>
         </div>

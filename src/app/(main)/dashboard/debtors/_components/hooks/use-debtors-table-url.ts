@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { DEBTORS_FILTER_PARAM_KEYS } from "@/lib/debtors/debtors-list-filters";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -92,7 +93,10 @@ export function useDebtorsTableUrl() {
     (status: string) => {
       const params = paramsFrom(searchParams);
       const current = params.get("status") || "all";
-      if (status === current) return;
+      if (status === current && !params.get("statuses")) return;
+
+      params.delete("statuses");
+
       if (status === "all") {
         params.delete("status");
       } else {
@@ -113,6 +117,16 @@ export function useDebtorsTableUrl() {
     [searchParams, pushQueryString],
   );
 
+  const handleClearAllFilters = React.useCallback(() => {
+    setSearchValue("");
+    const params = paramsFrom(searchParams);
+    for (const key of DEBTORS_FILTER_PARAM_KEYS) {
+      params.delete(key);
+    }
+    params.set("page", "1");
+    pushQueryString(params);
+  }, [searchParams, pushQueryString, setSearchValue]);
+
   return {
     searchParams,
     searchValue,
@@ -121,5 +135,6 @@ export function useDebtorsTableUrl() {
     handleSort,
     handleStatusFilter,
     handlePageChange,
+    handleClearAllFilters,
   };
 }

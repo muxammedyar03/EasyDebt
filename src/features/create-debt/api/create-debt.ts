@@ -14,7 +14,7 @@ export async function createDebt(payload: CreateDebtPayload): Promise<unknown> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error((errorData as { error?: string }).error || "Qarz qo'shishda xatolik yuz berdi");
+    throw new Error((errorData as { error?: string }).error || "Ошибка при создании долга");
   }
 
   return response.json();

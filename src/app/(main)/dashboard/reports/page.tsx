@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { reportsService } from "@/lib/services/reports.service";
 import CashClient from "./_components/cash-client";
 import { debtService } from "@/lib/services/debt.service";
+import { t } from "@/lib/i18n";
 
 export default async function ReportsPage() {
   const [report, debtLimit] = await Promise.all([reportsService.getDashboardReport(), debtService.debtLimit()]);
@@ -12,18 +13,18 @@ export default async function ReportsPage() {
         <TabsList className="h-12">
           <TabsTrigger value="payments">
             <div className="w-full md:w-44">
-              <h1 className="text-xl font-bold tracking-tight">Qarz va to&apos;lovlar</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t("reports.debtsAndPayments")}</h1>
             </div>
           </TabsTrigger>
 
           <TabsTrigger value="summary" disabled>
             <div className="w-full md:w-44">
-              <h1 className="text-xl font-bold tracking-tight">Hisobotlar</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t("reports.title")}</h1>
             </div>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="payments">
-          <p className="text-muted-foreground pb-4 pl-2">Vaqt boyicha qarz va to&apos;lovlar ro&apos;yxati</p>
+          <p className="text-muted-foreground pb-4 pl-2">{t("reports.subtitle")}</p>
           <CashClient payments={report.paymentsData} debts={report.debtsData} debtLimit={debtLimit} />
         </TabsContent>
         {/* <TabsContent value="summary">

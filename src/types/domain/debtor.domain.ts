@@ -113,6 +113,8 @@ export type DebtorDomainFilters = {
   minDebt?: number;
   maxDebt?: number;
   createdBy?: number;
+  dateFrom?: Date;
+  dateTo?: Date;
 };
 
 /**

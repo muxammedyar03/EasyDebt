@@ -2,30 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/errors";
-import { Prisma } from "@prisma/client";
-import { debtorRepository } from "@/entities/debtor/api";
-import { settingsRepository } from "@/entities/settings/api";
-
-/** Safely convert Prisma Decimal or number to number (works in all build/runtime envs). */
-function toNum(value: unknown): number {
-  if (typeof value === "number") return value;
-  const v = value as { toNumber?: () => number } | null | undefined;
-  return typeof v?.toNumber === "function" ? v.toNumber() : 0;
-}
-
-type DebtWithAmount = { amount: unknown };
-type PaymentWithAmount = { amount: unknown };
-type DebtorForExport = {
-  id: number;
-  first_name: string;
-  last_name: string;
-  phone_number: string | null;
-  address: string | null;
-  total_debt: unknown;
-  created_at: Date;
-  debts?: DebtWithAmount[];
-  payments?: PaymentWithAmount[];
-};
+import { debtorService } from "@/lib/services/debtor.service";
+import { debtService } from "@/lib/services/debt.service";
+import { parseDebtorsSearchParams } from "@/lib/debtors/debtors-list-filters";
+import { t } from "@/lib/i18n";
 
 type ExportData = {
   id: number | string;
@@ -40,6 +20,12 @@ type ExportData = {
   created_at: string;
 };
 
+function getExportStatus(totalDebt: number, debtLimit: number): string {
+  if (totalDebt <= 0) return t("debtors.paid");
+  if (totalDebt >= debtLimit) return t("debtors.overLimit");
+  return t("debtors.debtorStatus");
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -48,70 +34,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const search = searchParams.get("search") || "";
-    const status = searchParams.get("status") || "all";
-
-    // Get debt limit from settings
-    const debtLimit = await settingsRepository.getDebtLimit();
-
-    // Build where clause
-    const where: Prisma.DebtorWhereInput = {};
-
-    if (search) {
-      where.OR = [
-        { first_name: { contains: search, mode: "insensitive" } },
-        { last_name: { contains: search, mode: "insensitive" } },
-        { phone_number: { contains: search } },
-      ];
-    }
-
-    // Status filter
-    if (status === "qarzdor") {
-      where.total_debt = { gt: 0, lt: debtLimit }; // 0 < total_debt < debtLimit
-    } else if (status === "limitdan_oshgan") {
-      where.total_debt = { gte: debtLimit }; // total_debt >= debtLimit (teng bo'lsa ham)
-    } else if (status === "tolangan") {
-      where.total_debt = { lte: 0 };
-    }
-
-    const debtors = await debtorRepository.findMany(where, {
-      orderBy: { created_at: "desc" },
-      include: { debts: true, payments: true },
+    const params: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      params[key] = value;
     });
 
-    const exportData: ExportData[] = debtors.map((debtor: DebtorForExport) => {
-      const totalDebt = toNum(debtor.total_debt);
-      const totalDebts = (debtor.debts ?? []).reduce((sum: number, d: DebtWithAmount) => sum + toNum(d.amount), 0);
-      const totalPayments = (debtor.payments ?? []).reduce(
-        (sum: number, p: PaymentWithAmount) => sum + toNum(p.amount),
-        0,
-      );
+    const debtLimit = await debtService.debtLimit();
+    const { filters, listOptions } = parseDebtorsSearchParams(params, debtLimit);
+    const debtors = await debtorService.findAllFiltered(filters, listOptions);
 
-      let status = "To'langan";
-      if (totalDebt > debtLimit) {
-        status = "Limitdan oshgan";
-      } else if (totalDebt > 0) {
-        status = "Qarzdor";
-      }
+    const exportData: ExportData[] = debtors.map((debtor) => {
+      const totalDebts = debtor.debts?.reduce((sum, d) => sum + d.amount, 0) ?? 0;
+      const totalPayments = debtor.payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0;
 
       return {
         id: debtor.id,
-        first_name: debtor.first_name,
-        last_name: debtor.last_name,
-        phone_number: debtor.phone_number || "",
+        first_name: debtor.firstName,
+        last_name: debtor.lastName,
+        phone_number: debtor.phoneNumber || "",
         address: debtor.address || "",
-        total_debt: totalDebt,
+        total_debt: debtor.totalDebt,
         total_debts: totalDebts,
         total_payments: totalPayments,
-        status,
-        created_at: debtor.created_at.toLocaleDateString("uz-UZ"),
+        status: getExportStatus(debtor.totalDebt, debtLimit),
+        created_at: debtor.createdAt.toLocaleDateString("ru-RU"),
       };
     });
 
     exportData.push({
-      id: "Ja'mi",
+      id: t("reports.total"),
       first_name: "",
       last_name: "",
       phone_number: "",

@@ -29,6 +29,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { formatNumber } from "@/lib/format";
 import { addPaymentSchema, type AddPaymentFormData } from "@/lib/validation";
 import { createPayment } from "../api";
+import { t } from "@/lib/i18n";
 
 export interface AddPaymentDialogProps {
   open: boolean;
@@ -121,8 +122,8 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>To&apos;lov qo&apos;shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi to&apos;lov qo&apos;shish</DialogDescription>
+          <DialogTitle>{t("debtors.addPaymentDialogTitle")}</DialogTitle>
+          <DialogDescription>{t("debtors.addPaymentDialogDescription", { debtorName })}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
