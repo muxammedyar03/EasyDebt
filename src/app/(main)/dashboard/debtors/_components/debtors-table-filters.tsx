@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { DebtorsAdvancedFilters } from "./debtors-advanced-filters";
-import { hasActiveDebtorsFilters } from "@/lib/debtors/debtors-list-filters";
 
 type DebtorsTableFiltersProps = {
   isMobile: boolean;

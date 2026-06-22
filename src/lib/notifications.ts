@@ -19,21 +19,8 @@ interface CreateNotificationData {
   message: string;
 }
 
-export async function createNotification(data: CreateNotificationData) {
+export async function createNotification() {
   if (isMockMode()) return;
-  try {
-    const notification = await prisma.notification.create({
-      data: {
-        user_id: data.userId,
-        debtor_id: data.debtorId,
-        type: data.type,
-        title: data.title,
-        message: data.message,
-      },
-    });
-  } catch (error) {
-    console.error("Failed to create notification:", error);
-  }
 }
 
 export async function getUnreadNotifications(userId?: number) {

@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { NotificationType } from "@prisma/client";
-import { Check, EyeOff, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { NotificationItem } from "./notifications-client";
 import { cn } from "@/lib/utils";
 import { formatDateUz } from "@/lib/format";
-import { t } from "@/lib/i18n";
 
 export function NotificationCardDesktop({
   n,
