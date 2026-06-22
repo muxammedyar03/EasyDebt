@@ -36,6 +36,7 @@ export function DemoLogin() {
           },
           descriptionClassName: "!text-gray-600",
         });
+        console.log("result", result);
         return;
       }
 
@@ -53,7 +54,6 @@ export function DemoLogin() {
       router.refresh();
     } catch (error) {
       console.error("Login error:", error);
-      setIsLoading(false);
       toast.error("Error", {
         description: "An unexpected error occurred",
         style: {
@@ -62,6 +62,8 @@ export function DemoLogin() {
         },
         descriptionClassName: "!text-gray-600",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

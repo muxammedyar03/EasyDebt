@@ -43,6 +43,7 @@ README.md
 QUICK_START.md
 SMETA.md
 FEATURES.md
+*.md
 
 # vercel
 .vercel
