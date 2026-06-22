@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/errors";
+import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
+import { debtorService } from "@/lib/services/debtor.service";
 
 const updateDebtorSchema = z.object({
   first_name: z.string().min(1).optional(),
@@ -24,40 +27,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const debtor = await prisma.debtor.findUnique({
-      where: { id: debtorId },
-      include: {
-        debts: {
-          orderBy: { created_at: "desc" },
-        },
-        payments: {
-          orderBy: { created_at: "desc" },
-        },
-      },
-    });
-
-    if (!debtor) {
+    const domain = await debtorService.findById(debtorId, true);
+    if (!domain) {
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
-    // Convert Decimal to number
-    const debtorData = {
-      ...debtor,
-      total_debt: debtor.total_debt.toNumber(),
-      debts: debtor.debts.map((debt) => ({
-        ...debt,
-        amount: debt.amount.toNumber(),
-      })),
-      payments: debtor.payments.map((payment) => ({
-        ...payment,
-        amount: payment.amount.toNumber(),
-      })),
-    };
-
-    return NextResponse.json(debtorData);
+    return NextResponse.json(domain);
   } catch (error) {
     console.error("Error fetching debtor:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -78,22 +56,41 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validatedData = updateDebtorSchema.parse(body);
 
-    const updatedDebtor = await prisma.debtor.update({
-      where: { id: debtorId },
-      data: validatedData,
+    const updated = await debtorService.update(debtorId, {
+      firstName: validatedData.first_name,
+      lastName: validatedData.last_name,
+      phoneNumber: validatedData.phone_number,
+      address: validatedData.address,
     });
 
-    return NextResponse.json({
-      ...updatedDebtor,
-      total_debt: updatedDebtor.total_debt.toNumber(),
+    await createAuditLog({
+      userId: session.userId,
+      action: "UPDATE",
+      entityType: "DEBTOR",
+      entityId: debtorId,
+      newValue: {
+        debtor_id: debtorId,
+        first_name: validatedData.first_name,
+        last_name: validatedData.last_name,
+        phone_number: validatedData.phone_number,
+        address: validatedData.address,
+      },
+      description: `Qarzdor ${updated.firstName} ${updated.lastName} ma'lumotlari yangilandi`,
+      ipAddress: request.headers.get("cf-connecting-ip") || "",
+      userAgent: request.headers.get("user-agent") || "",
     });
+
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${updated.externalId}`);
+
+    return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }
-
     console.error("Error updating debtor:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -111,14 +108,37 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    // Delete debtor (cascade will delete related debts and payments)
-    await prisma.debtor.delete({
-      where: { id: debtorId },
+    const debtor = await debtorService.findById(debtorId, false);
+    if (!debtor) {
+      return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
+    }
+
+    await createAuditLog({
+      userId: session.userId,
+      action: "DELETE",
+      entityType: "DEBTOR",
+      entityId: debtorId,
+      newValue: {
+        debtor_id: debtorId,
+        first_name: debtor.firstName,
+        last_name: debtor.lastName,
+        phone_number: debtor.phoneNumber,
+        address: debtor.address,
+      },
+      description: `Qarzdor ${debtor.firstName} ${debtor.lastName} o'chirildi`,
+      ipAddress: request.headers.get("cf-connecting-ip") || "",
+      userAgent: request.headers.get("user-agent") || "",
     });
+
+    await debtorService.delete(debtorId);
+
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${debtor.externalId}`);
 
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {
     console.error("Error deleting debtor:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

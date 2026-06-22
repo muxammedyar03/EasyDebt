@@ -30,8 +30,6 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
     debtorsCount: number;
     debtsCount: number;
     paymentsCount: number;
-    notificationsCount?: number;
-    auditLogsCount?: number;
     exportedBy?: string;
     exportedAt?: string;
   } | null>(null);
@@ -66,22 +64,13 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 5000);
 
       setProgress(100);
-      const meta = data.meta as {
-        debtorsCount?: number;
-        debtsCount?: number;
-        paymentsCount?: number;
-        notificationsCount?: number;
-        auditLogsCount?: number;
-      };
-      const extra =
-        meta.notificationsCount != null || meta.auditLogsCount != null
-          ? `, ${meta.notificationsCount ?? 0} bildirishnoma, ${meta.auditLogsCount ?? 0} audit`
-          : "";
       toast.success("Ma'lumotlar muvaffaqiyatli export qilindi", {
-        description: `${meta.debtorsCount ?? 0} ta qarzdor, ${meta.debtsCount ?? 0} ta qarz, ${meta.paymentsCount ?? 0} ta to'lov${extra}`,
+        description: `${data.meta.debtorsCount} ta qarzdor, ${data.meta.debtsCount} ta qarz, ${data.meta.paymentsCount} ta to'lov`,
       });
 
       onOpenChange(false);
@@ -116,8 +105,6 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
           debtorsCount?: number;
           debtsCount?: number;
           paymentsCount?: number;
-          notificationsCount?: number;
-          auditLogsCount?: number;
           exportedBy?: string;
           exportedAt?: string;
         };
@@ -132,8 +119,6 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
         debtorsCount: data.meta.debtorsCount ?? data.debtors.length,
         debtsCount: data.meta.debtsCount ?? 0,
         paymentsCount: data.meta.paymentsCount ?? 0,
-        notificationsCount: data.meta.notificationsCount,
-        auditLogsCount: data.meta.auditLogsCount,
         exportedBy: data.meta.exportedBy,
         exportedAt: data.meta.exportedAt,
       });
@@ -324,18 +309,6 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
                       <span>To&apos;lovlar:</span>
                       <span className="font-semibold">{previewData.paymentsCount}</span>
                     </div>
-                    {previewData.notificationsCount != null && (
-                      <div className="flex justify-between text-sm">
-                        <span>Bildirishnomalar:</span>
-                        <span className="font-semibold">{previewData.notificationsCount}</span>
-                      </div>
-                    )}
-                    {previewData.auditLogsCount != null && (
-                      <div className="flex justify-between text-sm">
-                        <span>Audit yozuvlari:</span>
-                        <span className="font-semibold">{previewData.auditLogsCount}</span>
-                      </div>
-                    )}
                     {previewData.exportedBy && (
                       <div className="flex justify-between text-sm">
                         <span>Export qilgan:</span>

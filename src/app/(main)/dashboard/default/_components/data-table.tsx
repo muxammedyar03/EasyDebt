@@ -2,214 +2,159 @@
 
 import * as React from "react";
 
-import { Plus } from "lucide-react";
-import { z } from "zod";
-
-import { Button } from "@/components/ui/button";
-import { useDataTableInstance } from "@/hooks/use-data-table-instance";
-
-import { DataTable as DataTableNew } from "../../../../../components/data-table/data-table";
-import { withDndColumn } from "../../../../../components/data-table/table-utils";
-
 import { createDashboardColumns } from "./columns";
-import { debtorSchema } from "./schema";
-import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { AddDebtorDialog } from "./add-debtor-dialog";
-import { Input } from "@/components/ui/input";
-import { DebtorCard } from "@/components/mobile/debtor-card";
-import { QuickAddDebt } from "@/components/mobile/quick-add-debt";
-import { QuickAddPayment } from "@/components/mobile/quick-add-payment";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { toast } from "sonner";
+import { DataTableView } from "./data-table.view";
+import { DebtorView } from "@/types/view";
+import { rowToViewDebtor } from "@/lib/mappers/debtor.mapper";
 
-export function DataTable({
-  data: initialData,
-  debtLimit,
-}: {
-  data: z.infer<typeof debtorSchema>[];
+type DataTableContainerProps = {
+  data: DebtorView[];
   debtLimit: number;
-}) {
-  const [data, setData] = React.useState(() => initialData);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const isMobile = useIsMobile();
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  const [quickDebtDialog, setQuickDebtDialog] = React.useState<{ open: boolean; debtorId: number; debtorName: string }>(
-    {
-      open: false,
-      debtorId: 0,
-      debtorName: "",
-    },
-  );
-  const [quickPaymentDialog, setQuickPaymentDialog] = React.useState<{
-    open: boolean;
-    debtorId: number;
-    debtorName: string;
-    totalDebt: number;
-  }>({
-    open: false,
-    debtorId: 0,
-    debtorName: "",
-    totalDebt: 0,
-  });
+};
 
-  const handleDebtorAdded = React.useCallback(async () => {
+type ApiDebtorRow = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  address: string | null;
+  total_debt: number;
+  is_overdue: boolean;
+  created_at: string | Date;
+  updated_at: string | Date;
+  created_by: number;
+};
+
+function parseDebtorsFromApi(json: ApiDebtorRow[], debtLimit: number): DebtorView[] {
+  return json.map((debtor) =>
+    rowToViewDebtor(
+      {
+        ...debtor,
+        created_at: typeof debtor.created_at === "string" ? new Date(debtor.created_at) : debtor.created_at,
+        updated_at: typeof debtor.updated_at === "string" ? new Date(debtor.updated_at) : debtor.updated_at,
+      },
+      { debtLimit },
+    ),
+  );
+}
+
+/**
+ * Smart container: fetch, search, delete, refresh.
+ */
+export function DataTable({ data: initialData, debtLimit }: DataTableContainerProps) {
+  const [data, setData] = React.useState<DebtorView[]>(() => initialData);
+  const [search, setSearch] = React.useState("");
+  const [searchResults, setSearchResults] = React.useState<DebtorView[] | null>(null);
+
+  React.useEffect(() => {
+    if (!search.trim()) setData(initialData);
+  }, [initialData, search]);
+
+  const displayedData = search.trim() ? (searchResults ?? data) : data;
+
+  const fetchDebtors = React.useCallback(
+    async (searchQuery?: string) => {
+      const url = searchQuery?.trim()
+        ? `/api/debtors?search=${encodeURIComponent(searchQuery.trim())}`
+        : "/api/debtors";
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch debtors");
+      const json = await response.json();
+      return parseDebtorsFromApi(json, debtLimit);
+    },
+    [debtLimit],
+  );
+
+  const refreshDebtors = React.useCallback(async () => {
     try {
-      // Fetch updated debtors list
-      const response = await fetch("/api/debtors");
-      if (response.ok) {
-        const updatedDebtors = await response.json();
-        setData(updatedDebtors);
+      if (search.trim()) {
+        const parsed = await fetchDebtors(search);
+        setSearchResults(parsed);
+      } else {
+        const parsed = await fetchDebtors();
+        setData(parsed);
+        setSearchResults(null);
       }
     } catch (error) {
       console.error("Error refreshing debtors:", error);
     }
-  }, []);
+  }, [fetchDebtors, search]);
 
-  const columns = React.useMemo(
-    () =>
-      withDndColumn(
-        createDashboardColumns({
-          onDataChange: handleDebtorAdded,
-          debtLimit,
-        }),
-      ),
-    [handleDebtorAdded, debtLimit],
-  );
-
-  const table = useDataTableInstance({
-    data,
-    columns,
-    getRowId: (row) => row.id.toString(),
-    defaultPageSize: 10,
-  });
-
-  const handleAddDebt = (debtorId: number) => {
-    const debtor = data.find((d) => d.id === debtorId);
-    if (debtor) {
-      setQuickDebtDialog({
-        open: true,
-        debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
-      });
-    }
-  };
-
-  const handleAddPayment = (debtorId: number) => {
-    const debtor = data.find((d) => d.id === debtorId);
-    if (debtor) {
-      setQuickPaymentDialog({
-        open: true,
-        debtorId,
-        debtorName: `${debtor.first_name} ${debtor.last_name}`,
-        totalDebt: debtor.total_debt,
-      });
-    }
-  };
-
-  const handleDelete = async (debtorId: number) => {
-    if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
-  
-    if (process.env.NODE_ENV === "production") {
-      toast.error("Demo modda, qarzorni o'chirish imkoni yo'q");
+  const [searchLoading, setSearchLoading] = React.useState(false);
+  React.useEffect(() => {
+    if (!search.trim()) {
+      setSearchResults(null);
+      setSearchLoading(false);
       return;
     }
-  
-    try {
-      const response = await fetch(`/api/debtors/${debtorId}`, {
-        method: "DELETE",
+    let cancelled = false;
+    setSearchLoading(true);
+    void fetchDebtors(search)
+      .then(
+        (parsed) => {
+          if (!cancelled) setSearchResults(parsed);
+        },
+        (err) => {
+          if (!cancelled) {
+            console.error("Error searching debtors:", err);
+            setSearchResults([]);
+          }
+        },
+      )
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [search, fetchDebtors]);
 
-      if (response.ok) {
-        await handleDebtorAdded();
+  const handleDeleteDebtor = React.useCallback(
+    async (debtorId: number) => {
+      if (!confirm("Rostdan ham o'chirmoqchimisiz?")) return;
+
+      try {
+        const response = await fetch(`/api/debtors/${debtorId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Qarzdorni o'chirishda xatolik yuz berdi");
+        }
+
+        await refreshDebtors();
+      } catch (error) {
+        console.error("Error deleting debtor:", error);
       }
-    } catch (error) {
-      console.error("Error deleting debtor:", error);
-    }
-  };
+    },
+    [refreshDebtors],
+  );
 
-  // Filter data for mobile view
-  const filteredData = React.useMemo(() => {
-    if (!globalFilter) return data;
-    const lowerFilter = globalFilter.toLowerCase();
-    return data.filter(
-      (debtor) =>
-        debtor.first_name.toLowerCase().includes(lowerFilter) ||
-        debtor.last_name.toLowerCase().includes(lowerFilter) ||
-        debtor.phone_number?.toLowerCase().includes(lowerFilter) ||
-        debtor.address?.toLowerCase().includes(lowerFilter),
-    );
-  }, [data, globalFilter]);
+  const handleReorder = React.useCallback(
+    (rows: DebtorView[]) => {
+      if (search.trim()) setSearchResults(rows);
+      else setData(rows);
+    },
+    [search],
+  );
+
+  const columns = React.useMemo(
+    () => createDashboardColumns({ onDataChange: refreshDebtors, debtLimit }),
+    [refreshDebtors, debtLimit],
+  );
 
   return (
-    <div
-      className={`bg-card flex flex-col gap-y-4 rounded-xl p-4 shadow-sm ${isMobile ? "bg-card dark:bg-card rounded-xl border px-2 pb-4" : ""}`}
-    >
-      <div className="mt-6 mb-3 flex items-center gap-2 md:m-0">
-        <Input
-          type="text"
-          className="border-border h-14 w-full text-base font-medium xl:w-1/2"
-          placeholder="Ism telefon va address boyicha qidirish"
-          value={globalFilter}
-          onChange={(e) => {
-            setGlobalFilter(e.target.value);
-            table.setGlobalFilter(e.target.value);
-          }}
-        />
-        <DataTableViewOptions table={table} />
-        <Button variant="outline" size="sm" className="h-14 w-14 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
-          <Plus />
-          <span className="hidden lg:inline">Qarzdor qo&apos;shish</span>
-        </Button>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="grid gap-4 md:hidden">
-        {!globalFilter ? (
-          <div className="text-muted-foreground py-5 text-center"></div>
-        ) : filteredData.length === 0 ? (
-          <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
-        ) : (
-          filteredData.map((debtor) => (
-            <DebtorCard
-              key={debtor.id}
-              debtor={debtor}
-              debtLimit={debtLimit}
-              onAddDebt={handleAddDebt}
-              onAddPayment={handleAddPayment}
-              onDelete={handleDelete}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="hidden md:block">
-        <DataTableNew dndEnabled={false} table={table} columns={columns} onReorder={setData} />
-        <div className="mt-2">
-          <DataTablePagination table={table} />
-        </div>
-      </div>
-
-      <AddDebtorDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} onSuccess={handleDebtorAdded} />
-
-      {/* Quick Add Dialogs */}
-      <QuickAddDebt
-        open={quickDebtDialog.open}
-        onOpenChange={(open) => setQuickDebtDialog({ ...quickDebtDialog, open })}
-        debtorId={quickDebtDialog.debtorId}
-        debtorName={quickDebtDialog.debtorName}
-        onSuccess={handleDebtorAdded}
-      />
-
-      <QuickAddPayment
-        open={quickPaymentDialog.open}
-        onOpenChange={(open) => setQuickPaymentDialog({ ...quickPaymentDialog, open })}
-        debtorId={quickPaymentDialog.debtorId}
-        debtorName={quickPaymentDialog.debtorName}
-        totalDebt={quickPaymentDialog.totalDebt}
-        onSuccess={handleDebtorAdded}
-      />
-    </div>
+    <DataTableView
+      data={displayedData}
+      debtLimit={debtLimit}
+      columns={columns}
+      onReorder={handleReorder}
+      onDeleteDebtor={handleDeleteDebtor}
+      onRefresh={refreshDebtors}
+      search={search}
+      onSearchChange={setSearch}
+      searchLoading={searchLoading}
+    />
   );
 }

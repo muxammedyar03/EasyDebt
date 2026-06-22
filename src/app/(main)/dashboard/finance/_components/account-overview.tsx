@@ -3,12 +3,13 @@
 import { Plus } from "lucide-react";
 import { siApple, siPaypal, siOpenai, siVercel, siFigma } from "simple-icons";
 
-import { SimpleIcon } from "@/components/simple-icon";
+import { SimpleIcon } from "@/components/ui/simple-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 
 function ChipSVG() {
   return (

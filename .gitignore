@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+/invoices/
 
 # testing
 /coverage
@@ -32,18 +33,13 @@ yarn-error.log*
 .env.production
 .env.demo
 .env.development
-DEPLOYMENT.md
-AUTH_SETUP.md
-DEPLOY_GUIDE.md
-SERVER_SETUP.md
-SUMMARY.md
-CONTRIBUTING.md
-LICENSE
-README.md
-QUICK_START.md
-SMETA.md
-FEATURES.md
+archetecture_guidlines.md
+ARCHITECTURE_REFACTOR_TASKS.md
+PROJECT_STRUCTURE.md
+push-notifications.md
 *.md
+# CI build cache buster (commit SHA, repoga kirmaydi)
+.build-sha
 
 # vercel
 .vercel

@@ -36,16 +36,17 @@ export function CustomersTable({
 }: CustomersTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = React.useState(searchParams?.get("search") || "");
+  const [isSearching, setIsSearching] = React.useState(false);
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
-  const currentRating = searchParams.get("rating") || "all";
-  const currentSortField = searchParams.get("sortField") || null;
-  const currentSortOrder = (searchParams.get("sortOrder") as "asc" | "desc" | null) || null;
+  const currentRating = searchParams?.get("rating") || "all";
+  const currentSortField = searchParams?.get("sortField") || null;
+  const currentSortOrder = (searchParams?.get("sortOrder") as "asc" | "desc" | null) || null;
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
       if (value) {
         params.set("search", value);
       } else {
@@ -58,7 +59,7 @@ export function CustomersTable({
   );
 
   const handleRatingChange = (rating: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     if (rating === "all") {
       params.delete("rating");
     } else {
@@ -69,13 +70,13 @@ export function CustomersTable({
   };
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.set("page", page.toString());
     router.push(`/dashboard/customers?${params.toString()}`);
   };
 
   const handleSortToggle = (field: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
 
     // 1) boshqa field bosilsa -> shu field ASC
     if (currentSortField !== field) {
@@ -104,29 +105,36 @@ export function CustomersTable({
   // Debounce search on input change to avoid resetting pagination unexpectedly
   const onSearchChange = (value: string) => {
     setSearchValue(value);
+    setIsSearching(true);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       handleSearch(value);
-    }, 500);
+      setIsSearching(false);
+    }, 300); // 300ms - tezroq
   };
 
-  const getRatingBadge = (rating: "good" | "average" | "bad") => {
+  // URL o'zgarganda isSearching'ni reset qilish
+  React.useEffect(() => {
+    setIsSearching(false);
+  }, [searchParams]);
+  //  "high" | "medium" | "critical"
+  const getRatingBadge = (rating: "high" | "medium" | "critical") => {
     switch (rating) {
-      case "good":
+      case "high":
         return (
           <Badge className="bg-green-500">
             <TrendingUp className="mr-1 h-3 w-3" />
             Yaxshi
           </Badge>
         );
-      case "average":
+      case "medium":
         return (
           <Badge className="bg-yellow-500">
             <Minus className="mr-1 h-3 w-3" />
             O&apos;rtacha
           </Badge>
         );
-      case "bad":
+      case "critical":
         return (
           <Badge variant="destructive">
             <TrendingDown className="mr-1 h-3 w-3" />
@@ -152,8 +160,13 @@ export function CustomersTable({
               placeholder="Ism, familiya yoki telefon..."
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="h-12 pl-8"
+              className="h-12 pr-10 pl-8"
             />
+            {isSearching && (
+              <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+              </div>
+            )}
           </div>
           <SortToggleGroup
             sortOptions={[
@@ -171,23 +184,24 @@ export function CustomersTable({
 
         {/* Tabs */}
         {!isMobile ? (
+          //  "low" | "medium" | "high" | "critical"
           <Tabs value={currentRating} onValueChange={handleRatingChange} className="w-full lg:w-1/2">
             <TabsList className="grid h-12 w-full grid-cols-4">
               <TabsTrigger value="all">
                 Barchasi
                 <span className="ml-2 text-xs">({totalDebtorsCount})</span>
               </TabsTrigger>
-              <TabsTrigger value="good">
+              <TabsTrigger value="high">
                 <TrendingUp className="mr-1 h-4 w-4" />
                 Yaxshi
                 <span className="ml-2 text-xs">({goodCount})</span>
               </TabsTrigger>
-              <TabsTrigger value="average">
+              <TabsTrigger value="medium">
                 <Minus className="mr-1 h-4 w-4" />
                 O&apos;rtacha
                 <span className="ml-2 text-xs">({averageCount})</span>
               </TabsTrigger>
-              <TabsTrigger value="bad">
+              <TabsTrigger value="critical">
                 <TrendingDown className="mr-1 h-4 w-4" />
                 Yomon
                 <span className="ml-2 text-xs">({badCount})</span>
@@ -218,18 +232,18 @@ export function CustomersTable({
             <Card
               key={customer.debtorId}
               className="cursor-pointer transition-all hover:shadow-md"
-              onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.id}`)}
+              onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.externalId}`)}
             >
               <CardContent className="p-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">
-                      {customer.debtor.first_name} {customer.debtor.last_name}
+                      {customer.debtor.firstName} {customer.debtor.lastName}
                     </h3>
                     {getRatingBadge(customer.rating)}
                   </div>
-                  {customer.debtor.phone_number && (
-                    <p className="text-muted-foreground text-sm">{customer.debtor.phone_number}</p>
+                  {customer.debtor.phoneNumber && (
+                    <p className="text-muted-foreground text-sm">{customer.debtor.phoneNumber}</p>
                   )}
                   <div className="flex items-center justify-between pt-2">
                     <div>
@@ -273,17 +287,17 @@ export function CustomersTable({
                 <TableRow
                   key={customer.debtorId}
                   className="cursor-pointer"
-                  onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.id}`)}
+                  onClick={() => router.push(`/dashboard/default/debitor/${customer.debtor.externalId}`)}
                 >
                   <TableCell className="font-medium">
-                    {customer.debtor.first_name} {customer.debtor.last_name}
+                    {customer.debtor.firstName} {customer.debtor.lastName}
                   </TableCell>
-                  <TableCell>{customer.debtor.phone_number || "-"}</TableCell>
+                  <TableCell>{customer.debtor.phoneNumber || "-"}</TableCell>
                   <TableCell>{getRatingBadge(customer.rating)}</TableCell>
                   <TableCell>{customer.avgDaysBetweenPayments.toFixed(0)} kun</TableCell>
                   <TableCell>{customer.payments.length}</TableCell>
-                  <TableCell className={customer.debtor.total_debt > 0 ? "text-red-600" : "text-green-600"}>
-                    {formatCurrency(customer.debtor.total_debt)}
+                  <TableCell className={customer.debtor.totalDebt > 0 ? "text-red-600" : "text-green-600"}>
+                    {formatCurrency(customer.debtor.totalDebt)}
                   </TableCell>
                 </TableRow>
               ))

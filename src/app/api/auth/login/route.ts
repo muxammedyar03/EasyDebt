@@ -4,6 +4,7 @@ import { z } from "zod";
 import { setAuthCookie, signToken } from "@/lib/auth";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { isMockMode, mockFindUserByUsername, mockVerifyPassword } from "@/lib/mock";
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -16,9 +17,11 @@ export async function POST(req: NextRequest) {
     const validatedData = loginSchema.parse(body);
 
     // Find user by username
-    const user = await prisma.user.findUnique({
-      where: { username: validatedData.username },
-    });
+    const user = isMockMode()
+      ? mockFindUserByUsername(validatedData.username)
+      : await prisma.user.findUnique({
+          where: { username: validatedData.username },
+        });
 
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -30,7 +33,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify password
-    const isValidPassword = await verifyPassword(validatedData.password, user.password);
+    const isValidPassword = isMockMode()
+      ? mockVerifyPassword(validatedData.password, user.password)
+      : await verifyPassword(validatedData.password, user.password);
 
     if (!isValidPassword) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -46,6 +51,26 @@ export async function POST(req: NextRequest) {
 
     // Set HTTP-only cookie
     await setAuthCookie(token);
+
+    const userFullName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username;
+    const description = `${userFullName} tizimga kirdi`;
+
+    await prisma.auditLog.create({
+      data: {
+        user_id: user.id,
+        action: "LOGIN",
+        entity_type: "USER",
+        new_value: {
+          user_id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        },
+        description,
+        ip_address: req.headers.get("cf-connecting-ip") || "",
+        user_agent: req.headers.get("user-agent") || "",
+      },
+    });
 
     return NextResponse.json({
       message: "Login successful",

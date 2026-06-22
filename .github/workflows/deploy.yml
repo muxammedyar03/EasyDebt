@@ -3,16 +3,21 @@ name: Docker Build and Deploy
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   pull_request:
     branches: ["main"]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Docker image names must be lowercase (e.g. EasyDebt -> easydebt)
+  IMAGE_NAME: muxammedyar03/easydebt
+  # Force GitHub Actions JavaScript actions to use Node.js 24
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -23,6 +28,10 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
@@ -39,10 +48,16 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
+            type=ref,event=tag
             type=sha
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.sha }}
 
-      - name: Build and push Docker image
+      # Har commitda build konteksti o'zgaradi — COPY cache ishlanmaydi, yangi kod image'ga kiradi
+      - name: Set build cache buster
+        run: echo "${{ github.sha }}" > .build-sha
+
+      - name: Build and push Docker image (app)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -50,52 +65,121 @@ jobs:
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=build-cache
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=gha,mode=max,scope=build-cache
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            COMMIT_SHA=${{ github.sha }}
+          platforms: linux/amd64
+
+      - name: Build and push Docker image (migrate)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: migration
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
+          cache-from: |
+            type=gha,scope=build-cache
+          platforms: linux/amd64
 
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
 
     steps:
-      - name: 🔑 Setup SSH for deployment
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Deploy to production server via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
+          # host: ${{ secrets.FEAT_DEPLOY_HOST || secrets.DEPLOY_HOST }}
+          # username: ${{ secrets.FEAT_DEPLOY_USER || secrets.DEPLOY_USER }}
+          # key: ${{ secrets.FEAT_SSH_PRIVATE_KEY || secrets.SSH_PRIVATE_KEY }}
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
+          command_timeout: 20m
           script: |
+            set -e
             cd /var/www/EasyDebt
 
-            # Pull latest code changes
-            git pull origin main
+            # Tag nomi (v1.0.1) = image tag, server shu versiyani tortadi
+            # export IMAGE_TAG=${{ github.ref_name }}
 
-            # Pull latest images
-            # docker compose -f docker-compose.prod.yml pull
+            # Hozirgi build ning aniq image'ini tortish (latest emas — eski versiya tushmasin)
+            export IMAGE_TAG=${{ github.sha }}
 
-            # Stop and remove old containers
-            docker compose -f docker-compose.prod.yml down
+            echo "🔐 Logging in to GHCR..."
+            docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
 
-            # Start new containers
-            docker compose -f docker-compose.prod.yml up -d --build
+            # Docker pull optimizatsiyasi
+            echo "⚙️  Docker pull optimizatsiyasi sozlanmoqda..."
+            # Max connections oshirish (default 6)
+            export DOCKER_CLI_PLUGINS_PATH=/usr/libexec/docker/cli-plugins:$DOCKER_CLI_PLUGINS_PATH || true
 
-            sleep 15
+            # Docker daemon status tekshirish
+            echo "🔍 Docker daemon status:"
+            docker info | grep -E "(Server Version|Storage Driver|Logging Driver)" || true
 
-            # Run database migrations
-            docker compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
+            echo "📥 Pulling latest compose/env..."
+            git pull origin main --no-edit || true
 
-            # Run database migrations for demo DB
-            docker compose -f docker-compose.prod.yml exec -T app-demo npx prisma migrate deploy
+            echo "📦 Pulling image (commit $IMAGE_TAG)..."
+            IMAGE_FULL="ghcr.io/muxammedyar03/easydebt:$IMAGE_TAG"
 
-            # Clean up old images
-            docker image prune -af --filter "until=24h"
+            echo "📊 Image hajmini tekshirish..."
+            docker images $IMAGE_FULL 2>/dev/null || echo "Image hali pull qilinmagan"
+
+            echo "⬇️  Image pull qilinmoqda (progress ko'rsatiladi)..."
+            echo "💡 Tip: Agar pull sekin bo'lsa, network yoki registry muammosi bo'lishi mumkin"
+
+            # Variant 1: To'g'ridan-to'g'ri docker pull (tezroq, progress ko'rsatadi)
+            echo "🔄 Variant 1: docker pull (tezroq, progress ko'rsatadi)..."
+            if timeout 900 docker pull $IMAGE_FULL 2>&1 | tee /tmp/docker-pull.log; then
+              echo "✅ docker pull muvaffaqiyatli!"
+            else
+              echo "⚠️  docker pull muvaffaqiyatsiz, docker compose pull bilan urinib ko'ramiz..."
+              # Variant 2: docker compose pull (fallback)
+              if ! timeout 900 docker compose -f docker-compose.prod.yml pull app 2>&1 | tee -a /tmp/docker-pull.log; then
+                echo "❌ Pull timeout yoki xatolik! Qayta urinib ko'ramiz..."
+                sleep 5
+                if ! timeout 900 docker pull $IMAGE_FULL; then
+                  echo "❌ Ikkinchi urinish ham muvaffaqiyatsiz."
+                  echo "📋 Pull loglari:"
+                  tail -50 /tmp/docker-pull.log || true
+                  echo "📊 Mavjud imagelar:"
+                  docker images ghcr.io/muxammedyar03/easydebt --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | head -10
+                  exit 1
+                fi
+              fi
+            fi
+
+            echo "✅ Image muvaffaqiyatli pull qilindi!"
+            docker images $IMAGE_FULL --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+
+            echo "📦 Pulling migrate image (:migrate)..."
+            docker compose -f docker-compose.prod.yml pull migrate || docker pull ghcr.io/muxammedyar03/easydebt:migrate
+
+            echo "🚀 Migrate + app qayta yaratiladi (Prisma + custom migrations)..."
+            docker compose -f docker-compose.prod.yml up -d --force-recreate migrate app
+
+            echo "⏳ Waiting for app (5s)..."
+            sleep 5
+
+            echo "📊 Container status:"
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "📝 Migration logs:"
+            docker compose -f docker-compose.prod.yml logs --tail=50 migrate 2>/dev/null || true
 
             echo "✅ Deployment complete!"
+
+            echo "🧹 Cleanup in background (non-blocking)..."
+            (docker container prune -f && docker image prune -af --filter "until=24h" && docker builder prune -af) &

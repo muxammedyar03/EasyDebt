@@ -1,9 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { isMockMode } from "@/lib/mock/is-mock-mode";
 
-export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT" | "PAYMENT_ADDED" | "DEBT_ADDED";
+export type AuditAction =
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "LOGIN"
+  | "LOGOUT"
+  | "PAYMENT_ADDED"
+  | "DEBT_ADDED"
+  | "DEBT_UPDATED"
+  | "PAYMENT_UPDATED"
+  | "IMPORT"
+  | "EXPORT";
 
-export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS";
+export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS" | "PAYMENT_REMINDER";
 
 interface AuditLogData {
   userId?: number;
@@ -12,11 +24,13 @@ interface AuditLogData {
   entityId?: number;
   oldValue?: unknown;
   newValue?: unknown;
+  description?: string;
   ipAddress?: string;
   userAgent?: string;
 }
 
 export async function createAuditLog(data: AuditLogData) {
+  if (isMockMode()) return;
   try {
     await prisma.auditLog.create({
       data: {
@@ -26,6 +40,7 @@ export async function createAuditLog(data: AuditLogData) {
         entity_id: data.entityId,
         old_value: data.oldValue ? (data.oldValue as Prisma.InputJsonValue) : Prisma.JsonNull,
         new_value: data.newValue ? (data.newValue as Prisma.InputJsonValue) : Prisma.JsonNull,
+        description: data.description,
         ip_address: data.ipAddress,
         user_agent: data.userAgent,
       },

@@ -3,8 +3,9 @@ import { ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { SidebarProviderWithWidth } from "@/app/(main)/dashboard/_components/sidebar/sidebar-provider-with-width";
 import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -17,62 +18,28 @@ import {
   type ContentLayout,
   type NavbarStyle,
 } from "@/types/preferences/layout";
-import { prisma } from "@/lib/prisma";
+import { getDashboardLayoutData } from "@/lib/dashboard-layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
-import { getSession } from "@/lib/auth";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
-  const session = await getSession();
-  const [sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
+
+  const [layoutData, sidebarVariant, sidebarCollapsible, contentLayout, navbarStyle] = await Promise.all([
+    getDashboardLayoutData(),
     getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "inset"),
     getPreference<SidebarCollapsible>("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),
     getPreference<ContentLayout>("content_layout", CONTENT_LAYOUT_VALUES, "centered"),
     getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
   ]);
 
-  // Get debt limit and notifications - Optimized with Promise.all
-  const [debtLimitSetting, activeUser] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "debt_limit" },
-      select: { value: true },
-    }),
-    session
-      ? prisma.user.findUnique({
-          where: { id: session.userId },
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            first_name: true,
-            last_name: true,
-            role: true,
-          },
-        })
-      : null,
-  ]);
-  const [overdueDaysSetting] = await Promise.all([
-    prisma.settings.findUnique({
-      where: { key: "overdue_days" },
-      select: { value: true },
-    }),
-  ]);
-
-  const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
-  const overdueDays = overdueDaysSetting ? parseInt(overdueDaysSetting.value, 10) : 45;
-
-  const notifications = await prisma.notification.findMany({
-    where: { is_read: false },
-    orderBy: { created_at: "desc" },
-    take: 3,
-  });
+  const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
 
   const layoutPreferences = {
     contentLayout,
@@ -81,30 +48,8 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     navbarStyle,
   };
 
-  // Format active user for AccountSwitcher
-  const formattedActiveUser = activeUser
-    ? {
-        id: activeUser.id.toString(),
-        name:
-          activeUser.first_name && activeUser.last_name
-            ? `${activeUser.first_name} ${activeUser.last_name}`
-            : activeUser.username,
-        username: activeUser.username,
-        email: activeUser.email || "",
-        avatar: `/avatars/${activeUser.username}.png`,
-        role: activeUser.role,
-      }
-    : {
-        id: "1",
-        name: "",
-        username: "",
-        email: "",
-        avatar: "/avatars/user.png",
-        role: "SUPER_ADMIN",
-      };
-
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
       <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
       <SidebarInset
         data-content-layout={contentLayout}
@@ -138,6 +83,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         <div className="h-full p-4 md:p-6">{children}</div>
         {session?.userId ? <PinGate userId={session.userId} pinLength={4} /> : null}
       </SidebarInset>
-    </SidebarProvider>
+    </SidebarProviderWithWidth>
   );
 }

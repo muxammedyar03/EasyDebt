@@ -117,12 +117,12 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-        const response = await fetch("/api/auth/change-password", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            current_password: formData.current_password,
-            new_password: formData.new_password,
+      const response = await fetch("/api/auth/change-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_password: formData.current_password,
+          new_password: formData.new_password,
         }),
       });
 

@@ -7,9 +7,10 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { ChartContainer } from "@/components/ui/chart";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency, cn } from "@/lib/utils";
 
 import { salesPipelineChartData, salesPipelineChartConfig, regionSalesData, actionItems } from "./crm.config";
+import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function OperationalCards() {
   const totalSales = regionSalesData.reduce((sum, region) => sum + region.sales, 0);

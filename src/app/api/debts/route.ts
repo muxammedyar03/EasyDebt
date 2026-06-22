@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
+import { getApiErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { settingsRepository } from "@/entities/settings/api";
+import { debtRepository } from "@/entities/debt/api";
+import { debtorRepository } from "@/entities/debtor/api";
+import { isMockMode, mockFindUserByUsername } from "@/lib/mock";
 
 const createDebtSchema = z.object({
   debtor_id: z.number(),
   amount: z.number().positive("Qarz miqdori musbat bo'lishi kerak"),
   description: z.string().nullable().optional(),
+  created_at: z.string().optional(), // Dev mode: custom date
 });
 
 export async function POST(request: NextRequest) {
@@ -24,6 +30,50 @@ export async function POST(request: NextRequest) {
     const validatedData = createDebtSchema.parse(body);
 
     const userId = session.userId;
+
+    if (isMockMode()) {
+      const debtor = await debtorRepository.findById(validatedData.debtor_id);
+      if (!debtor) {
+        return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
+      }
+
+      const previousBalance = debtor.total_debt.toNumber();
+
+      const debt = await debtRepository.create({
+        debtor: { connect: { id: validatedData.debtor_id } },
+        amount: validatedData.amount,
+        description: validatedData.description || null,
+        creator: { connect: { id: userId } },
+        ...(validatedData.created_at && process.env.NODE_ENV === "development"
+          ? { created_at: new Date(validatedData.created_at) }
+          : {}),
+      });
+
+      const updatedDebtor = await debtorRepository.findById(validatedData.debtor_id);
+      const debtLimit = await settingsRepository.getDebtLimit();
+      const user = mockFindUserByUsername(session.username);
+      const userFullName =
+        user?.first_name && user?.last_name
+          ? `${user.first_name} ${user.last_name}`
+          : user?.username || "Foydalanuvchi";
+
+      revalidatePath("/dashboard/debtors");
+      revalidatePath("/dashboard/default");
+      revalidatePath(`/dashboard/default/debitor/${debtor.external_id}`);
+
+      return NextResponse.json(
+        {
+          ...debt,
+          amount: debt.amount.toNumber(),
+          previousBalance,
+          newBalance: updatedDebtor?.total_debt.toNumber() ?? 0,
+          debtorName: `${debtor.first_name} ${debtor.last_name}`,
+          debtorPhone: debtor.phone_number,
+          employeeName: userFullName,
+        },
+        { status: 201 },
+      );
+    }
 
     // Use transaction to create debt and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
@@ -43,14 +93,14 @@ export async function POST(request: NextRequest) {
           amount: validatedData.amount,
           description: validatedData.description || null,
           created_by: userId,
+          ...(validatedData.created_at && process.env.NODE_ENV === "development"
+            ? { created_at: new Date(validatedData.created_at) }
+            : {}),
         },
       });
 
-      // Get debt limit from settings
-      const debtLimitSetting = await tx.settings.findUnique({
-        where: { key: "debt_limit" },
-      });
-      const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
+      // Get debt limit from settings (inside transaction)
+      const debtLimit = await settingsRepository.getDebtLimit(tx);
 
       // Update debtor's total_debt
       const updatedDebtor = await tx.debtor.update({
@@ -65,6 +115,19 @@ export async function POST(request: NextRequest) {
       return { debt, debtor, updatedDebtor, debtLimit };
     });
 
+    // Get user info for description
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { first_name: true, last_name: true, username: true },
+    });
+
+    const userFullName =
+      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
+
+    const debtorFullName = `${result.debtor.first_name} ${result.debtor.last_name}`;
+    const formattedAmount = validatedData.amount.toLocaleString("uz-UZ");
+    const description = `${userFullName} qarzdor ${debtorFullName} ga ${formattedAmount} so'm miqdorda qarz qo'shdi`;
+
     // Create audit log
     await createAuditLog({
       userId,
@@ -76,6 +139,7 @@ export async function POST(request: NextRequest) {
         amount: validatedData.amount,
         description: validatedData.description,
       },
+      description,
     });
 
     // Check if debt limit exceeded
@@ -90,7 +154,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(result.debt, { status: 201 });
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${result.debtor.external_id}`);
+
+    return NextResponse.json(
+      {
+        ...JSON.parse(
+          JSON.stringify(result.debt, (_key, value) =>
+            typeof value === "bigint" || (value && typeof value === "object" && "toNumber" in value)
+              ? Number(value)
+              : value,
+          ),
+        ),
+        previousBalance: result.debtor.total_debt.toNumber(),
+        newBalance: result.updatedDebtor.total_debt.toNumber(),
+        debtorName: `${result.debtor.first_name} ${result.debtor.last_name}`,
+        debtorPhone: result.debtor.phone_number,
+        employeeName: userFullName,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
@@ -99,13 +184,12 @@ export async function POST(request: NextRequest) {
     console.error("Error creating debt:", error);
 
     if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string; meta?: Prisma.PrismaClientKnownRequestError };
-
+      const prismaError = error as { code: string };
       if (prismaError.code === "P2003") {
         return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
       }
     }
 
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

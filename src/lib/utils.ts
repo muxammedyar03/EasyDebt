@@ -19,47 +19,13 @@ export const getInitials = (str: string): string => {
   );
 };
 
-export function formatCurrency(
-  amount: number,
-  opts?: {
-    currency?: string;
-    locale?: string;
-    minimumFractionDigits?: number;
-    maximumFractionDigits?: number;
-    noDecimals?: boolean;
-  },
-) {
-  const { currency = "USD", locale = "en-US", minimumFractionDigits, maximumFractionDigits, noDecimals } = opts ?? {};
-
-  const formatOptions: Intl.NumberFormatOptions = {
-    style: "currency",
-    currency,
-    minimumFractionDigits: noDecimals ? 0 : minimumFractionDigits,
-    maximumFractionDigits: noDecimals ? 0 : maximumFractionDigits,
-  };
-
-  return new Intl.NumberFormat(locale, formatOptions).format(amount);
-}
-
-export function formatDateUz(date: Date): string {
-  const oylar = [
-    "yanvar",
-    "fevral",
-    "mart",
-    "aprel",
-    "may",
-    "iyun",
-    "iyul",
-    "avgust",
-    "sentyabr",
-    "oktyabr",
-    "noyabr",
-    "dekabr",
-  ];
-
-  const kun = date.getDate();
-  const oy = oylar[date.getMonth()];
-  const yil = date.getFullYear();
-
-  return `${kun}-${oy}/${yil}`;
+export function getPaymentTypeClass(currency: "CARD" | "CLICK" | "CASH" | "Karta" | "Naqd" | "Click") {
+  if (!currency) return "bg-gray-600";
+  if (currency === "CASH" || currency === "Naqd")
+    return "bg-orange-600/10 border-orange-600/30 dark:text-orange-500 text-orange-700";
+  if (currency === "CLICK" || currency === "Click")
+    return "bg-indigo-600/10 border-indigo-600/30 dark:border-indigo-400/30 dark:text-indigo-500 text-indigo-700";
+  if (currency === "CARD" || currency === "Karta")
+    return "bg-emerald-600/10 border-emerald-600/30 dark:text-emerald-500 text-emerald-700";
+  return "bg-gray-100 border-gray-300 text-gray-800";
 }

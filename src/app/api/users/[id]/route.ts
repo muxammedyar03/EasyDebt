@@ -132,6 +132,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Noma'lum action" }, { status: 400 });
     }
 
+    if (!session || session.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+    }
+
     // Prepare update data
     const updateData: Prisma.UserUpdateInput = {};
 
@@ -213,6 +217,16 @@ export async function DELETE(
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         return NextResponse.json({ error: "Foydalanuvchi topilmadi" }, { status: 404 });
+      }
+      // Foreign key constraint: user has related debtors, debts, payments, reminders, etc.
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          {
+            error:
+              "Foydalanuvchini o'chirib bo'lmaydi: unga bog'liq ma'lumotlar (qarzdorlar, qarzlar, to'lovlar yoki eslatmalar) mavjud.",
+          },
+          { status: 409 },
+        );
       }
     }
 

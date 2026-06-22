@@ -1,9 +1,5 @@
-// JSON types
-export type DebtItem = {
-  name: string;
-  price: number;
-  quantity?: number;
-};
+import { DebtDomain, PaymentDomain } from "./domain";
+import { DebtorView } from "./view";
 
 // Enums
 export enum UserRole {
@@ -12,11 +8,11 @@ export enum UserRole {
   USER = "USER",
 }
 
-export enum PaymentType {
-  CASH = "CASH",
-  CLICK = "CLICK",
-  CARD = "CARD",
-}
+// export enum PaymentType {
+//   CASH = "CASH",
+//   CLICK = "CLICK",
+//   CARD = "CARD",
+// }
 
 // Types
 export type User = {
@@ -33,8 +29,8 @@ export type User = {
 
   // Relations (optional)
   created_debtors?: Debtor[];
-  created_debts?: Debt[];
-  created_payments?: Payment[];
+  created_debts?: DebtDomain[];
+  created_payments?: PaymentDomain[];
 };
 
 export type Debtor = {
@@ -51,52 +47,46 @@ export type Debtor = {
 
   // Relations (optional)
   creator?: User;
-  debts?: Debt[];
-  payments?: Payment[];
+  debts?: DebtDomain[];
+  payments?: PaymentDomain[];
 };
 
-export type Debt = {
-  id: number;
-  debtor_id: number;
-  amount: number;
-  description: string | null;
-  items: DebtItem[] | null;
-  created_at: Date;
-  created_by: number;
+// export type Debt = {
+//   id: number;
+//   debtor_id: number;
+//   amount: number;
+//   description: string | null;
+//   items: DebtItem[] | null;
+//   created_at: Date;
+//   created_by: number;
 
-  // Relations (optional)
-  debtor?: Debtor;
-  creator?: User;
-};
+//   // Relations (optional)
+//   debtor?: Debtor;
+//   creator?: User;
+// };
 
-export type Payment = {
-  id: number;
-  debtor_id: number;
-  amount: number;
-  payment_type: PaymentType;
-  note: string | null;
-  created_at: Date;
-  created_by: number;
+// export type Payment = {
+//   id: number;
+//   debtor_id: number;
+//   amount: number;
+//   payment_type: PaymentType;
+//   note: string | null;
+//   created_at: Date;
+//   created_by: number;
 
-  // Relations (optional)
-  debtor?: Debtor;
-  creator?: User;
-};
+//   // Relations (optional)
+//   debtor?: Debtor;
+//   creator?: User;
+// };
 
 export interface CustomerTableProps {
   debtorId: number;
-  debtor: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    phone_number: string | null;
-    total_debt: number;
-  };
-  payments: Payment[];
+  debtor: DebtorView;
+  payments: PaymentDomain[];
   validPayments: number;
   avgDaysBetweenPayments: number;
   avgDaysBetweenDebtAndPayment: number;
-  rating: "good" | "average" | "bad";
+  rating: "high" | "medium" | "critical";
 }
 
 export interface AuditLogTableProps {
@@ -106,15 +96,28 @@ export interface AuditLogTableProps {
   entity_type: string;
   entity_id: number | null;
   old_value: string;
-  new_value: string;
+  new_value:
+    | string
+    | {
+        debtor_id: number;
+        amount: number;
+        username: string;
+        debtorName: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        role: string;
+      };
+  description: string | null;
   ip_address: string | null;
   user_agent: string | null;
   created_at: Date;
   user: {
     id: number;
     username: string;
+    email: string | null;
     first_name: string | null;
     last_name: string | null;
-    email: string | null;
   } | null;
+  debtorName?: string | null;
 }

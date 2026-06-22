@@ -1,8 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getApiErrorMessage } from "@/lib/errors";
 import { Prisma } from "@prisma/client";
+import { debtorRepository } from "@/entities/debtor/api";
+import { settingsRepository } from "@/entities/settings/api";
+
+/** Safely convert Prisma Decimal or number to number (works in all build/runtime envs). */
+function toNum(value: unknown): number {
+  if (typeof value === "number") return value;
+  const v = value as { toNumber?: () => number } | null | undefined;
+  return typeof v?.toNumber === "function" ? v.toNumber() : 0;
+}
+
+type DebtWithAmount = { amount: unknown };
+type PaymentWithAmount = { amount: unknown };
+type DebtorForExport = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+  address: string | null;
+  total_debt: unknown;
+  created_at: Date;
+  debts?: DebtWithAmount[];
+  payments?: PaymentWithAmount[];
+};
+
+type ExportData = {
+  id: number | string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  address: string;
+  total_debt: number;
+  total_debts: number;
+  total_payments: number;
+  status: string;
+  created_at: string;
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +54,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "all";
 
     // Get debt limit from settings
-    const debtLimitSetting = await prisma.settings.findUnique({
-      where: { key: "debt_limit" },
-    });
-    const debtLimit = debtLimitSetting ? parseFloat(debtLimitSetting.value) : 2000000;
+    const debtLimit = await settingsRepository.getDebtLimit();
 
     // Build where clause
     const where: Prisma.DebtorWhereInput = {};
@@ -36,43 +69,25 @@ export async function GET(request: NextRequest) {
 
     // Status filter
     if (status === "qarzdor") {
-      where.total_debt = { gt: 0, lte: debtLimit };
+      where.total_debt = { gt: 0, lt: debtLimit }; // 0 < total_debt < debtLimit
     } else if (status === "limitdan_oshgan") {
-      where.total_debt = { gt: debtLimit };
+      where.total_debt = { gte: debtLimit }; // total_debt >= debtLimit (teng bo'lsa ham)
     } else if (status === "tolangan") {
       where.total_debt = { lte: 0 };
     }
 
-    // Fetch all debtors (no pagination for export)
-    const debtors = await prisma.debtor.findMany({
-      where,
+    const debtors = await debtorRepository.findMany(where, {
       orderBy: { created_at: "desc" },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        phone_number: true,
-        address: true,
-        total_debt: true,
-        created_at: true,
-        debts: {
-          select: {
-            amount: true,
-          },
-        },
-        payments: {
-          select: {
-            amount: true,
-          },
-        },
-      },
+      include: { debts: true, payments: true },
     });
 
-    // Format data for export
-    const exportData = debtors.map((debtor) => {
-      const totalDebt = debtor.total_debt.toNumber();
-      const totalDebts = debtor.debts.reduce((sum, debt) => sum + debt.amount.toNumber(), 0);
-      const totalPayments = debtor.payments.reduce((sum, payment) => sum + payment.amount.toNumber(), 0);
+    const exportData: ExportData[] = debtors.map((debtor: DebtorForExport) => {
+      const totalDebt = toNum(debtor.total_debt);
+      const totalDebts = (debtor.debts ?? []).reduce((sum: number, d: DebtWithAmount) => sum + toNum(d.amount), 0);
+      const totalPayments = (debtor.payments ?? []).reduce(
+        (sum: number, p: PaymentWithAmount) => sum + toNum(p.amount),
+        0,
+      );
 
       let status = "To'langan";
       if (totalDebt > debtLimit) {
@@ -95,9 +110,22 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    exportData.push({
+      id: "Ja'mi",
+      first_name: "",
+      last_name: "",
+      phone_number: "",
+      address: "",
+      total_debt: exportData.reduce((sum, debtor) => sum + debtor.total_debt, 0),
+      total_debts: exportData.reduce((sum, debtor) => sum + debtor.total_debts, 0),
+      total_payments: exportData.reduce((sum, debtor) => sum + debtor.total_payments, 0),
+      status: "",
+      created_at: "",
+    });
+
     return NextResponse.json({ debtors: exportData });
   } catch (error) {
     console.error("Export error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

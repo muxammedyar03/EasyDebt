@@ -23,15 +23,19 @@ model User {
   pin        String? 
 
   // Relations
-  created_debtors  Debtor[]  @relation("CreatedBy")
-  created_debts    Debt[]    @relation("DebtCreatedBy")
-  created_payments Payment[] @relation("PaymentCreatedBy")
+  created_debtors       Debtor[]                @relation("CreatedBy")
+  created_debts         Debt[]                  @relation("DebtCreatedBy")
+  created_payments      Payment[]              @relation("PaymentCreatedBy")
+  created_reminders     PaymentReminder[]      @relation("ReminderCreatedBy")
+  push_subscriptions    PushSubscription[]
+  user_push_preferences UserPushPreferences?
 
   @@map("users")
 }
 
 model Debtor {
   id                Int       @id @default(autoincrement())
+  external_id       String    @unique @default(uuid())
   first_name        String
   last_name         String
   phone_number      String?
@@ -44,9 +48,10 @@ model Debtor {
   created_by        Int
 
   // Relations
-  creator  User      @relation("CreatedBy", fields: [created_by], references: [id])
-  debts    Debt[]
-  payments Payment[]
+  creator   User              @relation("CreatedBy", fields: [created_by], references: [id])
+  debts     Debt[]
+  payments  Payment[]
+  reminders PaymentReminder[]
 
   // Indexes for performance
   @@index([total_debt])
@@ -54,11 +59,13 @@ model Debtor {
   @@index([created_at])
   @@index([is_overdue])
   @@index([last_payment_date])
+  @@index([external_id])
   @@map("debtors")
 }
 
 model Debt {
   id          Int      @id @default(autoincrement())
+  external_id String   @unique @default(uuid())
   debtor_id   Int
   amount      Decimal  @db.Decimal(10, 2)
   description String?
@@ -73,11 +80,13 @@ model Debt {
   // Indexes for performance
   @@index([debtor_id])
   @@index([created_at])
+  @@index([external_id])
   @@map("debts")
 }
 
 model Payment {
   id           Int         @id @default(autoincrement())
+  external_id  String      @unique @default(uuid())
   debtor_id    Int
   amount       Decimal     @db.Decimal(10, 2)
   payment_type PaymentType @default(CASH)
@@ -92,6 +101,7 @@ model Payment {
   // Indexes for performance
   @@index([debtor_id])
   @@index([created_at])
+  @@index([external_id])
   @@map("payments")
 }
 
@@ -125,6 +135,7 @@ model AuditLog {
   entity_id   Int?
   old_value   Json?
   new_value   Json?
+  description String?
   ip_address  String?
   user_agent  String?
   created_at  DateTime @default(now())
@@ -158,4 +169,86 @@ enum NotificationType {
   DEBT_ADDED
   DEBT_LIMIT_EXCEEDED
   HOSTING_REMINDER
+  PAYMENT_REMINDER
+}
+
+model PaymentReminder {
+  id           Int                   @id @default(autoincrement())
+  debtor_id    Int
+  created_by   Int
+  reminder_at  DateTime
+  note         String?
+  status       PaymentReminderStatus @default(PENDING)
+  notified_at  DateTime?
+  created_at   DateTime              @default(now())
+  updated_at   DateTime              @updatedAt
+
+  // Relations
+  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  creator User   @relation("ReminderCreatedBy", fields: [created_by], references: [id])
+
+  @@index([debtor_id])
+  @@index([reminder_at])
+  @@index([status])
+  @@index([created_by])
+  @@map("payment_reminders")
+}
+
+enum PaymentReminderStatus {
+  PENDING
+  NOTIFIED
+  COMPLETED
+  CANCELLED
+}
+
+model ImportHistory {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  file_hash    String   @unique
+  debtors_count Int
+  debts_count  Int
+  payments_count Int
+  status       ImportStatus @default(SUCCESS)
+  error_message String?
+  created_at   DateTime @default(now())
+
+  @@index([user_id])
+  @@index([created_at])
+  @@map("import_history")
+}
+
+enum ImportStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
+}
+
+model PushSubscription {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  endpoint   String
+  p256dh     String
+  auth       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, endpoint])
+  @@index([user_id])
+  @@map("push_subscriptions")
+}
+
+model UserPushPreferences {
+  id                  Int      @id @default(autoincrement())
+  user_id             Int      @unique
+  enabled             Boolean  @default(false)
+  notification_types  Json     @default("[]")
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("user_push_preferences")
 }

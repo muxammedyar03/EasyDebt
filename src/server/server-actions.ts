@@ -2,10 +2,10 @@
 
 import { cookies } from "next/headers";
 
-export async function getValueFromCookie(key: string): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get(key)?.value;
-}
+// export async function getValueFromCookie(key: string): Promise<string | undefined> {
+//   const cookieStore = await cookies();
+//   return cookieStore.get(key)?.value;
+// }
 
 export async function setValueToCookie(
   key: string,
@@ -24,4 +24,15 @@ export async function getPreference<T extends string>(key: string, allowed: read
   const cookie = cookieStore.get(key);
   const value = cookie ? cookie.value.trim() : undefined;
   return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+import { getSession } from "@/lib/auth";
+import { signShareToken } from "@/lib/share-token";
+
+export async function generateShareTokenAction(externalId: string): Promise<string> {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+  return await signShareToken(externalId);
 }

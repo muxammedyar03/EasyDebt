@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone", // Required for Docker deployment
+  // Lint commit (lint-staged), local build va IDE da ishlaydi; deploy build da qayta lint kerak emas
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },

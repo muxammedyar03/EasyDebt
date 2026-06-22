@@ -23,7 +23,8 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
 
   React.useEffect(() => {
     setDebtLimit(initialDebtLimit.toString());
-  }, [initialDebtLimit]);
+    setOverdueDays(initialOverdueDays.toString());
+  }, [initialDebtLimit, initialOverdueDays]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,25 +36,44 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: "debt_limit",
-          value: debtLimit,
-        }),
-      });
-      const response2 = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: "overdue_days",
-          value: overdueDays,
-        }),
-      });
+      const requests = [];
 
-      if (response.ok && response2.ok) {
-        toast.success("Sozlamalar saqlandi");
+      if (debtLimit !== initialDebtLimit.toString()) {
+        requests.push(
+          fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              key: "debt_limit",
+              value: debtLimit,
+            }),
+          }),
+        );
+      }
+
+      if (overdueDays !== initialOverdueDays.toString()) {
+        requests.push(
+          fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              key: "overdue_days",
+              value: overdueDays,
+            }),
+          }),
+        );
+      }
+
+      if (requests.length === 0) {
+        toast.info("Hech qanday o'zgarish yo'q");
+        onOpenChange(false);
+        return;
+      }
+
+      const responses = await Promise.all(requests);
+
+      if (responses.every((res) => res.ok)) {
+        toast.success(`${requests.length} ta sozlama saqlandi`);
         router.refresh();
         onOpenChange(false);
       } else {

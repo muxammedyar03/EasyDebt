@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { debtorRepository } from "@/entities/debtor/api";
+import { paymentRepository } from "@/entities/payment/api";
+import { isMockMode, mockFindUserByUsername } from "@/lib/mock";
 
 const createPaymentSchema = z.object({
   debtor_id: z.number(),
   amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().nullable().optional(),
+  created_at: z.string().optional(), // Dev mode: custom date
 });
 
 export async function POST(request: NextRequest) {
@@ -25,6 +30,50 @@ export async function POST(request: NextRequest) {
 
     const userId = session.userId;
 
+    if (isMockMode()) {
+      const debtor = await debtorRepository.findById(validatedData.debtor_id);
+      if (!debtor) {
+        return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
+      }
+
+      const previousBalance = debtor.total_debt.toNumber();
+
+      const payment = await paymentRepository.create({
+        debtor: { connect: { id: validatedData.debtor_id } },
+        amount: validatedData.amount,
+        payment_type: validatedData.payment_type,
+        note: validatedData.note || null,
+        creator: { connect: { id: userId } },
+        ...(validatedData.created_at && process.env.NODE_ENV === "development"
+          ? { created_at: new Date(validatedData.created_at) }
+          : {}),
+      });
+
+      const updatedDebtor = await debtorRepository.findById(validatedData.debtor_id);
+      const user = mockFindUserByUsername(session.username);
+      const userFullName =
+        user?.first_name && user?.last_name
+          ? `${user.first_name} ${user.last_name}`
+          : user?.username || "Foydalanuvchi";
+
+      revalidatePath("/dashboard/debtors");
+      revalidatePath("/dashboard/default");
+      revalidatePath(`/dashboard/default/debitor/${debtor.external_id}`);
+
+      return NextResponse.json(
+        {
+          ...payment,
+          amount: payment.amount.toNumber(),
+          previousBalance,
+          newBalance: updatedDebtor?.total_debt.toNumber() ?? 0,
+          debtorName: `${debtor.first_name} ${debtor.last_name}`,
+          debtorPhone: debtor.phone_number,
+          employeeName: userFullName,
+        },
+        { status: 201 },
+      );
+    }
+
     // Use transaction to create payment and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
       // Get current debtor to check debt amount
@@ -36,9 +85,6 @@ export async function POST(request: NextRequest) {
         throw new Error("Qarzdor topilmadi");
       }
 
-      // Allow overpayment: payment can exceed current debt (total_debt may become negative)
-      const currentDebt = debtor.total_debt.toNumber();
-
       // Create payment record
       const payment = await tx.payment.create({
         data: {
@@ -47,11 +93,14 @@ export async function POST(request: NextRequest) {
           payment_type: validatedData.payment_type,
           note: validatedData.note || null,
           created_by: userId,
+          ...(validatedData.created_at && process.env.NODE_ENV === "development"
+            ? { created_at: new Date(validatedData.created_at) }
+            : {}),
         },
       });
 
       // Update debtor's total_debt (decrease) and payment date
-      await tx.debtor.update({
+      const updatedDebtor = await tx.debtor.update({
         where: { id: validatedData.debtor_id },
         data: {
           total_debt: {
@@ -62,13 +111,26 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return { payment, debtor };
+      return { payment, debtor, updatedDebtor };
     });
+
+    // Get user info for description
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { first_name: true, last_name: true, username: true },
+    });
+
+    const userFullName =
+      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
+
+    const debtorFullName = `${result.debtor.first_name} ${result.debtor.last_name}`;
+    const formattedAmount = validatedData.amount.toLocaleString("uz-UZ");
+    const description = `${userFullName} qarzdor ${debtorFullName} dan ${formattedAmount} so'm miqdorda ${validatedData.payment_type == "CASH" ? "naqd usulda" : validatedData.payment_type == "CLICK" ? "click orqali" : "karta orqali"} to'lov qabul qildi`;
 
     // Create audit log
     await createAuditLog({
       userId,
-      action: "PAYMENT_ADDED",
+      action: "UPDATE",
       entityType: "PAYMENT",
       entityId: result.payment.id,
       newValue: {
@@ -76,9 +138,31 @@ export async function POST(request: NextRequest) {
         amount: validatedData.amount,
         payment_type: validatedData.payment_type,
       },
+      description,
     });
 
-    return NextResponse.json(result.payment, { status: 201 });
+    // Revalidate pages that display debtor data
+    revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/default");
+    revalidatePath(`/dashboard/default/debitor/${result.debtor.external_id}`);
+
+    return NextResponse.json(
+      {
+        ...JSON.parse(
+          JSON.stringify(result.payment, (_key, value) =>
+            typeof value === "bigint" || (value && typeof value === "object" && "toNumber" in value)
+              ? Number(value)
+              : value,
+          ),
+        ),
+        previousBalance: result.debtor.total_debt.toNumber(),
+        newBalance: result.updatedDebtor.total_debt.toNumber(),
+        debtorName: `${result.debtor.first_name} ${result.debtor.last_name}`,
+        debtorPhone: result.debtor.phone_number,
+        employeeName: userFullName,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });

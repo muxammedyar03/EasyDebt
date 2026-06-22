@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { getApiErrorMessage } from "@/lib/errors";
 import { markAllNotificationsAsRead } from "@/lib/notifications";
-import { prisma } from "@/lib/prisma";
 import { NotificationType, Prisma } from "@prisma/client";
+import { debtorRepository } from "@/entities/debtor/api";
+import { notificationRepository } from "@/entities/notification/api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,42 +20,71 @@ export async function GET(request: NextRequest) {
     const q = (searchParams.get("q") ?? "").trim();
     const type = (searchParams.get("type") ?? "").trim();
     const readParam = (searchParams.get("read") ?? "").trim();
-    console.log(type);
 
     const where: Prisma.NotificationWhereInput = {};
+
+    // User filter: must belong to user or be global (user_id = null)
+    const userConditions: Prisma.NotificationWhereInput[] = [];
     if (session.userId) {
-      where.OR = [{ user_id: session.userId }, { user_id: null }];
+      userConditions.push({ user_id: session.userId }, { user_id: null });
     }
+
+    // Search filter: title or message contains query
+    const searchConditions: Prisma.NotificationWhereInput[] = [];
     if (q) {
-      where.OR = [
-        ...(where.OR ?? []),
+      searchConditions.push(
         { title: { contains: q, mode: "insensitive" } },
         { message: { contains: q, mode: "insensitive" } },
-      ];
+      );
+    }
+
+    // Combine conditions with AND
+    const andConditions: Prisma.NotificationWhereInput[] = [];
+    if (userConditions.length > 0) {
+      andConditions.push({ OR: userConditions });
+    }
+    if (searchConditions.length > 0) {
+      andConditions.push({ OR: searchConditions });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
     if (type) {
       where.type = type as NotificationType;
     } else {
-      where.type = { in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER"] as NotificationType[] };
+      where.type = {
+        in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER", "PAYMENT_REMINDER"] as NotificationType[],
+      };
     }
     if (readParam === "true" || readParam === "false") {
       where.is_read = readParam === "true";
     }
 
-    const [items, total] = await Promise.all([
-      prisma.notification.findMany({
-        where,
+    const [itemsRaw, total] = await Promise.all([
+      notificationRepository.findMany(where, {
         orderBy: { created_at: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.notification.count({ where }),
+      notificationRepository.count(where),
     ]);
 
-    return NextResponse.json({ notifications: items, total, page, pageSize });
+    const debtorIds = [...new Set(itemsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
+    const idToExternalId = new Map<number, string>();
+    if (debtorIds.length > 0) {
+      const debtors = await debtorRepository.findMany({ id: { in: debtorIds } }, { take: debtorIds.length });
+      debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
+    }
+    const notifications = itemsRaw.map((n) => ({
+      ...n,
+      debtor_external_id: n.debtor_id ? (idToExternalId.get(n.debtor_id) ?? null) : null,
+    }));
+
+    return NextResponse.json({ notifications, total, page, pageSize });
   } catch (error) {
     console.error("Error fetching notifications:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -75,6 +106,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Error updating notifications:", error);
-    return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
+    return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }

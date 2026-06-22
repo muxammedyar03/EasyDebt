@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,12 +41,13 @@ interface User {
 
 interface UsersListProps {
   users: User[];
+  role: string;
 }
 
 const roleColors = {
-  SUPER_ADMIN: "destructive",
-  ADMIN: "default",
-  USER: "secondary",
+  SUPER_ADMIN: "bg-blue-500/20 text-blue-700 dark:text-blue-500 rounded-full",
+  ADMIN: "bg-green-500/20 text-green-700 dark:text-green-500 rounded-full",
+  USER: "bg-gray-500/20 text-gray-700 dark:text-gray-500 rounded-full",
 } as const;
 
 const roleLabels = {
@@ -54,7 +56,7 @@ const roleLabels = {
   USER: "User",
 };
 
-export function UsersList({ users }: UsersListProps) {
+export function UsersList({ users, role }: UsersListProps) {
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -84,6 +86,31 @@ export function UsersList({ users }: UsersListProps) {
     }
   };
 
+  const handleRoleChange = async (userId: number, newRole: "SUPER_ADMIN" | "ADMIN" | "USER") => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Xatolik yuz berdi");
+      }
+
+      toast.success("Rol yangilandi");
+      router.refresh();
+    } catch (error) {
+      toast.error("Xatolik", {
+        description: error instanceof Error ? error.message : "Rolni yangilashda xatolik",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteUserId) return;
 
@@ -93,8 +120,10 @@ export function UsersList({ users }: UsersListProps) {
         method: "DELETE",
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error("Xatolik yuz berdi");
+        throw new Error(data.error || "Foydalanuvchini o'chirishda xatolik yuz berdi");
       }
 
       toast.success("Muvaffaqiyatli", {
@@ -104,7 +133,7 @@ export function UsersList({ users }: UsersListProps) {
       router.refresh();
     } catch (error) {
       toast.error("Xatolik", {
-        description: `${"Foydalanuvchini o'chirishda xatolik: " + error}`,
+        description: error instanceof Error ? error.message : "Foydalanuvchini o'chirishda xatolik yuz berdi",
       });
     } finally {
       setIsLoading(false);
@@ -156,7 +185,26 @@ export function UsersList({ users }: UsersListProps) {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant={roleColors[user.role]}>{roleLabels[user.role]}</Badge>
+                    {role === "SUPER_ADMIN" ? (
+                      <Select
+                        value={user.role}
+                        onValueChange={(value) => handleRoleChange(user.id, value as "SUPER_ADMIN" | "ADMIN" | "USER")}
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className="h-8 w-[130px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USER">{roleLabels.USER}</SelectItem>
+                          <SelectItem value="ADMIN">{roleLabels.ADMIN}</SelectItem>
+                          <SelectItem value="SUPER_ADMIN">{roleLabels.SUPER_ADMIN}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="default" className={roleColors[user.role]}>
+                        {roleLabels[user.role]}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.is_active ? "default" : "secondary"}>
@@ -182,24 +230,28 @@ export function UsersList({ users }: UsersListProps) {
                           {user.is_active ? (
                             <>
                               <UserX className="mr-2 h-4 w-4" />
-                              O&apos;chirish
+                              Deactivate
                             </>
                           ) : (
                             <>
                               <UserCheck className="mr-2 h-4 w-4" />
-                              Faollashtirish
+                              Activate
                             </>
                           )}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/users/${user.id}/edit`)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Tahrirlash
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeleteUserId(user.id)} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          O&apos;chirish
-                        </DropdownMenuItem>
+                        {role === "SUPER_ADMIN" && (
+                          <>
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/users/${user.id}/edit`)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Tahrirlash
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setDeleteUserId(user.id)} className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -215,7 +267,8 @@ export function UsersList({ users }: UsersListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Ishonchingiz komilmi?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bu amal qaytarib bo&apos;lmaydi. Foydalanuvchi ma&apos;limotlari butunlay o&apos;chiriladi.
+              Bu amal qaytarib bo&apos;lmaydi. Foydalanuvchi hisobi va barcha ma&apos;lumotlari butunlay
+              o&apos;chiriladi.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

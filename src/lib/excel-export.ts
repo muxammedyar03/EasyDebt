@@ -1,5 +1,5 @@
-// Excel export utility using xlsx library for true .xlsx format
-import * as XLSX from "xlsx";
+// Excel export utility using ExcelJS for .xlsx format (browser & Node)
+import * as ExcelJS from "exceljs";
 
 export interface ExportData {
   headers: string[];
@@ -7,31 +7,38 @@ export interface ExportData {
   filename: string;
 }
 
-export function exportToExcel(data: ExportData) {
-  // Create a new workbook
-  const workbook = XLSX.utils.book_new();
+export async function exportToExcel(data: ExportData): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Qarzdorlar", { headerFooter: { firstHeader: "", firstFooter: "" } });
 
-  // Combine headers and rows
-  const worksheetData = [data.headers, ...data.rows];
+  // Headers row
+  worksheet.addRow(data.headers);
+  // Data rows
+  data.rows.forEach((row) => worksheet.addRow(row));
 
-  // Create worksheet from array of arrays
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
-  // Set column widths for better readability
-  const columnWidths = data.headers.map((header, index) => {
-    // Calculate max width based on header and data
+  // Column widths
+  data.headers.forEach((header, index) => {
     const headerWidth = header.length;
-    const dataWidths = data.rows.map((row) => String(row[index] || "").length);
-    const maxDataWidth = Math.max(...dataWidths, 0);
-    return { wch: Math.max(headerWidth, maxDataWidth, 10) };
+    const dataWidths = data.rows.map((row) => String(row[index] ?? "").length);
+    const maxDataWidth = Math.max(0, ...dataWidths);
+    worksheet.getColumn(index + 1).width = Math.max(headerWidth, maxDataWidth, 10);
   });
-  worksheet["!cols"] = columnWidths;
 
-  // Add worksheet to workbook
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Qarzdorlar");
-
-  // Generate Excel file and trigger download
-  XLSX.writeFile(workbook, `${data.filename}.xlsx`);
+  // Browser: write to buffer and trigger download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${data.filename}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 5000);
 }
 
 // Format date for Excel
