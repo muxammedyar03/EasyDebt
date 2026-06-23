@@ -10,20 +10,12 @@ import { t } from "@/lib/i18n";
 export function DemoLogin() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const userData = {
-    username: "guest",
-    password: "guest123",
-  };
 
   const handleLogin = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/guest", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
       });
 
       const result = await response.json();

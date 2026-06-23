@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isMockMode, getMockStore } from "@/lib/mock";
+import { shouldUseMockData, getMockStore } from "@/lib/mock";
 
 export async function GET() {
   try {
@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (isMockMode()) {
+    if (await shouldUseMockData()) {
       const user = getMockStore().users.find((u) => u.id === session.userId);
       if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
       return NextResponse.json({ user });

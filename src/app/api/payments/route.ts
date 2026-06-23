@@ -8,7 +8,7 @@ import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { debtorRepository } from "@/entities/debtor/api";
 import { paymentRepository } from "@/entities/payment/api";
-import { isMockMode, mockFindUserByUsername } from "@/lib/mock";
+import { shouldUseMockData, mockFindUserByUsername } from "@/lib/mock";
 
 const createPaymentSchema = z.object({
   debtor_id: z.number(),
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const userId = session.userId;
 
-    if (isMockMode()) {
+    if (await shouldUseMockData()) {
       const debtor = await debtorRepository.findById(validatedData.debtor_id);
       if (!debtor) {
         return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });

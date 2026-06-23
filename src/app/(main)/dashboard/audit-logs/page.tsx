@@ -1,6 +1,6 @@
 import { auditLogRepository } from "@/entities/audit/api";
 import { debtorRepository } from "@/entities/debtor/api";
-import { isMockMode, getMockStore } from "@/lib/mock";
+import { shouldUseMockData, getMockStore } from "@/lib/mock";
 import { AuditLogsTable } from "./_components/audit-logs-table";
 import { Prisma } from "@prisma/client";
 import { AuditLogTableProps } from "@/types/types";
@@ -76,7 +76,7 @@ export default async function AuditLogsPage({
 
   const userIds = [...new Set(auditLogs.map((log) => log.user_id).filter((id): id is number => id !== null))];
 
-  const users = isMockMode()
+  const users = (await shouldUseMockData())
     ? getMockStore()
         .users.filter((u) => userIds.includes(u.id))
         .map((u) => ({

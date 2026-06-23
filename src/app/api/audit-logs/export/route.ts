@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { auditLogRepository } from "@/entities/audit/api";
-import { isMockMode, getMockStore } from "@/lib/mock";
+import { shouldUseMockData, getMockStore } from "@/lib/mock";
 import { t } from "@/lib/i18n";
 
 export async function GET(request: NextRequest) {
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     const auditLogs = await auditLogRepository.findMany(where, { orderBy: { created_at: "desc" } });
 
     const userIds = [...new Set(auditLogs.map((log) => log.user_id).filter((id): id is number => id !== null))];
-    const users = isMockMode()
+    const users = (await shouldUseMockData())
       ? getMockStore().users.filter((u) => userIds.includes(u.id))
       : await (async () => {
           const { prisma } = await import("@/lib/prisma");

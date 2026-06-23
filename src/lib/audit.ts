@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { isMockMode } from "@/lib/mock/is-mock-mode";
+import { shouldUseMockData } from "@/lib/mock/is-mock-mode";
 
 export type AuditAction =
   | "CREATE"
@@ -30,7 +30,7 @@ interface AuditLogData {
 }
 
 export async function createAuditLog(data: AuditLogData) {
-  if (isMockMode()) return;
+  if (await shouldUseMockData()) return;
   try {
     await prisma.auditLog.create({
       data: {

@@ -1,6 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
+import { GUEST_SESSION_COOKIE } from "@/lib/mock/is-mock-mode";
+
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
 
 export interface JWTPayload {
@@ -64,4 +66,20 @@ export async function setAuthCookie(token: string) {
 export async function clearAuthCookie() {
   const cookieStore = await cookies();
   cookieStore.delete("auth-token");
+}
+
+export async function setGuestDemoCookie() {
+  const cookieStore = await cookies();
+  cookieStore.set(GUEST_SESSION_COOKIE, "1", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7,
+    path: "/",
+  });
+}
+
+export async function clearGuestDemoCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(GUEST_SESSION_COOKIE);
 }

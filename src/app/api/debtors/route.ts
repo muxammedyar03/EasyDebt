@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { debtorService } from "@/lib/services/debtor.service";
 import { debtorRepository } from "@/entities/debtor/api";
 import { debtRepository } from "@/entities/debt/api";
-import { isMockMode } from "@/lib/mock";
+import { shouldUseMockData } from "@/lib/mock";
 
 const createDebtorSchema = z.object({
   first_name: z.string().min(1),
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Get userId from session
     const userId = session.userId;
 
-    if (isMockMode()) {
+    if (await shouldUseMockData()) {
       const debtor = await debtorRepository.create({
         first_name: validatedData.first_name,
         last_name: validatedData.last_name,

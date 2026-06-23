@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { settingsRepository } from "@/entities/settings/api";
 import { debtRepository } from "@/entities/debt/api";
 import { debtorRepository } from "@/entities/debtor/api";
-import { isMockMode, mockFindUserByUsername } from "@/lib/mock";
+import { shouldUseMockData, mockFindUserByUsername } from "@/lib/mock";
 
 const createDebtSchema = z.object({
   debtor_id: z.number(),
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const validatedData = createDebtSchema.parse(body);
 
     const userId = session.userId;
-    if (isMockMode()) {
+    if (await shouldUseMockData()) {
       const debtor = await debtorRepository.findById(validatedData.debtor_id);
       if (!debtor) {
         return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Get debt limit from settings (inside transaction)
-      const debtLimit = await settingsRepository.getDebtLimit(tx);
+      const debtLimit = await settingsRepository.getDebtLimit();
 
       // Update debtor's total_debt
       const updatedDebtor = await tx.debtor.update({

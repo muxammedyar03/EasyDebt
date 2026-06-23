@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { clearAuthCookie, getSession } from "@/lib/auth";
+import { clearAuthCookie, clearGuestDemoCookie, getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { shouldUseMockData } from "@/lib/mock";
 
 export async function POST() {
   const session = await getSession();
   try {
+    const useMockData = await shouldUseMockData();
     await clearAuthCookie();
+    await clearGuestDemoCookie();
 
-    if (session) {
+    if (session && !useMockData) {
       // Get user info for description
       const user = await prisma.user.findUnique({
         where: { id: session.userId },

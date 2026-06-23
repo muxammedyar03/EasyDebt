@@ -1,4 +1,4 @@
-import { isMockMode } from "@/lib/mock/is-mock-mode";
+import { createRepositoryProxy } from "@/lib/mock/create-repository-proxy";
 import { mockPaymentReminderRepository } from "@/lib/mock/repositories/payment-reminder.repository.mock";
 import {
   PaymentReminderRepository,
@@ -6,4 +6,7 @@ import {
 } from "./payment-reminder.repository";
 
 export { PaymentReminderRepository };
-export const paymentReminderRepository = isMockMode() ? mockPaymentReminderRepository : prismaPaymentReminderRepository;
+export const paymentReminderRepository = createRepositoryProxy(
+  mockPaymentReminderRepository,
+  prismaPaymentReminderRepository,
+);

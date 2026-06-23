@@ -1,7 +1,7 @@
 import type { NotificationType } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { settingsRepository } from "@/entities/settings/api";
-import { isMockMode, getMockStore } from "@/lib/mock";
+import { shouldUseMockData, getMockStore } from "@/lib/mock";
 
 export type DashboardLayoutUser = {
   id: string;
@@ -66,7 +66,7 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
     settingsRepository.getOverdueDays(),
   ]);
 
-  if (isMockMode()) {
+  if (await shouldUseMockData()) {
     const store = getMockStore();
     const user = session ? store.users.find((u) => u.id === session.userId) : null;
     const unread = store.notifications

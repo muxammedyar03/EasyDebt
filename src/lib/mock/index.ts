@@ -1,4 +1,5 @@
-export { isMockMode } from "./is-mock-mode";
+export { isMockMode, shouldUseMockData, GUEST_SESSION_COOKIE } from "./is-mock-mode";
+export { createRepositoryProxy } from "./create-repository-proxy";
 export {
   getMockStore,
   resetMockStore,

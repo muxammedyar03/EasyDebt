@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { isMockMode } from "@/lib/mock/is-mock-mode";
+import { shouldUseMockData } from "@/lib/mock/is-mock-mode";
 import { mockMarkAllNotificationsRead, mockMarkNotificationRead } from "@/lib/mock";
 import { notificationRepository } from "@/entities/notification/api";
 
@@ -48,7 +48,7 @@ async function resolveShopId(data: CreateNotificationData): Promise<number | und
 }
 
 export async function createNotification(data: CreateNotificationData) {
-  if (isMockMode()) return;
+  if (await shouldUseMockData()) return;
   try {
     const shopId = await resolveShopId(data);
 
@@ -82,7 +82,7 @@ export async function getUnreadNotifications(userId?: number) {
 }
 
 export async function markNotificationAsRead(notificationId: number) {
-  if (isMockMode()) {
+  if (await shouldUseMockData()) {
     mockMarkNotificationRead(notificationId);
     return;
   }
@@ -94,7 +94,7 @@ export async function markNotificationAsRead(notificationId: number) {
 }
 
 export async function markAllNotificationsAsRead(userId?: number) {
-  if (isMockMode()) {
+  if (await shouldUseMockData()) {
     mockMarkAllNotificationsRead(userId);
     return;
   }
