@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
@@ -30,7 +31,6 @@ export async function POST(request: NextRequest) {
     const validatedData = createDebtSchema.parse(body);
 
     const userId = session.userId;
-
     if (isMockMode()) {
       const debtor = await debtorRepository.findById(validatedData.debtor_id);
       if (!debtor) {
@@ -86,6 +86,8 @@ export async function POST(request: NextRequest) {
         throw new Error("Qarzdor topilmadi");
       }
 
+      const shopId = (debtor as { shop_id?: number }).shop_id;
+
       // Create debt record
       const debt = await tx.debt.create({
         data: {
@@ -93,10 +95,11 @@ export async function POST(request: NextRequest) {
           amount: validatedData.amount,
           description: validatedData.description || null,
           created_by: userId,
+          ...(shopId !== undefined ? { shop_id: shopId } : {}),
           ...(validatedData.created_at && process.env.NODE_ENV === "development"
             ? { created_at: new Date(validatedData.created_at) }
             : {}),
-        },
+        } as Prisma.DebtUncheckedCreateInput,
       });
 
       // Get debt limit from settings (inside transaction)

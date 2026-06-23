@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { isMockMode } from "@/lib/mock/is-mock-mode";
 import { mockMarkAllNotificationsRead, mockMarkNotificationRead } from "@/lib/mock";
 import { notificationRepository } from "@/entities/notification/api";
@@ -13,14 +14,57 @@ export type NotificationType =
 
 interface CreateNotificationData {
   userId?: number;
+  shopId?: number;
   debtorId?: number;
   type: NotificationType;
   title: string;
   message: string;
 }
 
-export async function createNotification() {
+async function resolveShopId(data: CreateNotificationData): Promise<number | undefined> {
+  if (data.shopId) return data.shopId;
+
+  if (data.debtorId) {
+    const debtor = await prisma.debtor.findUnique({ where: { id: data.debtorId } });
+    const shopId = (debtor as { shop_id?: number } | null)?.shop_id;
+    if (shopId) return shopId;
+  }
+
+  if (data.userId) {
+    const user = await prisma.user.findUnique({ where: { id: data.userId } });
+    const shopId = (user as { shop_id?: number } | null)?.shop_id;
+    if (shopId) return shopId;
+  }
+
+  const prismaWithShop = prisma as typeof prisma & {
+    shop?: { findFirst: (args: object) => Promise<{ id: number } | null> };
+  };
+  const shop = await prismaWithShop.shop?.findFirst({
+    where: { is_active: true },
+    select: { id: true },
+  });
+
+  return shop?.id;
+}
+
+export async function createNotification(data: CreateNotificationData) {
   if (isMockMode()) return;
+  try {
+    const shopId = await resolveShopId(data);
+
+    await prisma.notification.create({
+      data: {
+        ...(shopId !== undefined ? { shop_id: shopId } : {}),
+        user_id: data.userId ?? null,
+        debtor_id: data.debtorId ?? null,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+      } as Prisma.NotificationUncheckedCreateInput,
+    });
+  } catch (error) {
+    console.error("Failed to create notification:", error);
+  }
 }
 
 export async function getUnreadNotifications(userId?: number) {
