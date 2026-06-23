@@ -7,7 +7,7 @@ import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
 const updateDebtSchema = z.object({
-  amount: z.number().positive("Qarz miqdori musbat bo'lishi kerak").optional(),
+  amount: z.number().positive("Сумма долга должна быть положительной").optional(),
   description: z.string().nullable().optional(),
   created_at: z.string().optional(), // Dev mode: custom date
 });

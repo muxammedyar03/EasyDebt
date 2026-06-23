@@ -30,7 +30,7 @@ import { PaymentDomain } from "@/types/domain";
 import { t } from "@/lib/i18n";
 
 const editPaymentSchema = z.object({
-  amount: z.string().min(1, "To'lov miqdorini kiriting"),
+  amount: z.string().min(1, "Введите сумму платежа"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().optional(),
   createdAt: z.date().optional(),
@@ -135,7 +135,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                To&apos;lov miqdori <span className="text-destructive">*</span>
+                Сумма платежа <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -151,7 +151,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
 
             <div className="grid gap-2">
               <Label htmlFor="payment_type">
-                To&apos;lov turi <span className="text-destructive">*</span>
+                Тип платежа <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={paymentType}
@@ -159,30 +159,24 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
                 disabled={isLoading}
               >
                 <SelectTrigger id="payment_type">
-                  <SelectValue placeholder="To'lov turini tanlang" />
+                  <SelectValue placeholder="Выберите тип платежа" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CASH">Naqd</SelectItem>
+                  <SelectItem value="CASH">Наличные</SelectItem>
                   <SelectItem value="CLICK">Click</SelectItem>
-                  <SelectItem value="CARD">Karta</SelectItem>
+                  <SelectItem value="CARD">Карта</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="note">Izoh</Label>
-              <Textarea
-                id="note"
-                placeholder="To'lov haqida ma'lumot"
-                {...register("note")}
-                disabled={isLoading}
-                rows={3}
-              />
+              <Label htmlFor="note">Описание</Label>
+              <Textarea id="note" placeholder="Описание платежа" {...register("note")} disabled={isLoading} rows={3} />
             </div>
 
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>Дата (Dev Mode)</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -192,7 +186,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
                       type="button"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Выберите дату"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -206,11 +200,11 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              Отмена
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Saqlash
+              Сохранить
             </Button>
           </DialogFooter>
         </form>

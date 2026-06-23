@@ -134,7 +134,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                To&apos;lov miqdori <span className="text-destructive">*</span>
+                Сумма платежа <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -150,7 +150,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
             </div>
             <div className="grid gap-2">
               <Label htmlFor="payment_type">
-                To&apos;lov turi <span className="text-destructive">*</span>
+                Тип платежа <span className="text-destructive">*</span>
               </Label>
               <Tabs
                 value={paymentType}
@@ -163,7 +163,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                     disabled={isLoading}
                     className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-orange-500 data-[state=active]:text-white dark:data-[state=active]:bg-orange-500"
                   >
-                    Naqd
+                    Наличные
                   </TabsTrigger>
                   <TabsTrigger
                     value="CLICK"
@@ -177,16 +177,16 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                     disabled={isLoading}
                     className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-emerald-500 data-[state=active]:text-white dark:data-[state=active]:bg-emerald-500"
                   >
-                    Karta
+                    Карта
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="note">Izoh</Label>
+              <Label htmlFor="note">Описание</Label>
               <Textarea
                 id="note"
-                placeholder="To'lov haqida ma'lumot"
+                placeholder="Описание платежа"
                 {...register("note")}
                 disabled={isLoading}
                 rows={3}
@@ -195,7 +195,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
             </div>
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>Дата (Dev Mode)</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -205,24 +205,24 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                       disabled={isLoading}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Выберите дату"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">Bo&apos;sh qoldirilsa, hozirgi sana ishlatiladi.</p>
+                <p className="text-muted-foreground text-xs">Если дата не выбрана, будет использована текущая дата.</p>
               </div>
             )}
           </div>
           <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              Отмена
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo&apos;shish
+              Добавить
             </Button>
           </DialogFooter>
         </form>

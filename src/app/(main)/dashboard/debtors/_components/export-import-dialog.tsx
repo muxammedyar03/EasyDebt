@@ -69,8 +69,8 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
       }, 5000);
 
       setProgress(100);
-      toast.success("Ma'lumotlar muvaffaqiyatli export qilindi", {
-        description: `${data.meta.debtorsCount} ta qarzdor, ${data.meta.debtsCount} ta qarz, ${data.meta.paymentsCount} ta to'lov`,
+      toast.success("Материалы успешно экспортированы", {
+        description: `${data.meta.debtorsCount} дебиторов, ${data.meta.debtsCount} долгов, ${data.meta.paymentsCount} платежей`,
       });
 
       onOpenChange(false);
@@ -196,8 +196,8 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
       }
 
       setProgress(100);
-      toast.success("Ma'lumotlar muvaffaqiyatli import qilindi", {
-        description: `${result.debtorsCount} ta qarzdor, ${result.debtsCount} ta qarz, ${result.paymentsCount} ta to'lov yaratildi`,
+      toast.success("Материалы успешно импортированы", {
+        description: `${result.debtorsCount} дебиторов, ${result.debtsCount} долгов, ${result.paymentsCount} платежей`,
       });
 
       onOpenChange(false);
@@ -241,19 +241,19 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
             {mode === "export" ? (
               <>
                 <Download className="h-5 w-5" />
-                Ma&apos;lumotlarni Export qilish
+                Экспортировать материалы
               </>
             ) : (
               <>
                 <Upload className="h-5 w-5" />
-                Ma&apos;lumotlarni Import qilish
+                Импортировать материалы
               </>
             )}
           </DialogTitle>
           <DialogDescription>
             {mode === "export"
-              ? "Barcha qarzdorlar va ularning qarzlari JSON formatda yuklab olinadi"
-              : "JSON fayldan qarzdorlar va qarzlarni import qiling"}
+              ? "Barcha дебиторы и их долги в формате JSON загружаются"
+              : "JSON файл из дебиторов и их долгов импортируется"}
           </DialogDescription>
         </DialogHeader>
 
@@ -261,10 +261,9 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
           {mode === "export" ? (
             <Alert>
               <FileJson className="h-4 w-4" />
-              <AlertTitle>Export formati: JSON</AlertTitle>
+              <AlertTitle>Формат экспорта: JSON</AlertTitle>
               <AlertDescription>
-                Barcha ma&apos;lumotlar nested strukturada saqlanadi. Import qilish uchun bu faylni ishlatishingiz
-                mumkin.
+                Barcha материалы хранятся в вложенной структуре. Импортировать можно используя этот файл. mumkin.
               </AlertDescription>
             </Alert>
           ) : (
@@ -287,7 +286,7 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
                     disabled={loading}
                   >
                     <FileJson className="mr-2 h-4 w-4" />
-                    {selectedFile ? selectedFile.name : "JSON fayl tanlang"}
+                    {selectedFile ? selectedFile.name : "Выберите JSON файл"}
                   </Button>
                 </label>
               </div>
@@ -295,29 +294,29 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
               {previewData && (
                 <Alert>
                   <CheckCircle2 className="h-4 w-4" />
-                  <AlertTitle>Fayl ma&apos;lumotlari</AlertTitle>
+                  <AlertTitle>Информация о файле</AlertTitle>
                   <AlertDescription className="mt-2 space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span>Qarzdorlar:</span>
+                      <span>Дебиторы:</span>
                       <span className="font-semibold">{previewData.debtorsCount}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Qarzlar:</span>
+                      <span>Долги:</span>
                       <span className="font-semibold">{previewData.debtsCount}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>To&apos;lovlar:</span>
+                      <span>Платежи:</span>
                       <span className="font-semibold">{previewData.paymentsCount}</span>
                     </div>
                     {previewData.exportedBy && (
                       <div className="flex justify-between text-sm">
-                        <span>Export qilgan:</span>
+                        <span>Экспортировал:</span>
                         <span className="font-semibold">{previewData.exportedBy}</span>
                       </div>
                     )}
                     {previewData.exportedAt && (
                       <div className="flex justify-between text-sm">
-                        <span>Export sanasi:</span>
+                        <span>Дата экспорта:</span>
                         <span className="font-semibold">
                           {new Date(previewData.exportedAt).toLocaleDateString("uz-UZ")}
                         </span>
@@ -331,8 +330,8 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Diqqat!</AlertTitle>
                 <AlertDescription>
-                  Import paytida yangi ma&apos;lumotlar yaratiladi. Mavjud ma&apos;lumotlar o&apos;zgartirilmaydi.
-                  Duplicate ma&apos;lumotlar avtomatik aniqlanadi.
+                  При импорте новые материалы создаются. Существующие материалы не изменяются. Duplicate материалы
+                  автоматически определяются.
                 </AlertDescription>
               </Alert>
             </>
@@ -342,7 +341,7 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
             <div className="space-y-2">
               <Progress value={progress} className="w-full" />
               <p className="text-muted-foreground text-center text-sm">
-                {mode === "export" ? "Export qilinmoqda..." : "Import qilinmoqda..."}
+                {mode === "export" ? "Экспортируется..." : "Импортируется..."}
               </p>
             </div>
           )}
@@ -350,17 +349,17 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Bekor qilish
+            Отмена
           </Button>
           {mode === "export" ? (
             <Button onClick={handleExport} disabled={loading}>
               <Download className="mr-2 h-4 w-4" />
-              Export qilish
+              Экспортировать
             </Button>
           ) : (
             <Button onClick={handleImport} disabled={loading || !selectedFile}>
               <Upload className="mr-2 h-4 w-4" />
-              Import qilish
+              Импортировать
             </Button>
           )}
         </DialogFooter>

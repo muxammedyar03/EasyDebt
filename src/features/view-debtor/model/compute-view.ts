@@ -34,7 +34,7 @@ export function computeViewValueSync(debtor: DebtorDomain, overdueDays: number):
     id: `debt-${d.id}`,
     type: "DEBT" as const,
     amount: d.amount,
-    title: `Qarz qo'shildi: +${d.amount.toLocaleString()} so'm`,
+    title: `Долг добавлен: +${d.amount.toLocaleString()} so'm`,
     subtitle: d.description ?? null,
     createdAt: new Date(d.createdAt),
   }));
@@ -42,14 +42,14 @@ export function computeViewValueSync(debtor: DebtorDomain, overdueDays: number):
     id: `payment-${p.id}`,
     type: "PAYMENT" as const,
     amount: p.amount,
-    title: `To'lov: -${p.amount.toLocaleString()} so'm`,
+    title: `Платеж: -${p.amount.toLocaleString()} so'm`,
     subtitle:
       p.paymentType === "CASH"
-        ? "Naqd"
+        ? "Наличные"
         : p.paymentType === "CLICK"
-          ? "Click"
+          ? "Карта"
           : p.paymentType === "CARD"
-            ? "Karta"
+            ? "Карта"
             : "Unknown",
     createdAt: new Date(p.createdAt),
   }));
@@ -97,7 +97,7 @@ export function useComputedViewValue(
       id: `debt-${d.id}`,
       type: "DEBT" as const,
       amount: d.amount,
-      title: `Qarz qo'shildi: +${d.amount.toLocaleString()} so'm`,
+      title: `Долг добавлен: +${d.amount.toLocaleString()} so'm`,
       subtitle: d.description ?? null,
       createdAt: new Date(d.createdAt),
     }));
@@ -113,7 +113,7 @@ export function useComputedViewValue(
             ? "Click"
             : p.paymentType === "CARD"
               ? "Karta"
-              : "Unknown",
+              : "Неизвестно",
       createdAt: new Date(p.createdAt),
     }));
     return [...debtEvents, ...paymentEvents].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

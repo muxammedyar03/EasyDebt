@@ -47,9 +47,9 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Foydalanuvchini tahrirlash</h2>
+        <h2 className="text-2xl font-bold">Редактировать пользователя</h2>
         <p className="text-muted-foreground text-sm">
-          {serializedUser.username} — ma&apos;lumotlarni o&apos;zgartiring yoki rolni yangilang.
+          {serializedUser.username} — обновите информацию или измените роль.
         </p>
       </div>
       <Card>

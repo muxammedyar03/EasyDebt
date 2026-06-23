@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const addDebtSchema = z.object({
-  amount: z.string().min(1, "Qarz miqdorini kiriting"),
+  amount: z.string().min(1, "Введите сумму долга"),
   description: z.string().optional(),
   createdAt: z.date().optional(),
 });

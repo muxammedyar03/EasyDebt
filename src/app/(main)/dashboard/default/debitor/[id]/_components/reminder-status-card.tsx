@@ -116,10 +116,8 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
               <Bell className="h-5 w-5" />
             </div>
             <div className="flex-1 space-y-1">
-              <p className="text-muted-foreground text-sm font-medium">To&apos;lov eslatmasi o&apos;rnatilmagan</p>
-              <p className="text-muted-foreground/70 text-xs">
-                Qarzdorga to&apos;lov sanasini eslatish uchun eslatma qo&apos;shing
-              </p>
+              <p className="text-muted-foreground text-sm font-medium">Напоминание о платеже не установлено</p>
+              <p className="text-muted-foreground/70 text-xs">Для напоминания о платеже установите напоминание</p>
             </div>
           </div>
           <Button
@@ -129,7 +127,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
             className={cn("h-12 w-full cursor-pointer px-4 hover:bg-green-500/20 sm:w-auto", colorClass)}
           >
             <Bell className="mr-2 h-4 w-4" />
-            Eslatma qo&apos;shish
+            Установить напоминание
           </Button>
         </CardContent>
       </Card>
@@ -187,7 +185,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium">{isNotified ? "Eslatma yuborilgan" : "To'lov eslatmasi"}</p>
+              <p className="text-sm font-medium">{isNotified ? "Напоминание отправлено" : "Напоминание о платеже"}</p>
               <Badge variant="outline" className={cn("text-xs", badgeStyles[currentStyle])}>
                 {isNotified ? `${timeInfo?.timeText}` : timeInfo?.timeText}
               </Badge>
@@ -203,7 +201,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
               </span>
               {isNotified && activeReminder.notifiedAt && (
                 <span className="text-purple-600">
-                  • Bildirilgan: {format(new Date(activeReminder.notifiedAt), "HH:mm")}
+                  • Отправлено: {format(new Date(activeReminder.notifiedAt), "HH:mm")}
                 </span>
               )}
             </div>
@@ -224,7 +222,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
               : urgencyStyles[currentStyle],
           )}
         >
-          {isNotified ? "Tugallash" : "Boshqarish"}
+          {isNotified ? "Завершить" : "Управление"}
         </Button>
       </CardContent>
     </Card>

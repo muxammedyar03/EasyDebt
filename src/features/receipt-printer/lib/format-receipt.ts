@@ -47,7 +47,7 @@ export function formatPaymentType(type: "CASH" | "CLICK" | "CARD"): string {
  * Receipt type ni sarlavhaga aylantirish
  */
 export function formatReceiptTitle(type: "DEBT" | "PAYMENT"): string {
-  return type === "DEBT" ? "QARZ QO'SHILDI" : "TO'LOV QABUL QILINDI";
+  return type === "DEBT" ? "ДОЛГ ДОБАВЛЕН" : "ПЛАТЕЖ ПОЛУЧЕН";
 }
 
 /**
@@ -65,25 +65,25 @@ export function generateSingleReceiptHtml(data: SingleReceiptData): string {
       </div>
       <div class="receipt-section receipt-doc-info">
         <div class="receipt-row">
-          <span class="receipt-label">Dok №:</span>
+          <span class="receipt-label">Документ №:</span>
           <span class="receipt-value">${data.docNumber}</span>
         </div>
         <div class="receipt-row">
-          <span class="receipt-label">Sana:</span>
+          <span class="receipt-label">Дата:</span>
           <span class="receipt-value">${formatReceiptDate(data.date)}</span>
         </div>
       </div>
       <div class="receipt-line"></div>
       <div class="receipt-section">
         <div class="receipt-row">
-          <span class="receipt-label">Qarzdor:</span>
+          <span class="receipt-label">Дебитор:</span>
           <span class="receipt-value">${data.debtorName}</span>
         </div>
         ${
           data.debtorPhone
             ? `
         <div class="receipt-row">
-          <span class="receipt-label">Telefon:</span>
+          <span class="receipt-label">Телефон:</span>
           <span class="receipt-value">${data.debtorPhone}</span>
         </div>
         `
@@ -93,7 +93,7 @@ export function generateSingleReceiptHtml(data: SingleReceiptData): string {
           data.employeeName
             ? `
         <div class="receipt-row">
-          <span class="receipt-label">Xodim:</span>
+          <span class="receipt-label">Сотрудник:</span>
           <span class="receipt-value">${data.employeeName}</span>
         </div>
         `
@@ -103,14 +103,14 @@ export function generateSingleReceiptHtml(data: SingleReceiptData): string {
       <div class="receipt-line"></div>
       <div class="receipt-section receipt-amount-section">
         <div class="receipt-row receipt-row-bold">
-          <span class="receipt-label">Miqdor:</span>
+          <span class="receipt-label">Сумма:</span>
           <span class="receipt-value">${formatReceiptAmount(data.amount)} so&apos;m</span>
         </div>
         ${
           data.type === "PAYMENT" && data.paymentType
             ? `
         <div class="receipt-row">
-          <span class="receipt-label">To&apos;lov turi:</span>
+          <span class="receipt-label">Тип платежа:</span>
           <span class="receipt-value">${formatPaymentType(data.paymentType)}</span>
         </div>
         `
@@ -120,7 +120,7 @@ export function generateSingleReceiptHtml(data: SingleReceiptData): string {
           data.description
             ? `
         <div class="receipt-row">
-          <span class="receipt-label">Izoh:</span>
+          <span class="receipt-label">Описание:</span>
           <span class="receipt-value">${data.description}</span>
         </div>
         `
@@ -130,17 +130,17 @@ export function generateSingleReceiptHtml(data: SingleReceiptData): string {
       <div class="receipt-line"></div>
       <div class="receipt-section">
         <div class="receipt-row">
-          <span class="receipt-label">Oldingi qoldiq:</span>
+          <span class="receipt-label">Предыдущий остаток:</span>
           <span class="receipt-value">${formatReceiptAmount(data.previousBalance)} so&apos;m</span>
         </div>
         <div class="receipt-row receipt-row-bold">
-          <span class="receipt-label">Yangi qoldiq:</span>
+          <span class="receipt-label">Новый остаток:</span>
           <span class="receipt-value">${formatReceiptAmount(data.newBalance)} so&apos;m</span>
         </div>
       </div>
       <div class="receipt-line"></div>
       <div class="receipt-footer">
-        <p>* * * Rahmat! * * *</p>
+        <p>* * * Спасибо! * * *</p>
         <p class="receipt-app-url">${APP_CONFIG.name}</p>
       </div>
     </div>

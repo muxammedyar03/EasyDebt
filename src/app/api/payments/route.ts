@@ -12,7 +12,7 @@ import { shouldUseMockData, mockFindUserByUsername } from "@/lib/mock";
 
 const createPaymentSchema = z.object({
   debtor_id: z.number(),
-  amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak"),
+  amount: z.number().positive("Сумма платежа должна быть положительной"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().nullable().optional(),
   created_at: z.string().optional(), // Dev mode: custom date

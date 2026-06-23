@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const addPaymentSchema = z.object({
-  amount: z.string().min(1, "To'lov miqdorini kiriting"),
+  amount: z.string().min(1, "Введите сумму платежа"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().optional(),
   createdAt: z.date().optional(),
@@ -9,7 +9,7 @@ export const addPaymentSchema = z.object({
 
 /** Shared schema for quick add (no date) */
 export const paymentSchema = z.object({
-  amount: z.string().min(1, "Summani kiriting"),
+  amount: z.string().min(1, "Введите сумму платежа"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().optional(),
 });

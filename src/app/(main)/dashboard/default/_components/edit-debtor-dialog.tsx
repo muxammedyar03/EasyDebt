@@ -23,8 +23,8 @@ import type { DebtorView } from "@/types/view";
 import { t } from "@/lib/i18n";
 
 const editDebtorSchema = z.object({
-  first_name: z.string().min(1, "Ism kiritish shart"),
-  last_name: z.string().min(1, "Familiya kiritish shart"),
+  first_name: z.string().min(1, "Введите имя"),
+  last_name: z.string().min(1, "Введите фамилию"),
   phone_number: z.string().optional(),
   address: z.string().optional(),
 });
@@ -89,10 +89,10 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Qarzdor ma'lumotlarini o'zgartirishda xatolik yuz berdi");
+        throw new Error(errorData.error || "Ошибка при обновлении данных дебитора");
       }
 
-      toast.success("Qarzdor ma'lumotlari muvaffaqiyatli o'zgartirildi");
+      toast.success("Данные дебитора успешно обновлены");
       onOpenChange(false);
 
       if (onSuccess) {
@@ -100,7 +100,7 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
       }
     } catch (error) {
       console.error("Error updating debtor:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzdor ma'lumotlarini o'zgartirishda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : "Ошибка при обновлении данных дебитора");
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +125,7 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="first_name">
-                Ism <span className="text-destructive">*</span>
+                Имя <span className="text-destructive">*</span>
               </Label>
               <Input id="first_name" placeholder="Ism" {...register("first_name")} disabled={isLoading} />
               {errors.first_name && <p className="text-destructive text-sm">{errors.first_name.message}</p>}
@@ -133,14 +133,14 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
 
             <div className="grid gap-2">
               <Label htmlFor="last_name">
-                Familiya <span className="text-destructive">*</span>
+                Фамилия <span className="text-destructive">*</span>
               </Label>
               <Input id="last_name" placeholder="Familiya" {...register("last_name")} disabled={isLoading} />
               {errors.last_name && <p className="text-destructive text-sm">{errors.last_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone_number">Telefon raqami</Label>
+              <Label htmlFor="phone_number">Телефон</Label>
               <Controller
                 name="phone_number"
                 control={control}
@@ -163,18 +163,18 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="address">Manzil</Label>
-              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
+              <Label htmlFor="address">Адрес</Label>
+              <Input id="address" placeholder="Адрес" {...register("address")} disabled={isLoading} />
             </div>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              Отмена
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Saqlash
+              Сохранить
             </Button>
           </DialogFooter>
         </form>

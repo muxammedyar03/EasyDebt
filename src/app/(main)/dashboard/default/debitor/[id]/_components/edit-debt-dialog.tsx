@@ -29,7 +29,7 @@ import { DebtDomain } from "@/types/domain";
 import { t } from "@/lib/i18n";
 
 const editDebtSchema = z.object({
-  amount: z.string().min(1, "Qarz miqdorini kiriting"),
+  amount: z.string().min(1, "Введите сумму долга"),
   description: z.string().optional(),
   createdAt: z.date().optional(),
 });
@@ -127,7 +127,7 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                Qarz miqdori <span className="text-destructive">*</span>
+                Сумма долга <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -142,10 +142,10 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Tavsif</Label>
+              <Label htmlFor="description">Описание</Label>
               <Textarea
                 id="description"
-                placeholder="Qarz haqida ma'lumot"
+                placeholder="Описание долга"
                 {...register("description")}
                 disabled={isLoading}
                 rows={3}
@@ -154,7 +154,7 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
 
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>Дата (Dev Mode)</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -178,11 +178,11 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              Отмена
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Saqlash
+              Сохранить
             </Button>
           </DialogFooter>
         </form>

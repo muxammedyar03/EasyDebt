@@ -15,7 +15,7 @@ import { shouldUseMockData, mockFindUserByUsername } from "@/lib/mock";
 
 const createDebtSchema = z.object({
   debtor_id: z.number(),
-  amount: z.number().positive("Qarz miqdori musbat bo'lishi kerak"),
+  amount: z.number().positive("Сумма долга должна быть положительной"),
   description: z.string().nullable().optional(),
   created_at: z.string().optional(), // Dev mode: custom date
 });

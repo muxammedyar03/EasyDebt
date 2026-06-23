@@ -7,7 +7,7 @@ import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
 const updatePaymentSchema = z.object({
-  amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak").optional(),
+  amount: z.number().positive("Сумма платежа должна быть положительной").optional(),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]).optional(),
   note: z.string().nullable().optional(),
   created_at: z.string().optional(), // Dev mode: custom date

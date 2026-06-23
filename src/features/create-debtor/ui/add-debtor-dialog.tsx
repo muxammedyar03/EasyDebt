@@ -92,36 +92,36 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Yangi qarzdor qo&apos;shish</DialogTitle>
-          <DialogDescription>Yangi qarzdor ma&apos;lumotlarini kiriting</DialogDescription>
+          <DialogTitle>Добавить нового дебитора</DialogTitle>
+          <DialogDescription>Введите информацию о новом дебитере</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="first_name">
-                Ism <span className="text-destructive">*</span>
+                Имя <span className="text-destructive">*</span>
               </Label>
-              <Input id="first_name" placeholder="Ism" {...register("first_name")} disabled={isLoading} />
+              <Input id="first_name" placeholder="Имя" {...register("first_name")} disabled={isLoading} />
               {errors.first_name && <p className="text-destructive text-sm">{errors.first_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="last_name">
-                Familiya <span className="text-destructive">*</span>
+                Фамилия <span className="text-destructive">*</span>
               </Label>
-              <Input id="last_name" placeholder="Familiya" {...register("last_name")} disabled={isLoading} />
+              <Input id="last_name" placeholder="Фамилия" {...register("last_name")} disabled={isLoading} />
               {errors.last_name && <p className="text-destructive text-sm">{errors.last_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone_number">Telefon raqami</Label>
+              <Label htmlFor="phone_number">Телефон</Label>
               <Controller
                 name="phone_number"
                 control={control}
                 render={({ field }) => (
                   <Input
                     id="phone_number"
-                    placeholder="+998 90 123 45 67"
+                    placeholder="+998 XX XXX XX XX"
                     value={phone}
                     onChange={(e) => {
                       const formatted = formatUzPhone(e.target.value);
@@ -137,12 +137,12 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="address">Manzil</Label>
-              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
+              <Label htmlFor="address">Адрес</Label>
+              <Input id="address" placeholder="Адрес" {...register("address")} disabled={isLoading} />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="debt_amount">Qarz miqdori</Label>
+              <Label htmlFor="debt_amount">Сумма долга</Label>
               <Input
                 id="debt_amount"
                 type="text"
@@ -155,10 +155,10 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="debt_description">Qarz tavsifi</Label>
+              <Label htmlFor="debt_description">Описание долга</Label>
               <Input
                 id="debt_description"
-                placeholder="Qarz haqida ma'lumot"
+                placeholder="Описание долга"
                 {...register("debt_description")}
                 disabled={isLoading}
               />
@@ -167,11 +167,11 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
 
           <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              Отмена
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo&apos;shish
+              Добавить
             </Button>
           </DialogFooter>
         </form>

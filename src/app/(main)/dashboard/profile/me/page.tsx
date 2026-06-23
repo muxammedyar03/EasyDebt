@@ -308,22 +308,22 @@ export default function ProfilePage() {
       {/* Account Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Hisob ma&apos;lumotlari</CardTitle>
+          <CardTitle>Информация о аккаунте</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Rol:</span>
+            <span className="text-muted-foreground">Роль:</span>
             <span className="font-medium capitalize">{userData?.role}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Hisob yaratilgan:</span>
+            <span className="text-muted-foreground">Аккаунт создан:</span>
             <span className="font-medium">
               {userData?.created_at ? new Date(userData.created_at).toLocaleDateString("uz-UZ") : "-"}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Holat:</span>
-            <span className="font-medium">{userData?.is_active ? "Faol" : "Nofaol"}</span>
+            <span className="text-muted-foreground">Статус:</span>
+            <span className="font-medium">{userData?.is_active ? "Активный" : "Неактивный"}</span>
           </div>
         </CardContent>
       </Card>

@@ -96,18 +96,18 @@ export function PaymentHistoryTable({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>To&apos;lovlar tarixi</CardTitle>
+          <CardTitle>История платежей</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>№</TableHead>
-                <TableHead>Sana</TableHead>
-                <TableHead>Miqdor</TableHead>
-                {!isMobile && <TableHead>To&apos;lov turi</TableHead>}
-                {!isMobile && <TableHead>Izoh</TableHead>}
-                <TableHead className="w-[100px]">Amallar</TableHead>
+                <TableHead>Дата</TableHead>
+                <TableHead>Сумма</TableHead>
+                {!isMobile && <TableHead>Тип платежа</TableHead>}
+                {!isMobile && <TableHead>Описание</TableHead>}
+                <TableHead className="w-[100px]">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,15 +116,15 @@ export function PaymentHistoryTable({
                   <TableCell width={isMobile ? 20 : 50}>{index + 1}</TableCell>
                   <TableCell width={!isMobile ? 300 : undefined}>
                     {payment?.createdAt ? formatDateUz(payment.createdAt, !isMobile) : "--/--/----"}
-                    <p className="text-muted-foreground text-xs md:hidden">{"izoh: " + (payment.note || "--")}</p>
+                    <p className="text-muted-foreground text-xs md:hidden">{"описание: " + (payment.note || "--")}</p>
                   </TableCell>
                   <TableCell width={!isMobile ? 300 : undefined} className="flex flex-col items-end">
-                    <p className="font-bold text-green-600">-{payment.amount.toLocaleString()} so&apos;m</p>
+                    <p className="font-bold text-green-600">-{payment.amount.toLocaleString()} сум</p>
                     <Badge
                       variant="default"
                       className={`h-6 px-3 text-xs md:hidden ${getPaymentTypeClass(payment.paymentType)}`}
                     >
-                      {payment.paymentType == "CASH" ? "Naqd" : payment.paymentType == "CLICK" ? "Click" : "Karta"}
+                      {payment.paymentType == "CASH" ? "Наличные" : payment.paymentType == "CLICK" ? "Карта" : "Карта"}
                     </Badge>
                   </TableCell>
                   {!isMobile && (
@@ -133,7 +133,11 @@ export function PaymentHistoryTable({
                         variant="default"
                         className={`h-6 px-3 text-xs ${getPaymentTypeClass(payment.paymentType)}`}
                       >
-                        {payment.paymentType == "CASH" ? "Naqd" : payment.paymentType == "CLICK" ? "Click" : "Karta"}
+                        {payment.paymentType == "CASH"
+                          ? "Наличные"
+                          : payment.paymentType == "CLICK"
+                            ? "Карта"
+                            : "Карта"}
                       </Badge>
                     </TableCell>
                   )}
@@ -165,14 +169,14 @@ export function PaymentHistoryTable({
                   disabled={currentPage === 1}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Oldingi
+                  Предыдущая
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Keyingi
+                  Следующая
                 </button>
               </div>
             </div>

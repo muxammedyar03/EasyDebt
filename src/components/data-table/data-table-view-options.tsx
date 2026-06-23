@@ -24,7 +24,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
     address: "Manzil",
     index: "№",
     first_name: "Qarzdor",
-    total_debt: "Qarz miqdori",
+    total_debt: "Сумма долга",
     status: "Status",
   };
 

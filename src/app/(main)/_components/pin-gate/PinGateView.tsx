@@ -89,9 +89,9 @@ export function PinGateView(props: PinGateViewProps) {
           <div className="flex w-full items-center justify-center p-6">
             <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
               <div className="space-y-2 text-center">
-                <h1 className="text-3xl font-medium">{hasPin ? "Pin kodni kiriting" : `Yangi PIN o'rnatish`}</h1>
+                <h1 className="text-3xl font-medium">{hasPin ? "Введите PIN код" : `Установите новый PIN код`}</h1>
                 <p className="text-muted-foreground text-sm">
-                  {hasPin ? "Davom etish uchun pin kodni kiriting" : `Iltimos ${pinLength} raqamli PIN o'rnating`}
+                  {hasPin ? "Для продолжения введите PIN код" : `Пожалуйста, установите ${pinLength} цифровой PIN код`}
                 </p>
               </div>
 
@@ -119,7 +119,7 @@ export function PinGateView(props: PinGateViewProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">PIN kodni tasdiqlang</label>
+                        <label className="text-sm font-medium">Подтвердите PIN код</label>
                         <div className="flex justify-center">
                           <InputOTP
                             value={pinConfirm}
@@ -138,7 +138,7 @@ export function PinGateView(props: PinGateViewProps) {
                     </div>
 
                     <Button className="w-full" onClick={onSetPin} disabled={loading}>
-                      {loading ? "Saqlanmoqda..." : "PIN o'rnatish"}
+                      {loading ? "Сохраняется..." : "Установка PIN кода"}
                     </Button>
                   </>
                 ) : (
@@ -163,7 +163,7 @@ export function PinGateView(props: PinGateViewProps) {
                         </div>
 
                         <Button className="w-full" onClick={onVerify} disabled={loading}>
-                          {loading ? "Tekshirilmoqda..." : "Kirish"}
+                          {loading ? "Проверяется..." : "Вход"}
                         </Button>
 
                         <div className="flex gap-2">
@@ -175,7 +175,7 @@ export function PinGateView(props: PinGateViewProps) {
                               setResetMode(true);
                             }}
                           >
-                            Unutdim
+                            Забыл
                           </Button>
                         </div>
                       </>
@@ -185,10 +185,10 @@ export function PinGateView(props: PinGateViewProps) {
                       <>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Login yoki Email</label>
+                            <label className="text-sm font-medium">Логин или Email</label>
                             <input
                               type="text"
-                              placeholder="Login yoki email kiriting"
+                              placeholder="Введите логин или email"
                               value={credentials.login}
                               onChange={(e) => onCredentialsChange("login", e.target.value)}
                               className="h-10 w-full rounded-md border px-3 py-2 text-sm"
@@ -196,10 +196,10 @@ export function PinGateView(props: PinGateViewProps) {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Parol</label>
+                            <label className="text-sm font-medium">Пароль</label>
                             <input
                               type="password"
-                              placeholder="••••••••"
+                              placeholder="********"
                               value={credentials.password}
                               onChange={(e) => onCredentialsChange("password", e.target.value)}
                               className="h-10 w-full rounded-md border px-3 py-2 text-sm"
@@ -207,7 +207,7 @@ export function PinGateView(props: PinGateViewProps) {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Yangi PIN</label>
+                            <label className="text-sm font-medium">Новый PIN</label>
                             <div className="flex justify-center">
                               <InputOTP
                                 value={pin}
@@ -226,7 +226,7 @@ export function PinGateView(props: PinGateViewProps) {
                         </div>
 
                         <Button className="w-full" onClick={onReset} disabled={loading}>
-                          {loading ? "So'ralmoqda..." : "PIN tiklash"}
+                          {loading ? "Сбрасывается..." : "Сброс PIN кода"}
                         </Button>
                         <Button type="button" variant="ghost" className="w-full" onClick={() => setResetMode(false)}>
                           Bekor qilish

@@ -249,7 +249,7 @@ export function UsersList({ users, role }: UsersListProps) {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setDeleteUserId(user.id)} className="text-destructive">
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Удалить
                             </DropdownMenuItem>
                           </>
                         )}
@@ -266,14 +266,14 @@ export function UsersList({ users, role }: UsersListProps) {
       <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ishonchingiz komilmi?</AlertDialogTitle>
+            <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bu amal qaytarib bo&apos;lmaydi. Foydalanuvchi hisobi va barcha ma&apos;lumotlari butunlay
-              o&apos;chiriladi.
+              Bu действие не может быть отменено. Пользователь и все его данные будут удалены полностью. Удаление не
+              может быть отменено.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Bekor qilish</AlertDialogCancel>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

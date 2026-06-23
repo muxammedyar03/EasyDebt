@@ -106,17 +106,17 @@ export function DebtHistoryTable({
     <>
       <Card className="p-2 md:p-3 xl:p-4">
         <CardHeader className="p-2 md:p-3 xl:p-4">
-          <CardTitle>Qarzlar tarixi</CardTitle>
+          <CardTitle>История долгов</CardTitle>
         </CardHeader>
         <CardContent className="p-2 md:p-3 xl:p-4">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>№</TableHead>
-                <TableHead>Sana</TableHead>
-                <TableHead>Miqdor</TableHead>
-                {!isMobile && <TableHead>Tavsif</TableHead>}
-                <TableHead className="w-[100px]">Amallar</TableHead>
+                <TableHead>Дата</TableHead>
+                <TableHead>Сумма</TableHead>
+                {!isMobile && <TableHead>Описание</TableHead>}
+                <TableHead className="w-[100px]">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -126,7 +126,7 @@ export function DebtHistoryTable({
                   <TableCell width={400}>{formatDateUz(debt.createdAt, true)}</TableCell>
                   <TableCell width={500}>
                     <Badge className="h-6 border-red-600/20 bg-red-500/10 px-3 text-xs text-red-700 dark:text-red-500">
-                      +{debt.amount.toLocaleString()} so&apos;m
+                      +{debt.amount.toLocaleString()} сум
                     </Badge>
                   </TableCell>
                   {!isMobile && <TableCell className="text-muted-foreground">{debt.description || "—"}</TableCell>}
@@ -157,14 +157,14 @@ export function DebtHistoryTable({
                   disabled={currentPage === 1}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Oldingi
+                  Предыдущая
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Keyingi
+                  Следующая
                 </button>
               </div>
             </div>

@@ -179,7 +179,7 @@ export function PublicDebtorClient({ debtor, initialViewValue }: PublicDebtorCli
                         <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 dark:bg-slate-900/30">
                           <TableHead className="w-[180px]">Sana</TableHead>
                           <TableHead className="text-right">Miqdor</TableHead>
-                          <TableHead>Tavsif</TableHead>
+                          <TableHead>Описание</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
