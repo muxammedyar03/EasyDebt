@@ -1,7 +1,14 @@
 import { jwtVerify } from "jose";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { GUEST_SESSION_COOKIE } from "@/lib/mock/is-mock-mode";
+
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
+
+function clearSessionCookies(response: NextResponse) {
+  response.cookies.set("auth-token", "", { path: "/", maxAge: 0 });
+  response.cookies.set(GUEST_SESSION_COOKIE, "", { path: "/", maxAge: 0 });
+}
 
 export async function authMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -14,10 +21,9 @@ export async function authMiddleware(req: NextRequest) {
       await jwtVerify(token, JWT_SECRET);
       isAuthenticated = true;
     } catch (error) {
-      // Token is invalid, clear it
       console.error("Invalid token:", error);
       const response = NextResponse.redirect(new URL("/auth/login", req.url));
-      response.cookies.delete("auth-token");
+      clearSessionCookies(response);
       return response;
     }
   }

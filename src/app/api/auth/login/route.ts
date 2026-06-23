@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { setAuthCookie, clearGuestDemoCookie, signToken } from "@/lib/auth";
+import { applyAuthCookie, clearGuestDemoCookieOnResponse, signToken } from "@/lib/auth";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { isMockMode, mockFindUserByUsername, mockVerifyPassword } from "@/lib/mock";
@@ -22,11 +22,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const validatedData = loginSchema.parse(body);
-    await clearGuestDemoCookie();
 
     const useMockData = isMockMode();
 
-    // Find user by username
     const user = useMockData
       ? mockFindUserByUsername(validatedData.username)
       : await prisma.user.findUnique({
@@ -37,12 +35,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Check if user is active
     if (!isUserAccountActive(user)) {
       return NextResponse.json({ error: "Account is disabled" }, { status: 403 });
     }
 
-    // Verify password
     const isValidPassword = useMockData
       ? mockVerifyPassword(validatedData.password, user.password)
       : await verifyPassword(validatedData.password, user.password);
@@ -51,7 +47,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Generate JWT token
     const token = await signToken({
       userId: user.id,
       username: user.username,
@@ -59,32 +54,7 @@ export async function POST(req: NextRequest) {
       role: user.role,
     });
 
-    // Set HTTP-only cookie
-    await setAuthCookie(token);
-
-    const userFullName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username;
-    const description = `${userFullName} tizimga kirdi`;
-
-    if (!useMockData) {
-      await prisma.auditLog.create({
-        data: {
-          user_id: user.id,
-          action: "LOGIN",
-          entity_type: "USER",
-          new_value: {
-            user_id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-          },
-          description,
-          ip_address: req.headers.get("cf-connecting-ip") || "",
-          user_agent: req.headers.get("user-agent") || "",
-        },
-      });
-    }
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: "Login successful",
       user: {
         id: user.id,
@@ -95,6 +65,35 @@ export async function POST(req: NextRequest) {
         last_name: user.last_name,
       },
     });
+
+    clearGuestDemoCookieOnResponse(response);
+    applyAuthCookie(response, token);
+
+    if (!useMockData) {
+      const userFullName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username;
+      try {
+        await prisma.auditLog.create({
+          data: {
+            user_id: user.id,
+            action: "LOGIN",
+            entity_type: "USER",
+            new_value: {
+              user_id: user.id,
+              username: user.username,
+              email: user.email,
+              role: user.role,
+            },
+            description: `${userFullName} tizimga kirdi`,
+            ip_address: req.headers.get("cf-connecting-ip") || "",
+            user_agent: req.headers.get("user-agent") || "",
+          },
+        });
+      } catch (auditError) {
+        console.error("Login audit log failed:", auditError);
+      }
+    }
+
+    return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation error", details: error.errors }, { status: 400 });

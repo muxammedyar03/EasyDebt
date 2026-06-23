@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { setAuthCookie, setGuestDemoCookie, signToken } from "@/lib/auth";
+import { applyAuthCookie, applyGuestDemoCookie, signToken } from "@/lib/auth";
 import { mockFindUserByUsername } from "@/lib/mock";
 
 export async function POST() {
@@ -17,10 +17,7 @@ export async function POST() {
       role: user.role,
     });
 
-    await setAuthCookie(token);
-    await setGuestDemoCookie();
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: "Guest login successful",
       user: {
         id: user.id,
@@ -31,6 +28,11 @@ export async function POST() {
         last_name: user.last_name,
       },
     });
+
+    applyAuthCookie(response, token);
+    applyGuestDemoCookie(response);
+
+    return response;
   } catch (error) {
     console.error("Guest login error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
