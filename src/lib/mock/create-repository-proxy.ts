@@ -1,6 +1,7 @@
 import { shouldUseMockData } from "./is-mock-mode";
 
-export function createRepositoryProxy<T extends object>(mockRepo: T, prismaRepo: T): T {
+/** Runtime picks mock vs prisma repo; types only need to share the same public API. */
+export function createRepositoryProxy<T extends object>(mockRepo: T, prismaRepo: object): T {
   return new Proxy({} as T, {
     get(_target, prop: string | symbol) {
       const mockValue = Reflect.get(mockRepo, prop);
