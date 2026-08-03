@@ -23,12 +23,15 @@ model User {
   pin        String? 
 
   // Relations
-  created_debtors       Debtor[]                @relation("CreatedBy")
-  created_debts         Debt[]                  @relation("DebtCreatedBy")
-  created_payments      Payment[]              @relation("PaymentCreatedBy")
-  created_reminders     PaymentReminder[]      @relation("ReminderCreatedBy")
-  push_subscriptions    PushSubscription[]
-  user_push_preferences UserPushPreferences?
+  created_debtors              Debtor[]                @relation("CreatedBy")
+  created_debts                Debt[]                  @relation("DebtCreatedBy")
+  created_payments             Payment[]               @relation("PaymentCreatedBy")
+  created_reminders            PaymentReminder[]       @relation("ReminderCreatedBy")
+  created_companies            Company[]               @relation("CompanyCreatedBy")
+  created_company_debts        CompanyDebt[]           @relation("CompanyDebtCreatedBy")
+  created_company_payments     CompanyPayment[]        @relation("CompanyPaymentCreatedBy")
+  push_subscriptions           PushSubscription[]
+  user_push_preferences        UserPushPreferences?
 
   @@map("users")
 }
@@ -251,4 +254,96 @@ model UserPushPreferences {
 
   @@index([user_id])
   @@map("user_push_preferences")
+}
+
+// ============================================================================
+// COMPANY (supplier) — shop owes these companies
+// ============================================================================
+
+model Company {
+  id                Int       @id @default(autoincrement())
+  external_id       String    @unique @default(uuid())
+  name              String
+  contact_person    String?
+  phone_number      String?
+  address           String?
+  total_debt        Decimal   @default(0) @db.Decimal(10, 2)
+  last_payment_date DateTime?
+  last_debt_date    DateTime?
+  is_overdue        Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  created_by        Int
+
+  creator  User             @relation("CompanyCreatedBy", fields: [created_by], references: [id])
+  debts    CompanyDebt[]
+  payments CompanyPayment[]
+
+  @@index([total_debt])
+  @@index([created_by])
+  @@index([created_at])
+  @@index([is_overdue])
+  @@index([last_payment_date])
+  @@index([last_debt_date])
+  @@index([external_id])
+  @@index([name])
+  @@map("companies")
+}
+
+model CompanyDebt {
+  id          Int      @id @default(autoincrement())
+  external_id String   @unique @default(uuid())
+  company_id  Int
+  amount      Decimal  @db.Decimal(10, 2)
+  note        String
+  items       Json?
+  created_at  DateTime @default(now())
+  created_by  Int
+
+  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  creator User    @relation("CompanyDebtCreatedBy", fields: [created_by], references: [id])
+
+  @@index([company_id])
+  @@index([created_at])
+  @@index([external_id])
+  @@map("company_debts")
+}
+
+model CompanyPayment {
+  id            Int         @id @default(autoincrement())
+  external_id   String      @unique @default(uuid())
+  company_id    Int
+  amount        Decimal     @db.Decimal(10, 2)
+  payment_type  PaymentType @default(CASH)
+  note          String
+  receipt_path  String?
+  receipt_mime  String?
+  receipt_size  Int?
+  created_at    DateTime    @default(now())
+  created_by    Int
+
+  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  creator User    @relation("CompanyPaymentCreatedBy", fields: [created_by], references: [id])
+
+  @@index([company_id])
+  @@index([created_at])
+  @@index([external_id])
+  @@index([receipt_path])
+  @@map("company_payments")
+}
+
+model CompanyDailySnapshot {
+  id                      Int      @id @default(autoincrement())
+  date                    DateTime @db.Date
+  total_outstanding_debt  Decimal  @db.Decimal(12, 2)
+  debts_sum               Decimal  @default(0) @db.Decimal(12, 2)
+  debts_count             Int      @default(0)
+  payments_sum            Decimal  @default(0) @db.Decimal(12, 2)
+  payments_count          Int      @default(0)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@unique([date])
+  @@index([date])
+  @@map("company_daily_snapshots")
 }

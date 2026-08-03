@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { BadgeCheck, Bell, LogOut, Settings } from "lucide-react";
+import { BadgeCheck, Bell, CreditCard, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -79,9 +79,13 @@ export function AccountSwitcher({
             <Settings />
             Sozlamalar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/push-notifications")}>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/push-notifications")} disabled>
             <Bell />
             Push notificationlar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/my-debts")}>
+            <CreditCard />
+            My debts
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

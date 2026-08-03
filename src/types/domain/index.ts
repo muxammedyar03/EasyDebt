@@ -32,3 +32,35 @@ export type {
   PaymentReminderFilters,
   PaymentReminderComputedFields,
 } from "./payment-reminder.domain";
+
+export type {
+  CompanyDomain,
+  CompanyStats,
+  CompanyStatus,
+  CompanyFilterStatus,
+  CompanySortBy,
+  CreateCompanyDomainInput,
+  UpdateCompanyDomainInput,
+  CompanyDomainFilters,
+  CompanyPaginationOptions,
+} from "./company.domain";
+
+export type {
+  CompanyDebtDomain,
+  CreateCompanyDebtDomainInput,
+  UpdateCompanyDebtDomainInput,
+} from "./company-debt.domain";
+
+export type {
+  CompanyPaymentDomain,
+  CreateCompanyPaymentDomainInput,
+  UpdateCompanyPaymentDomainInput,
+} from "./company-payment.domain";
+
+export type {
+  CompanyDailySnapshotDomain,
+  CompanyDayDebtActivity,
+  CompanyDayPaymentActivity,
+  CompanyDayActivityDomain,
+  UpsertCompanyDailySnapshotInput,
+} from "./company-daily-snapshot.domain";

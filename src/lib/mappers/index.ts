@@ -12,3 +12,12 @@ export {
   domainToTableViewDebtor,
   domainToDetailViewDebtor,
 } from "./debtor.mapper";
+
+export {
+  prismaToDomainCompany,
+  prismaToDomainCompanyDebt,
+  prismaToDomainCompanyPayment,
+  prismaToDomainCompanyDailySnapshot,
+  domainToViewCompany,
+  domainToDetailViewCompany,
+} from "./company.mapper";

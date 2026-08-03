@@ -10,7 +10,7 @@ export async function checkHostingReminder(): Promise<number> {
       return 0;
     }
 
-    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 6, 0, 0, 0));
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 5, 0, 0, 0));
     const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59));
 
     const existing = await prisma.notification.findFirst({

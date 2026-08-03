@@ -12,3 +12,5 @@ export {
   type PaymentReminderListView,
   type PaymentReminderFormData,
 } from "./payment-reminder.view";
+
+export type { CompanyView, CompanyDetailView } from "./company.view";
