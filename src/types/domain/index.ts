@@ -63,4 +63,5 @@ export type {
   CompanyDayPaymentActivity,
   CompanyDayActivityDomain,
   UpsertCompanyDailySnapshotInput,
+  CompanyPeriodReportDomain,
 } from "./company-daily-snapshot.domain";

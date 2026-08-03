@@ -48,3 +48,16 @@ export type UpsertCompanyDailySnapshotInput = {
   paymentsSum: number;
   paymentsCount: number;
 };
+
+export type CompanyPeriodReportDomain = {
+  dateFrom: Date;
+  dateTo: Date;
+  outstandingAtStart: number | null;
+  outstandingAtEnd: number | null;
+  debtsSum: number;
+  debtsCount: number;
+  paymentsSum: number;
+  paymentsCount: number;
+  debts: CompanyDayDebtActivity[];
+  payments: CompanyDayPaymentActivity[];
+};

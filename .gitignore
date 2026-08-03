@@ -22,6 +22,9 @@
 *.pem
 *.sh
 
+# uploaded company payment receipts
+/uploads/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

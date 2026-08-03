@@ -14,7 +14,17 @@ export type AuditAction =
   | "IMPORT"
   | "EXPORT";
 
-export type EntityType = "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS" | "PAYMENT_REMINDER";
+export type EntityType =
+  | "DEBTOR"
+  | "DEBT"
+  | "PAYMENT"
+  | "USER"
+  | "SETTINGS"
+  | "PAYMENT_REMINDER"
+  | "COMPANY"
+  | "COMPANY_DEBT"
+  | "COMPANY_PAYMENT"
+  | "COMPANY_PAYMENT_RECEIPT";
 
 interface AuditLogData {
   userId?: number;

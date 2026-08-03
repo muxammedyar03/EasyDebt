@@ -13,6 +13,7 @@ import type {
   CompanyDayActivityDomain,
   CompanyDayDebtActivity,
   CompanyDayPaymentActivity,
+  CompanyPeriodReportDomain,
 } from "@/types/domain/company-daily-snapshot.domain";
 
 type CompanyDebtWithCompany = Prisma.CompanyDebtGetPayload<{ include: { company: true } }>;
@@ -124,6 +125,69 @@ export class CompanyDailySnapshotService {
   async getPreviousMonthFirstDayReport(from: Date = new Date()) {
     const day = this.getFirstDayOfPreviousMonth(from);
     return this.getDayActivity(day);
+  }
+
+  private periodRange(dateFrom: Date, dateTo: Date): { gte: Date; lte: Date } {
+    const gte = new Date(dateFrom);
+    gte.setHours(0, 0, 0, 0);
+    const lte = new Date(dateTo);
+    lte.setHours(23, 59, 59, 999);
+    return { gte, lte };
+  }
+
+  /**
+   * Period report: outstanding at start/end + debts/payments activity in range.
+   */
+  async getPeriodReport(dateFrom: Date, dateTo: Date): Promise<CompanyPeriodReportDomain> {
+    const range = this.periodRange(dateFrom, dateTo);
+    const dayBeforeStart = new Date(range.gte);
+    dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
+
+    const [startSnapshot, endSnapshot, debtsAgg, debtsCount, paymentsAgg, paymentsCount, debts, payments] =
+      await Promise.all([
+        this.getSnapshotOn(dayBeforeStart),
+        this.getSnapshotOn(range.lte),
+        companyDebtRepository.aggregate({ created_at: range }),
+        companyDebtRepository.count({ created_at: range }),
+        companyPaymentRepository.aggregate({ created_at: range }),
+        companyPaymentRepository.count({ created_at: range }),
+        companyDebtRepository.findMany(
+          { created_at: range },
+          { include: { company: true }, orderBy: { created_at: "desc" }, take: 2000 },
+        ) as Promise<CompanyDebtWithCompany[]>,
+        companyPaymentRepository.findMany(
+          { created_at: range },
+          { include: { company: true }, orderBy: { created_at: "desc" }, take: 2000 },
+        ) as Promise<CompanyPaymentWithCompany[]>,
+      ]);
+
+    return {
+      dateFrom: range.gte,
+      dateTo: range.lte,
+      outstandingAtStart: startSnapshot?.totalOutstandingDebt ?? null,
+      outstandingAtEnd: endSnapshot?.totalOutstandingDebt ?? null,
+      debtsSum: debtsAgg._sum.amount?.toNumber() ?? 0,
+      debtsCount,
+      paymentsSum: paymentsAgg._sum.amount?.toNumber() ?? 0,
+      paymentsCount,
+      debts: debts.map((d) => ({
+        id: d.id,
+        companyId: d.company_id,
+        companyName: d.company.name,
+        amount: d.amount.toNumber(),
+        note: d.note,
+        createdAt: d.created_at,
+      })),
+      payments: payments.map((p) => ({
+        id: p.id,
+        companyId: p.company_id,
+        companyName: p.company.name,
+        amount: p.amount.toNumber(),
+        note: p.note,
+        paymentType: p.payment_type,
+        createdAt: p.created_at,
+      })),
+    };
   }
 }
 

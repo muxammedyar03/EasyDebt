@@ -1,4 +1,13 @@
-import { LayoutDashboard, UserCog, FileText, Users, BarChart3, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  UserCog,
+  FileText,
+  Users,
+  BarChart3,
+  Building2,
+  ChartColumn,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -54,6 +63,16 @@ export const sidebarItems: NavGroup[] = [
         icon: UserCog,
       },
       {
+        title: "Mening qarzlarim",
+        url: "/dashboard/my-debts",
+        icon: Building2,
+      },
+      {
+        title: "Qarz hisoboti",
+        url: "/dashboard/my-debts/report",
+        icon: ChartColumn,
+      },
+      {
         title: "Mijozlar Reytingi",
         url: "/dashboard/customers",
         icon: Users,
@@ -63,6 +82,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/reports",
         icon: BarChart3,
       },
+
       {
         title: "Audit Log",
         url: "/dashboard/audit-logs",
