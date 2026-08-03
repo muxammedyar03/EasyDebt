@@ -30,7 +30,7 @@ export class CompanyDebtService {
         data: {
           company_id: input.companyId,
           amount: input.amount,
-          note: input.note,
+          note: input.note?.trim() || null,
           items: input.items === undefined ? undefined : (input.items as Prisma.InputJsonValue),
           created_by: input.createdBy,
         },

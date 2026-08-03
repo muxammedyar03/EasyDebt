@@ -45,7 +45,7 @@ export type CompanyDetailView = CompanyView & {
     id: number;
     amount: number;
     amountFormatted: string;
-    note: string;
+    note: string | null;
     createdAt: Date;
     createdAtFormatted: string;
   }>;
@@ -54,7 +54,7 @@ export type CompanyDetailView = CompanyView & {
     amount: number;
     amountFormatted: string;
     paymentType: string;
-    note: string;
+    note: string | null;
     receiptPath: string | null;
     createdAt: Date;
     createdAtFormatted: string;

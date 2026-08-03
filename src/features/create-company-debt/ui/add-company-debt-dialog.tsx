@@ -59,7 +59,7 @@ export function AddCompanyDebtDialog({
       await createCompanyDebt({
         company_id: companyId,
         amount: parseFloat(data.amount.replace(/\s/g, "")),
-        note: data.note,
+        note: data.note?.trim() || null,
       });
       toast.success("Qarz qo'shildi");
       reset();
@@ -107,11 +107,8 @@ export function AddCompanyDebtDialog({
               {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="note">
-                Izoh <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="note">Izoh (ixtiyoriy)</Label>
               <Textarea id="note" placeholder="Mahsulot / sabab..." {...register("note")} disabled={isLoading} />
-              {errors.note && <p className="text-destructive text-sm">{errors.note.message}</p>}
             </div>
           </div>
           <DialogFooter>

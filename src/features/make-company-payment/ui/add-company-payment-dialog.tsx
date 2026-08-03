@@ -67,7 +67,7 @@ export function AddCompanyPaymentDialog({
         company_id: companyId,
         amount: parseFloat(data.amount.replace(/\s/g, "")),
         payment_type: data.payment_type,
-        note: data.note,
+        note: data.note?.trim() || null,
         receipt,
       });
       toast.success("To'lov qo'shildi");
@@ -133,9 +133,7 @@ export function AddCompanyPaymentDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="note">
-                Izoh <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="note">Izoh (ixtiyoriy)</Label>
               <Textarea id="note" placeholder="To'lov haqida..." {...register("note")} disabled={isLoading} />
               {errors.note && <p className="text-destructive text-sm">{errors.note.message}</p>}
             </div>

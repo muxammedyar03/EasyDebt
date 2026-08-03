@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileDown, Eye, Loader2 } from "lucide-react";
+import { Building2, CalendarDays, Eye, FileDown, Loader2, MapPin, Phone, UserRound, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export function CompanyAccordionDetail({ company, open }: CompanyAccordionDetail
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground flex items-center gap-2 py-4 text-sm">
+      <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
         Yuklanmoqda...
       </div>
@@ -45,52 +45,113 @@ export function CompanyAccordionDetail({ company, open }: CompanyAccordionDetail
 
   return (
     <div className="space-y-4 py-2">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="text-muted-foreground text-xs">Umumiy qarz</p>
-          <p className="font-semibold">{formatCurrencyUzs(summary.totalDebtAdded)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground text-xs">To&apos;langan</p>
-          <p className="font-semibold">{formatCurrencyUzs(summary.totalPaid)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground text-xs">Qolgan qarz</p>
-          <p className="font-semibold">{formatCurrencyUzs(summary.remaining)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground text-xs">Oxirgi to&apos;lov</p>
-          <p className="font-semibold">{data?.lastPaymentDate ? formatDateUz(data.lastPaymentDate) : "—"}</p>
-        </div>
-      </div>
-
-      <div className="grid gap-1 text-sm sm:grid-cols-2">
-        <p>
-          <span className="text-muted-foreground">Mas&apos;ul: </span>
-          {company.contactPerson || "—"}
-        </p>
-        <p>
-          <span className="text-muted-foreground">Telefon: </span>
-          {company.phoneDisplay || company.phoneNumber || "—"}
-        </p>
-        <p className="sm:col-span-2">
-          <span className="text-muted-foreground">Manzil: </span>
-          {company.address || "—"}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={handleExcel}>
+      {/* Top-right actions */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button variant="outline" size="lg" className="h-12" onClick={handleExcel}>
           <FileDown className="mr-2 h-4 w-4" />
           Excel
         </Button>
-        <Button asChild size="sm">
+        <Button asChild variant="default" size="lg" className="h-12">
           <Link href={`/dashboard/my-debts/${company.externalId}`}>
             <Eye className="mr-2 h-4 w-4" />
             Batafsil
           </Link>
         </Button>
-        {company.isOverdue && <Badge variant="destructive">Muddati o&apos;tgan</Badge>}
+      </div>
+
+      {/* Header strip */}
+      <div className="overflow-hidden rounded-xl border">
+        <div className="bg-muted/50 flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="bg-primary/15 text-primary flex size-7 items-center justify-center rounded-full">
+              <Building2 className="size-3.5" />
+            </span>
+            <div>
+              <p className="font-semibold">{company.name}</p>
+              <p className="text-muted-foreground text-xs">ID: {company.id}</p>
+            </div>
+          </div>
+          <Badge variant={company.statusBadge.variant}>{company.statusBadge.label}</Badge>
+        </div>
+
+        {/* Amounts recap row */}
+        <div className="bg-border grid grid-cols-2 gap-px sm:grid-cols-4">
+          <div className="bg-background px-4 py-4">
+            <p className="text-muted-foreground text-[11px] tracking-wide uppercase">Umumiy qarz</p>
+            <p className="mt-1 text-lg font-bold tabular-nums">{formatCurrencyUzs(summary.totalDebtAdded)}</p>
+          </div>
+          <div className="bg-background px-4 py-4">
+            <p className="text-muted-foreground text-[11px] tracking-wide uppercase">To&apos;langan</p>
+            <p className="mt-1 text-lg font-bold text-emerald-600 tabular-nums">
+              {formatCurrencyUzs(summary.totalPaid)}
+            </p>
+          </div>
+          <div className="bg-background px-4 py-4">
+            <p className="text-muted-foreground text-[11px] tracking-wide uppercase">Qolgan</p>
+            <p className="mt-1 text-lg font-bold tabular-nums">{formatCurrencyUzs(summary.remaining)}</p>
+          </div>
+          <div className="bg-background px-4 py-4">
+            <p className="text-muted-foreground text-[11px] tracking-wide uppercase">Oxirgi to&apos;lov</p>
+            <p className="mt-1 text-lg font-bold">{data?.lastPaymentDate ? formatDateUz(data.lastPaymentDate) : "—"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Two info cards */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="rounded-xl border p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="bg-primary/15 text-primary flex size-6 items-center justify-center rounded-full">
+              <UserRound className="size-3.5" />
+            </span>
+            <p className="text-xs font-semibold tracking-wide uppercase">Kompaniya</p>
+          </div>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground flex items-center gap-1.5">
+                <Phone className="size-3.5" /> Telefon
+              </dt>
+              <dd className="font-medium">{company.phoneDisplay || company.phoneNumber || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Mas&apos;ul</dt>
+              <dd className="font-medium">{company.contactPerson || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground flex items-center gap-1.5">
+                <MapPin className="size-3.5" /> Manzil
+              </dt>
+              <dd className="max-w-[60%] text-right font-medium">{company.address || "—"}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className="rounded-xl border p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="bg-primary/15 text-primary flex size-6 items-center justify-center rounded-full">
+              <Wallet className="size-3.5" />
+            </span>
+            <p className="text-xs font-semibold tracking-wide uppercase">Qo&apos;shimcha</p>
+          </div>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground flex items-center gap-1.5">
+                <CalendarDays className="size-3.5" /> Qo&apos;shilgan
+              </dt>
+              <dd className="font-medium">{formatDateUz(company.createdAt)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Oxirgi qarz</dt>
+              <dd className="font-medium">{data?.lastDebtDate ? formatDateUz(data.lastDebtDate) : "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Status</dt>
+              <dd>
+                <Badge variant={company.statusBadge.variant}>{company.statusBadge.label}</Badge>
+              </dd>
+            </div>
+          </dl>
+        </div>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ export type CompanyPaymentDomain = {
   companyId: number;
   amount: number;
   paymentType: PaymentTypeDomain;
-  note: string;
+  note: string | null;
   receiptPath: string | null;
   receiptMime: string | null;
   receiptSize: number | null;
@@ -28,7 +28,7 @@ export type CreateCompanyPaymentDomainInput = {
   companyId: number;
   amount: number;
   paymentType: PaymentTypeDomain;
-  note: string;
+  note?: string | null;
   createdBy: number;
   receiptPath?: string | null;
   receiptMime?: string | null;
@@ -38,7 +38,7 @@ export type CreateCompanyPaymentDomainInput = {
 export type UpdateCompanyPaymentDomainInput = {
   amount?: number;
   paymentType?: PaymentTypeDomain;
-  note?: string;
+  note?: string | null;
   receiptPath?: string | null;
   receiptMime?: string | null;
   receiptSize?: number | null;

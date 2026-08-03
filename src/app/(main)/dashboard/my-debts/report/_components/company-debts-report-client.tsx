@@ -73,7 +73,8 @@ export function CompanyDebtsReportClient({ initialReport, initialDateFrom, initi
     let rows = report.debts;
     if (searchTerm) {
       rows = rows.filter(
-        (d) => d.companyName.toLowerCase().includes(searchTerm) || d.note.toLowerCase().includes(searchTerm),
+        (d) =>
+          d.companyName.toLowerCase().includes(searchTerm) || (d.note?.toLowerCase().includes(searchTerm) ?? false),
       );
     }
     return [...rows].sort((a, b) => {
@@ -89,7 +90,8 @@ export function CompanyDebtsReportClient({ initialReport, initialDateFrom, initi
     let rows = report.payments;
     if (searchTerm) {
       rows = rows.filter(
-        (p) => p.companyName.toLowerCase().includes(searchTerm) || p.note.toLowerCase().includes(searchTerm),
+        (p) =>
+          p.companyName.toLowerCase().includes(searchTerm) || (p.note?.toLowerCase().includes(searchTerm) ?? false),
       );
     }
     return [...rows].sort((a, b) => {
@@ -119,7 +121,7 @@ export function CompanyDebtsReportClient({ initialReport, initialDateFrom, initi
             formatDateUz(d.createdAt),
             d.companyName,
             formatNumberForExcel(d.amount),
-            d.note,
+            d.note || "",
             "-",
           ]),
           ...filteredPayments.map((p) => [
@@ -127,7 +129,7 @@ export function CompanyDebtsReportClient({ initialReport, initialDateFrom, initi
             formatDateUz(p.createdAt),
             p.companyName,
             formatNumberForExcel(p.amount),
-            p.note,
+            p.note || "",
             p.paymentType,
           ]),
         ],
@@ -251,7 +253,7 @@ export function CompanyDebtsReportClient({ initialReport, initialDateFrom, initi
                   <li key={d.id} className="flex items-start justify-between gap-3 px-3 py-3 text-sm">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{d.companyName}</p>
-                      <p className="text-muted-foreground truncate text-xs">{d.note}</p>
+                      <p className="text-muted-foreground truncate text-xs">{d.note || "—"}</p>
                       <p className="text-muted-foreground text-xs">{formatDateUz(d.createdAt)}</p>
                     </div>
                     <span className="shrink-0 font-semibold tabular-nums">{formatCurrencyUzs(d.amount)}</span>
@@ -270,7 +272,7 @@ export function CompanyDebtsReportClient({ initialReport, initialDateFrom, initi
                   <li key={p.id} className="flex items-start justify-between gap-3 px-3 py-3 text-sm">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{p.companyName}</p>
-                      <p className="text-muted-foreground truncate text-xs">{p.note}</p>
+                      <p className="text-muted-foreground truncate text-xs">{p.note || "—"}</p>
                       <p className="text-muted-foreground text-xs">
                         {formatDateUz(p.createdAt)} · {p.paymentType}
                       </p>

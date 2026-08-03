@@ -295,7 +295,7 @@ model CompanyDebt {
   external_id String   @unique @default(uuid())
   company_id  Int
   amount      Decimal  @db.Decimal(10, 2)
-  note        String
+  note        String?
   items       Json?
   created_at  DateTime @default(now())
   created_by  Int
@@ -315,7 +315,7 @@ model CompanyPayment {
   company_id    Int
   amount        Decimal     @db.Decimal(10, 2)
   payment_type  PaymentType @default(CASH)
-  note          String
+  note          String?
   receipt_path  String?
   receipt_mime  String?
   receipt_size  Int?

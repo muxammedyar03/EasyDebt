@@ -10,7 +10,7 @@ export type CompanyDebtDomain = {
   externalId: string;
   companyId: number;
   amount: number;
-  note: string;
+  note: string | null;
   items: DebtItem[] | null;
   createdAt: Date;
   createdBy: number;
@@ -24,13 +24,13 @@ export type CompanyDebtDomain = {
 export type CreateCompanyDebtDomainInput = {
   companyId: number;
   amount: number;
-  note: string;
+  note?: string | null;
   items?: DebtItem[] | null;
   createdBy: number;
 };
 
 export type UpdateCompanyDebtDomainInput = {
   amount?: number;
-  note?: string;
+  note?: string | null;
   items?: DebtItem[] | null;
 };

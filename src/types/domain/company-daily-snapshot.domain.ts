@@ -19,7 +19,7 @@ export type CompanyDayDebtActivity = {
   companyId: number;
   companyName: string;
   amount: number;
-  note: string;
+  note: string | null;
   createdAt: Date;
 };
 
@@ -28,7 +28,7 @@ export type CompanyDayPaymentActivity = {
   companyId: number;
   companyName: string;
   amount: number;
-  note: string;
+  note: string | null;
   paymentType: string;
   createdAt: Date;
 };

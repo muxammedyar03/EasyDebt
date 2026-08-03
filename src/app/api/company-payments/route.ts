@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     let companyId: number;
     let amount: number;
     let paymentType: "CASH" | "CLICK" | "CARD";
-    let note: string;
+    let note: string | null | undefined;
     let receiptMeta: { receiptPath?: string; receiptMime?: string; receiptSize?: number } = {};
 
     if (contentType.includes("multipart/form-data")) {

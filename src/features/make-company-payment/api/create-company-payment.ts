@@ -4,7 +4,7 @@ export type CreateCompanyPaymentPayload = {
   company_id: number;
   amount: number;
   payment_type: "CASH" | "CLICK" | "CARD";
-  note: string;
+  note?: string | null;
   receipt?: File | null;
 };
 
@@ -23,7 +23,7 @@ export async function createCompanyPayment(payload: CreateCompanyPaymentPayload)
   form.append("company_id", String(payload.company_id));
   form.append("amount", String(payload.amount));
   form.append("payment_type", payload.payment_type);
-  form.append("note", payload.note);
+  if (payload.note) form.append("note", payload.note);
   if (payload.receipt) {
     const err = validateCompanyReceiptFile(payload.receipt);
     if (err) throw new Error(err);

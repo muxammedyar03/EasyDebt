@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const addCompanyDebtSchema = z.object({
   amount: z.string().min(1, "Qarz miqdorini kiriting"),
-  note: z.string().min(1, "Izoh kiritish shart"),
+  note: z.string().optional(),
   createdAt: z.date().optional(),
 });
 
@@ -11,7 +11,7 @@ export type AddCompanyDebtFormData = z.infer<typeof addCompanyDebtSchema>;
 export const createCompanyDebtApiSchema = z.object({
   company_id: z.number().int().positive(),
   amount: z.number().positive("Qarz miqdori musbat bo'lishi kerak"),
-  note: z.string().min(1, "Izoh kiritish shart"),
+  note: z.string().nullable().optional(),
   items: z
     .array(
       z.object({

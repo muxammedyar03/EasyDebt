@@ -6,6 +6,7 @@ import {
   BarChart3,
   Building2,
   ChartColumn,
+  ImageIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -94,6 +95,13 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN"],
       },
+      {
+        title: "To'lov cheklari",
+        url: "/dashboard/company-receipts",
+        icon: ImageIcon,
+        roles: ["SUPER_ADMIN"],
+      },
+
       // {
       //   title: "Sozlamalar",
       //   url: "/dashboard/settings",

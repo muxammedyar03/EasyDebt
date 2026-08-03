@@ -38,7 +38,7 @@ export class CompanyPaymentService {
           company_id: input.companyId,
           amount: input.amount,
           payment_type: input.paymentType as PaymentType,
-          note: input.note,
+          note: input.note?.trim() || null,
           receipt_path: input.receiptPath ?? null,
           receipt_mime: input.receiptMime ?? null,
           receipt_size: input.receiptSize ?? null,

@@ -1,7 +1,7 @@
 export type CreateCompanyDebtPayload = {
   company_id: number;
   amount: number;
-  note: string;
+  note?: string | null;
   items?: Array<{ name: string; price: number; quantity?: number }> | null;
 };
 
