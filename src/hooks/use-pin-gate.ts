@@ -24,20 +24,44 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [credentials, setCredentials] = useState({ login: "", password: "" });
+  const [pinInputKey, setPinInputKey] = useState(0);
+
+  const resetSensitiveFields = useCallback(() => {
+    setPin("");
+    setPinConfirm("");
+    setCredentials({ login: "", password: "" });
+    setResetMode(false);
+    setMsg(null);
+    setPinInputKey((k) => k + 1);
+  }, []);
+
+  const clearPinOnly = useCallback(() => {
+    setPin("");
+    setPinConfirm("");
+    setPinInputKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
-    if (!userId || !locked) {
+    resetSensitiveFields();
+
+    if (!locked) {
       setHasPin(null);
       return;
     }
+
+    if (!userId) {
+      setHasPin(null);
+      return;
+    }
+
     fetch(`/api/users/${userId}`)
       .then((r) => r.json())
       .then((data) => setHasPin(Boolean(data?.has_pin)))
       .catch(() => setHasPin(false));
-  }, [userId, locked]);
+  }, [userId, locked, resetSensitiveFields]);
 
   const handleSetPin = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || loading) return;
     setMsg(null);
     if (!isFourDigitPin(pin)) return setMsg(`Pin ${pinLength} raqam bo'lishi kerak`);
     if (pin !== pinConfirm) return setMsg("Pin tasdiqlanmadi");
@@ -52,12 +76,13 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     if (res.ok && data.ok) {
       onUnlock?.();
     } else {
+      clearPinOnly();
       setMsg(data?.error || "Xato");
     }
-  }, [userId, pin, pinConfirm, pinLength, onUnlock]);
+  }, [userId, pin, pinConfirm, pinLength, onUnlock, loading, clearPinOnly]);
 
   const handleVerify = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || loading) return;
     setMsg(null);
     if (!isFourDigitPin(pin)) return setMsg(`Pin ${pinLength} raqam bo'lishi kerak`);
     setLoading(true);
@@ -71,12 +96,13 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     if (res.ok && data.ok) {
       onUnlock?.();
     } else {
+      clearPinOnly();
       setMsg(data?.error || "Pin noto'g'ri");
     }
-  }, [userId, pin, pinLength, onUnlock]);
+  }, [userId, pin, pinLength, onUnlock, loading, clearPinOnly]);
 
   const handleReset = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || loading) return;
     setMsg(null);
     if (!credentials.login || !credentials.password) return setMsg("Login va parol kiriting");
     if (!isFourDigitPin(pin)) return setMsg(`Yangi pin ${pinLength} raqam bo'lishi kerak`);
@@ -100,7 +126,7 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     } else {
       setMsg(data?.error || "Xato");
     }
-  }, [userId, credentials, pin, pinLength, onUnlock]);
+  }, [userId, credentials, pin, pinLength, onUnlock, loading]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -127,6 +153,7 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     credentials,
     pin,
     pinConfirm,
+    pinInputKey,
     onKeyDown: handleKeyDown,
     onPinChange: (v) => setPin(onlyDigits(v, pinLength)),
     onPinConfirmChange: (v) => setPinConfirm(onlyDigits(v, pinLength)),
@@ -134,7 +161,10 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     onSetPin: () => void handleSetPin(),
     onVerify: () => void handleVerify(),
     onReset: () => void handleReset(),
-    setResetMode,
+    setResetMode: (value: boolean) => {
+      if (value) clearPinOnly();
+      setResetMode(value);
+    },
   };
 
   return { viewProps };
