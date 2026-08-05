@@ -68,11 +68,11 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/my-debts",
         icon: Building2,
       },
-      {
-        title: "Qarz hisoboti",
-        url: "/dashboard/my-debts/report",
-        icon: ChartColumn,
-      },
+      // {
+      //   title: "Qarz hisoboti",
+      //   url: "/dashboard/my-debts/report",
+      //   icon: ChartColumn,
+      // },
       {
         title: "Mijozlar Reytingi",
         url: "/dashboard/customers",
