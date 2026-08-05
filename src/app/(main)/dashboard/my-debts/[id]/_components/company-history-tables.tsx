@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { Download, ExternalLink } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 import { getPaymentTypeClass } from "@/lib/utils";
+import { getReceiptDisplayName, companyPaymentReceiptUrl } from "@/lib/companies/receipt-display";
 import type { CompanyDomain } from "@/types/domain/company.domain";
 
 type Props = {
@@ -98,23 +100,63 @@ export function CompanyHistoryTables({ kind, company }: Props) {
                   <TableHead>Summa</TableHead>
                   <TableHead>Usul</TableHead>
                   <TableHead>Izoh</TableHead>
-                  <TableHead>Chek</TableHead>
+                  <TableHead>Attachments</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {slice.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell>{formatDateUz(p.createdAt, true)}</TableCell>
-                    <TableCell className="font-semibold text-emerald-600">{formatCurrencyUzs(p.amount)}</TableCell>
-                    <TableCell>
-                      <Badge className={getPaymentTypeClass(p.paymentType as "CASH" | "CLICK" | "CARD")}>
-                        {p.paymentType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-[220px] truncate">{p.note || "—"}</TableCell>
-                    <TableCell>{p.receiptPath ? "Bor" : "—"}</TableCell>
-                  </TableRow>
-                ))}
+                {slice.map((p) => {
+                  const hasReceipt = Boolean(p.receiptPath);
+                  const name = getReceiptDisplayName({
+                    ...p,
+                    companyName: company.name,
+                    paymentId: p.id,
+                    createdAt: p.createdAt,
+                  });
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell>{formatDateUz(p.createdAt, true)}</TableCell>
+                      <TableCell className="font-semibold text-emerald-600">{formatCurrencyUzs(p.amount)}</TableCell>
+                      <TableCell>
+                        <Badge className={getPaymentTypeClass(p.paymentType as "CASH" | "CLICK" | "CARD")}>
+                          {p.paymentType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[220px] truncate">{p.note || "—"}</TableCell>
+                      <TableCell>
+                        {hasReceipt ? (
+                          <div className="flex max-w-[240px] items-center gap-1">
+                            <a
+                              href={companyPaymentReceiptUrl(p.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary min-w-0 flex-1 truncate text-sm font-medium hover:underline"
+                              title={name}
+                            >
+                              {name}
+                            </a>
+                            <Button asChild variant="ghost" size="icon" className="size-8 shrink-0">
+                              <a
+                                href={companyPaymentReceiptUrl(p.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Yangi tabda ochish"
+                              >
+                                <ExternalLink className="size-3.5" />
+                              </a>
+                            </Button>
+                            <Button asChild variant="ghost" size="icon" className="size-8 shrink-0">
+                              <a href={companyPaymentReceiptUrl(p.id, true)} title="Yuklab olish">
+                                <Download className="size-3.5" />
+                              </a>
+                            </Button>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

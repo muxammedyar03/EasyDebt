@@ -9,6 +9,7 @@ import { companyPaymentService } from "@/lib/services/company-payment.service";
 import { companyService } from "@/lib/services/company.service";
 import { createCompanyPaymentApiSchema } from "@/lib/validation/company-payment";
 import { saveCompanyReceipt } from "@/lib/companies/receipt-storage";
+import { buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
 import { PaymentTypeDomain } from "@/types/domain/payment.domain";
 
 export async function POST(request: NextRequest) {
@@ -23,7 +24,12 @@ export async function POST(request: NextRequest) {
     let amount: number;
     let paymentType: "CASH" | "CLICK" | "CARD";
     let note: string | null | undefined;
-    let receiptMeta: { receiptPath?: string; receiptMime?: string; receiptSize?: number } = {};
+    let receiptMeta: {
+      receiptPath?: string;
+      receiptName?: string;
+      receiptMime?: string;
+      receiptSize?: number;
+    } = {};
 
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
@@ -43,6 +49,7 @@ export async function POST(request: NextRequest) {
         const saved = await saveCompanyReceipt(file);
         receiptMeta = {
           receiptPath: saved.receiptPath,
+          receiptName: saved.receiptName,
           receiptMime: saved.receiptMime,
           receiptSize: saved.receiptSize,
         };
@@ -69,6 +76,18 @@ export async function POST(request: NextRequest) {
       createdBy: session.userId,
       ...receiptMeta,
     });
+
+    if (receiptMeta.receiptPath) {
+      const receiptName = buildCompanyReceiptFileName({
+        companyName: company.name,
+        paymentId: payment.id,
+        date: payment.createdAt,
+        mime: receiptMeta.receiptMime,
+        receiptPath: receiptMeta.receiptPath,
+      });
+      await companyPaymentService.update(payment.id, { receiptName });
+      payment.receiptName = receiptName;
+    }
 
     await createAuditLog({
       userId: session.userId,

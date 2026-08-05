@@ -6,11 +6,13 @@ import {
   COMPANY_RECEIPT_MAX_BYTES,
   isAllowedCompanyReceiptMime,
 } from "@/lib/validation/company-payment";
+import { sanitizeReceiptOriginalName } from "@/lib/companies/receipt-display";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads", "company-receipts");
 
 export type SavedCompanyReceipt = {
   receiptPath: string;
+  receiptName: string;
   receiptMime: string;
   receiptSize: number;
 };
@@ -50,6 +52,7 @@ export async function saveCompanyReceipt(file: File): Promise<SavedCompanyReceip
 
   return {
     receiptPath: path.join("uploads", "company-receipts", filename),
+    receiptName: sanitizeReceiptOriginalName(file.name, file.type),
     receiptMime: file.type,
     receiptSize: file.size,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, Plus, Search } from "lucide-react";
+import { FileDown, FilterIcon, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportCompaniesListToExcel } from "@/lib/companies/export-companies-excel-client";
 import { getErrorMessage } from "@/lib/errors";
+import { useState } from "react";
 
 type CompaniesToolbarProps = {
   searchValue: string;
@@ -47,6 +48,7 @@ export function CompaniesToolbar({
   onMaxAmountChange,
   onAddCompany,
 }: CompaniesToolbarProps) {
+  const [showFilter, setShowFilter] = useState(false);
   const handleExcel = async () => {
     try {
       const { rowCount } = await exportCompaniesListToExcel({ search: searchValue, status });
@@ -54,6 +56,10 @@ export function CompaniesToolbar({
     } catch (error) {
       toast.error(getErrorMessage(error, "Excel export xatosi"));
     }
+  };
+
+  const toggleFilter = () => {
+    setShowFilter(!showFilter);
   };
 
   return (
@@ -65,7 +71,7 @@ export function CompaniesToolbar({
             placeholder="Kompaniya, telefon yoki manzil..."
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="h-11 pr-10 pl-8"
+            className="border-border h-11 border bg-white pr-10 pl-8 dark:bg-zinc-800"
           />
           {isSearching && (
             <div className="absolute top-1/2 right-3 -translate-y-1/2">
@@ -82,70 +88,85 @@ export function CompaniesToolbar({
             <Plus className="mr-2 h-4 w-4" />
             Kompaniya
           </Button>
+          <Button className="h-11 w-11" onClick={toggleFilter}>
+            <FilterIcon />
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <div className="grid gap-1.5">
-          <Label className="text-xs">Status</Label>
-          <Select value={status} onValueChange={onStatusChange}>
-            <SelectTrigger className="h-10 w-full">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Barchasi</SelectItem>
-              <SelectItem value="qarzdor">Qarzdor</SelectItem>
-              <SelectItem value="tolangan">To&apos;langan</SelectItem>
-              <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
-              <SelectItem value="limitdan_otgan">Limitdan o&apos;tgan</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {showFilter && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Status</Label>
+            <Select value={status} onValueChange={onStatusChange}>
+              <SelectTrigger className="border-border h-10 w-full border">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Barchasi</SelectItem>
+                <SelectItem value="qarzdor">Qarzdor</SelectItem>
+                <SelectItem value="tolangan">To&apos;langan</SelectItem>
+                <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
+                <SelectItem value="limitdan_otgan">Limitdan o&apos;tgan</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="grid gap-1.5">
-          <Label className="text-xs">Sort</Label>
-          <Select value={sortBy} onValueChange={onSortChange}>
-            <SelectTrigger className="h-10 w-full">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Nomi</SelectItem>
-              <SelectItem value="amount">Summa</SelectItem>
-              <SelectItem value="debt_added_at">Qarz qo&apos;shilgan sana</SelectItem>
-              <SelectItem value="paid_at">To&apos;langan sana</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Sort</Label>
+            <Select value={sortBy} onValueChange={onSortChange}>
+              <SelectTrigger className="border-border h-10 w-full border">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Nomi</SelectItem>
+                <SelectItem value="amount">Summa</SelectItem>
+                <SelectItem value="debt_added_at">Qarz qo&apos;shilgan sana</SelectItem>
+                <SelectItem value="paid_at">To&apos;langan sana</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="grid gap-1.5">
-          <Label className="text-xs">Sana dan</Label>
-          <Input type="date" className="h-10" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} />
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Sana dan</Label>
+            <Input
+              type="date"
+              className="border-border h-10 border"
+              value={dateFrom}
+              onChange={(e) => onDateFromChange(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Sana gacha</Label>
+            <Input
+              type="date"
+              className="border-border h-10 border"
+              value={dateTo}
+              onChange={(e) => onDateToChange(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Min summa</Label>
+            <Input
+              type="number"
+              className="border-border h-10 border"
+              placeholder="0"
+              value={minAmount}
+              onChange={(e) => onMinAmountChange(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Max summa</Label>
+            <Input
+              type="number"
+              className="border-border h-10 border"
+              placeholder="—"
+              value={maxAmount}
+              onChange={(e) => onMaxAmountChange(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="grid gap-1.5">
-          <Label className="text-xs">Sana gacha</Label>
-          <Input type="date" className="h-10" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label className="text-xs">Min summa</Label>
-          <Input
-            type="number"
-            className="h-10"
-            placeholder="0"
-            value={minAmount}
-            onChange={(e) => onMinAmountChange(e.target.value)}
-          />
-        </div>
-        <div className="grid gap-1.5">
-          <Label className="text-xs">Max summa</Label>
-          <Input
-            type="number"
-            className="h-10"
-            placeholder="—"
-            value={maxAmount}
-            onChange={(e) => onMaxAmountChange(e.target.value)}
-          />
-        </div>
-      </div>
+      )}
     </section>
   );
 }

@@ -2,15 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/errors";
+import { parseInputDate, todayInputDate } from "@/lib/period-date-range";
 import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
 
-function startOfMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-function endOfMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-}
+const SORT_KEYS = new Set(["date", "amount", "name"]);
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,21 +15,42 @@ export async function GET(request: NextRequest) {
     }
 
     const sp = request.nextUrl.searchParams;
-    const fromParam = sp.get("dateFrom");
-    const toParam = sp.get("dateTo");
+    const paymentsPage = Number(sp.get("paymentsPage") || 1);
+    const debtsPage = Number(sp.get("debtsPage") || 1);
+    const limit = Number(sp.get("limit") || 20);
+    const search = sp.get("search") || "";
+    const sortRaw = sp.get("sort") || "date";
+    const sort = SORT_KEYS.has(sortRaw) ? (sortRaw as "date" | "amount" | "name") : "date";
+    const sortAsc = sp.get("sortAsc") === "true";
 
-    const dateFrom = fromParam ? new Date(fromParam) : startOfMonth();
-    const dateTo = toParam ? new Date(toParam) : endOfMonth();
+    const dateFromStr = sp.get("dateFrom") || todayInputDate();
+    const dateToStr = sp.get("dateTo") || dateFromStr;
+    const dateFrom = parseInputDate(dateFromStr);
+    const dateTo = parseInputDate(dateToStr, true);
 
-    if (Number.isNaN(dateFrom.getTime()) || Number.isNaN(dateTo.getTime())) {
-      return NextResponse.json({ error: "Noto'g'ri sana oralig'i" }, { status: 400 });
+    if (!dateFrom || !dateTo) {
+      return NextResponse.json({ error: "Noto'g'ri sana formati" }, { status: 400 });
     }
     if (dateFrom > dateTo) {
       return NextResponse.json({ error: "Boshlanish sanasi tugash sanasidan katta" }, { status: 400 });
     }
 
-    const report = await companyDailySnapshotService.getPeriodReport(dateFrom, dateTo);
-    return NextResponse.json(report);
+    const report = await companyDailySnapshotService.getPeriodReportQuery(dateFrom, dateTo, {
+      paymentsPage,
+      debtsPage,
+      limit,
+      search,
+      sort,
+      sortAsc,
+    });
+
+    return NextResponse.json({
+      ...report,
+      dateFrom: report.dateFrom.toISOString(),
+      dateTo: report.dateTo.toISOString(),
+      debts: report.debts.map((d) => ({ ...d, createdAt: d.createdAt.toISOString() })),
+      payments: report.payments.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() })),
+    });
   } catch (error) {
     console.error("Error fetching company period report:", error);
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });

@@ -106,6 +106,10 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
             { value: "LOGOUT", label: "Chiqish" },
             { value: "EXPORT", label: "Export" },
             { value: "IMPORT", label: "Import" },
+            { value: "DEBT_ADDED", label: "Qarz qo'shildi" },
+            { value: "PAYMENT_ADDED", label: "To'lov qo'shildi" },
+            { value: "DEBT_UPDATED", label: "Qarz yangilandi" },
+            { value: "PAYMENT_UPDATED", label: "To'lov yangilandi" },
           ].map((action) => (
             <div key={action.value} className="flex h-8 items-center space-x-2 border-b px-2">
               <Checkbox
@@ -134,6 +138,11 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
             { value: "PAYMENT", label: "To'lov" },
             { value: "USER", label: "Foydalanuvchi" },
             { value: "SETTINGS", label: "Sozlamalar" },
+            { value: "PAYMENT_REMINDER", label: "To'lov eslatmasi" },
+            { value: "COMPANY", label: "Kompaniya" },
+            { value: "COMPANY_DEBT", label: "Kompaniya qarzi" },
+            { value: "COMPANY_PAYMENT", label: "Kompaniya to'lovi" },
+            { value: "COMPANY_PAYMENT_RECEIPT", label: "To'lov cheki" },
           ].map((entityType) => (
             <div key={entityType.value} className="flex h-8 items-center space-x-2 border-b px-2">
               <Checkbox

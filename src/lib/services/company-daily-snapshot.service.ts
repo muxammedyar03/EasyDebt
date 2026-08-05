@@ -3,6 +3,7 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { companyDailySnapshotRepository } from "@/entities/company-daily-snapshot/api";
 import { companyRepository } from "@/entities/company/api";
 import { companyDebtRepository } from "@/entities/company-debt/api";
@@ -14,10 +15,64 @@ import type {
   CompanyDayDebtActivity,
   CompanyDayPaymentActivity,
   CompanyPeriodReportDomain,
+  CompanyChartMetric,
+  CompanyChartPoint,
 } from "@/types/domain/company-daily-snapshot.domain";
+import { getChartPeriodBounds, toInputDate, type ChartPeriod } from "@/lib/period-date-range";
 
 type CompanyDebtWithCompany = Prisma.CompanyDebtGetPayload<{ include: { company: true } }>;
 type CompanyPaymentWithCompany = Prisma.CompanyPaymentGetPayload<{ include: { company: true } }>;
+
+type PeriodReportSort = "date" | "amount" | "name";
+
+type PeriodReportQueryOptions = {
+  paymentsPage?: number;
+  debtsPage?: number;
+  limit?: number;
+  search?: string;
+  sort?: PeriodReportSort;
+  sortAsc?: boolean;
+};
+
+export type CompanyPeriodReportQueryResult = CompanyPeriodReportDomain & {
+  cash: number;
+  card: number;
+  click: number;
+  paymentsPage: number;
+  paymentsLimit: number;
+  paymentsTotal: number;
+  paymentsTotalPages: number;
+  debtsPage: number;
+  debtsLimit: number;
+  debtsTotal: number;
+  debtsTotalPages: number;
+};
+
+function buildPaymentOrder(sort: PeriodReportSort, sortAsc: boolean): Prisma.CompanyPaymentOrderByWithRelationInput {
+  const dir = sortAsc ? "asc" : "desc";
+  if (sort === "name") return { company: { name: dir } };
+  if (sort === "amount") return { amount: dir };
+  return { created_at: dir };
+}
+
+function buildDebtOrder(sort: PeriodReportSort, sortAsc: boolean): Prisma.CompanyDebtOrderByWithRelationInput {
+  const dir = sortAsc ? "asc" : "desc";
+  if (sort === "name") return { company: { name: dir } };
+  if (sort === "amount") return { amount: dir };
+  return { created_at: dir };
+}
+
+function applyCompanySearch<T extends Prisma.CompanyPaymentWhereInput | Prisma.CompanyDebtWhereInput>(
+  where: T,
+  search?: string,
+): T {
+  const term = search?.trim();
+  if (!term) return where;
+  return {
+    ...where,
+    company: { name: { contains: term, mode: "insensitive" } },
+  };
+}
 
 /** Normalize to UTC date-only (midnight) for @db.Date uniqueness. */
 export function toSnapshotDate(input: Date = new Date()): Date {
@@ -182,12 +237,172 @@ export class CompanyDailySnapshotService {
         id: p.id,
         companyId: p.company_id,
         companyName: p.company.name,
+        companyExternalId: p.company.external_id,
         amount: p.amount.toNumber(),
         note: p.note,
         paymentType: p.payment_type,
         createdAt: p.created_at,
       })),
     };
+  }
+
+  async getPeriodReportQuery(
+    dateFrom: Date,
+    dateTo: Date,
+    options?: PeriodReportQueryOptions,
+  ): Promise<CompanyPeriodReportQueryResult> {
+    const range = this.periodRange(dateFrom, dateTo);
+    const sort = options?.sort ?? "date";
+    const sortAsc = options?.sortAsc ?? false;
+    const limit = options?.limit ?? 20;
+    const paymentsPage = options?.paymentsPage ?? 1;
+    const debtsPage = options?.debtsPage ?? 1;
+    const paymentsSkip = (paymentsPage - 1) * limit;
+    const debtsSkip = (debtsPage - 1) * limit;
+
+    const paymentWhere = applyCompanySearch({ created_at: range }, options?.search);
+    const debtWhere = applyCompanySearch({ created_at: range }, options?.search);
+
+    const dayBeforeStart = new Date(range.gte);
+    dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
+
+    const [
+      startSnapshot,
+      endSnapshot,
+      debtsAgg,
+      debtsCount,
+      paymentsAgg,
+      paymentsCount,
+      debts,
+      debtsTotal,
+      payments,
+      paymentsTotal,
+      groupBy,
+    ] = await Promise.all([
+      this.getSnapshotOn(dayBeforeStart),
+      this.getSnapshotOn(range.lte),
+      companyDebtRepository.aggregate({ created_at: range }),
+      companyDebtRepository.count({ created_at: range }),
+      companyPaymentRepository.aggregate({ created_at: range }),
+      companyPaymentRepository.count({ created_at: range }),
+      companyDebtRepository.findMany(debtWhere, {
+        include: { company: true },
+        orderBy: buildDebtOrder(sort, sortAsc),
+        skip: debtsSkip,
+        take: limit,
+      }) as Promise<CompanyDebtWithCompany[]>,
+      companyDebtRepository.count(debtWhere),
+      companyPaymentRepository.findMany(paymentWhere, {
+        include: { company: true },
+        orderBy: buildPaymentOrder(sort, sortAsc),
+        skip: paymentsSkip,
+        take: limit,
+      }) as Promise<CompanyPaymentWithCompany[]>,
+      companyPaymentRepository.count(paymentWhere),
+      prisma.companyPayment.groupBy({
+        by: ["payment_type"],
+        where: { created_at: range },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    let cash = 0;
+    let card = 0;
+    let click = 0;
+    for (const row of groupBy) {
+      const sum = row._sum.amount?.toNumber() ?? 0;
+      if (row.payment_type === "CASH") cash = sum;
+      else if (row.payment_type === "CARD") card = sum;
+      else if (row.payment_type === "CLICK") click = sum;
+    }
+
+    return {
+      dateFrom: range.gte,
+      dateTo: range.lte,
+      outstandingAtStart: startSnapshot?.totalOutstandingDebt ?? null,
+      outstandingAtEnd: endSnapshot?.totalOutstandingDebt ?? null,
+      debtsSum: debtsAgg._sum.amount?.toNumber() ?? 0,
+      debtsCount,
+      paymentsSum: paymentsAgg._sum.amount?.toNumber() ?? 0,
+      paymentsCount,
+      cash,
+      card,
+      click,
+      debts: debts.map((d) => ({
+        id: d.id,
+        companyId: d.company_id,
+        companyName: d.company.name,
+        companyExternalId: d.company.external_id,
+        amount: d.amount.toNumber(),
+        note: d.note,
+        createdAt: d.created_at,
+      })),
+      payments: payments.map((p) => ({
+        id: p.id,
+        companyId: p.company_id,
+        companyName: p.company.name,
+        companyExternalId: p.company.external_id,
+        amount: p.amount.toNumber(),
+        note: p.note,
+        paymentType: p.payment_type,
+        createdAt: p.created_at,
+      })),
+      paymentsPage,
+      paymentsLimit: limit,
+      paymentsTotal,
+      paymentsTotalPages: Math.ceil(paymentsTotal / limit) || 1,
+      debtsPage,
+      debtsLimit: limit,
+      debtsTotal,
+      debtsTotalPages: Math.ceil(debtsTotal / limit) || 1,
+    };
+  }
+
+  async getOverviewChartSeries(period: ChartPeriod, metric: CompanyChartMetric): Promise<CompanyChartPoint[]> {
+    const { dateFrom, dateTo } = getChartPeriodBounds(period);
+    const rangeStart = toSnapshotDate(dateFrom);
+    const rangeEnd = toSnapshotDate(dateTo);
+
+    const [snapshots, beforeStart] = await Promise.all([
+      companyDailySnapshotRepository.findMany(
+        { date: { gte: rangeStart, lte: rangeEnd } },
+        { orderBy: { date: "asc" } },
+      ),
+      companyDailySnapshotRepository.findFirstOnOrBefore(rangeStart),
+    ]);
+
+    const snapshotByDay = new Map<string, (typeof snapshots)[number]>();
+    for (const row of snapshots) {
+      snapshotByDay.set(toInputDate(new Date(row.date)), row);
+    }
+
+    const points: CompanyChartPoint[] = [];
+    let lastDebt = beforeStart?.total_outstanding_debt?.toNumber() ?? 0;
+    const cursor = new Date(dateFrom);
+
+    while (cursor <= dateTo) {
+      const key = toInputDate(cursor);
+      const snap = snapshotByDay.get(key);
+
+      if (metric === "debt") {
+        if (snap) lastDebt = snap.total_outstanding_debt.toNumber();
+        points.push({
+          date: key,
+          label: cursor.toLocaleDateString("uz-UZ", { month: "short", day: "numeric" }),
+          value: lastDebt,
+        });
+      } else {
+        points.push({
+          date: key,
+          label: cursor.toLocaleDateString("uz-UZ", { month: "short", day: "numeric" }),
+          value: snap?.payments_sum?.toNumber() ?? 0,
+        });
+      }
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return points;
   }
 }
 

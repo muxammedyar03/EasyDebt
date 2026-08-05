@@ -7,6 +7,7 @@ import type { CompanyView } from "@/types/view/company.view";
 import { CompaniesToolbar } from "./companies-toolbar";
 import { CompaniesAccordionList } from "./companies-accordion-list";
 import { CompaniesPagination } from "./companies-pagination";
+import { CompanyDebtsOverviewChart } from "./company-debts-overview-chart";
 import { useCompaniesUrl } from "./hooks/use-companies-url";
 
 type CompaniesClientProps = {
@@ -27,7 +28,7 @@ export function CompaniesClient({ companies, currentPage, totalPages }: Companie
   const maxAmount = searchParams?.get("maxAmount") || "";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="bg-muted/20 flex flex-col gap-4 rounded-xl border p-2">
       <CompaniesToolbar
         searchValue={searchValue}
         onSearchChange={setSearchValue}
@@ -48,6 +49,7 @@ export function CompaniesClient({ companies, currentPage, totalPages }: Companie
       />
 
       <CompaniesAccordionList companies={companies} />
+      <CompanyDebtsOverviewChart />
       <CompaniesPagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
 
       <AddCompanyDialog open={addOpen} onOpenChange={setAddOpen} />

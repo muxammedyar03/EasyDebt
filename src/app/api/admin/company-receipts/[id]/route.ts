@@ -6,6 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
 import { deleteCompanyReceiptFile, getCompanyReceiptAbsolutePath } from "@/lib/companies/receipt-storage";
+import { buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,11 +31,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const absolute = getCompanyReceiptAbsolutePath(payment.receiptPath);
     const buffer = await readFile(absolute);
+    const filename = buildCompanyReceiptFileName({
+      companyName: payment.company?.name || "kompaniya",
+      paymentId: payment.id,
+      date: payment.createdAt,
+      mime: payment.receiptMime,
+      receiptPath: payment.receiptPath,
+    });
 
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": payment.receiptMime || "application/octet-stream",
-        "Content-Disposition": `inline; filename="receipt-${paymentId}"`,
+        "Content-Disposition": `inline; filename="${filename.replace(/"/g, "")}"`,
         "Cache-Control": "private, max-age=3600",
       },
     });
@@ -68,6 +76,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     await deleteCompanyReceiptFile(payment.receiptPath);
     await companyPaymentService.update(paymentId, {
       receiptPath: null,
+      receiptName: null,
       receiptMime: null,
       receiptSize: null,
     });

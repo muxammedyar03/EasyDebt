@@ -8,6 +8,7 @@ type CompanyTimelineItem = {
   createdAt: Date;
   note: string | null;
   subtitle?: string;
+  attachmentName?: string | null;
 };
 
 export async function exportCompanyReceipt(args: {
@@ -90,7 +91,8 @@ export async function exportCompanyReceipt(args: {
     const date = new Date(item.createdAt).toLocaleString("uz-UZ");
     const type = item.type === "DEBT" ? "Qarz" : "To'lov";
     const amount = `${item.type === "DEBT" ? "+" : "-"}${item.amount.toLocaleString("uz-UZ")}`;
-    const line = `${date} | ${type} | ${amount} | ${item.note || "—"}`;
+    const attachment = item.attachmentName ? ` | Fayl: ${item.attachmentName}` : "";
+    const line = `${date} | ${type} | ${amount} | ${item.note || "—"}${attachment}`;
     const clipped = line.length > 95 ? `${line.slice(0, 92)}...` : line;
     pdf.text(clipped, margin, y);
     y += 5;

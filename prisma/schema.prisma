@@ -317,6 +317,7 @@ model CompanyPayment {
   payment_type  PaymentType @default(CASH)
   note          String?
   receipt_path  String?
+  receipt_name  String?
   receipt_mime  String?
   receipt_size  Int?
   created_at    DateTime    @default(now())

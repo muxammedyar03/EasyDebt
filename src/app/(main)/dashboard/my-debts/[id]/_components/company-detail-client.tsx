@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Download, FileDown, Minus, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, FileDown, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { formatCurrencyUzs, formatDateUz, formatUzPhone } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
 import { exportCompaniesListToExcel } from "@/lib/companies/export-companies-excel-client";
 import { exportCompanyReceipt } from "@/lib/companies/export-company-pdf";
+import { companyPaymentReceiptUrl, getReceiptDisplayName } from "@/lib/companies/receipt-display";
 import { APP_CONFIG } from "@/config/app-config";
 import type { CompanyDomain } from "@/types/domain/company.domain";
 import { CompanyHistoryTables } from "./company-history-tables";
@@ -61,6 +62,16 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
       note: p.note ?? null,
       createdAt: p.createdAt,
       subtitle: p.paymentType,
+      attachmentName: p.receiptPath
+        ? getReceiptDisplayName({
+            ...p,
+            companyName: current.name,
+            paymentId: p.id,
+            createdAt: p.createdAt,
+          })
+        : null,
+      paymentId: p.id,
+      hasReceipt: Boolean(p.receiptPath),
     }));
     return [...debts, ...payments].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [current.debts, current.payments]);
@@ -83,6 +94,7 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
           createdAt: t.createdAt,
           note: t.note,
           subtitle: t.subtitle,
+          attachmentName: "attachmentName" in t ? t.attachmentName : null,
         })),
       });
       toast.success("PDF yuklandi");
@@ -97,6 +109,33 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
       toast.success("Excel yuklandi");
     } catch (error) {
       toast.error(getErrorMessage(error, "Excel export xatosi"));
+    }
+  };
+
+  const handleDownloadReceipts = async () => {
+    const paymentsWithReceipt = (current.payments ?? []).filter((p) => p.receiptPath);
+    if (paymentsWithReceipt.length === 0) {
+      toast.error("Yuklangan chek topilmadi");
+      return;
+    }
+    try {
+      for (const payment of paymentsWithReceipt) {
+        const link = document.createElement("a");
+        link.href = companyPaymentReceiptUrl(payment.id, true);
+        link.download = getReceiptDisplayName({
+          ...payment,
+          companyName: current.name,
+          paymentId: payment.id,
+          createdAt: payment.createdAt,
+        });
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      toast.success(`${paymentsWithReceipt.length} ta chek yuklandi`);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Cheklarni yuklashda xatolik"));
     }
   };
 
@@ -138,14 +177,6 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setEditOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Tahrirlash
-          </Button>
-          <Button variant="outline" className="text-destructive" onClick={() => void handleDelete()}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            O&apos;chirish
-          </Button>
           <Button variant="outline" onClick={() => setDebtOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Qarz
@@ -166,6 +197,30 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
               <DropdownMenuItem onSelect={() => void handleExcel()}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void handleDownloadReceipts()}>
+                <Download className="mr-2 h-4 w-4" />
+                Cheklarni yuklab olish
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Ko'proq amallar">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Tahrirlash
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => void handleDelete()}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                O&apos;chirish
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

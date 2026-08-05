@@ -154,10 +154,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   <CardContent className="p-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        {getActionBadge(
-                          log.action,
-                          log.entity_type as "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS",
-                        )}
+                        {getActionBadge(log.action, log.entity_type)}
                         <span className="text-muted-foreground text-xs">{formatDate(log.created_at)}</span>
                       </div>
                       <div>
@@ -223,10 +220,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                           )}
                         </TableCell>
                         <TableCell className="w-32 space-y-1">
-                          {getActionBadge(
-                            log.action,
-                            log.entity_type as "DEBTOR" | "DEBT" | "PAYMENT" | "USER" | "SETTINGS",
-                          )}
+                          {getActionBadge(log.action, log.entity_type)}
                           <div className="flex items-end gap-2 pl-2">
                             <p className="font-medium">{getEntityTypeName(log.entity_type)}</p>
                             {log.entity_id && <p className="text-muted-foreground text-xs">ID: {log.entity_id}</p>}

@@ -40,6 +40,7 @@ export class CompanyPaymentService {
           payment_type: input.paymentType as PaymentType,
           note: input.note?.trim() || null,
           receipt_path: input.receiptPath ?? null,
+          receipt_name: input.receiptName ?? null,
           receipt_mime: input.receiptMime ?? null,
           receipt_size: input.receiptSize ?? null,
           created_by: input.createdBy,
@@ -79,13 +80,13 @@ export class CompanyPaymentService {
           ...(input.paymentType !== undefined ? { payment_type: input.paymentType as PaymentType } : {}),
           ...(input.note !== undefined ? { note: input.note } : {}),
           ...(input.receiptPath !== undefined ? { receipt_path: input.receiptPath } : {}),
+          ...(input.receiptName !== undefined ? { receipt_name: input.receiptName } : {}),
           ...(input.receiptMime !== undefined ? { receipt_mime: input.receiptMime } : {}),
           ...(input.receiptSize !== undefined ? { receipt_size: input.receiptSize } : {}),
         },
       });
 
       if (delta !== 0) {
-        // Payment increase → more paid → decrease company debt further
         await tx.company.update({
           where: { id: existing.company_id },
           data: { total_debt: { decrement: delta } },

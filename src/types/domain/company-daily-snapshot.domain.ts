@@ -18,6 +18,7 @@ export type CompanyDayDebtActivity = {
   id: number;
   companyId: number;
   companyName: string;
+  companyExternalId?: string;
   amount: number;
   note: string | null;
   createdAt: Date;
@@ -27,6 +28,7 @@ export type CompanyDayPaymentActivity = {
   id: number;
   companyId: number;
   companyName: string;
+  companyExternalId?: string;
   amount: number;
   note: string | null;
   paymentType: string;
@@ -60,4 +62,12 @@ export type CompanyPeriodReportDomain = {
   paymentsCount: number;
   debts: CompanyDayDebtActivity[];
   payments: CompanyDayPaymentActivity[];
+};
+
+export type CompanyChartMetric = "debt" | "payments";
+
+export type CompanyChartPoint = {
+  date: string;
+  label: string;
+  value: number;
 };
