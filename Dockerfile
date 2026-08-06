@@ -18,10 +18,21 @@ RUN npm ci --legacy-peer-deps --prefer-offline --no-audit
 # Generate Prisma Client
 RUN npx prisma generate
 
-# ---- Migration stage ----
-FROM deps AS migration
+# ---- Migration stage (minimal — faqat prisma migrate + custom migrations) ----
+FROM base AS migration
 WORKDIR /app
-# Migration uchun barcha kerakli fayllar allaqachon deps stage'da
+COPY package.json ./
+COPY prisma ./prisma
+COPY scripts ./scripts
+COPY src/lib/migrations ./src/lib/migrations
+COPY tsconfig.json ./
+# To'liq npm ci emas — migrate image ~400MB+ bo'lmasligi uchun minimal paketlar
+RUN npm install --prefer-offline --no-audit --no-fund \
+    prisma@5.19.1 \
+    @prisma/client@5.19.1 \
+    tsx@4.7.0 \
+    typescript@5.9.3 \
+  && npx prisma generate
 
 # ---- Builder ----
 FROM base AS builder

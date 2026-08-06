@@ -33,7 +33,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public
       NODE_ENV: production
-    command: sh -c "set -e; ./node_modules/.bin/prisma migrate deploy; npm run migrate:prod"
+    command: sh -c "set -e; ./node_modules/.bin/prisma migrate deploy; NODE_ENV=production ./node_modules/.bin/tsx scripts/migrate.ts"
     depends_on:
       postgres:
         condition: service_healthy
