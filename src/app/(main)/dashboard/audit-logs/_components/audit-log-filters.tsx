@@ -14,6 +14,125 @@ interface AuditLogFiltersProps {
   isMobile?: boolean;
 }
 
+const ACTION_OPTIONS = [
+  { value: "CREATE", label: "Yaratish" },
+  { value: "UPDATE", label: "Yangilash" },
+  { value: "DELETE", label: "O'chirish" },
+  { value: "LOGIN", label: "Kirish" },
+  { value: "LOGOUT", label: "Chiqish" },
+  { value: "EXPORT", label: "Export" },
+  { value: "IMPORT", label: "Import" },
+  { value: "DEBT_ADDED", label: "Qarz qo'shildi" },
+  { value: "PAYMENT_ADDED", label: "To'lov qo'shildi" },
+  { value: "DEBT_UPDATED", label: "Qarz yangilandi" },
+  { value: "PAYMENT_UPDATED", label: "To'lov yangilandi" },
+] as const;
+
+const ENTITY_TYPE_OPTIONS = [
+  { value: "DEBTOR", label: "Qarzdor" },
+  { value: "DEBT", label: "Qarz" },
+  { value: "PAYMENT", label: "To'lov" },
+  { value: "USER", label: "Foydalanuvchi" },
+  { value: "SETTINGS", label: "Sozlamalar" },
+  { value: "PAYMENT_REMINDER", label: "To'lov eslatmasi" },
+  { value: "COMPANY", label: "Kompaniya" },
+  { value: "COMPANY_DEBT", label: "Kompaniya qarzi" },
+  { value: "COMPANY_PAYMENT", label: "Kompaniya to'lovi" },
+  { value: "COMPANY_PAYMENT_RECEIPT", label: "To'lov cheki" },
+] as const;
+
+type AuditLogFilterContentProps = {
+  dateFrom: string;
+  dateTo: string;
+  selectedActions: string[];
+  selectedEntityTypes: string[];
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
+  onActionToggle: (action: string) => void;
+  onEntityTypeToggle: (entityType: string) => void;
+  onApplyFilters: () => void;
+  onClearFilters: () => void;
+};
+
+function AuditLogFilterContent({
+  dateFrom,
+  dateTo,
+  selectedActions,
+  selectedEntityTypes,
+  onDateFromChange,
+  onDateToChange,
+  onActionToggle,
+  onEntityTypeToggle,
+  onApplyFilters,
+  onClearFilters,
+}: AuditLogFilterContentProps) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="dateFrom">Boshlanish sanasi</Label>
+        <Input id="dateFrom" type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="dateTo">Tugash sanasi</Label>
+        <Input id="dateTo" type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} />
+      </div>
+
+      <div className="space-y-3">
+        <Label>Harakat turi</Label>
+        <div className="border-border h-32 overflow-y-scroll rounded-md border">
+          {ACTION_OPTIONS.map((action) => (
+            <div key={action.value} className="flex h-8 items-center space-x-2 border-b px-2">
+              <Checkbox
+                id={`action-${action.value}`}
+                checked={selectedActions.includes(action.value)}
+                onCheckedChange={() => onActionToggle(action.value)}
+              />
+              <label
+                htmlFor={`action-${action.value}`}
+                className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {action.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Label>Entity turi</Label>
+        <div className="border-border h-32 overflow-y-scroll rounded-md border">
+          {ENTITY_TYPE_OPTIONS.map((entityType) => (
+            <div key={entityType.value} className="flex h-8 items-center space-x-2 border-b px-2">
+              <Checkbox
+                id={`entity-${entityType.value}`}
+                checked={selectedEntityTypes.includes(entityType.value)}
+                onCheckedChange={() => onEntityTypeToggle(entityType.value)}
+              />
+              <label
+                htmlFor={`entity-${entityType.value}`}
+                className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {entityType.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 pt-2">
+        <Button onClick={onApplyFilters} className="w-full">
+          Filterni qo&apos;llash
+        </Button>
+        <Button onClick={onClearFilters} variant="outline" className="w-full">
+          <X className="mr-2 h-4 w-4" />
+          Tozalash
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,99 +199,18 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
     if (isMobile) setOpen(false);
   };
 
-  const FilterContent = () => (
-    <div className="space-y-4">
-      {/* Date From */}
-      <div className="space-y-2">
-        <Label htmlFor="dateFrom">Boshlanish sanasi</Label>
-        <Input id="dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-      </div>
-
-      {/* Date To */}
-      <div className="space-y-2">
-        <Label htmlFor="dateTo">Tugash sanasi</Label>
-        <Input id="dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-      </div>
-
-      {/* Action Filter */}
-      <div className="space-y-3">
-        <Label>Harakat turi</Label>
-        <div className="border-border h-32 overflow-y-scroll rounded-md border">
-          {[
-            { value: "CREATE", label: "Yaratish" },
-            { value: "UPDATE", label: "Yangilash" },
-            { value: "DELETE", label: "O'chirish" },
-            { value: "LOGIN", label: "Kirish" },
-            { value: "LOGOUT", label: "Chiqish" },
-            { value: "EXPORT", label: "Export" },
-            { value: "IMPORT", label: "Import" },
-            { value: "DEBT_ADDED", label: "Qarz qo'shildi" },
-            { value: "PAYMENT_ADDED", label: "To'lov qo'shildi" },
-            { value: "DEBT_UPDATED", label: "Qarz yangilandi" },
-            { value: "PAYMENT_UPDATED", label: "To'lov yangilandi" },
-          ].map((action) => (
-            <div key={action.value} className="flex h-8 items-center space-x-2 border-b px-2">
-              <Checkbox
-                id={`action-${action.value}`}
-                checked={selectedActions.includes(action.value)}
-                onCheckedChange={() => handleActionToggle(action.value)}
-              />
-              <label
-                htmlFor={`action-${action.value}`}
-                className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {action.label}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Entity Type Filter */}
-      <div className="space-y-3">
-        <Label>Entity turi</Label>
-        <div className="border-border h-32 overflow-y-scroll rounded-md border">
-          {[
-            { value: "DEBTOR", label: "Qarzdor" },
-            { value: "DEBT", label: "Qarz" },
-            { value: "PAYMENT", label: "To'lov" },
-            { value: "USER", label: "Foydalanuvchi" },
-            { value: "SETTINGS", label: "Sozlamalar" },
-            { value: "PAYMENT_REMINDER", label: "To'lov eslatmasi" },
-            { value: "COMPANY", label: "Kompaniya" },
-            { value: "COMPANY_DEBT", label: "Kompaniya qarzi" },
-            { value: "COMPANY_PAYMENT", label: "Kompaniya to'lovi" },
-            { value: "COMPANY_PAYMENT_RECEIPT", label: "To'lov cheki" },
-          ].map((entityType) => (
-            <div key={entityType.value} className="flex h-8 items-center space-x-2 border-b px-2">
-              <Checkbox
-                id={`entity-${entityType.value}`}
-                checked={selectedEntityTypes.includes(entityType.value)}
-                onCheckedChange={() => handleEntityTypeToggle(entityType.value)}
-              />
-              <label
-                htmlFor={`entity-${entityType.value}`}
-                className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {entityType.label}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col gap-2 pt-2">
-        <Button onClick={applyFilters} className="w-full">
-          Filterni qo&apos;llash
-        </Button>
-        <Button onClick={handleClearFilters} variant="outline" className="w-full">
-          <X className="mr-2 h-4 w-4" />
-          Tozalash
-        </Button>
-      </div>
-    </div>
-  );
+  const filterContentProps: AuditLogFilterContentProps = {
+    dateFrom,
+    dateTo,
+    selectedActions,
+    selectedEntityTypes,
+    onDateFromChange: setDateFrom,
+    onDateToChange: setDateTo,
+    onActionToggle: handleActionToggle,
+    onEntityTypeToggle: handleEntityTypeToggle,
+    onApplyFilters: applyFilters,
+    onClearFilters: handleClearFilters,
+  };
 
   // Mobile/Tablet - Dialog
   if (isMobile) {
@@ -188,7 +226,7 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
           <DialogHeader>
             <DialogTitle>Filterlar</DialogTitle>
           </DialogHeader>
-          <FilterContent />
+          <AuditLogFilterContent {...filterContentProps} />
         </DialogContent>
       </Dialog>
     );
@@ -204,7 +242,7 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <FilterContent />
+        <AuditLogFilterContent {...filterContentProps} />
       </CardContent>
     </Card>
   );

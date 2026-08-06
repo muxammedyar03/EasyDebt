@@ -110,7 +110,7 @@ export async function DELETE(request: NextRequest) {
  * GET /api/push/subscribe
  * Get user's subscription status
  */
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
     if (!session || !session.userId) {

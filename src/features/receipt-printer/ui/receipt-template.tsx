@@ -114,6 +114,8 @@ function SingleReceiptContent({ data }: { data: SingleReceiptData }) {
 // ─── Timeline Receipt Content ──────────────────────────────────
 
 function TimelineReceiptContent({ data }: { data: TimelineReceiptData }) {
+  const id = React.useId();
+  const key = `${id}-${data.timeline.length}`;
   return (
     <div className="receipt">
       {/* Header */}
@@ -186,9 +188,9 @@ function TimelineReceiptContent({ data }: { data: TimelineReceiptData }) {
             </tr>
           </thead>
           <tbody>
-            {data.timeline.map((item, index) => (
-              <tr key={index}>
-                <td>{index + 1}</td>
+            {data.timeline.map((item) => (
+              <tr key={key}>
+                <td>{key}</td>
                 <td>{formatReceiptDate(item.date)}</td>
                 <td>{item.type === "DEBT" ? "Qarz" : "To'lov"}</td>
                 <td className={item.type === "DEBT" ? "receipt-debt" : "receipt-payment"}>

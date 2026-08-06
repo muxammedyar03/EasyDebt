@@ -1,4 +1,4 @@
-import { ExternalLink, Globe, Link } from "lucide-react";
+import { ExternalLink, Globe } from "lucide-react";
 
 import { APP_CONFIG } from "@/config/app-config";
 import { LoginForm } from "../_components/login-form";

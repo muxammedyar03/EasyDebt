@@ -74,7 +74,7 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
       hasReceipt: Boolean(p.receiptPath),
     }));
     return [...debts, ...payments].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [current.debts, current.payments]);
+  }, [current.debts, current.payments, current.name]);
 
   const refresh = React.useCallback(async () => {
     await refetch();

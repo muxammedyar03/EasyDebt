@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
   const [selectedDate, setSelectedDate] = useState(today);
   const [timeRange, setTimeRange] = useState<"daily" | "week" | "month">("daily");
   const router = useRouter();
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const selected = new Date(selectedDate);
 
     if (timeRange === "daily") {
@@ -61,7 +61,6 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
       }
       return dates;
     } else {
-      // month
       const dates: string[] = [];
       const startOfMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
       const endOfMonth = new Date(selected.getFullYear(), selected.getMonth() + 1, 0);
@@ -71,7 +70,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
       }
       return dates;
     }
-  };
+  }, [selectedDate, timeRange]);
 
   // Filter data by date range
   const filteredPayments = useMemo(() => {
@@ -80,7 +79,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
       const pDate = new Date(p.created_at).toISOString().split("T")[0];
       return dateRange.includes(pDate);
     });
-  }, [selectedDate, timeRange, payments, getDateRange]);
+  }, [payments, getDateRange]);
 
   const filteredDebts = useMemo(() => {
     const dateRange = getDateRange();
@@ -88,7 +87,7 @@ export default function CashClient({ payments, debts, debtLimit }: Props) {
       const dDate = new Date(d.created_at).toISOString().split("T")[0];
       return dateRange.includes(dDate);
     });
-  }, [selectedDate, timeRange, debts, getDateRange]);
+  }, [debts, getDateRange]);
 
   // Calculate totals
   const totals = useMemo(() => {

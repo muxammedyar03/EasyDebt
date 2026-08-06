@@ -22,7 +22,7 @@ const updatePreferencesSchema = z.object({
  * GET /api/push/preferences
  * Get user's push notification preferences
  */
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
     if (!session || !session.userId) {

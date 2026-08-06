@@ -75,16 +75,19 @@ export function NotificationsDropdown({ notifications }: NotificationsDropdownPr
     DEBT_ADDED: "text-blue-600",
   };
 
-  const markAsRead = React.useCallback(async (id: number) => {
-    try {
-      await fetch(`/api/notifications/${id}`, { method: "PATCH" });
-      setItems(items.map((item) => (item.id === id ? { ...item, is_read: true } : item)));
-      toast("Bildirishnoma o'qildi holatiga o'zgartirildi", { duration: 3000 });
-      router.refresh();
-    } catch {
-      toast("Xatolik", { description: "Bildirishnoma o'qildi holatiga o'zgartirilmadi", duration: 3000 });
-    }
-  }, []);
+  const markAsRead = React.useCallback(
+    async (id: number) => {
+      try {
+        await fetch(`/api/notifications/${id}`, { method: "PATCH" });
+        setItems(items.map((item) => (item.id === id ? { ...item, is_read: true } : item)));
+        toast("Bildirishnoma o'qildi holatiga o'zgartirildi", { duration: 3000 });
+        router.refresh();
+      } catch {
+        toast("Xatolik", { description: "Bildirishnoma o'qildi holatiga o'zgartirilmadi", duration: 3000 });
+      }
+    },
+    [items, router],
+  );
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

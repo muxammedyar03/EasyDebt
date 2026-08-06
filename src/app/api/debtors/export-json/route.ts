@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/errors";
 import { createAuditLog } from "@/lib/audit";
@@ -43,7 +43,7 @@ type ExportData = {
   debtors: ExportDebtor[];
 };
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
 

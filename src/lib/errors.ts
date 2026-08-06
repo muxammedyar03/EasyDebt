@@ -12,7 +12,7 @@ export const API_ERROR_MESSAGE = "Serverda xatolik yuz berdi";
  * Use in catch blocks: return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 })
  */
 export function getApiErrorMessage(_error: unknown): string {
-  return API_ERROR_MESSAGE;
+  return API_ERROR_MESSAGE + " " + _error;
 }
 
 /**

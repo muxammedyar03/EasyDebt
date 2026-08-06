@@ -5,7 +5,6 @@ import {
   Users,
   BarChart3,
   Building2,
-  ChartColumn,
   ImageIcon,
   type LucideIcon,
 } from "lucide-react";

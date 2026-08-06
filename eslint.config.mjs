@@ -10,23 +10,32 @@ const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
 });
 
+const globalIgnores = [
+  ".github/**",
+  ".husky/**",
+  "node_modules/**",
+  ".next/**",
+  "coverage/**",
+  "dist/**",
+  "out/**",
+  "build/**",
+  "src/components/ui/**",
+  "**/*.config.ts",
+  "**/*.config.mjs",
+  "eslint.config.mjs",
+  "next-env.d.ts",
+  "jest.config.js",
+  "jest.setup.js",
+  "public/sw.js",
+];
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
+    ignores: globalIgnores,
+  },
+  {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
-    ignores: [
-      ".github/",
-      ".husky/",
-      "node_modules/",
-      ".next/",
-      "src/components/ui",
-      "*.config.ts",
-      "*.mjs",
-      "next-env.d.ts",
-      "jest.config.js",
-      "jest.setup.js",
-      "public/sw.js",
-    ],
     languageOptions: {
       globals: globals.browser,
       parser: "@typescript-eslint/parser",
