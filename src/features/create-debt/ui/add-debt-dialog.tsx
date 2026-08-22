@@ -26,6 +26,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateHeaderNotifications } from "@/features/notifications";
 import { createDebt } from "../api";
 
 const formatNumber = (value: string) => {
@@ -43,6 +45,7 @@ export interface AddDebtDialogProps {
 
 export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddDebtDialogProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
@@ -74,6 +77,8 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
         description: data.description || null,
         created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
       });
+
+      await invalidateHeaderNotifications(queryClient);
 
       toast.success("Qarz muvaffaqiyatli qo'shildi");
       reset();

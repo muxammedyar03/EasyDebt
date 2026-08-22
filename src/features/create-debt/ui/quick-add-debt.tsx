@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatNumber } from "@/lib/format";
 import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateHeaderNotifications } from "@/features/notifications";
 import { createDebt } from "../api";
 
 export interface QuickAddDebtProps {
@@ -24,6 +26,7 @@ export interface QuickAddDebtProps {
 
 export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSuccess }: QuickAddDebtProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = React.useState(false);
   const refreshAfterCloseRef = React.useRef(false);
 
@@ -41,6 +44,8 @@ export function QuickAddDebt({ debtorId, debtorName, open, onOpenChange, onSucce
         amount: parseFloat(cleanAmount),
         description: data.description || null,
       });
+
+      await invalidateHeaderNotifications(queryClient);
 
       toast.success("Qarz muvaffaqiyatli qo'shildi");
       form.reset();

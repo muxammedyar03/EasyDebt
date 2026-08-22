@@ -38,7 +38,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
   ]);
 
-  const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
+  const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications, unreadCount } = layoutData;
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
@@ -65,7 +65,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <div>{session?.userId && <HeaderLockButton />}</div>
             </div>
             <div className="flex items-center gap-2">
-              <NotificationsDropdown notifications={notifications} />
+              <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
               <ThemeSwitcher />
               <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
             </div>

@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
 
     // Check if debt limit exceeded
     const newTotalDebt = result.updatedDebtor.total_debt.toNumber();
-    if (newTotalDebt > result.debtLimit) {
+    const limitExceeded = newTotalDebt > result.debtLimit;
+    if (limitExceeded) {
       await createNotification({
         userId,
         debtorId: validatedData.debtor_id,
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
         debtorName: `${result.debtor.first_name} ${result.debtor.last_name}`,
         debtorPhone: result.debtor.phone_number,
         employeeName: userFullName,
+        limitExceeded,
       },
       { status: 201 },
     );

@@ -1,7 +1,11 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ArrowLeft, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { notificationKeys } from "@/features/notifications";
 
 interface NotificationsHeaderProps {
   updateParams: (params: Record<string, string | undefined>) => void;
@@ -10,6 +14,7 @@ interface NotificationsHeaderProps {
 export function NotificationsHeader({ updateParams }: NotificationsHeaderProps) {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   async function markAllAsRead() {
     await fetch(`/api/notifications`, {
@@ -17,6 +22,7 @@ export function NotificationsHeader({ updateParams }: NotificationsHeaderProps) 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "mark_all_read" }),
     });
+    await queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     updateParams({});
   }
 

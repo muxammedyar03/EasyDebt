@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/errors";
 import { markAllNotificationsAsRead } from "@/lib/notifications";
+import { buildHeaderNotificationsWhere, HEADER_NOTIFICATION_TYPES } from "@/lib/notifications/header-query";
 import { NotificationType, Prisma } from "@prisma/client";
 import { debtorRepository } from "@/entities/debtor/api";
 import { notificationRepository } from "@/entities/notification/api";
@@ -21,44 +22,41 @@ export async function GET(request: NextRequest) {
     const type = (searchParams.get("type") ?? "").trim();
     const readParam = (searchParams.get("read") ?? "").trim();
 
-    const where: Prisma.NotificationWhereInput = {};
+    // Header preview: unread + default types — shared where builder
+    const isHeaderPreview = !q && !type && readParam === "false";
+    let where: Prisma.NotificationWhereInput;
 
-    // User filter: must belong to user or be global (user_id = null)
-    const userConditions: Prisma.NotificationWhereInput[] = [];
-    if (session.userId) {
-      userConditions.push({ user_id: session.userId }, { user_id: null });
-    }
-
-    // Search filter: title or message contains query
-    const searchConditions: Prisma.NotificationWhereInput[] = [];
-    if (q) {
-      searchConditions.push(
-        { title: { contains: q, mode: "insensitive" } },
-        { message: { contains: q, mode: "insensitive" } },
-      );
-    }
-
-    // Combine conditions with AND
-    const andConditions: Prisma.NotificationWhereInput[] = [];
-    if (userConditions.length > 0) {
-      andConditions.push({ OR: userConditions });
-    }
-    if (searchConditions.length > 0) {
-      andConditions.push({ OR: searchConditions });
-    }
-
-    if (andConditions.length > 0) {
-      where.AND = andConditions;
-    }
-    if (type) {
-      where.type = type as NotificationType;
+    if (isHeaderPreview) {
+      where = buildHeaderNotificationsWhere(session.userId, true);
     } else {
-      where.type = {
-        in: ["OVERDUE_PAYMENT", "DEBT_LIMIT_EXCEEDED", "HOSTING_REMINDER", "PAYMENT_REMINDER"] as NotificationType[],
-      };
-    }
-    if (readParam === "true" || readParam === "false") {
-      where.is_read = readParam === "true";
+      where = {};
+      const andConditions: Prisma.NotificationWhereInput[] = [];
+
+      if (session.userId) {
+        andConditions.push({
+          OR: [{ user_id: session.userId }, { user_id: null }],
+        });
+      }
+
+      if (q) {
+        andConditions.push({
+          OR: [{ title: { contains: q, mode: "insensitive" } }, { message: { contains: q, mode: "insensitive" } }],
+        });
+      }
+
+      if (andConditions.length > 0) {
+        where.AND = andConditions;
+      }
+
+      if (type) {
+        where.type = type as NotificationType;
+      } else {
+        where.type = { in: HEADER_NOTIFICATION_TYPES };
+      }
+
+      if (readParam === "true" || readParam === "false") {
+        where.is_read = readParam === "true";
+      }
     }
 
     const [itemsRaw, total] = await Promise.all([

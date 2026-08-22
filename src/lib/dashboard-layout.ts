@@ -2,6 +2,7 @@ import type { NotificationType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { settingsRepository } from "@/entities/settings/api";
+import { buildHeaderNotificationsWhere } from "@/lib/notifications/header-query";
 
 export type DashboardLayoutUser = {
   id: string;
@@ -30,6 +31,7 @@ export type DashboardLayoutData = {
   overdueDays: number;
   activeUser: DashboardLayoutUser;
   notifications: DashboardLayoutNotification[];
+  unreadCount: number;
 };
 
 const DEFAULT_ACTIVE_USER: DashboardLayoutUser = {
@@ -66,11 +68,16 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
       : null,
   ]);
 
-  const notificationsRaw = await prisma.notification.findMany({
-    where: { is_read: false },
-    orderBy: { created_at: "desc" },
-    take: 3,
-  });
+  const headerWhere = buildHeaderNotificationsWhere(session?.userId, true);
+
+  const [notificationsRaw, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: headerWhere,
+      orderBy: { created_at: "desc" },
+      take: 5,
+    }),
+    prisma.notification.count({ where: headerWhere }),
+  ]);
 
   const debtorIds = [...new Set(notificationsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
   const idToExternalId = new Map<number, string>();
@@ -104,5 +111,6 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
     overdueDays,
     activeUser,
     notifications,
+    unreadCount,
   };
 }
