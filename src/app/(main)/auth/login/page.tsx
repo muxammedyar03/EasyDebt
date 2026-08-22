@@ -8,18 +8,21 @@ export default function LoginV2() {
     <>
       <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-medium">Login to your account</h1>
-          <p className="text-muted-foreground text-sm">Please enter your details to login.</p>
+          <h1 className="text-3xl font-medium">Вход в аккаунт</h1>
+          <p className="text-muted-foreground text-sm">Пожалуйста, введите ваши данные для входа.</p>
         </div>
         <div className="space-y-4">
           <LoginForm />
           <p className="text-muted-foreground text-center text-xs">или</p>
-          <div className="flex items-center justify-center gap-x-2 rounded-lg bg-blue-100 p-2 text-center text-sm text-blue-500 hover:underline dark:bg-blue-900/10">
-            <a href="https://demoeasy-debt-git-dev-muxammedyars-projects-8ab207c3.vercel.app/" target="_blank">
-              Перейти на демо версию
-            </a>
+          <a
+            href="https://demoeasy-debt-git-dev-muxammedyars-projects-8ab207c3.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-12 items-center justify-center gap-x-2 rounded-lg bg-blue-100 px-4 text-center text-sm font-medium text-blue-500 hover:bg-blue-100/80 hover:underline dark:bg-blue-900/10"
+          >
+            Перейти на демо версию
             <ExternalLink width={16} height={16} />
-          </div>
+          </a>
         </div>
       </div>
 
@@ -27,7 +30,7 @@ export default function LoginV2() {
         <div className="text-sm">{APP_CONFIG.copyright}</div>
         <div className="flex items-center gap-1 text-sm">
           <Globe className="text-muted-foreground size-4" />
-          ENG
+          UZB | RUS
         </div>
       </div>
     </>

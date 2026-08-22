@@ -79,9 +79,13 @@ export function AccountSwitcher({
             <Settings />
             Sozlamalar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/push-notifications")} disabled>
+          {/* <DropdownMenuItem onClick={() => router.push("/dashboard/push-notifications")} disabled>
             <Bell />
             Push notificationlar
+          </DropdownMenuItem> */}
+          <DropdownMenuItem onClick={() => router.push("/dashboard/layout-settings")}>
+            <Settings />
+            Настройки макета
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push("/dashboard/my-debts")}>
             <CreditCard />

@@ -21,7 +21,6 @@ import {
 import { getDashboardLayoutData } from "@/lib/dashboard-layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
-import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
@@ -40,13 +39,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
 
   const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
-
-  const layoutPreferences = {
-    contentLayout,
-    variant: sidebarVariant,
-    collapsible: sidebarCollapsible,
-    navbarStyle,
-  };
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
@@ -70,11 +62,10 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-1 lg:gap-2">
               <SidebarTrigger className="text-2xl md:-ml-4" />
               <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
+              <div>{session?.userId && <HeaderLockButton />}</div>
             </div>
             <div className="flex items-center gap-2">
               <NotificationsDropdown notifications={notifications} />
-              <div>{session?.userId && <HeaderLockButton />}</div>
-              <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
               <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
             </div>

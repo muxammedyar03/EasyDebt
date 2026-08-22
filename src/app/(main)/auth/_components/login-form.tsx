@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -13,14 +14,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 
 const FormSchema = z.object({
-  username: z.string().min(1, { message: "Username is required." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  username: z.string().min(1, { message: "Логин обязательно для заполнения." }),
+  password: z.string().min(6, { message: "Пароль должен быть не менее 6 символов." }),
   remember: z.boolean().optional(),
 });
 
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -89,15 +91,22 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>Логин</FormLabel>
               <FormControl>
-                <Input id="username" type="text" placeholder="Enter your username" autoComplete="username" {...field} />
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Введите ваш логин"
+                  autoComplete="username"
+                  className="h-12 rounded-xl text-base md:text-base"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -108,15 +117,29 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Пароль</FormLabel>
               <FormControl>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  {...field}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Введите пароль"
+                    autoComplete="current-password"
+                    className="h-12 rounded-xl pr-11 text-base md:text-base"
+                    {...field}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1.5 size-9 -translate-y-1/2"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  </Button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -136,13 +159,13 @@ export function LoginForm() {
                 />
               </FormControl>
               <FormLabel htmlFor="login-remember" className="text-muted-foreground ml-1 text-sm font-medium">
-                Remember me for 30 days
+                Запомнить меня на 30 дней
               </FormLabel>
             </FormItem>
           )}
         />
-        <Button className="w-full" type="submit" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
+        <Button className="h-12 w-full rounded-xl text-base" type="submit" disabled={isLoading}>
+          {isLoading ? "Вход..." : "Войти"}
         </Button>
       </form>
     </Form>
