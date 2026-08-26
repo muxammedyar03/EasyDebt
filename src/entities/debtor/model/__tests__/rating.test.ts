@@ -3,6 +3,7 @@
  * Covers input/output and boundary values (overdueDays thresholds).
  */
 
+import { expect } from "@playwright/test";
 import { calculatePaymentRating, type PaymentRating } from "../rating";
 
 const OVERDUE_DAYS = 45;
@@ -91,6 +92,19 @@ describe("calculatePaymentRating", () => {
       );
       expect(result.label).toBe("A'lo");
       expect(result.score).toBeLessThanOrEqual(15);
+    });
+
+    it("resets avgDays when payment has resetsRating even if under 50%", () => {
+      const debtDate = daysAgo(100);
+      const paymentDate = daysAgo(0);
+      const result = calculatePaymentRating(
+        [{ amount: 1000, createdAt: debtDate }],
+        [{ amount: 100, createdAt: paymentDate, resetsRating: true }],
+        OVERDUE_DAYS,
+        900,
+      );
+      expect(result.score).toBe(0);
+      expect(result.label).toBe("A'lo");
     });
   });
 

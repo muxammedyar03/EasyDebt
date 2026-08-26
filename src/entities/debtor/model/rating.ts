@@ -10,7 +10,7 @@ export interface PaymentRating {
   color: string;
 }
 
-type TransactionInput = { amount: number; createdAt: Date };
+type TransactionInput = { amount: number; createdAt: Date; resetsRating?: boolean };
 
 const MIN_PAYMENT_PERCENT = 0.5;
 const DEFAULT_RATING: PaymentRating = {
@@ -55,9 +55,10 @@ export function calculatePaymentRating(
     if (transaction.type === "debt") {
       remainingDebt += transaction.amount;
     } else {
+      const payment = transaction.item as (typeof sortedPayments)[0];
       const is50Plus = remainingDebt > 0 && transaction.amount >= remainingDebt * 0.5;
-      if (is50Plus) {
-        lastResetPayment = transaction.item as (typeof sortedPayments)[0];
+      if (is50Plus || payment.resetsRating) {
+        lastResetPayment = payment;
       }
       remainingDebt -= transaction.amount;
     }
@@ -160,9 +161,10 @@ export function isDebtorOverdue(
     if (transaction.type === "debt") {
       remainingDebt += transaction.amount;
     } else {
+      const payment = transaction.item as (typeof sortedPayments)[0];
       const is50Plus = remainingDebt > 0 && transaction.amount >= remainingDebt * 0.5;
-      if (is50Plus) {
-        lastResetPayment = transaction.item as (typeof sortedPayments)[0];
+      if (is50Plus || payment.resetsRating) {
+        lastResetPayment = payment;
       }
       remainingDebt -= transaction.amount;
     }

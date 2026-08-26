@@ -112,6 +112,7 @@ export function prismaToDomainPayment(prismaPayment: Payment): PaymentDomain {
     amount: prismaPayment.amount.toNumber(),
     paymentType: prismaPayment.payment_type as PaymentDomain["paymentType"],
     note: prismaPayment.note,
+    resetsRating: prismaPayment.resets_rating ?? false,
     createdAt: prismaPayment.created_at,
     createdBy: prismaPayment.created_by,
   };

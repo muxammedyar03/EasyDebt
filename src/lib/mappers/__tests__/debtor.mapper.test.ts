@@ -48,6 +48,7 @@ describe("prismaToDomainPayment", () => {
       amount: decimal(25_000),
       payment_type: "CASH",
       note: "Partial",
+      resets_rating: false,
       created_at: new Date("2025-03-02"),
       created_by: 1,
     };
@@ -59,6 +60,7 @@ describe("prismaToDomainPayment", () => {
       amount: 25_000,
       paymentType: "CASH",
       note: "Partial",
+      resetsRating: false,
       createdAt: prismaPayment.created_at,
       createdBy: 1,
     });

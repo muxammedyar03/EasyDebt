@@ -23,6 +23,8 @@ export type PaymentDomain = {
   amount: number; // Normalized from Decimal
   paymentType: PaymentTypeDomain;
   note: string | null;
+  /** When true, this payment resets "O'rtacha kun" rating counter to 0 */
+  resetsRating: boolean;
   createdAt: Date;
   createdBy: number;
 

@@ -88,14 +88,15 @@ model Debt {
 }
 
 model Payment {
-  id           Int         @id @default(autoincrement())
-  external_id  String      @unique @default(uuid())
-  debtor_id    Int
-  amount       Decimal     @db.Decimal(10, 2)
-  payment_type PaymentType @default(CASH)
-  note         String?
-  created_at   DateTime    @default(now())
-  created_by   Int
+  id            Int         @id @default(autoincrement())
+  external_id   String      @unique @default(uuid())
+  debtor_id     Int
+  amount        Decimal     @db.Decimal(10, 2)
+  payment_type  PaymentType @default(CASH)
+  note          String?
+  resets_rating Boolean     @default(false)
+  created_at    DateTime    @default(now())
+  created_by    Int
 
   // Relations
   debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)

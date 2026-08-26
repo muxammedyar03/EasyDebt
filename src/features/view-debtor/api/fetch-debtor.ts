@@ -25,9 +25,10 @@ export function normalizeDebtorFromApi(data: Record<string, unknown>): DebtorDom
     createdAt: typeof d.createdAt === "string" ? new Date(d.createdAt) : d.createdAt,
   }));
   const payments = (debtor.payments ?? []).map((p) => {
-    const raw = p as unknown as { createdAt: string | Date };
+    const raw = p as unknown as { createdAt: string | Date; resetsRating?: boolean };
     return {
       ...p,
+      resetsRating: raw.resetsRating ?? false,
       createdAt: typeof raw.createdAt === "string" ? new Date(raw.createdAt) : raw.createdAt,
     };
   });

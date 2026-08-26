@@ -3,6 +3,7 @@ export type CreatePaymentPayload = {
   amount: number;
   payment_type: "CASH" | "CARD" | "CLICK";
   note?: string | null;
+  resets_rating?: boolean;
   created_at?: string;
 };
 

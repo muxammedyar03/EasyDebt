@@ -511,6 +511,7 @@ export class DebtorService {
       const paymentsForCalculation = debtorPayments.map((p) => ({
         amount: p.amount.toNumber(),
         createdAt: p.created_at,
+        resetsRating: p.resets_rating ?? false,
       }));
 
       const days = calculatePaymentRating(debtsForCalculation, paymentsForCalculation, overdueDays, totalDebt);
@@ -525,6 +526,7 @@ export class DebtorService {
           amount: p.amount.toNumber(),
           paymentType: p.payment_type as PaymentDomain["paymentType"],
           note: p.note,
+          resetsRating: p.resets_rating ?? false,
           createdAt: p.created_at,
           createdBy: p.created_by,
         })),

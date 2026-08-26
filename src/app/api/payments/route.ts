@@ -12,6 +12,7 @@ const createPaymentSchema = z.object({
   amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak"),
   payment_type: z.enum(["CASH", "CLICK", "CARD"]),
   note: z.string().nullable().optional(),
+  resets_rating: z.boolean().optional(),
   created_at: z.string().optional(), // Dev mode: custom date
 });
 
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
           amount: validatedData.amount,
           payment_type: validatedData.payment_type,
           note: validatedData.note || null,
+          resets_rating: validatedData.resets_rating ?? false,
           created_by: userId,
           ...(validatedData.created_at && process.env.NODE_ENV === "development"
             ? { created_at: new Date(validatedData.created_at) }

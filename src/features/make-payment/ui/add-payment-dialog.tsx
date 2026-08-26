@@ -29,6 +29,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { formatNumber } from "@/lib/format";
 import { addPaymentSchema, type AddPaymentFormData } from "@/lib/validation";
 import { createPayment } from "../api";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface AddPaymentDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+  const [resetRating, setResetRating] = React.useState(false);
   const refreshAfterCloseRef = React.useRef(false);
 
   const {
@@ -74,6 +76,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
         amount: parseFloat(cleanAmount),
         payment_type: data.payment_type,
         note: data.note || null,
+        resets_rating: resetRating,
         created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
       });
 
@@ -99,6 +102,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
       reset();
       setAmount("");
       setSelectedDate(undefined);
+      setResetRating(false);
       refreshAfterCloseRef.current = true;
       onOpenChange(false);
 
@@ -191,6 +195,22 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 rows={3}
                 className="border-border border"
               />
+            </div>
+            <div className="border-border flex items-start gap-3 rounded-md border p-3">
+              <Checkbox
+                id="reset_rating"
+                checked={resetRating}
+                onCheckedChange={(checked) => setResetRating(checked === true)}
+                disabled={isLoading}
+              />
+              <div className="grid gap-1">
+                <Label htmlFor="reset_rating" className="cursor-pointer leading-none font-medium">
+                  O&apos;rtacha kunni 0 ga tushirish
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  Belgilansa, reyting hisobi shu to&apos;lovdan boshlab yangilanadi.
+                </p>
+              </div>
             </div>
             {DEV_MODE && (
               <div className="grid gap-2">
