@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-interface User {
+export interface CurrentUser {
   id: number;
   username: string;
   email: string | null;
@@ -13,35 +13,38 @@ interface User {
   created_at: string;
 }
 
+export const CURRENT_USER_QUERY_KEY = ["current-user"] as const;
+
+async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  const response = await fetch("/api/auth/me");
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch user");
+  }
+
+  const data = await response.json();
+  return data.user as CurrentUser;
+}
+
 export function useCurrentUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: CURRENT_USER_QUERY_KEY,
+    queryFn: fetchCurrentUser,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const response = await fetch("/api/auth/me");
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            setUser(null);
-            return;
-          }
-          throw new Error("Failed to fetch user");
-        }
-
-        const data = await response.json();
-        setUser(data.user);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUser();
-  }, []);
-
-  return { user, loading, error, isAuthenticated: !!user };
+  return {
+    user: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : query.error ? "Unknown error" : null,
+    isAuthenticated: !!query.data,
+    refetch: query.refetch,
+  };
 }

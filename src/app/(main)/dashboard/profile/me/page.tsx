@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@prisma/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
 
@@ -11,12 +11,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { CURRENT_USER_QUERY_KEY, useCurrentUser } from "@/hooks/use-current-user";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { user: userData, loading, error, refetch } = useCurrentUser();
   const [saving, setSaving] = useState(false);
-  const [userData, setUserData] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -28,34 +29,21 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch("/api/auth/me");
-      if (!response.ok) {
-        toast.error("Foydalanuvchi ma'lumotlarini olishda xatolik");
-        return;
-      }
-      const data = await response.json();
-      setUserData(data.user);
-      setFormData({
-        first_name: data.user.first_name || "",
-        last_name: data.user.last_name || "",
-        username: data.user.username || "",
-        email: data.user.email || "",
-        current_password: "",
-        new_password: "",
-        confirm_password: "",
-      });
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      toast.error("Xatolik yuz berdi");
-    } finally {
-      setLoading(false);
+    if (error) {
+      toast.error("Foydalanuvchi ma'lumotlarini olishda xatolik");
     }
-  };
+  }, [error]);
+
+  useEffect(() => {
+    if (!userData) return;
+    setFormData((prev) => ({
+      ...prev,
+      first_name: userData.first_name || "",
+      last_name: userData.last_name || "",
+      username: userData.username || "",
+      email: userData.email || "",
+    }));
+  }, [userData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -86,7 +74,8 @@ export default function ProfilePage() {
       }
 
       toast.success("Ma'lumotlar muvaffaqiyatli yangilandi");
-      fetchUserData();
+      await queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
+      await refetch();
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Xatolik yuz berdi");
