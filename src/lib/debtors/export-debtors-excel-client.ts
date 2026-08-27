@@ -1,6 +1,8 @@
 import { exportToExcel, formatNumberForExcel } from "@/lib/excel-export";
 import type { DebtorsExportApiResponse, DebtorsExportApiRow } from "@/types/api/debtors-export";
 
+const DEFAULT_HEADERS = ["ID", "Ism", "Familiya", "Telefon", "Manzil", "Jami qarz", "Jami to'lovlar"];
+
 export async function fetchDebtorsExportJson(search: string, status: string): Promise<DebtorsExportApiResponse> {
   const response = await fetch(
     `/api/debtors/export?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`,
@@ -26,14 +28,18 @@ function rowToExcelCells(debtor: DebtorsExportApiRow): (string | number)[] {
 /**
  * GET /api/debtors/export dan olingan ma'lumotni Excel ga yozadi (toast yo'q).
  */
-export async function exportDebtorsListToExcel(params: { search: string; status: string }): Promise<{
+export async function exportDebtorsListToExcel(params: {
+  search: string;
+  status: string;
+  headers?: string[];
+}): Promise<{
   rowCount: number;
 }> {
   const data = await fetchDebtorsExportJson(params.search, params.status);
   const debtors = data.debtors;
 
   await exportToExcel({
-    headers: ["ID", "Ism", "Familiya", "Telefon", "Manzil", "Jami qarz", "Jami to'lovlar"],
+    headers: params.headers ?? DEFAULT_HEADERS,
     rows: debtors.map(rowToExcelCells),
     filename: `qarzdorlar_${new Date().toISOString().split("T")[0]}_${params.status}`,
   });

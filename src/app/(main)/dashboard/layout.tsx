@@ -22,6 +22,7 @@ import { getDashboardLayoutData } from "@/lib/dashboard-layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
@@ -66,6 +67,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             </div>
             <div className="flex items-center gap-2">
               <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
+              <LanguageSwitcher />
               <ThemeSwitcher />
               <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
             </div>

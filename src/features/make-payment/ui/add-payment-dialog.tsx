@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { uz } from "date-fns/locale";
+import { useTranslations } from "next-intl";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 import { DEV_MODE } from "@/lib/dev-mode";
@@ -42,6 +43,8 @@ export interface AddPaymentDialogProps {
 
 export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onSuccess }: AddPaymentDialogProps) {
   const router = useRouter();
+  const t = useTranslations("payment");
+  const tCommon = useTranslations("common");
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
@@ -80,7 +83,6 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
         created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
       });
 
-      // Receipt info ni API response dan olish
       const response = result as Record<string, unknown> | undefined;
       const receiptInfo =
         response?.previousBalance !== undefined
@@ -98,7 +100,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
             }
           : undefined;
 
-      toast.success("To'lov muvaffaqiyatli qo'shildi");
+      toast.success(t("success"));
       reset();
       setAmount("");
       setSelectedDate(undefined);
@@ -115,7 +117,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
       });
     } catch (error) {
       console.error("Error adding payment:", error);
-      toast.error(getErrorMessage(error, "To'lov qo'shishda xatolik yuz berdi"));
+      toast.error(getErrorMessage(error, t("error")));
     } finally {
       setIsLoading(false);
     }
@@ -125,8 +127,8 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>To&apos;lov qo&apos;shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi to&apos;lov qo&apos;shish</DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description", { name: debtorName })}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -137,7 +139,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                To&apos;lov miqdori <span className="text-destructive">*</span>
+                {t("amount")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -153,7 +155,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
             </div>
             <div className="grid gap-2">
               <Label htmlFor="payment_type">
-                To&apos;lov turi <span className="text-destructive">*</span>
+                {t("type")} <span className="text-destructive">*</span>
               </Label>
               <Tabs
                 value={paymentType}
@@ -166,30 +168,30 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                     disabled={isLoading}
                     className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-orange-500 data-[state=active]:text-white dark:data-[state=active]:bg-orange-500"
                   >
-                    Naqd
+                    {t("cash")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="CLICK"
                     disabled={isLoading}
                     className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-indigo-500 data-[state=active]:text-white dark:data-[state=active]:bg-indigo-500"
                   >
-                    Click
+                    {t("click")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="CARD"
                     disabled={isLoading}
                     className="dark:bg-input/30 cursor-pointer bg-white data-[state=active]:bg-emerald-500 data-[state=active]:text-white dark:data-[state=active]:bg-emerald-500"
                   >
-                    Karta
+                    {t("card")}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="note">Izoh</Label>
+              <Label htmlFor="note">{t("note")}</Label>
               <Textarea
                 id="note"
-                placeholder="To'lov haqida ma'lumot"
+                placeholder={t("notePlaceholder")}
                 {...register("note")}
                 disabled={isLoading}
                 rows={3}
@@ -205,16 +207,14 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
               />
               <div className="grid gap-1">
                 <Label htmlFor="reset_rating" className="cursor-pointer leading-none font-medium">
-                  O&apos;rtacha kunni 0 ga tushirish
+                  {t("resetRating")}
                 </Label>
-                <p className="text-muted-foreground text-xs">
-                  Belgilansa, reyting hisobi shu to&apos;lovdan boshlab yangilanadi.
-                </p>
+                <p className="text-muted-foreground text-xs">{t("resetRatingHint")}</p>
               </div>
             </div>
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>{t("dateDev")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -224,24 +224,24 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                       disabled={isLoading}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : t("pickDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">Bo&apos;sh qoldirilsa, hozirgi sana ishlatiladi.</p>
+                <p className="text-muted-foreground text-xs">{t("dateHint")}</p>
               </div>
             )}
           </div>
           <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo&apos;shish
+              {tCommon("add")}
             </Button>
           </DialogFooter>
         </form>

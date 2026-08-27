@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
-import { uz } from "date-fns/locale";
+import { ru, uz } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { DEV_MODE } from "@/lib/dev-mode";
 
@@ -27,13 +28,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { DebtDomain } from "@/types/domain";
 
-const editDebtSchema = z.object({
-  amount: z.string().min(1, "Qarz miqdorini kiriting"),
-  description: z.string().optional(),
-  createdAt: z.date().optional(),
-});
-
-type EditDebtFormData = z.infer<typeof editDebtSchema>;
+type EditDebtFormData = {
+  amount: string;
+  description?: string;
+  createdAt?: Date;
+};
 
 interface EditDebtDialogProps {
   open: boolean;
@@ -43,6 +42,21 @@ interface EditDebtDialogProps {
 }
 
 export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebtDialogProps) {
+  const t = useTranslations("debt");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "ru" ? ru : uz;
+
+  const editDebtSchema = React.useMemo(
+    () =>
+      z.object({
+        amount: z.string().min(1, t("amountRequired")),
+        description: z.string().optional(),
+        createdAt: z.date().optional(),
+      }),
+    [t],
+  );
+
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState(debt.amount.toLocaleString());
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date(debt.createdAt));
@@ -98,10 +112,10 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Qarzni yangilashda xatolik yuz berdi");
+        throw new Error(errorData.error || t("editError"));
       }
 
-      toast.success("Qarz muvaffaqiyatli yangilandi");
+      toast.success(t("editSuccess"));
       onOpenChange(false);
 
       if (onSuccess) {
@@ -109,7 +123,7 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
       }
     } catch (error) {
       console.error("Error updating debt:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzni yangilashda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : t("editError"));
     } finally {
       setIsLoading(false);
     }
@@ -119,14 +133,14 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Qarzni tahrirlash</DialogTitle>
-          <DialogDescription>Qarz ma&apos;lumotlarini o&apos;zgartirish</DialogDescription>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
+          <DialogDescription>{t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                Qarz miqdori <span className="text-destructive">*</span>
+                {t("amount")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -141,10 +155,10 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Tavsif</Label>
+              <Label htmlFor="description">{tCommon("description")}</Label>
               <Textarea
                 id="description"
-                placeholder="Qarz haqida ma'lumot"
+                placeholder={t("descriptionPlaceholder")}
                 {...register("description")}
                 disabled={isLoading}
                 rows={3}
@@ -153,7 +167,7 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
 
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>{t("dateDev")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -163,25 +177,25 @@ export function EditDebtDialog({ open, onOpenChange, debt, onSuccess }: EditDebt
                       type="button"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                      {selectedDate ? format(selectedDate, "PPP", { locale: dateLocale }) : tCommon("pickDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">Qarzning yaratilgan sanasini o&apos;zgartirish</p>
+                <p className="text-muted-foreground text-xs">{t("editDateHint")}</p>
               </div>
             )}
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Saqlash
+              {tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

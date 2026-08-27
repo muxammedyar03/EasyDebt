@@ -1,11 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,26 +16,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-const formSchema = z
-  .object({
-    username: z.string().min(3, "Username kamida 3 ta belgidan iborat bo'lishi kerak"),
-    email: z.string().email("To'g'ri email kiriting").optional().or(z.literal("")),
-    first_name: z.string().optional(),
-    last_name: z.string().optional(),
-    role: z.enum(["SUPER_ADMIN", "ADMIN", "USER"]),
-    is_active: z.boolean(),
-    password: z.string().min(6, "Parol kamida 6 ta belgidan iborat bo'lishi kerak").optional().or(z.literal("")),
-    confirmPassword: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.password && data.password.length > 0) return data.password === data.confirmPassword;
-      return true;
-    },
-    { message: "Parollar mos kelmayapti", path: ["confirmPassword"] },
-  );
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+  username: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "USER";
+  is_active: boolean;
+  password?: string;
+  confirmPassword?: string;
+};
 
 export interface EditUserFormUser {
   id: number;
@@ -49,15 +41,34 @@ interface EditUserFormProps {
   user: EditUserFormUser;
 }
 
-const roleLabels: Record<EditUserFormUser["role"], string> = {
-  SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
-  USER: "User",
-};
-
 export function EditUserForm({ user }: EditUserFormProps) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          username: z.string().min(3, t("usernameMin")),
+          email: z.string().email(t("emailInvalid")).optional().or(z.literal("")),
+          first_name: z.string().optional(),
+          last_name: z.string().optional(),
+          role: z.enum(["SUPER_ADMIN", "ADMIN", "USER"]),
+          is_active: z.boolean(),
+          password: z.string().min(6, t("passwordMin")).optional().or(z.literal("")),
+          confirmPassword: z.string().optional(),
+        })
+        .refine(
+          (data) => {
+            if (data.password && data.password.length > 0) return data.password === data.confirmPassword;
+            return true;
+          },
+          { message: t("passwordMismatch"), path: ["confirmPassword"] },
+        ),
+    [t],
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -97,18 +108,18 @@ export function EditUserForm({ user }: EditUserFormProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Xatolik yuz berdi");
+        throw new Error(data.error || t("genericError"));
       }
 
-      toast.success("Muvaffaqiyatli", {
-        description: "Foydalanuvchi yangilandi",
+      toast.success(tCommon("success"), {
+        description: t("updateSuccess"),
       });
 
       router.push("/dashboard/users");
       router.refresh();
     } catch (error) {
-      toast.error("Xatolik", {
-        description: error instanceof Error ? error.message : "Foydalanuvchini yangilashda xatolik",
+      toast.error(tCommon("error"), {
+        description: error instanceof Error ? error.message : t("updateError"),
       });
     } finally {
       setIsLoading(false);
@@ -124,7 +135,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username *</FormLabel>
+                <FormLabel>{t("username")}</FormLabel>
                 <FormControl>
                   <Input placeholder="username" {...field} className="flex h-11 items-center" />
                 </FormControl>
@@ -138,7 +149,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t("email")}</FormLabel>
                 <FormControl>
                   <Input type="email" className="flex h-11 items-center" placeholder="email@example.com" {...field} />
                 </FormControl>
@@ -152,9 +163,9 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="first_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Ism</FormLabel>
+                <FormLabel>{t("firstName")}</FormLabel>
                 <FormControl>
-                  <Input className="flex h-11 items-center" placeholder="Ism" {...field} />
+                  <Input className="flex h-11 items-center" placeholder={t("firstName")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -166,9 +177,9 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="last_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Familiya</FormLabel>
+                <FormLabel>{t("lastName")}</FormLabel>
                 <FormControl>
-                  <Input className="flex h-11 items-center" placeholder="Familiya" {...field} />
+                  <Input className="flex h-11 items-center" placeholder={t("lastName")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -180,26 +191,26 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="role"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Rol *</FormLabel>
+                <FormLabel>{t("role")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger className="!h-11 px-4">
-                      <SelectValue placeholder="Rolni tanlang" />
+                      <SelectValue placeholder={t("selectRole")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem className="h-10 px-4" value="USER">
-                      {roleLabels.USER}
+                      {t("roleUser")}
                     </SelectItem>
                     <SelectItem className="h-10 px-4" value="ADMIN">
-                      {roleLabels.ADMIN}
+                      {t("roleAdmin")}
                     </SelectItem>
                     <SelectItem className="h-10 px-4" value="SUPER_ADMIN">
-                      {roleLabels.SUPER_ADMIN}
+                      {t("roleSuperAdmin")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <FormDescription>Foydalanuvchi rolini yangilang</FormDescription>
+                <FormDescription>{t("roleHintEdit")}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -211,8 +222,8 @@ export function EditUserForm({ user }: EditUserFormProps) {
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base">Faol</FormLabel>
-                  <FormDescription>Foydalanuvchi tizimga kirishi mumkin</FormDescription>
+                  <FormLabel className="text-base">{t("active")}</FormLabel>
+                  <FormDescription>{t("activeHint")}</FormDescription>
                 </div>
                 <FormControl>
                   <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -226,12 +237,12 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Yangi parol</FormLabel>
+                <FormLabel>{t("newPassword")}</FormLabel>
                 <FormControl>
                   <Input
                     className="flex h-11 items-center"
                     type="password"
-                    placeholder="O'zgartirmasangiz bo'sh qoldiring"
+                    placeholder={t("newPasswordPlaceholder")}
                     {...field}
                   />
                 </FormControl>
@@ -245,7 +256,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Yangi parolni tasdiqlash</FormLabel>
+                <FormLabel>{t("newPasswordConfirm")}</FormLabel>
                 <FormControl>
                   <Input className="flex h-11 items-center" type="password" placeholder="******" {...field} />
                 </FormControl>
@@ -263,11 +274,11 @@ export function EditUserForm({ user }: EditUserFormProps) {
             onClick={() => router.push("/dashboard/users")}
             disabled={isLoading}
           >
-            Bekor qilish
+            {tCommon("cancel")}
           </Button>
           <Button className="h-11 px-4" type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Saqlash
+            {tCommon("save")}
           </Button>
         </div>
       </form>

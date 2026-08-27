@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getTranslations } from "next-intl/server";
 import { AuditLogsTable } from "./_components/audit-logs-table";
 import { AuditLog, Prisma } from "@prisma/client";
 import { AuditLogTableProps } from "@/types/types";
@@ -12,6 +13,7 @@ export default async function AuditLogsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const t = await getTranslations("audit");
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || 50;
@@ -113,7 +115,7 @@ export default async function AuditLogsPage({
       } catch (e) {
         // Ignore parse errors
         console.error(e);
-        toast("Xatolik yuz berdi", { description: String(e) });
+        toast(t("errorOccurred"), { description: String(e) });
       }
     }
   });
@@ -152,7 +154,7 @@ export default async function AuditLogsPage({
             return debtorMap.get(value.debtor_id as number) || null;
           }
         } catch (e) {
-          toast("Xatolik yuz berdi", { description: String(e) });
+          toast(t("errorOccurred"), { description: String(e) });
           return null;
         }
       }
@@ -163,8 +165,8 @@ export default async function AuditLogsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Audit Log</h1>
-        <p className="text-muted-foreground">Barcha harakatlar tarixi</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <AuditLogsTable

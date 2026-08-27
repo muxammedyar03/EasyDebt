@@ -1,11 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,28 +23,43 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-const formSchema = z
-  .object({
-    username: z.string().min(3, "Username kamida 3 ta belgidan iborat bo'lishi kerak"),
-    email: z.string().email("To'g'ri email kiriting").optional().or(z.literal("")),
-    password: z.string().min(6, "Parol kamida 6 ta belgidan iborat bo'lishi kerak"),
-    confirmPassword: z.string(),
-    role: z.enum(["SUPER_ADMIN", "ADMIN", "USER"]),
-    first_name: z.string().optional(),
-    last_name: z.string().optional(),
-    is_active: z.boolean().default(true),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Parollar mos kelmayapti",
-    path: ["confirmPassword"],
-  });
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = {
+  username: string;
+  email?: string;
+  password: string;
+  confirmPassword: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "USER";
+  first_name?: string;
+  last_name?: string;
+  is_active: boolean;
+};
 
 export function CreateUserForm() {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          username: z.string().min(3, t("usernameMin")),
+          email: z.string().email(t("emailInvalid")).optional().or(z.literal("")),
+          password: z.string().min(6, t("passwordMin")),
+          confirmPassword: z.string(),
+          role: z.enum(["SUPER_ADMIN", "ADMIN", "USER"]),
+          first_name: z.string().optional(),
+          last_name: z.string().optional(),
+          is_active: z.boolean().default(true),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: t("passwordMismatch"),
+          path: ["confirmPassword"],
+        }),
+    [t],
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,19 +95,19 @@ export function CreateUserForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Xatolik yuz berdi");
+        throw new Error(data.error || t("genericError"));
       }
 
-      toast.success("Muvaffaqiyatli", {
-        description: "Foydalanuvchi yaratildi",
+      toast.success(tCommon("success"), {
+        description: t("createSuccess"),
       });
 
       form.reset();
       setOpen(false);
       router.refresh();
     } catch (error) {
-      toast.error("Xatolik", {
-        description: error instanceof Error ? error.message : "Foydalanuvchi yaratishda xatolik",
+      toast.error(tCommon("error"), {
+        description: error instanceof Error ? error.message : t("createError"),
       });
     } finally {
       setIsLoading(false);
@@ -102,15 +119,13 @@ export function CreateUserForm() {
       <DialogTrigger asChild>
         <Button className="h-11">
           <Plus className="mr-2 h-4 w-4" />
-          Yangi foydalanuvchi
+          {t("createButton")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Yangi foydalanuvchi qo&apos;shish</DialogTitle>
-          <DialogDescription>
-            Tizimga yangi foydalanuvchi qo&apos;shish uchun quyidagi ma&apos;limotlarni to&apos;ldiring.
-          </DialogDescription>
+          <DialogTitle>{t("createTitle")}</DialogTitle>
+          <DialogDescription>{t("createDescription")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -121,7 +136,7 @@ export function CreateUserForm() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username *</FormLabel>
+                    <FormLabel>{t("username")}</FormLabel>
                     <FormControl>
                       <Input placeholder="username" {...field} />
                     </FormControl>
@@ -135,7 +150,7 @@ export function CreateUserForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("email")}</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="email@example.com" {...field} />
                     </FormControl>
@@ -149,9 +164,9 @@ export function CreateUserForm() {
                 name="first_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ism</FormLabel>
+                    <FormLabel>{t("firstName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ism" {...field} />
+                      <Input placeholder={t("firstName")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,9 +178,9 @@ export function CreateUserForm() {
                 name="last_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Familiya</FormLabel>
+                    <FormLabel>{t("lastName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Familiya" {...field} />
+                      <Input placeholder={t("lastName")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -177,7 +192,7 @@ export function CreateUserForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parol *</FormLabel>
+                    <FormLabel>{t("password")}</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="******" {...field} />
                     </FormControl>
@@ -191,7 +206,7 @@ export function CreateUserForm() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Parolni tasdiqlash *</FormLabel>
+                    <FormLabel>{t("confirmPassword")}</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="******" {...field} />
                     </FormControl>
@@ -205,20 +220,20 @@ export function CreateUserForm() {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rol *</FormLabel>
+                    <FormLabel>{t("role")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Rolni tanlang" />
+                          <SelectValue placeholder={t("selectRole")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="USER">User</SelectItem>
-                        <SelectItem value="ADMIN">Admin</SelectItem>
-                        <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                        <SelectItem value="USER">{t("roleUser")}</SelectItem>
+                        <SelectItem value="ADMIN">{t("roleAdmin")}</SelectItem>
+                        <SelectItem value="SUPER_ADMIN">{t("roleSuperAdmin")}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>Foydalanuvchi rolini tanlang</FormDescription>
+                    <FormDescription>{t("roleHint")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -227,11 +242,11 @@ export function CreateUserForm() {
 
             <div className="flex justify-end space-x-4">
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
-                Bekor qilish
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Foydalanuvchi yaratish
+                {t("createSubmit")}
               </Button>
             </div>
           </form>

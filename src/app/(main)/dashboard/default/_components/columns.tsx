@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { ColumnDef, Row } from "@tanstack/react-table";
+import { Column, ColumnDef, Row } from "@tanstack/react-table";
 import { Bell, Clock, EllipsisVertical, Minus, Plus } from "lucide-react";
 import { formatDistanceToNow, isPast, differenceInHours, differenceInMinutes } from "date-fns";
-import { uz } from "date-fns/locale";
+import { ru, uz } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,19 @@ interface ColumnsContext {
   debtLimit?: number;
 }
 
+function TranslatedColumnHeader({
+  column,
+  titleKey,
+  className,
+}: {
+  column: Column<DebtorView, unknown>;
+  titleKey: string;
+  className?: string;
+}) {
+  const t = useTranslations("dashboard");
+  return <DataTableColumnHeader className={className} column={column} title={t(titleKey)} />;
+}
+
 const FirstNameCell = ({ row }: { row: Row<DebtorView> }) => {
   const router = useRouter();
   return (
@@ -53,8 +67,8 @@ const FirstNameCell = ({ row }: { row: Row<DebtorView> }) => {
   );
 };
 
-// Cell component for action buttons
 const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: ColumnsContext }) => {
+  const t = useTranslations("dashboard");
   const [debtDialogOpen, setDebtDialogOpen] = React.useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
   const [printConfirmOpen, setPrintConfirmOpen] = React.useState(false);
@@ -106,10 +120,10 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onMouseUpCapture={(e) => e.stopPropagation()}
       >
         <Button variant="outline" size="lg" onClick={() => setDebtDialogOpen(true)}>
-          <Plus className="h-4 w-4" /> Qarz
+          <Plus className="h-4 w-4" /> {t("debt")}
         </Button>
         <Button variant="outline" size="lg" onClick={() => setPaymentDialogOpen(true)}>
-          <Minus className="h-4 w-4" /> To&apos;lov
+          <Minus className="h-4 w-4" /> {t("payment")}
         </Button>
       </div>
 
@@ -141,11 +155,12 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
   );
 };
 
-// Cell component for reminder indicator
 const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
+  const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "ru" ? ru : uz;
   const reminder = row.original.nextReminder;
-
-  // Track current time for real-time updates
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
   React.useEffect(() => {
@@ -153,9 +168,7 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
 
     const reminderDate = new Date(reminder.reminderAt);
     const hoursUntilReminder = differenceInHours(reminderDate, currentTime);
-
-    // Update more frequently if reminder is within 24 hours
-    const intervalMs = hoursUntilReminder <= 24 ? 30000 : 60000; // 30s if urgent, 1min otherwise
+    const intervalMs = hoursUntilReminder <= 24 ? 30000 : 60000;
 
     const interval = setInterval(() => {
       setCurrentTime(new Date());
@@ -172,35 +185,30 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
   const isOverdue = isPast(reminderDate);
   const isNotified = reminder.status === "NOTIFIED";
 
-  // Calculate time display using current time
   let timeText: string;
   let urgencyClass: string;
 
   if (isNotified) {
-    timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
+    timeText = t("ago", { time: formatDistanceToNow(reminderDate, { locale: dateLocale }) });
     urgencyClass = "bg-purple-600/15 text-purple-700 dark:text-purple-500";
   } else if (isOverdue) {
-    timeText = `${formatDistanceToNow(reminderDate, { locale: uz })} o'tdi`;
+    timeText = t("ago", { time: formatDistanceToNow(reminderDate, { locale: dateLocale }) });
     urgencyClass = "bg-red-600/15 text-red-700 dark:text-red-500";
   } else {
-    // Calculate total minutes left for accurate display
     const totalMinutesLeft = differenceInMinutes(reminderDate, currentTime);
     const hoursLeft = Math.floor(totalMinutesLeft / 60);
     const daysLeft = Math.floor(hoursLeft / 24);
 
     if (totalMinutesLeft < 60) {
-      // Less than 1 hour - show minutes
-      timeText = `${totalMinutesLeft} daqiqa`;
+      timeText = `${totalMinutesLeft} ${tCommon("minutes")}`;
       urgencyClass = "bg-orange-600/15 text-orange-700 dark:text-orange-500";
     } else if (hoursLeft < 24) {
-      // Less than 24 hours - show hours (round up if there are extra minutes)
       const displayHours = totalMinutesLeft % 60 > 0 ? hoursLeft + 1 : hoursLeft;
-      timeText = `${displayHours} soat`;
+      timeText = `${displayHours} ${tCommon("hours")}`;
       urgencyClass = "bg-yellow-600/15 text-yellow-700 dark:text-yellow-500";
     } else {
-      // 24 hours or more - show days (round up if there are extra hours)
       const displayDays = hoursLeft % 24 > 0 ? daysLeft + 1 : daysLeft;
-      timeText = `${displayDays} kun`;
+      timeText = `${displayDays} ${tCommon("days")}`;
       urgencyClass = "bg-blue-600/15 text-blue-700 dark:text-blue-500";
     }
   }
@@ -216,7 +224,7 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
         </TooltipTrigger>
         <TooltipContent className="bg-white">
           <div className="text-xs">
-            <p className="font-medium text-black">{isNotified ? "Eslatma yuborilgan" : "Eslatma vaqti"}</p>
+            <p className="font-medium text-black">{isNotified ? t("reminderSent") : t("reminderTime")}</p>
             <p className="text-muted-foreground">{formatDateUz(reminderDate, true)}</p>
             {reminder.note && <p className="text-muted-foreground mt-1">{reminder.note}</p>}
           </div>
@@ -226,8 +234,57 @@ const ReminderIndicatorCell = ({ row }: { row: Row<DebtorView> }) => {
   );
 };
 
-// Cell component for dropdown actions
+const StatusCell = ({ row, context }: { row: Row<DebtorView>; context?: ColumnsContext }) => {
+  const t = useTranslations("dashboard");
+  const debtLimit = context?.debtLimit || 2000000;
+  const totalDebt = row.original.totalDebt;
+
+  let variant: "default" | "destructive" | "secondary" = "secondary";
+  let label = t("statusDebtor");
+  const redColor = "font-medium bg-red-600/15 text-red-700 dark:text-red-500";
+  const greenColor = "font-medium bg-green-600/20 text-green-700 dark:text-green-500";
+  const defaultColor = "font-semibold bg-gray-600/15 text-gray-700 dark:text-gray-300 ";
+  let color = "";
+
+  if (totalDebt <= 0) {
+    variant = "default";
+    label = t("statusPaid");
+    color = greenColor;
+  } else if (totalDebt > debtLimit) {
+    variant = "default";
+    label = t("statusOverLimit");
+    color = redColor;
+  } else {
+    variant = "default";
+    label = t("statusDebtor");
+    color = defaultColor;
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Badge
+        variant={"default"}
+        className={`h-5 w-5 rounded-full ${row.original.isOverdue ? "bg-red-500" : "bg-green-500"}`}
+      ></Badge>
+      <Badge variant={variant} className={`h-7 rounded-xl px-2 font-medium ${color}`}>
+        {label}
+      </Badge>
+    </div>
+  );
+};
+
+const DebtAmountCell = ({ row }: { row: Row<DebtorView> }) => {
+  const t = useTranslations("common");
+  return (
+    <div className="text-base font-semibold">
+      {row.original.totalDebt.toLocaleString()} {t("som")}
+    </div>
+  );
+};
+
 const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?: ColumnsContext }) => {
+  const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -242,7 +299,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
     phoneDisplay: row.original.phoneNumber,
     address: row.original.address,
     totalDebt: row.original.totalDebt,
-    totalDebtFormatted: `${row.original.totalDebt.toLocaleString()} so'm`,
+    totalDebtFormatted: `${row.original.totalDebt.toLocaleString()} ${tCommon("som")}`,
     isOverdue: row.original.riskStatus === "low",
     lastPaymentDate: null,
     lastPaymentDateFormatted: null,
@@ -269,8 +326,9 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
   };
 
   const handleDelete = async () => {
-    if (!confirm(`${row.original.firstName} ${row.original.lastName} ni o'chirishni xohlaysizmi?`)) {
-      return toast.error("Qarzdorni o'chirishni bekor qilindi");
+    const name = `${row.original.firstName} ${row.original.lastName}`;
+    if (!confirm(t("confirmDelete", { name }))) {
+      return toast.error(t("deleteCancelled"));
     }
 
     setIsDeleting(true);
@@ -281,17 +339,17 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Qarzdorni o&apos;chirishda xatolik yuz berdi");
+        throw new Error(errorData.error || t("deleteError"));
       }
 
-      toast.success("Qarzdor muvaffaqiyatli o&apos;chirildi");
+      toast.success(t("deleteSuccess"));
 
       if (context?.onDataChange) {
         context.onDataChange();
       }
     } catch (error) {
       console.error("Error deleting debtor:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzdorni o'chirishda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setIsDeleting(false);
     }
@@ -309,7 +367,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
             onClick={(e) => e.stopPropagation()}
           >
             <EllipsisVertical />
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">{tCommon("openMenu")}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
@@ -320,7 +378,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
               setEditDialogOpen(true);
             }}
           >
-            O&apos;zgartirish
+            {tCommon("edit")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={async (e) => {
@@ -331,7 +389,7 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
             className="text-destructive"
             disabled={isDeleting}
           >
-            {isDeleting ? "O'chirilmoqda..." : "O'chirish"}
+            {isDeleting ? tCommon("deleting") : tCommon("delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -349,21 +407,21 @@ const DropdownActionsCell = ({ row, context }: { row: Row<DebtorView>; context?:
 export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<DebtorView>[] => [
   {
     id: "index",
-    header: ({ column }) => <DataTableColumnHeader className="w-5" column={column} title="№" />,
+    header: ({ column }) => <TranslatedColumnHeader className="w-5" column={column} titleKey="index" />,
     cell: ({ row }) => <div>{row.index + 1}</div>,
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: "firstName",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Qarzdor" />,
+    header: ({ column }) => <TranslatedColumnHeader column={column} titleKey="debtor" />,
     cell: ({ row }) => <FirstNameCell row={row} />,
     enableSorting: true,
     enableHiding: false,
   },
   {
     accessorKey: "phoneNumber",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Telefon" />,
+    header: ({ column }) => <TranslatedColumnHeader column={column} titleKey="phone" />,
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="text-muted-foreground px-1.5">
@@ -376,7 +434,7 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   },
   {
     accessorKey: "address",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Manzil" />,
+    header: ({ column }) => <TranslatedColumnHeader column={column} titleKey="address" />,
     cell: ({ row }) => (
       <Badge variant="outline" className="text-muted-foreground px-1.5">
         {row.original.address || "—"}
@@ -388,60 +446,22 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   {
     accessorKey: "totalDebt",
     header: ({ column }) => (
-      <DataTableColumnHeader className="w-full text-right" column={column} title="Qarz miqdori" />
+      <TranslatedColumnHeader className="w-full text-right" column={column} titleKey="debtAmount" />
     ),
-    cell: ({ row }) => (
-      <div className="text-base font-semibold">{row.original.totalDebt.toLocaleString()} so&apos;m</div>
-    ),
+    cell: ({ row }) => <DebtAmountCell row={row} />,
     enableSorting: true,
     enableHiding: false,
   },
   {
     accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => {
-      const debtLimit = context?.debtLimit || 2000000;
-      const totalDebt = row.original.totalDebt;
-
-      let variant: "default" | "destructive" | "secondary" = "secondary";
-      let label = "Qarzdor";
-      const redColor = "font-medium bg-red-600/15 text-red-700 dark:text-red-500";
-      const greenColor = "font-medium bg-green-600/20 text-green-700 dark:text-green-500";
-      const defaultColor = "font-semibold bg-gray-600/15 text-gray-700 dark:text-gray-300 ";
-      let color = "";
-
-      if (totalDebt <= 0) {
-        variant = "default";
-        label = "To'langan";
-        color = greenColor;
-      } else if (totalDebt > debtLimit) {
-        variant = "default";
-        label = "Limitdan oshgan";
-        color = redColor;
-      } else {
-        variant = "default";
-        label = "Qarzdor";
-        color = defaultColor;
-      }
-
-      return (
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={"default"}
-            className={`h-5 w-5 rounded-full ${row.original.isOverdue ? "bg-red-500" : "bg-green-500"}`}
-          ></Badge>
-          <Badge variant={variant} className={`h-7 rounded-xl px-2 font-medium ${color}`}>
-            {label}
-          </Badge>
-        </div>
-      );
-    },
+    header: ({ column }) => <TranslatedColumnHeader column={column} titleKey="status" />,
+    cell: ({ row }) => <StatusCell row={row} context={context} />,
     enableSorting: false,
     enableHiding: false,
   },
   {
     id: "actions-buttons",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Amallar" />,
+    header: ({ column }) => <TranslatedColumnHeader column={column} titleKey="actions" />,
     cell: ({ row }) => <ActionButtonsCell row={row} context={context} />,
     enableHiding: false,
   },
@@ -453,5 +473,4 @@ export const createDashboardColumns = (context?: ColumnsContext): ColumnDef<Debt
   },
 ];
 
-// Backward compatibility
 export const dashboardColumns = createDashboardColumns();

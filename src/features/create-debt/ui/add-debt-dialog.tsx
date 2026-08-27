@@ -29,6 +29,7 @@ import { addDebtSchema, type AddDebtFormData } from "@/lib/validation";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateHeaderNotifications } from "@/features/notifications";
 import { createDebt } from "../api";
+import { useTranslations } from "next-intl";
 
 const formatNumber = (value: string) => {
   const numbers = value.replace(/\D/g, "");
@@ -50,6 +51,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
   const [amount, setAmount] = React.useState("");
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const refreshAfterCloseRef = React.useRef(false);
+  const translate = useTranslations();
 
   const {
     register,
@@ -80,7 +82,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
 
       await invalidateHeaderNotifications(queryClient);
 
-      toast.success("Qarz muvaffaqiyatli qo'shildi");
+      toast.success(translate("debtAddedSuccess"));
       reset();
       setAmount("");
       setSelectedDate(undefined);
@@ -96,7 +98,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       });
     } catch (error) {
       console.error("Error adding debt:", error);
-      toast.error(getErrorMessage(error, "Qarz qo'shishda xatolik yuz berdi"));
+      toast.error(getErrorMessage(error, translate("debtAddError")));
     } finally {
       setIsLoading(false);
     }
@@ -106,8 +108,8 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>Qarz qo&apos;shish</DialogTitle>
-          <DialogDescription>{debtorName} uchun yangi qarz qo&apos;shish</DialogDescription>
+          <DialogTitle>{translate("debt.addTitle")}</DialogTitle>
+          <DialogDescription>{translate("debt.addDescription", { name: debtorName })}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -118,7 +120,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                Qarz miqdori <span className="text-destructive">*</span>
+                {translate("debt.amount")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -132,10 +134,10 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
               {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Tavsif</Label>
+              <Label htmlFor="description">{translate("debt.description")}</Label>
               <Textarea
                 id="description"
-                placeholder="Qarz haqida ma'lumot"
+                placeholder={translate("debt.descriptionPlaceholder")}
                 {...register("description")}
                 disabled={isLoading}
                 rows={3}
@@ -143,7 +145,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
             </div>
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>{translate("debt.date")} (Dev Mode)</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -153,24 +155,24 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
                       disabled={isLoading}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : translate("debt.pickDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">Bo&apos;sh qoldirilsa, hozirgi sana ishlatiladi.</p>
+                <p className="text-muted-foreground text-xs">{translate("debt.dateEmptyWarning")}</p>
               </div>
             )}
           </div>
           <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {translate("debt.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo&apos;shish
+              {translate("debt.add")}
             </Button>
           </DialogFooter>
         </form>

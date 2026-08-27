@@ -29,12 +29,18 @@ import { APP_CONFIG } from "@/config/app-config";
 import type { CompanyDomain } from "@/types/domain/company.domain";
 import { CompanyHistoryTables } from "./company-history-tables";
 import { CompanyTimeline } from "./company-timeline";
+import { useLocale, useTranslations } from "next-intl";
 
 type Props = {
   company: CompanyDomain;
 };
 
 export function CompanyDetailClient({ company: initialCompany }: Props) {
+  const tDebtor = useTranslations("debtor");
+  const tMyDebts = useTranslations("myDebts");
+  const tExport = useTranslations("dataExport");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: company, isLoading, refetch } = useCompanyDetail(initialCompany.id, true, initialCompany);
@@ -88,34 +94,68 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
         appName: APP_CONFIG.name,
         company: current,
         totals: summary,
-        timeline: timeline.map((t) => ({
-          type: t.type,
-          amount: t.amount,
-          createdAt: t.createdAt,
-          note: t.note,
-          subtitle: t.subtitle,
-          attachmentName: "attachmentName" in t ? t.attachmentName : null,
+        timeline: timeline.map((item) => ({
+          type: item.type,
+          amount: item.amount,
+          createdAt: item.createdAt,
+          note: item.note,
+          subtitle: item.subtitle,
+          attachmentName: "attachmentName" in item ? item.attachmentName : null,
         })),
+        locale,
+        labels: {
+          title: tExport("pdfTitle"),
+          company: tExport("pdfCompany"),
+          contact: tExport("pdfContact"),
+          phone: tExport("pdfPhone"),
+          address: tExport("pdfAddress"),
+          created: tExport("pdfCreated"),
+          summary: tExport("pdfSummary"),
+          totalDebt: tExport("pdfTotalDebt"),
+          totalPaid: tExport("pdfTotalPaid"),
+          remaining: tExport("pdfRemaining"),
+          timeline: tExport("pdfTimeline"),
+          debt: tExport("pdfDebt"),
+          payment: tExport("pdfPayment"),
+          file: tExport("pdfFile"),
+          generated: tExport("pdfGenerated"),
+          currency: tCommon("som"),
+        },
       });
-      toast.success("PDF yuklandi");
+      toast.success(tDebtor("pdfSuccess"));
     } catch (error) {
-      toast.error(getErrorMessage(error, "PDF export xatosi"));
+      toast.error(getErrorMessage(error, tDebtor("pdfError")));
     }
   };
 
+  const companyExcelHeaders = [
+    tExport("companyHeaderId"),
+    tExport("companyHeaderName"),
+    tExport("companyHeaderContact"),
+    tExport("companyHeaderPhone"),
+    tExport("companyHeaderAddress"),
+    tExport("companyHeaderTotalDebt"),
+    tExport("companyHeaderTotalPayments"),
+    tExport("companyHeaderStatus"),
+  ];
+
   const handleExcel = async () => {
     try {
-      await exportCompaniesListToExcel({ search: current.name, status: "all" });
-      toast.success("Excel yuklandi");
+      const { rowCount } = await exportCompaniesListToExcel({
+        search: current.name,
+        status: "all",
+        headers: companyExcelHeaders,
+      });
+      toast.success(tMyDebts("exportSuccess", { count: rowCount }));
     } catch (error) {
-      toast.error(getErrorMessage(error, "Excel export xatosi"));
+      toast.error(getErrorMessage(error, tMyDebts("exportError")));
     }
   };
 
   const handleDownloadReceipts = async () => {
     const paymentsWithReceipt = (current.payments ?? []).filter((p) => p.receiptPath);
     if (paymentsWithReceipt.length === 0) {
-      toast.error("Yuklangan chek topilmadi");
+      toast.error(tMyDebts("noReceipts"));
       return;
     }
     try {
@@ -133,26 +173,26 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
         document.body.removeChild(link);
         await new Promise((r) => setTimeout(r, 250));
       }
-      toast.success(`${paymentsWithReceipt.length} ta chek yuklandi`);
+      toast.success(tMyDebts("receiptsDownloaded", { count: paymentsWithReceipt.length }));
     } catch (error) {
-      toast.error(getErrorMessage(error, "Cheklarni yuklashda xatolik"));
+      toast.error(getErrorMessage(error, tMyDebts("receiptsError")));
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`"${current.name}" o'chirilsinmi?`)) return;
+    if (!confirm(tMyDebts("confirmDeleteCompany", { name: current.name }))) return;
     try {
       await deleteCompany(current.id);
-      toast.success("Kompaniya o'chirildi");
+      toast.success(tMyDebts("deleteSuccess"));
       router.push("/dashboard/my-debts");
       router.refresh();
     } catch (error) {
-      toast.error(getErrorMessage(error, "O'chirishda xatolik"));
+      toast.error(getErrorMessage(error, tMyDebts("deleteError")));
     }
   };
 
   if (isLoading && !company) {
-    return <div className="text-muted-foreground p-4">Yuklanmoqda...</div>;
+    return <div className="text-muted-foreground p-4">{tCommon("loading")}</div>;
   }
 
   return (
@@ -167,10 +207,10 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold">{current.name}</h1>
-              {current.isOverdue && <Badge variant="destructive">Muddati o&apos;tgan</Badge>}
+              {current.isOverdue && <Badge variant="destructive">{tMyDebts("statusOverdue")}</Badge>}
             </div>
             <p className="text-muted-foreground text-sm">
-              {current.phoneNumber ? formatUzPhone(current.phoneNumber) : "Telefon yo'q"}
+              {current.phoneNumber ? formatUzPhone(current.phoneNumber) : tMyDebts("noPhone")}
               {current.contactPerson ? ` · ${current.contactPerson}` : ""}
             </p>
           </div>
@@ -179,48 +219,48 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setDebtOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Qarz
+            {tMyDebts("debtShort")}
           </Button>
           <Button variant="outline" onClick={() => setPayOpen(true)}>
             <Minus className="mr-2 h-4 w-4" />
-            To&apos;lov
+            {tMyDebts("paymentShort")}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
                 <Download className="mr-2 h-4 w-4" />
-                Export
+                {tDebtor("export")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => void handlePdf()}>PDF</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void handlePdf()}>{tDebtor("pdfShort")}</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void handleExcel()}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Excel
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void handleDownloadReceipts()}>
                 <Download className="mr-2 h-4 w-4" />
-                Cheklarni yuklab olish
+                {tMyDebts("downloadReceipts")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Ko'proq amallar">
+              <Button variant="outline" size="icon" aria-label={tMyDebts("moreActions")}>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setEditOpen(true)}>
                 <Pencil className="mr-2 h-4 w-4" />
-                Tahrirlash
+                {tCommon("edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onSelect={() => void handleDelete()}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                O&apos;chirish
+                {tCommon("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -229,20 +269,22 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
-          <p className="text-muted-foreground text-xs">Manzil</p>
+          <p className="text-muted-foreground text-xs">{tMyDebts("address")}</p>
           <p className="mt-1 text-sm font-medium">{current.address || "—"}</p>
-          <p className="text-muted-foreground mt-2 text-xs">Qo&apos;shilgan: {formatDateUz(current.createdAt)}</p>
+          <p className="text-muted-foreground mt-2 text-xs">
+            {tMyDebts("addedAt", { date: formatDateUz(current.createdAt) })}
+          </p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-muted-foreground text-xs">Umumiy qarz</p>
+          <p className="text-muted-foreground text-xs">{tMyDebts("totalDebtAdded")}</p>
           <p className="mt-1 text-xl font-bold">{formatCurrencyUzs(summary.totalDebtAdded)}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-muted-foreground text-xs">Umumiy to&apos;lov</p>
+          <p className="text-muted-foreground text-xs">{tMyDebts("totalPaid")}</p>
           <p className="mt-1 text-xl font-bold text-emerald-600">{formatCurrencyUzs(summary.totalPaid)}</p>
         </div>
         <div className="rounded-lg border p-4">
-          <p className="text-muted-foreground text-xs">Qolgan qarz</p>
+          <p className="text-muted-foreground text-xs">{tMyDebts("remaining")}</p>
           <p className="mt-1 text-xl font-bold">{formatCurrencyUzs(summary.remaining)}</p>
         </div>
       </section>
@@ -250,18 +292,18 @@ export function CompanyDetailClient({ company: initialCompany }: Props) {
       <Tabs defaultValue="debts" className="w-full">
         <TabsList className="grid h-10 w-full grid-cols-3 md:w-1/2">
           <TabsTrigger value="debts">
-            Qarzlar
+            {tDebtor("debts")}
             <Badge variant="secondary" className="ml-1">
               {current.debts?.length ?? 0}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
-            To&apos;lovlar
+            {tDebtor("payments")}
             <Badge variant="secondary" className="ml-1">
               {current.payments?.length ?? 0}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="timeline">Vaqt chizig&apos;i</TabsTrigger>
+          <TabsTrigger value="timeline">{tDebtor("timeline")}</TabsTrigger>
         </TabsList>
         <TabsContent value="debts" className="mt-4">
           <CompanyHistoryTables kind="debts" company={current} />

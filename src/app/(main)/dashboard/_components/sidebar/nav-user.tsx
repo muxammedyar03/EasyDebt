@@ -16,11 +16,13 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/c
 import { getInitials } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
   const router = useRouter();
   const { user: userData } = useCurrentUser();
+  const t = useTranslations("common");
 
   const fullName = [userData?.first_name, userData?.last_name].filter(Boolean).join(" ") || userData?.username || "";
 
@@ -66,17 +68,17 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => router.push("/dashboard/profile/me")}>
                 <CircleUser />
-                Account
+                {t("account")}
               </DropdownMenuItem>
               <DropdownMenuItem disabled>
                 <CreditCard />
-                Billing
+                {t("billing")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <LogOut />
-              Log out
+              {t("logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

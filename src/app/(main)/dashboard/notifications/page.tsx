@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { headers as getHeaders, cookies as getCookies } from "next/headers";
 import { format } from "date-fns";
-import { uz } from "date-fns/locale";
+import { ru, uz } from "date-fns/locale";
+import { getLocale } from "next-intl/server";
 import NotificationsClient from "./_components/notifications-client";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   const q = params.q?.trim() ?? "";
   const type = params.type?.trim();
   const readParam = params.read?.trim();
+  const locale = await getLocale();
+  const dateLocale = locale === "ru" ? ru : uz;
 
   const search = new URLSearchParams();
   search.set("page", String(page));
@@ -55,7 +58,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
     return {
       ...n,
       created_at: createdAt.toISOString(),
-      created_at_text: format(createdAt, "yyyy-MM-dd HH:mm", { locale: uz }),
+      created_at_text: format(createdAt, "yyyy-MM-dd HH:mm", { locale: dateLocale }),
     };
   });
 

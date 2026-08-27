@@ -10,6 +10,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { DebtorCard } from "@/components/mobile/debtor-card";
 import { QuickAddDebt } from "@/features/create-debt/ui";
@@ -33,6 +34,9 @@ interface DebtorsTableProps {
 }
 
 export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: DebtorsTableProps) {
+  const t = useTranslations("debtorsPage");
+  const tCommon = useTranslations("common");
+  const tExport = useTranslations("dataExport");
   const router = useRouter();
   const isMobile = useIsMobile();
   const { searchParams, searchValue, setSearchValue, isSearching, handleSort, handleStatusFilter, handlePageChange } =
@@ -63,7 +67,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
   const handleBulkDelete = React.useCallback(async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`${selectedIds.length} ta qarzdorni o'chirmoqchimisiz?`)) return;
+    if (!confirm(t("confirmBulkDelete", { count: selectedIds.length }))) return;
     try {
       const ok = await bulkDeleteDebtors(selectedIds);
       if (ok) {
@@ -73,11 +77,11 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
     } catch (error) {
       console.error("Error deleting debtors:", error);
     }
-  }, [selectedIds, router]);
+  }, [selectedIds, router, t]);
 
   const handleDelete = React.useCallback(
     async (id: number) => {
-      if (!confirm("Qarzdorni o'chirmoqchimisiz?")) return;
+      if (!confirm(t("confirmDelete"))) return;
       try {
         const ok = await deleteDebtorById(id);
         if (ok) router.refresh();
@@ -85,24 +89,36 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         console.error("Error deleting debtor:", error);
       }
     },
-    [router],
+    [router, t],
   );
 
   const handleExcelExport = React.useCallback(async () => {
     try {
-      toast.loading("Excel fayl tayyorlanmoqda...");
+      toast.loading(tCommon("exportPreparing"));
       const params = new URLSearchParams(searchParams?.toString() ?? "");
       const search = params.get("search") || "";
       const status = params.get("status") || "all";
-      const { rowCount } = await exportDebtorsListToExcel({ search, status });
+      const { rowCount } = await exportDebtorsListToExcel({
+        search,
+        status,
+        headers: [
+          tExport("debtorHeaderId"),
+          tExport("debtorHeaderFirstName"),
+          tExport("debtorHeaderLastName"),
+          tExport("debtorHeaderPhone"),
+          tExport("debtorHeaderAddress"),
+          tExport("debtorHeaderTotalDebt"),
+          tExport("debtorHeaderTotalPayments"),
+        ],
+      });
       toast.dismiss();
-      toast.success(`${rowCount} ta qarzdor Excel fayliga yuklandi`);
+      toast.success(t("exportSuccess", { count: rowCount }));
     } catch (error) {
       console.error("Export error:", error);
       toast.dismiss();
-      toast.error("Excel fayliga yuklashda xatolik yuz berdi");
+      toast.error(tCommon("exportError"));
     }
-  }, [searchParams]);
+  }, [searchParams, t, tCommon, tExport]);
 
   const handleAddDebt = React.useCallback(
     (debtorId: number) => {
@@ -169,7 +185,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
 
         <div className="grid gap-4 md:hidden">
           {debtors.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+            <div className="text-muted-foreground py-8 text-center">{tCommon("noData")}</div>
           ) : (
             debtors.map((debtor) => (
               <DebtorCard

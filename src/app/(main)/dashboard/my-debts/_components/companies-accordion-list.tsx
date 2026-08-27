@@ -14,12 +14,14 @@ import { COMPANY_QUERY_KEY } from "@/features/view-company";
 import { cn } from "@/lib/utils";
 import type { CompanyView } from "@/types/view/company.view";
 import { CompanyAccordionDetail } from "./company-accordion-detail";
+import { useTranslations } from "next-intl";
 
 type CompaniesAccordionListProps = {
   companies: CompanyView[];
 };
 
 export function CompaniesAccordionList({ companies }: CompaniesAccordionListProps) {
+  const t = useTranslations("myDebts");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [openId, setOpenId] = React.useState<number | null>(null);
@@ -36,7 +38,7 @@ export function CompaniesAccordionList({ companies }: CompaniesAccordionListProp
   if (companies.length === 0) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-10 text-center text-sm">
-        Kompaniyalar topilmadi. Yangi kompaniya qo&apos;shing.
+        {t("emptyCompanies")}
       </div>
     );
   }

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { NotificationsHeader } from "./notifications-header";
@@ -33,6 +34,8 @@ interface Props {
 }
 
 export default function NotificationsClient({ items, total, page, pageSize, query, type, read }: Props) {
+  const t = useTranslations("notifications");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
@@ -64,7 +67,7 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
 
       <div className="divide-y rounded-md border">
         {items.length === 0 ? (
-          <div className="text-muted-foreground p-6 text-center text-sm">Bildirishnomalar topilmadi</div>
+          <div className="text-muted-foreground p-6 text-center text-sm">{t("empty")}</div>
         ) : (
           items.map((n) =>
             isMobile ? (
@@ -77,10 +80,10 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="text-muted-foreground text-sm">Jami: {total}</div>
+        <div className="text-muted-foreground text-sm">{tCommon("total", { count: total })}</div>
         <div className="flex items-center gap-2">
           <Button variant="outline" disabled={page <= 1} onClick={() => updateParams({ page: String(page - 1) })}>
-            Oldingi
+            {tCommon("previous")}
           </Button>
           <span className="text-sm">
             {page} / {totalPages}
@@ -90,7 +93,7 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
             disabled={page >= totalPages}
             onClick={() => updateParams({ page: String(page + 1) })}
           >
-            Keyingi
+            {tCommon("next")}
           </Button>
         </div>
       </div>

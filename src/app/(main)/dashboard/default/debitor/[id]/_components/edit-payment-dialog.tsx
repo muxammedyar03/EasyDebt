@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, Calendar } from "lucide-react";
 import { format } from "date-fns";
-import { uz } from "date-fns/locale";
+import { ru, uz } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { DEV_MODE } from "@/lib/dev-mode";
 
@@ -28,14 +29,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { PaymentDomain } from "@/types/domain";
 
-const editPaymentSchema = z.object({
-  amount: z.string().min(1, "To'lov miqdorini kiriting"),
-  payment_type: z.enum(["CASH", "CLICK", "CARD"]),
-  note: z.string().optional(),
-  createdAt: z.date().optional(),
-});
-
-type EditPaymentFormData = z.infer<typeof editPaymentSchema>;
+type EditPaymentFormData = {
+  amount: string;
+  payment_type: "CASH" | "CLICK" | "CARD";
+  note?: string;
+  createdAt?: Date;
+};
 
 interface EditPaymentDialogProps {
   open: boolean;
@@ -45,6 +44,22 @@ interface EditPaymentDialogProps {
 }
 
 export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: EditPaymentDialogProps) {
+  const t = useTranslations("payment");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "ru" ? ru : uz;
+
+  const editPaymentSchema = React.useMemo(
+    () =>
+      z.object({
+        amount: z.string().min(1, t("amountRequired")),
+        payment_type: z.enum(["CASH", "CLICK", "CARD"]),
+        note: z.string().optional(),
+        createdAt: z.date().optional(),
+      }),
+    [t],
+  );
+
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState(payment.amount.toLocaleString());
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date(payment.createdAt));
@@ -106,10 +121,10 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "To'lovni yangilashda xatolik yuz berdi");
+        throw new Error(errorData.error || t("editError"));
       }
 
-      toast.success("To'lov muvaffaqiyatli yangilandi");
+      toast.success(t("editSuccess"));
       onOpenChange(false);
 
       if (onSuccess) {
@@ -117,7 +132,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
       }
     } catch (error) {
       console.error("Error updating payment:", error);
-      toast.error(error instanceof Error ? error.message : "To'lovni yangilashda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : t("editError"));
     } finally {
       setIsLoading(false);
     }
@@ -127,14 +142,14 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>To&apos;lovni tahrirlash</DialogTitle>
-          <DialogDescription>To&apos;lov ma&apos;lumotlarini o&apos;zgartirish</DialogDescription>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
+          <DialogDescription>{t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                To&apos;lov miqdori <span className="text-destructive">*</span>
+                {t("amount")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -150,7 +165,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
 
             <div className="grid gap-2">
               <Label htmlFor="payment_type">
-                To&apos;lov turi <span className="text-destructive">*</span>
+                {t("type")} <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={paymentType}
@@ -158,21 +173,21 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
                 disabled={isLoading}
               >
                 <SelectTrigger id="payment_type">
-                  <SelectValue placeholder="To'lov turini tanlang" />
+                  <SelectValue placeholder={t("typePlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CASH">Naqd</SelectItem>
-                  <SelectItem value="CLICK">Click</SelectItem>
-                  <SelectItem value="CARD">Karta</SelectItem>
+                  <SelectItem value="CASH">{t("cash")}</SelectItem>
+                  <SelectItem value="CLICK">{t("click")}</SelectItem>
+                  <SelectItem value="CARD">{t("card")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="note">Izoh</Label>
+              <Label htmlFor="note">{t("note")}</Label>
               <Textarea
                 id="note"
-                placeholder="To'lov haqida ma'lumot"
+                placeholder={t("notePlaceholder")}
                 {...register("note")}
                 disabled={isLoading}
                 rows={3}
@@ -181,7 +196,7 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
 
             {DEV_MODE && (
               <div className="grid gap-2">
-                <Label>Sana (Dev Mode)</Label>
+                <Label>{t("dateDev")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -191,25 +206,25 @@ export function EditPaymentDialog({ open, onOpenChange, payment, onSuccess }: Ed
                       type="button"
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP", { locale: uz }) : "Sana tanlang"}
+                      {selectedDate ? format(selectedDate, "PPP", { locale: dateLocale }) : t("pickDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                   </PopoverContent>
                 </Popover>
-                <p className="text-muted-foreground text-xs">To&apos;lovning yaratilgan sanasini o&apos;zgartirish</p>
+                <p className="text-muted-foreground text-xs">{t("editDateHint")}</p>
               </div>
             )}
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Saqlash
+              {tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

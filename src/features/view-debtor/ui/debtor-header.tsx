@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Minus, Plus, Download, FileText, Printer, ChevronDown, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ export function ViewDebtorHeader({
   onShareProfile,
 }: ViewDebtorHeaderProps) {
   const router = useRouter();
+  const t = useTranslations("debtor");
   const { debtor } = value;
 
   return (
@@ -42,30 +44,29 @@ export function ViewDebtorHeader({
           <h1 className="text-2xl font-bold">
             {debtor.firstName} {debtor.lastName}
           </h1>
-          <p className="text-muted-foreground text-sm">{debtor.phoneNumber || "Telefon raqami yo'q"}</p>
+          <p className="text-muted-foreground text-sm">{debtor.phoneNumber || t("noPhone")}</p>
         </div>
       </div>
-      {/* Desktop buttons */}
       <div className="mt-5 hidden justify-end gap-2 md:mt-0 md:flex">
         {onShareProfile && (
           <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
             <Share2 className="h-4 w-4 text-slate-500" />
-            Profilni ulash
+            {t("shareProfile")}
           </Button>
         )}
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
-          Qarz qo&apos;shish
+          {t("addDebt")}
         </Button>
         <Button variant="outline" className="h-12" onClick={onAddPayment}>
           <Minus className="h-4 w-4" />
-          To&apos;lov qo&apos;shish
+          {t("addPayment")}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="default" className="h-12">
               <Download className="h-4 w-4" />
-              Export
+              {t("export")}
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -77,7 +78,7 @@ export function ViewDebtorHeader({
               }}
             >
               <FileText className="mr-2 h-4 w-4" />
-              PDF Export
+              {t("pdfExport")}
             </DropdownMenuItem>
             {onPrintReceipt && (
               <DropdownMenuItem
@@ -87,33 +88,32 @@ export function ViewDebtorHeader({
                 }}
               >
                 <Printer className="mr-2 h-4 w-4" />
-                Chek chiqarish
+                {t("printReceipt")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {/* Mobile buttons */}
       <div className="mt-5 grid grid-cols-2 gap-2 md:hidden">
         <Button variant="outline" className="h-12" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
-          Qarz
+          {t("debtShort")}
         </Button>
         <Button variant="outline" className="h-12" onClick={onAddPayment}>
           <Minus className="h-4 w-4" />
-          To&apos;lov
+          {t("paymentShort")}
         </Button>
         {onShareProfile && (
           <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
             <Share2 className="h-4 w-4 text-slate-500" />
-            Ulashish
+            {t("share")}
           </Button>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="default" className="h-12">
               <Download className="h-4 w-4" />
-              Export
+              {t("export")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -124,7 +124,7 @@ export function ViewDebtorHeader({
               }}
             >
               <FileText className="mr-2 h-4 w-4" />
-              PDF
+              {t("pdfShort")}
             </DropdownMenuItem>
             {onPrintReceipt && (
               <DropdownMenuItem
@@ -134,7 +134,7 @@ export function ViewDebtorHeader({
                 }}
               >
                 <Printer className="mr-2 h-4 w-4" />
-                Chek
+                {t("receiptShort")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

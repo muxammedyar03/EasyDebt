@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -15,24 +16,6 @@ import { ArrowRight } from "lucide-react";
 
 export const description = "An interactive area chart";
 
-const chartConfig = {
-  visitors: {
-    label: "To'lovlar",
-  },
-  cash: {
-    label: "Naqd",
-    color: "var(--chart-1)",
-  },
-  card: {
-    label: "Karta",
-    color: "var(--chart-2)",
-  },
-  click: {
-    label: "Click",
-    color: "var(--chart-3)",
-  },
-} satisfies ChartConfig;
-
 interface ChartAreaInteractiveProps {
   chartData: Array<{
     date: string;
@@ -43,9 +26,36 @@ interface ChartAreaInteractiveProps {
 }
 
 export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
+  const t = useTranslations("home");
+  const tPayment = useTranslations("payment");
+  const locale = useLocale();
   const isMobile = useIsMobile();
   const router = useRouter();
   const [timeRange, setTimeRange] = React.useState("90d");
+
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        visitors: {
+          label: t("payments"),
+        },
+        cash: {
+          label: tPayment("cash"),
+          color: "var(--chart-1)",
+        },
+        card: {
+          label: tPayment("card"),
+          color: "var(--chart-2)",
+        },
+        click: {
+          label: tPayment("click"),
+          color: "var(--chart-3)",
+        },
+      }) satisfies ChartConfig,
+    [t, tPayment],
+  );
+
+  const dateLocale = locale === "ru" ? "ru-RU" : "uz-UZ";
 
   React.useEffect(() => {
     if (isMobile) {
@@ -73,10 +83,10 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>To&apos;lov Usullari</CardTitle>
+        <CardTitle>{t("paymentMethods")}</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">Oxirgi 3 oylik to&apos;lovlar statistikasi</span>
-          <span className="@[540px]/card:hidden">Oxirgi 3 oy</span>
+          <span className="hidden @[540px]/card:block">{t("last3MonthsStats")}</span>
+          <span className="@[540px]/card:hidden">{t("last3MonthsShort")}</span>
         </CardDescription>
         <CardAction>
           <ToggleGroup
@@ -86,9 +96,9 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">Oxirgi 3 oy</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Oxirgi 30 kun</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Oxirgi 7 kun</ToggleGroupItem>
+            <ToggleGroupItem value="90d">{t("last3Months")}</ToggleGroupItem>
+            <ToggleGroupItem value="30d">{t("last30Days")}</ToggleGroupItem>
+            <ToggleGroupItem value="7d">{t("last7Days")}</ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
@@ -96,24 +106,24 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
               size="sm"
               aria-label="Select a value"
             >
-              <SelectValue placeholder="Oxirgi 3 oy" />
+              <SelectValue placeholder={t("last3Months")} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                Oxirgi 3 oy
+                {t("last3Months")}
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
-                Oxirgi 30 kun
+                {t("last30Days")}
               </SelectItem>
               <SelectItem value="7d" className="rounded-lg">
-                Oxirgi 7 kun
+                {t("last7Days")}
               </SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
         <CardTitle>
           <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/reports")}>
-            Barchasini ko&apos;rish <ArrowRight className="ml-2 h-4 w-4" />
+            {t("viewAll")} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardTitle>
       </CardHeader>
@@ -143,7 +153,7 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
               minTickGap={32}
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
+                return date.toLocaleDateString(dateLocale, {
                   month: "short",
                   day: "numeric",
                 });
@@ -155,7 +165,7 @@ export function ChartAreaInteractive({ chartData }: ChartAreaInteractiveProps) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                    return new Date(value).toLocaleDateString(dateLocale, {
                       month: "short",
                       day: "numeric",
                     });

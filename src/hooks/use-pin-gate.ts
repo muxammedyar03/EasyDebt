@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import type { PinGateViewProps } from "@/app/(main)/_components/pin-gate/PinGateView";
 import { isFourDigitPin, onlyDigits } from "@/lib/pin-utils";
@@ -17,6 +18,8 @@ type UsePinGateOptions = {
 };
 
 export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGateOptions) {
+  const t = useTranslations("pinGate");
+  const tCommon = useTranslations("common");
   const [hasPin, setHasPin] = useState<boolean | null>(null);
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -63,8 +66,8 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
   const handleSetPin = useCallback(async () => {
     if (!userId || loading) return;
     setMsg(null);
-    if (!isFourDigitPin(pin)) return setMsg(`Pin ${pinLength} raqam bo'lishi kerak`);
-    if (pin !== pinConfirm) return setMsg("Pin tasdiqlanmadi");
+    if (!isFourDigitPin(pin)) return setMsg(t("pinMustBeDigits", { length: pinLength }));
+    if (pin !== pinConfirm) return setMsg(t("pinMismatch"));
     setLoading(true);
     const res = await fetch(`/api/users/${userId}`, {
       method: "PATCH",
@@ -77,14 +80,14 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
       onUnlock?.();
     } else {
       clearPinOnly();
-      setMsg(data?.error || "Xato");
+      setMsg(data?.error || tCommon("error"));
     }
-  }, [userId, pin, pinConfirm, pinLength, onUnlock, loading, clearPinOnly]);
+  }, [userId, pin, pinConfirm, pinLength, onUnlock, loading, clearPinOnly, t, tCommon]);
 
   const handleVerify = useCallback(async () => {
     if (!userId || loading) return;
     setMsg(null);
-    if (!isFourDigitPin(pin)) return setMsg(`Pin ${pinLength} raqam bo'lishi kerak`);
+    if (!isFourDigitPin(pin)) return setMsg(t("pinMustBeDigits", { length: pinLength }));
     setLoading(true);
     const res = await fetch(`/api/users/${userId}`, {
       method: "PATCH",
@@ -97,15 +100,15 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
       onUnlock?.();
     } else {
       clearPinOnly();
-      setMsg(data?.error || "Pin noto'g'ri");
+      setMsg(data?.error || t("pinWrong"));
     }
-  }, [userId, pin, pinLength, onUnlock, loading, clearPinOnly]);
+  }, [userId, pin, pinLength, onUnlock, loading, clearPinOnly, t]);
 
   const handleReset = useCallback(async () => {
     if (!userId || loading) return;
     setMsg(null);
-    if (!credentials.login || !credentials.password) return setMsg("Login va parol kiriting");
-    if (!isFourDigitPin(pin)) return setMsg(`Yangi pin ${pinLength} raqam bo'lishi kerak`);
+    if (!credentials.login || !credentials.password) return setMsg(t("enterLoginPassword"));
+    if (!isFourDigitPin(pin)) return setMsg(t("newPinMustBeDigits", { length: pinLength }));
     setLoading(true);
     const res = await fetch(`/api/users/${userId}`, {
       method: "PATCH",
@@ -122,11 +125,11 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     if (res.ok && data.ok) {
       onUnlock?.();
       setResetMode(false);
-      setMsg("Yangi pin o'rnatildi");
+      setMsg(t("pinResetSuccess"));
     } else {
-      setMsg(data?.error || "Xato");
+      setMsg(data?.error || tCommon("error"));
     }
-  }, [userId, credentials, pin, pinLength, onUnlock, loading]);
+  }, [userId, credentials, pin, pinLength, onUnlock, loading, t, tCommon]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

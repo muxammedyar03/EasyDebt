@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -50,16 +51,20 @@ const roleColors = {
   USER: "bg-gray-500/20 text-gray-700 dark:text-gray-500 rounded-full",
 } as const;
 
-const roleLabels = {
-  SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
-  USER: "User",
-};
-
 export function UsersList({ users, role }: UsersListProps) {
+  const t = useTranslations("users");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "ru" ? "ru-RU" : "uz-UZ";
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  const roleLabels = {
+    SUPER_ADMIN: t("roleSuperAdmin"),
+    ADMIN: t("roleAdmin"),
+    USER: t("roleUser"),
+  };
 
   const handleToggleActive = async (userId: number, currentStatus: boolean) => {
     setIsLoading(true);
@@ -71,15 +76,15 @@ export function UsersList({ users, role }: UsersListProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Xatolik yuz berdi");
+        throw new Error(t("genericError"));
       }
 
-      toast.success(`Foydalanuvchi ${!currentStatus ? "faollashtirildi" : "o'chirildi"}`);
+      toast.success(!currentStatus ? t("activated") : t("deactivated"));
 
       router.refresh();
     } catch (error) {
-      toast.error("Xatolik", {
-        description: `${"Status o'zgartirishda xatolik: " + error}`,
+      toast.error(tCommon("error"), {
+        description: `${t("statusChangeError")}: ${error}`,
       });
     } finally {
       setIsLoading(false);
@@ -97,14 +102,14 @@ export function UsersList({ users, role }: UsersListProps) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Xatolik yuz berdi");
+        throw new Error(data.error || t("genericError"));
       }
 
-      toast.success("Rol yangilandi");
+      toast.success(t("roleUpdated"));
       router.refresh();
     } catch (error) {
-      toast.error("Xatolik", {
-        description: error instanceof Error ? error.message : "Rolni yangilashda xatolik",
+      toast.error(tCommon("error"), {
+        description: error instanceof Error ? error.message : t("roleUpdateError"),
       });
     } finally {
       setIsLoading(false);
@@ -123,17 +128,17 @@ export function UsersList({ users, role }: UsersListProps) {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || "Foydalanuvchini o'chirishda xatolik yuz berdi");
+        throw new Error(data.error || t("deleteError"));
       }
 
-      toast.success("Muvaffaqiyatli", {
-        description: "Foydalanuvchi o'chirildi",
+      toast.success(tCommon("success"), {
+        description: t("deleteSuccess"),
       });
 
       router.refresh();
     } catch (error) {
-      toast.error("Xatolik", {
-        description: error instanceof Error ? error.message : "Foydalanuvchini o'chirishda xatolik yuz berdi",
+      toast.error(tCommon("error"), {
+        description: error instanceof Error ? error.message : t("deleteError"),
       });
     } finally {
       setIsLoading(false);
@@ -142,7 +147,7 @@ export function UsersList({ users, role }: UsersListProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("uz-UZ", {
+    return new Date(dateString).toLocaleDateString(dateLocale, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -155,19 +160,19 @@ export function UsersList({ users, role }: UsersListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Foydalanuvchi</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Rol</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Yaratilgan</TableHead>
-              <TableHead className="text-right">Amallar</TableHead>
+              <TableHead>{t("columnUser")}</TableHead>
+              <TableHead>{t("columnEmail")}</TableHead>
+              <TableHead>{t("columnRole")}</TableHead>
+              <TableHead>{t("columnStatus")}</TableHead>
+              <TableHead>{t("columnCreated")}</TableHead>
+              <TableHead className="text-right">{tCommon("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-muted-foreground text-center">
-                  Foydalanuvchilar topilmadi
+                  {t("noUsers")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -208,7 +213,7 @@ export function UsersList({ users, role }: UsersListProps) {
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.is_active ? "default" : "secondary"}>
-                      {user.is_active ? "Faol" : "Nofaol"}
+                      {user.is_active ? t("active") : t("inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(user.created_at)}</TableCell>
@@ -216,12 +221,12 @@ export function UsersList({ users, role }: UsersListProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Menu ochish</span>
+                          <span className="sr-only">{t("openMenu")}</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Amallar</DropdownMenuLabel>
+                        <DropdownMenuLabel>{tCommon("actions")}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleToggleActive(user.id, user.is_active)}
@@ -230,12 +235,12 @@ export function UsersList({ users, role }: UsersListProps) {
                           {user.is_active ? (
                             <>
                               <UserX className="mr-2 h-4 w-4" />
-                              Deactivate
+                              {t("deactivate")}
                             </>
                           ) : (
                             <>
                               <UserCheck className="mr-2 h-4 w-4" />
-                              Activate
+                              {t("activate")}
                             </>
                           )}
                         </DropdownMenuItem>
@@ -243,12 +248,12 @@ export function UsersList({ users, role }: UsersListProps) {
                           <>
                             <DropdownMenuItem onClick={() => router.push(`/dashboard/users/${user.id}/edit`)}>
                               <Pencil className="mr-2 h-4 w-4" />
-                              Tahrirlash
+                              {t("edit")}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => setDeleteUserId(user.id)} className="text-destructive">
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              {t("delete")}
                             </DropdownMenuItem>
                           </>
                         )}
@@ -265,20 +270,17 @@ export function UsersList({ users, role }: UsersListProps) {
       <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ishonchingiz komilmi?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bu amal qaytarib bo&apos;lmaydi. Foydalanuvchi hisobi va barcha ma&apos;lumotlari butunlay
-              o&apos;chiriladi.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("deleteConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Bekor qilish</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isLoading}
             >
-              O&apos;chirish
+              {tCommon("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

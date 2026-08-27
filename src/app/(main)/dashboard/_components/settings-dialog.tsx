@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,9 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOverdueDays }: SettingsDialogProps) {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [debtLimit, setDebtLimit] = React.useState(initialDebtLimit.toString());
   const [overdueDays, setOverdueDays] = React.useState(initialOverdueDays.toString());
@@ -60,7 +64,7 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
       }
 
       if (requests.length === 0) {
-        toast.info("Hech qanday o'zgarish yo'q");
+        toast.info(t("noChanges"));
         onOpenChange(false);
         return;
       }
@@ -68,35 +72,37 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
       const responses = await Promise.all(requests);
 
       if (responses.every((res) => res.ok)) {
-        toast.success(`${requests.length} ta sozlama saqlandi`);
+        toast.success(t("savedCount", { count: requests.length }));
         router.refresh();
         onOpenChange(false);
       } else {
-        toast.error("Xatolik yuz berdi");
+        toast.error(tCommon("error"));
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error("Xatolik yuz berdi");
+      toast.error(tCommon("error"));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const numberLocale = locale === "ru" ? "ru-RU" : "uz-UZ";
+
   const formatNumber = (value: string) => {
     const number = value.replace(/\D/g, "");
-    return new Intl.NumberFormat("uz-UZ").format(Number(number));
+    return new Intl.NumberFormat(numberLocale).format(Number(number));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Sozlamalar</DialogTitle>
-          <DialogDescription>Qarzdorlar uchun maksimal qarz limitini belgilang</DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="debt_limit">{"Qarz limiti (so'm)"}</Label>
+            <Label htmlFor="debt_limit">{t("debtLimit", { currency: tCommon("som") })}</Label>
             <Input
               id="debt_limit"
               type="text"
@@ -109,11 +115,11 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
               required
             />
             <p className="text-muted-foreground text-sm">
-              Joriy limit: {formatNumber(debtLimit)} {"so'm"}
+              {t("currentLimit", { amount: formatNumber(debtLimit), currency: tCommon("som") })}
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="overdue_days">Muddati o&apos;tish kuni (kun)</Label>
+            <Label htmlFor="overdue_days">{t("overdueDays")}</Label>
             <Input
               id="overdue_days"
               type="number"
@@ -123,15 +129,15 @@ export function SettingsDialog({ open, onOpenChange, initialDebtLimit, initialOv
               placeholder="45"
               required
             />
-            <p className="text-muted-foreground text-sm">Joriy muddat: {overdueDays} kun</p>
+            <p className="text-muted-foreground text-sm">{t("currentOverdue", { days: overdueDays })}</p>
           </div>
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saqlanmoqda..." : "Saqlash"}
+              {isLoading ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </form>

@@ -11,13 +11,58 @@ type CompanyTimelineItem = {
   attachmentName?: string | null;
 };
 
+export type CompanyPdfLabels = {
+  title?: string;
+  company?: string;
+  contact?: string;
+  phone?: string;
+  address?: string;
+  created?: string;
+  summary?: string;
+  totalDebt?: string;
+  totalPaid?: string;
+  remaining?: string;
+  timeline?: string;
+  debt?: string;
+  payment?: string;
+  file?: string;
+  generated?: string;
+  currency?: string;
+  empty?: string;
+};
+
+const DEFAULT_LABELS: Required<CompanyPdfLabels> = {
+  title: "Kompaniya qarz hisoboti (PDF)",
+  company: "Kompaniya",
+  contact: "Mas'ul",
+  phone: "Telefon",
+  address: "Manzil",
+  created: "Yaratilgan",
+  summary: "Umumiy",
+  totalDebt: "Umumiy qarz",
+  totalPaid: "Umumiy to'lov",
+  remaining: "Qolgan qarz",
+  timeline: "Vaqt chizig'i",
+  debt: "Qarz",
+  payment: "To'lov",
+  file: "Fayl",
+  generated: "Yaratilgan",
+  currency: "so'm",
+  empty: "—",
+};
+
 export async function exportCompanyReceipt(args: {
   appName: string;
   company: CompanyDomain;
   totals: { totalDebtAdded: number; totalPaid: number; remaining: number };
   timeline: CompanyTimelineItem[];
   generatedAt?: Date;
+  labels?: CompanyPdfLabels;
+  locale?: string;
 }) {
+  const labels = { ...DEFAULT_LABELS, ...args.labels };
+  const numberLocale = args.locale === "ru" ? "ru-RU" : "uz-UZ";
+
   const jspdfMod = await import("jspdf");
   const { jsPDF } = jspdfMod as unknown as {
     jsPDF: new (opts: { orientation: string; unit: string; format: string }) => {
@@ -46,16 +91,16 @@ export async function exportCompanyReceipt(args: {
   pdf.text(args.appName, margin, y);
   y += 8;
   pdf.setFontSize(14);
-  pdf.text("Kompaniya qarz hisoboti (PDF)", margin, y);
+  pdf.text(labels.title, margin, y);
   y += 8;
 
   pdf.setFontSize(11);
   const info = [
-    `Kompaniya: ${args.company.name}`,
-    `Mas'ul: ${args.company.contactPerson || "—"}`,
-    `Telefon: ${args.company.phoneNumber || "—"}`,
-    `Manzil: ${args.company.address || "—"}`,
-    `Yaratilgan: ${new Date(args.company.createdAt).toLocaleString("uz-UZ")}`,
+    `${labels.company}: ${args.company.name}`,
+    `${labels.contact}: ${args.company.contactPerson || labels.empty}`,
+    `${labels.phone}: ${args.company.phoneNumber || labels.empty}`,
+    `${labels.address}: ${args.company.address || labels.empty}`,
+    `${labels.created}: ${new Date(args.company.createdAt).toLocaleString(numberLocale)}`,
   ];
   info.forEach((line) => {
     ensureSpace();
@@ -65,13 +110,13 @@ export async function exportCompanyReceipt(args: {
   y += 2;
 
   pdf.setFontSize(12);
-  pdf.text("Umumiy", margin, y);
+  pdf.text(labels.summary, margin, y);
   y += 6;
   pdf.setFontSize(11);
   const totals = [
-    ["Umumiy qarz", `${args.totals.totalDebtAdded.toLocaleString("uz-UZ")} so'm`],
-    ["Umumiy to'lov", `${args.totals.totalPaid.toLocaleString("uz-UZ")} so'm`],
-    ["Qolgan qarz", `${args.totals.remaining.toLocaleString("uz-UZ")} so'm`],
+    [labels.totalDebt, `${args.totals.totalDebtAdded.toLocaleString(numberLocale)} ${labels.currency}`],
+    [labels.totalPaid, `${args.totals.totalPaid.toLocaleString(numberLocale)} ${labels.currency}`],
+    [labels.remaining, `${args.totals.remaining.toLocaleString(numberLocale)} ${labels.currency}`],
   ] as const;
   totals.forEach(([label, value]) => {
     ensureSpace();
@@ -82,17 +127,17 @@ export async function exportCompanyReceipt(args: {
   y += 4;
 
   pdf.setFontSize(12);
-  pdf.text("Vaqt chizig'i", margin, y);
+  pdf.text(labels.timeline, margin, y);
   y += 6;
   pdf.setFontSize(9);
 
   args.timeline.forEach((item) => {
     ensureSpace(8);
-    const date = new Date(item.createdAt).toLocaleString("uz-UZ");
-    const type = item.type === "DEBT" ? "Qarz" : "To'lov";
-    const amount = `${item.type === "DEBT" ? "+" : "-"}${item.amount.toLocaleString("uz-UZ")}`;
-    const attachment = item.attachmentName ? ` | Fayl: ${item.attachmentName}` : "";
-    const line = `${date} | ${type} | ${amount} | ${item.note || "—"}${attachment}`;
+    const date = new Date(item.createdAt).toLocaleString(numberLocale);
+    const type = item.type === "DEBT" ? labels.debt : labels.payment;
+    const amount = `${item.type === "DEBT" ? "+" : "-"}${item.amount.toLocaleString(numberLocale)}`;
+    const attachment = item.attachmentName ? ` | ${labels.file}: ${item.attachmentName}` : "";
+    const line = `${date} | ${type} | ${amount} | ${item.note || labels.empty}${attachment}`;
     const clipped = line.length > 95 ? `${line.slice(0, 92)}...` : line;
     pdf.text(clipped, margin, y);
     y += 5;
@@ -101,7 +146,7 @@ export async function exportCompanyReceipt(args: {
   y += 4;
   ensureSpace();
   pdf.setFontSize(9);
-  pdf.text(`Yaratilgan: ${(args.generatedAt ?? new Date()).toLocaleString("uz-UZ")}`, margin, y);
+  pdf.text(`${labels.generated}: ${(args.generatedAt ?? new Date()).toLocaleString(numberLocale)}`, margin, y);
 
   const blob = pdf.output("blob");
   const url = URL.createObjectURL(blob);
@@ -113,6 +158,5 @@ export async function exportCompanyReceipt(args: {
   document.body.removeChild(link);
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-  // silence unused
   void pageWidth;
 }

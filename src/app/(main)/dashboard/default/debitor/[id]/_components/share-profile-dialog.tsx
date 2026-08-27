@@ -4,6 +4,7 @@ import * as React from "react";
 import { Share2, Copy, Check, QrCode, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import { useTranslations } from "next-intl";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ interface ShareProfileDialogProps {
 }
 
 export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName }: ShareProfileDialogProps) {
+  const t = useTranslations("debtor");
   const [copied, setCopied] = React.useState(false);
   const [token, setToken] = React.useState<string>("");
   const [qrCodeUrl, setQrCodeUrl] = React.useState<string>("");
@@ -27,19 +29,19 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
     if (open) {
       setIsGeneratingQr(true);
       generateShareTokenAction(externalId)
-        .then((t) => {
-          setToken(t);
+        .then((tkn) => {
+          setToken(tkn);
         })
         .catch((err) => {
           console.error("Token generation error:", err);
-          toast.error("Havola generatsiya qilishda xatolik yuz berdi");
+          toast.error(t("shareLinkError"));
           setIsGeneratingQr(false);
         });
     } else {
       setToken("");
       setQrCodeUrl("");
     }
-  }, [open, externalId]);
+  }, [open, externalId, t]);
 
   const shareUrl = React.useMemo(() => {
     if (typeof window === "undefined" || !token) return "";
@@ -52,7 +54,7 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
         width: 300,
         margin: 2,
         color: {
-          dark: "#0f172a", // Slate 900
+          dark: "#0f172a",
           light: "#ffffff",
         },
       })
@@ -63,39 +65,38 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
         .catch((err) => {
           console.error("Failed to generate QR Code:", err);
           setIsGeneratingQr(false);
-          toast.error("QR Code yaratishda xatolik yuz berdi");
+          toast.error(t("shareQrError"));
         });
     }
-  }, [shareUrl]);
+  }, [shareUrl, t]);
 
   const handleCopy = React.useCallback(async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast.success("Havola nusxalandi!");
+      toast.success(t("shareLinkCopied"));
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy link:", err);
-      toast.error("Havolani nusxalashda xatolik yuz berdi");
+      toast.error(t("shareCopyError"));
     }
-  }, [shareUrl]);
+  }, [shareUrl, t]);
 
   const handleNativeShare = React.useCallback(async () => {
     if (!navigator.share) return;
     try {
       await navigator.share({
-        title: `${debtorName} - Qarz Hisoboti`,
-        text: `${debtorName} ning joriy qarz va to'lovlar hisoboti.`,
+        title: t("shareTitle", { name: debtorName }),
+        text: t("shareText", { name: debtorName }),
         url: shareUrl,
       });
     } catch (err) {
-      // User cancelled or share failed
       if ((err as Error).name !== "AbortError") {
         console.error("Native share failed:", err);
-        toast.error("Ulashishda xatolik yuz berdi");
+        toast.error(t("shareError"));
       }
     }
-  }, [shareUrl, debtorName]);
+  }, [shareUrl, debtorName, t]);
 
   const isShareSupported = typeof navigator !== "undefined" && !!navigator.share;
 
@@ -105,13 +106,12 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
         <DialogHeader className="space-y-1">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <Share2 className="text-primary h-5 w-5" />
-            Profilni ulash
+            {t("shareProfile")}
           </DialogTitle>
-          <DialogDescription>{debtorName} profili uchun ochiq monitoring havolasi va QR kod</DialogDescription>
+          <DialogDescription>{t("shareDescription", { name: debtorName })}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center justify-center gap-6 py-4">
-          {/* QR Code Container */}
           <div className="relative flex h-52 w-52 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-white p-3 shadow-inner dark:border-slate-800">
             {isGeneratingQr ? (
               <Loader2 className="text-primary h-8 w-8 animate-spin" />
@@ -123,7 +123,6 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
             )}
           </div>
 
-          {/* Share Link Row */}
           <div className="flex w-full items-center gap-2">
             <Input
               readOnly
@@ -140,11 +139,10 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
             </Button>
           </div>
 
-          {/* Native Share Button */}
           {isShareSupported && (
             <Button onClick={handleNativeShare} className="h-12 w-full gap-2 font-semibold">
               <Share2 className="h-4 w-4" />
-              Tizim orqali ulashish
+              {t("shareNative")}
             </Button>
           )}
         </div>

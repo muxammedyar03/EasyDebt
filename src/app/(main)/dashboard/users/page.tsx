@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/auth";
@@ -7,6 +8,7 @@ import { UsersList } from "./_components/users-list";
 import { prisma } from "@/lib/prisma";
 
 export default async function UsersPage() {
+  const t = await getTranslations("users");
   const session = await getSession();
 
   if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
@@ -44,8 +46,8 @@ export default async function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div>
-          <CardTitle>Foydalanuvchilar</CardTitle>
-          <p className="text-muted-foreground mt-2 text-sm">Yangi foydalanuvchi qo&apos;shish va boshqarish.</p>
+          <CardTitle>{t("title")}</CardTitle>
+          <p className="text-muted-foreground mt-2 text-sm">{t("subtitle")}</p>
         </div>
         {session?.role === "SUPER_ADMIN" && <CreateUserForm />}
       </div>

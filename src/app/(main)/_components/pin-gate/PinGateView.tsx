@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Command } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -125,6 +126,8 @@ export function PinGateView(props: PinGateViewProps) {
     setResetMode,
   } = props;
 
+  const t = useTranslations("pinGate");
+  const tCommon = useTranslations("common");
   const pinInputRef = React.useRef<HTMLInputElement>(null);
   const pinConfirmRef = React.useRef<HTMLInputElement>(null);
   const loginInputRef = React.useRef<HTMLInputElement>(null);
@@ -166,15 +169,15 @@ export function PinGateView(props: PinGateViewProps) {
             <div className="text-primary-foreground absolute top-10 space-y-1 px-10">
               <Command className="size-10" />
               <h1 className="text-2xl font-medium">{APP_CONFIG.name}</h1>
-              <p className="text-sm">Design. Build. Launch. Repeat.</p>
+              <p className="text-sm">{t("tagline")}</p>
             </div>
           </div>
           <div className="relative order-1 flex h-full">
             <div className="flex w-full items-center justify-center p-6">
               <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
                 <div className="space-y-2 text-center">
-                  <h1 className="text-3xl font-medium">Yuklanmoqda...</h1>
-                  <p className="text-muted-foreground text-sm">Iltimos kuting</p>
+                  <h1 className="text-3xl font-medium">{tCommon("loading")}</h1>
+                  <p className="text-muted-foreground text-sm">{tCommon("pleaseWait")}</p>
                 </div>
               </div>
             </div>
@@ -194,16 +197,16 @@ export function PinGateView(props: PinGateViewProps) {
           <div className="text-primary-foreground absolute top-10 space-y-1 px-10">
             <Command className="size-10" />
             <h1 className="text-2xl font-medium">{APP_CONFIG.name}</h1>
-            <p className="text-sm">Design. Build. Launch. Repeat.</p>
+            <p className="text-sm">{t("tagline")}</p>
           </div>
         </div>
         <div className="relative order-1 flex h-full">
           <div className="flex w-full items-center justify-center p-6">
             <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
               <div className="space-y-2 text-center">
-                <h1 className="text-3xl font-medium">{hasPin ? "Pin kodni kiriting" : `Yangi PIN o'rnatish`}</h1>
+                <h1 className="text-3xl font-medium">{hasPin ? t("enterPin") : t("setNewPin")}</h1>
                 <p className="text-muted-foreground text-sm">
-                  {hasPin ? "Davom etish uchun pin kodni kiriting" : `Iltimos ${pinLength} raqamli PIN o'rnating`}
+                  {hasPin ? t("enterPinHint") : t("setPinHint", { length: pinLength })}
                 </p>
               </div>
 
@@ -229,7 +232,7 @@ export function PinGateView(props: PinGateViewProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">PIN kodni tasdiqlang</label>
+                        <label className="text-sm font-medium">{t("confirmPin")}</label>
                         <div className="flex justify-center">
                           <SecurePinOTP
                             instanceKey={pinInputKey + 1000}
@@ -247,7 +250,7 @@ export function PinGateView(props: PinGateViewProps) {
                     </div>
 
                     <Button className="w-full" onClick={onSetPin} disabled={loading}>
-                      {loading ? "Saqlanmoqda..." : "PIN o'rnatish"}
+                      {loading ? tCommon("saving") : t("setPin")}
                     </Button>
                   </>
                 ) : (
@@ -270,7 +273,7 @@ export function PinGateView(props: PinGateViewProps) {
                         </div>
 
                         <Button className="w-full" onClick={onVerify} disabled={loading || pin.length < pinLength}>
-                          {loading ? "Tekshirilmoqda..." : "Kirish"}
+                          {loading ? t("verifying") : t("enter")}
                         </Button>
 
                         <div className="flex gap-2">
@@ -282,7 +285,7 @@ export function PinGateView(props: PinGateViewProps) {
                               setResetMode(true);
                             }}
                           >
-                            Unutdim
+                            {t("forgot")}
                           </Button>
                         </div>
                       </>
@@ -292,11 +295,11 @@ export function PinGateView(props: PinGateViewProps) {
                       <>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Login yoki Email</label>
+                            <label className="text-sm font-medium">{t("loginOrEmail")}</label>
                             <input
                               ref={loginInputRef}
                               type="text"
-                              placeholder="Login yoki email kiriting"
+                              placeholder={t("loginPlaceholder")}
                               autoComplete="off"
                               value={credentials.login}
                               onChange={(e) => onCredentialsChange("login", e.target.value)}
@@ -305,7 +308,7 @@ export function PinGateView(props: PinGateViewProps) {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Parol</label>
+                            <label className="text-sm font-medium">{t("password")}</label>
                             <input
                               type="password"
                               placeholder="••••••••"
@@ -317,7 +320,7 @@ export function PinGateView(props: PinGateViewProps) {
                           </div>
 
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Yangi PIN</label>
+                            <label className="text-sm font-medium">{t("newPin")}</label>
                             <div className="flex justify-center">
                               <SecurePinOTP
                                 instanceKey={pinInputKey}
@@ -335,10 +338,10 @@ export function PinGateView(props: PinGateViewProps) {
                         </div>
 
                         <Button className="w-full" onClick={onReset} disabled={loading}>
-                          {loading ? "So'ralmoqda..." : "PIN tiklash"}
+                          {loading ? t("resetting") : t("resetPin")}
                         </Button>
                         <Button type="button" variant="ghost" className="w-full" onClick={() => setResetMode(false)}>
-                          Bekor qilish
+                          {tCommon("cancel")}
                         </Button>
                       </>
                     )}

@@ -2,6 +2,7 @@
 
 import { FileDown, FilterIcon, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,13 +49,30 @@ export function CompaniesToolbar({
   onMaxAmountChange,
   onAddCompany,
 }: CompaniesToolbarProps) {
+  const t = useTranslations("myDebts");
+  const tCommon = useTranslations("common");
+  const tExport = useTranslations("dataExport");
   const [showFilter, setShowFilter] = useState(false);
+
   const handleExcel = async () => {
     try {
-      const { rowCount } = await exportCompaniesListToExcel({ search: searchValue, status });
-      toast.success(`${rowCount} ta kompaniya Excelga yuklandi`);
+      const { rowCount } = await exportCompaniesListToExcel({
+        search: searchValue,
+        status,
+        headers: [
+          tExport("companyHeaderId"),
+          tExport("companyHeaderName"),
+          tExport("companyHeaderContact"),
+          tExport("companyHeaderPhone"),
+          tExport("companyHeaderAddress"),
+          tExport("companyHeaderTotalDebt"),
+          tExport("companyHeaderTotalPayments"),
+          tExport("companyHeaderStatus"),
+        ],
+      });
+      toast.success(t("exportSuccess", { count: rowCount }));
     } catch (error) {
-      toast.error(getErrorMessage(error, "Excel export xatosi"));
+      toast.error(getErrorMessage(error, t("exportError")));
     }
   };
 
@@ -68,7 +86,7 @@ export function CompaniesToolbar({
         <div className="relative flex-1 lg:max-w-xl">
           <Search className="text-muted-foreground absolute top-3.5 left-2.5 h-4 w-4" />
           <Input
-            placeholder="Kompaniya, telefon yoki manzil..."
+            placeholder={t("searchPlaceholder")}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="border-border h-11 border bg-white pr-10 pl-8 dark:bg-zinc-800"
@@ -82,11 +100,11 @@ export function CompaniesToolbar({
         <div className="flex items-center gap-2">
           <Button variant="outline" className="h-11" onClick={handleExcel}>
             <FileDown className="mr-2 h-4 w-4" />
-            Excel
+            {tCommon("excel")}
           </Button>
           <Button className="h-11" onClick={onAddCompany}>
             <Plus className="mr-2 h-4 w-4" />
-            Kompaniya
+            {t("addCompany")}
           </Button>
           <Button className="h-11 w-11" onClick={toggleFilter}>
             <FilterIcon />
@@ -97,38 +115,38 @@ export function CompaniesToolbar({
       {showFilter && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div className="grid gap-1.5">
-            <Label className="text-xs">Status</Label>
+            <Label className="text-xs">{tCommon("status")}</Label>
             <Select value={status} onValueChange={onStatusChange}>
               <SelectTrigger className="border-border h-10 w-full border">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={tCommon("status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Barchasi</SelectItem>
-                <SelectItem value="qarzdor">Qarzdor</SelectItem>
-                <SelectItem value="tolangan">To&apos;langan</SelectItem>
-                <SelectItem value="muddati_otgan">Muddati o&apos;tgan</SelectItem>
-                <SelectItem value="limitdan_otgan">Limitdan o&apos;tgan</SelectItem>
+                <SelectItem value="all">{tCommon("all")}</SelectItem>
+                <SelectItem value="qarzdor">{t("statusDebtor")}</SelectItem>
+                <SelectItem value="tolangan">{t("statusPaid")}</SelectItem>
+                <SelectItem value="muddati_otgan">{t("statusOverdue")}</SelectItem>
+                <SelectItem value="limitdan_otgan">{t("statusOverLimit")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid gap-1.5">
-            <Label className="text-xs">Sort</Label>
+            <Label className="text-xs">{t("sort")}</Label>
             <Select value={sortBy} onValueChange={onSortChange}>
               <SelectTrigger className="border-border h-10 w-full border">
-                <SelectValue placeholder="Sort" />
+                <SelectValue placeholder={t("sort")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">Nomi</SelectItem>
-                <SelectItem value="amount">Summa</SelectItem>
-                <SelectItem value="debt_added_at">Qarz qo&apos;shilgan sana</SelectItem>
-                <SelectItem value="paid_at">To&apos;langan sana</SelectItem>
+                <SelectItem value="name">{t("sortName")}</SelectItem>
+                <SelectItem value="amount">{t("sortAmount")}</SelectItem>
+                <SelectItem value="debt_added_at">{t("sortDebtAdded")}</SelectItem>
+                <SelectItem value="paid_at">{t("sortPaidAt")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid gap-1.5">
-            <Label className="text-xs">Sana dan</Label>
+            <Label className="text-xs">{t("dateFrom")}</Label>
             <Input
               type="date"
               className="border-border h-10 border"
@@ -137,7 +155,7 @@ export function CompaniesToolbar({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Sana gacha</Label>
+            <Label className="text-xs">{t("dateTo")}</Label>
             <Input
               type="date"
               className="border-border h-10 border"
@@ -146,7 +164,7 @@ export function CompaniesToolbar({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Min summa</Label>
+            <Label className="text-xs">{t("minAmount")}</Label>
             <Input
               type="number"
               className="border-border h-10 border"
@@ -156,7 +174,7 @@ export function CompaniesToolbar({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Max summa</Label>
+            <Label className="text-xs">{t("maxAmount")}</Label>
             <Input
               type="number"
               className="border-border h-10 border"

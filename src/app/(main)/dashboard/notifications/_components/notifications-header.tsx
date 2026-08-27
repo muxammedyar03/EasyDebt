@@ -5,6 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ArrowLeft, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { notificationKeys } from "@/features/notifications";
 
 interface NotificationsHeaderProps {
@@ -12,6 +13,7 @@ interface NotificationsHeaderProps {
 }
 
 export function NotificationsHeader({ updateParams }: NotificationsHeaderProps) {
+  const t = useTranslations("notifications");
   const router = useRouter();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
@@ -33,14 +35,14 @@ export function NotificationsHeader({ updateParams }: NotificationsHeaderProps) 
           <ArrowLeft className="!h-5 !w-5" />
         </Button>
         <div>
-          <h1 className="text-lg font-bold md:text-2xl">Bildirishnomalar</h1>
-          <p className="text-muted-foreground text-xs md:text-sm">Bildirishnomalar sizga yuborilgan barcha xabarlar.</p>
+          <h1 className="text-lg font-bold md:text-2xl">{t("title")}</h1>
+          <p className="text-muted-foreground text-xs md:text-sm">{t("subtitle")}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <Button onClick={markAllAsRead} className="text-xs md:text-sm">
           <Check className="!h-5 !w-5" />
-          {isMobile ? "" : "Mark all as read"}
+          {isMobile ? "" : t("markAllRead")}
         </Button>
       </div>
     </div>

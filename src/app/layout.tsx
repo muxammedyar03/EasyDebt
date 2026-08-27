@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 import { Toaster } from "@/components/ui/sonner";
 import { APP_CONFIG } from "@/config/app-config";
@@ -27,20 +29,24 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const themeMode = await getPreference<ThemeMode>("theme_mode", THEME_MODE_VALUES, "light");
   const themePreset = await getPreference<ThemePreset>("theme_preset", THEME_PRESET_VALUES, "default");
+  const locale = await getLocale();
+  const messages = await getMessages();
 
   return (
     <html
-      lang="en"
+      lang={locale}
       className={themeMode === "dark" ? "dark" : ""}
       data-theme-preset={themePreset}
       suppressHydrationWarning
     >
       <body className={`min-h-screen antialiased ${inter.className}`} suppressHydrationWarning>
         <QueryProvider>
-          <PreferencesStoreProvider themeMode={themeMode} themePreset={themePreset}>
-            {children}
-            <Toaster />
-          </PreferencesStoreProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <PreferencesStoreProvider themeMode={themeMode} themePreset={themePreset}>
+              {children}
+              <Toaster />
+            </PreferencesStoreProvider>
+          </NextIntlClientProvider>
         </QueryProvider>
       </body>
     </html>

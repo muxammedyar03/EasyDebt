@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -17,9 +18,12 @@ interface TrendAnalysisProps {
 }
 
 export function TrendAnalysis({ trends }: TrendAnalysisProps) {
+  const t = useTranslations("reports");
+  const tCommon = useTranslations("common");
+
   const formatValue = (value: number, format?: "currency" | "number") => {
     if (format === "currency") {
-      return new Intl.NumberFormat("uz-UZ").format(value) + " so'm";
+      return new Intl.NumberFormat("uz-UZ").format(value) + " " + tCommon("som");
     }
     return value.toString();
   };
@@ -58,7 +62,7 @@ export function TrendAnalysis({ trends }: TrendAnalysisProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trend Tahlili (Oylik)</CardTitle>
+        <CardTitle>{t("trendAnalysis")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -81,7 +85,7 @@ export function TrendAnalysis({ trends }: TrendAnalysisProps) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-muted-foreground text-xs">O&apos;tgan oy</p>
+                  <p className="text-muted-foreground text-xs">{t("previousMonth")}</p>
                   <p className="text-muted-foreground text-sm font-medium">
                     {formatValue(trend.previous, trend.format)}
                   </p>

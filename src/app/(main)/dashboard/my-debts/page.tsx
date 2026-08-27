@@ -1,4 +1,5 @@
 import { BadgeDollarSign, Building2, HandCoinsIcon } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { SectionCard } from "../_components/section-card";
 import { companyService } from "@/lib/services/company.service";
@@ -14,6 +15,7 @@ export default async function MyDebtsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const t = await getTranslations("myDebts");
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || 10;
@@ -46,35 +48,38 @@ export default async function MyDebtsPage({
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
       <div>
-        <h1 className="text-2xl font-bold">Mening qarzlarim</h1>
-        <p className="text-muted-foreground text-sm">Yetkazib beruvchi kompaniyalarga qarzlar boshqaruvi</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
         <SectionCard
-          title="Kompaniyalar"
+          title={t("companies")}
           count={stats.totalCompanies}
           color="text-indigo-600"
           icon={<Building2 className="!size-4" />}
         />
         <SectionCard
-          title="Jami qarz"
+          title={t("totalDebt")}
           defaultVisible
           amount={stats.totalDebt}
           icon={<BadgeDollarSign className="!h-4 !w-4" />}
         />
         <SectionCard
-          title="Jami to'lovlar"
+          title={t("totalPayments")}
           defaultVisible
           color="text-green-600"
           amount={stats.totalPaymentsAmount}
           icon={<HandCoinsIcon className="!h-4 !w-4" />}
         />
         <SectionCard
-          title="Bugungi harakat"
+          title={t("todayActivity")}
           defaultVisible
           amount={stats.todayDebtsAmount + stats.todayPaymentsAmount}
-          description={`Qarz: ${stats.todayDebtsCount} · To'lov: ${stats.todayPaymentsCount}`}
+          description={t("todayActivityDesc", {
+            debts: stats.todayDebtsCount,
+            payments: stats.todayPaymentsCount,
+          })}
           icon={<HandCoinsIcon className="!h-4 !w-4" />}
         />
       </div>

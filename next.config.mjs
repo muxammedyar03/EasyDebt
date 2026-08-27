@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
 const nextConfig = {
   output: "standalone", // Required for Docker deployment
   // Lint commit (lint-staged), local build va IDE da ishlaydi; deploy build da qayta lint kerak emas
@@ -54,6 +58,6 @@ const nextConfig = {
       },
     ];
   },
-}
+};
 
-export default nextConfig
+export default withNextIntl(nextConfig);

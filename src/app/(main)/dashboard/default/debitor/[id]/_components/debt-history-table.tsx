@@ -13,6 +13,7 @@ import { formatDateUz } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PrintReceiptButton, type SingleReceiptData } from "@/features/receipt-printer";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useTranslations } from "next-intl";
 
 interface DebtHistoryTableProps {
   debts: DebtDomain[];
@@ -31,6 +32,9 @@ export function DebtHistoryTable({
   totalDebt,
   onPrintReceipt,
 }: DebtHistoryTableProps) {
+  const t = useTranslations("debtor");
+  const tCommon = useTranslations("common");
+  const tDash = useTranslations("dashboard");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -96,7 +100,7 @@ export function DebtHistoryTable({
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-muted-foreground text-center">Hozircha qarzlar yo&apos;q</p>
+          <p className="text-muted-foreground text-center">{t("noDebts")}</p>
         </CardContent>
       </Card>
     );
@@ -106,17 +110,17 @@ export function DebtHistoryTable({
     <>
       <Card className="p-2 md:p-3 xl:p-4">
         <CardHeader className="p-2 md:p-3 xl:p-4">
-          <CardTitle>Qarzlar tarixi</CardTitle>
+          <CardTitle>{t("debtHistory")}</CardTitle>
         </CardHeader>
         <CardContent className="p-2 md:p-3 xl:p-4">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>№</TableHead>
-                <TableHead>Sana</TableHead>
-                <TableHead>Miqdor</TableHead>
-                {!isMobile && <TableHead>Tavsif</TableHead>}
-                <TableHead className="w-[100px]">Amallar</TableHead>
+                <TableHead>{tDash("index")}</TableHead>
+                <TableHead>{tCommon("date")}</TableHead>
+                <TableHead>{tCommon("amount")}</TableHead>
+                {!isMobile && <TableHead>{tCommon("description")}</TableHead>}
+                <TableHead className="w-[100px]">{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -126,7 +130,7 @@ export function DebtHistoryTable({
                   <TableCell width={400}>{formatDateUz(debt.createdAt, true)}</TableCell>
                   <TableCell width={500}>
                     <Badge className="h-6 border-red-600/20 bg-red-500/10 px-3 text-xs text-red-700 dark:text-red-500">
-                      +{debt.amount.toLocaleString()} so&apos;m
+                      +{debt.amount.toLocaleString()} {tCommon("som")}
                     </Badge>
                   </TableCell>
                   {!isMobile && <TableCell className="text-muted-foreground">{debt.description || "—"}</TableCell>}
@@ -157,14 +161,14 @@ export function DebtHistoryTable({
                   disabled={currentPage === 1}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Oldingi
+                  {t("previous")}
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Keyingi
+                  {t("next")}
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { DebtorsTable } from "./_components/debtors-table";
 import { SectionCard } from "../_components/section-card";
 import { BadgeDollarSign, HandCoinsIcon, Users } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { debtorService } from "@/lib/services/debtor.service";
 import { domainToViewDebtor } from "@/lib/mappers";
 import type { DebtorDomainFilters, DebtorStatus } from "@/types/domain/debtor.domain";
@@ -16,6 +17,7 @@ export default async function DebtorsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const t = await getTranslations("debtorsPage");
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || 10;
@@ -55,24 +57,24 @@ export default async function DebtorsPage({
     <div className="@container/main flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Qarzdorlar</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-6 2xl:grid-cols-4">
         <SectionCard
-          title="Umumiy qarzdorlar"
+          title={t("totalDebtors")}
           count={debtorsFromService.total}
           color="text-indigo-600"
           icon={<Users className="!size-4" />}
         />
         <SectionCard
-          title="Ja'mi qarz"
+          title={t("totalDebt")}
           defaultVisible
           amount={totalDebt}
           icon={<BadgeDollarSign className="!h-4 !w-4" />}
         />
         <SectionCard
-          title="Ja'mi tolovlar"
+          title={t("totalPayments")}
           defaultVisible
           color="text-green-600"
           amount={totalPayments}

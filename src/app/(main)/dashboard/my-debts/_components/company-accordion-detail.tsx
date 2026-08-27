@@ -11,6 +11,7 @@ import { useCompanyDetail, computeCompanySummary } from "@/features/view-company
 import { exportCompaniesListToExcel } from "@/lib/companies/export-companies-excel-client";
 import { getErrorMessage } from "@/lib/errors";
 import type { CompanyView } from "@/types/view/company.view";
+import { useTranslations } from "next-intl";
 
 type CompanyAccordionDetailProps = {
   company: CompanyView;
@@ -18,15 +19,31 @@ type CompanyAccordionDetailProps = {
 };
 
 export function CompanyAccordionDetail({ company, open }: CompanyAccordionDetailProps) {
+  const t = useTranslations("myDebts");
+  const tCommon = useTranslations("common");
+  const tExport = useTranslations("dataExport");
   const { data, isLoading, error } = useCompanyDetail(company.id, open);
   const summary = computeCompanySummary(data);
 
   const handleExcel = async () => {
     try {
-      await exportCompaniesListToExcel({ search: company.name, status: "all" });
-      toast.success("Excel yuklandi");
+      const { rowCount } = await exportCompaniesListToExcel({
+        search: company.name,
+        status: "all",
+        headers: [
+          tExport("companyHeaderId"),
+          tExport("companyHeaderName"),
+          tExport("companyHeaderContact"),
+          tExport("companyHeaderPhone"),
+          tExport("companyHeaderAddress"),
+          tExport("companyHeaderTotalDebt"),
+          tExport("companyHeaderTotalPayments"),
+          tExport("companyHeaderStatus"),
+        ],
+      });
+      toast.success(t("exportSuccess", { count: rowCount }));
     } catch (e) {
-      toast.error(getErrorMessage(e, "Export xatosi"));
+      toast.error(getErrorMessage(e, t("exportError")));
     }
   };
 
@@ -34,7 +51,7 @@ export function CompanyAccordionDetail({ company, open }: CompanyAccordionDetail
     return (
       <div className="text-muted-foreground flex items-center gap-2 py-6 text-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Yuklanmoqda...
+        {tCommon("loading")}
       </div>
     );
   }
@@ -104,22 +121,22 @@ export function CompanyAccordionDetail({ company, open }: CompanyAccordionDetail
             <span className="bg-primary/15 text-primary flex size-6 items-center justify-center rounded-full">
               <UserRound className="size-3.5" />
             </span>
-            <p className="text-xs font-semibold tracking-wide uppercase">Kompaniya</p>
+            <p className="text-xs font-semibold tracking-wide uppercase">{t("companyLabel")}</p>
           </div>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground flex items-center gap-1.5">
-                <Phone className="size-3.5" /> Telefon
+                <Phone className="size-3.5" /> {tExport("companyHeaderPhone")}
               </dt>
               <dd className="font-medium">{company.phoneDisplay || company.phoneNumber || "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Mas&apos;ul</dt>
+              <dt className="text-muted-foreground">{tExport("companyHeaderContact")}</dt>
               <dd className="font-medium">{company.contactPerson || "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="size-3.5" /> Manzil
+                <MapPin className="size-3.5" /> {t("address")}
               </dt>
               <dd className="max-w-[60%] text-right font-medium">{company.address || "—"}</dd>
             </div>

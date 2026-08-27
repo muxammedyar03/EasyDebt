@@ -6,6 +6,8 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import * as z from "zod";
 
 import { getErrorMessage } from "@/lib/errors";
 import { formatUzPhone } from "@/lib/format";
@@ -20,8 +22,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { addCompanySchema, type AddCompanyFormData } from "@/lib/validation/company";
 import { createCompany, updateCompany } from "../api";
+
+type AddCompanyFormData = {
+  name: string;
+  contact_person?: string;
+  phone_number?: string;
+  address?: string;
+};
 
 export interface AddCompanyDialogProps {
   open: boolean;
@@ -38,9 +46,22 @@ export interface AddCompanyDialogProps {
 }
 
 export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: AddCompanyDialogProps) {
+  const t = useTranslations("company");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const isEdit = Boolean(company);
+
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        name: z.string().min(1, t("nameRequired")),
+        contact_person: z.string().optional(),
+        phone_number: z.string().optional(),
+        address: z.string().optional(),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -49,7 +70,7 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
     reset,
     control,
   } = useForm<AddCompanyFormData>({
-    resolver: zodResolver(addCompanySchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       contact_person: "",
@@ -80,10 +101,10 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
 
       if (isEdit && company) {
         await updateCompany(company.id, payload);
-        toast.success("Kompaniya yangilandi");
+        toast.success(t("updateSuccess"));
       } else {
         await createCompany(payload);
-        toast.success("Kompaniya qo'shildi");
+        toast.success(t("addSuccess"));
       }
 
       onOpenChange(false);
@@ -94,7 +115,7 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
         }, 150);
       });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Kompaniya saqlashda xatolik"));
+      toast.error(getErrorMessage(error, t("saveError")));
     } finally {
       setIsLoading(false);
     }
@@ -104,29 +125,29 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Kompaniyani tahrirlash" : "Yangi kompaniya"}</DialogTitle>
-          <DialogDescription>Yetkazib beruvchi kompaniya ma&apos;lumotlarini kiriting</DialogDescription>
+          <DialogTitle>{isEdit ? t("editTitle") : t("addTitle")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">
-                Nomi <span className="text-destructive">*</span>
+                {t("name")} <span className="text-destructive">*</span>
               </Label>
-              <Input id="name" placeholder="Kompaniya nomi" {...register("name")} disabled={isLoading} />
+              <Input id="name" placeholder={t("namePlaceholder")} {...register("name")} disabled={isLoading} />
               {errors.name && <p className="text-destructive text-sm">{errors.name.message}</p>}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="contact_person">Mas&apos;ul shaxs</Label>
+              <Label htmlFor="contact_person">{t("contactPerson")}</Label>
               <Input
                 id="contact_person"
-                placeholder="Ism familiya"
+                placeholder={t("contactPlaceholder")}
                 {...register("contact_person")}
                 disabled={isLoading}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="phone_number">Telefon</Label>
+              <Label htmlFor="phone_number">{t("phone")}</Label>
               <Controller
                 name="phone_number"
                 control={control}
@@ -142,17 +163,17 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="address">Manzil</Label>
-              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
+              <Label htmlFor="address">{t("address")}</Label>
+              <Input id="address" placeholder={t("addressPlaceholder")} {...register("address")} disabled={isLoading} />
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "Saqlash" : "Qo'shish"}
+              {isEdit ? tCommon("save") : tCommon("add")}
             </Button>
           </DialogFooter>
         </form>

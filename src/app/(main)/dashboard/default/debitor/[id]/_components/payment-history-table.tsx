@@ -14,6 +14,7 @@ import { formatDateUz } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PrintReceiptButton, type SingleReceiptData } from "@/features/receipt-printer";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useTranslations } from "next-intl";
 
 interface PaymentHistoryTableProps {
   payments: PaymentDomain[];
@@ -32,6 +33,10 @@ export function PaymentHistoryTable({
   totalDebt,
   onPrintReceipt,
 }: PaymentHistoryTableProps) {
+  const t = useTranslations("debtor");
+  const tCommon = useTranslations("common");
+  const tDash = useTranslations("dashboard");
+  const tPayment = useTranslations("payment");
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -86,7 +91,7 @@ export function PaymentHistoryTable({
     return (
       <Card>
         <CardContent className="py-8">
-          <p className="text-muted-foreground text-center">Hozircha to&apos;lovlar yo&apos;q</p>
+          <p className="text-muted-foreground text-center">{t("noPayments")}</p>
         </CardContent>
       </Card>
     );
@@ -96,18 +101,18 @@ export function PaymentHistoryTable({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>To&apos;lovlar tarixi</CardTitle>
+          <CardTitle>{t("paymentHistory")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>№</TableHead>
-                <TableHead>Sana</TableHead>
-                <TableHead>Miqdor</TableHead>
-                {!isMobile && <TableHead>To&apos;lov turi</TableHead>}
-                {!isMobile && <TableHead>Izoh</TableHead>}
-                <TableHead className="w-[100px]">Amallar</TableHead>
+                <TableHead>{tDash("index")}</TableHead>
+                <TableHead>{tCommon("date")}</TableHead>
+                <TableHead>{tCommon("amount")}</TableHead>
+                {!isMobile && <TableHead>{tPayment("type")}</TableHead>}
+                {!isMobile && <TableHead>{tCommon("note")}</TableHead>}
+                <TableHead className="w-[100px]">{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,15 +121,23 @@ export function PaymentHistoryTable({
                   <TableCell width={isMobile ? 20 : 50}>{index + 1}</TableCell>
                   <TableCell width={!isMobile ? 300 : undefined}>
                     {payment?.createdAt ? formatDateUz(payment.createdAt, !isMobile) : "--/--/----"}
-                    <p className="text-muted-foreground text-xs md:hidden">{"izoh: " + (payment.note || "--")}</p>
+                    <p className="text-muted-foreground text-xs md:hidden">
+                      {t("notePrefix") + (payment.note || "--")}
+                    </p>
                   </TableCell>
                   <TableCell width={!isMobile ? 300 : undefined} className="flex flex-col items-end">
-                    <p className="font-bold text-green-600">-{payment.amount.toLocaleString()} so&apos;m</p>
+                    <p className="font-bold text-green-600">
+                      -{payment.amount.toLocaleString()} {tCommon("som")}
+                    </p>
                     <Badge
                       variant="default"
                       className={`h-6 px-3 text-xs md:hidden ${getPaymentTypeClass(payment.paymentType)}`}
                     >
-                      {payment.paymentType == "CASH" ? "Naqd" : payment.paymentType == "CLICK" ? "Click" : "Karta"}
+                      {payment.paymentType == "CASH"
+                        ? tPayment("cash")
+                        : payment.paymentType == "CLICK"
+                          ? tPayment("click")
+                          : tPayment("card")}
                     </Badge>
                   </TableCell>
                   {!isMobile && (
@@ -133,7 +146,11 @@ export function PaymentHistoryTable({
                         variant="default"
                         className={`h-6 px-3 text-xs ${getPaymentTypeClass(payment.paymentType)}`}
                       >
-                        {payment.paymentType == "CASH" ? "Naqd" : payment.paymentType == "CLICK" ? "Click" : "Karta"}
+                        {payment.paymentType == "CASH"
+                          ? tPayment("cash")
+                          : payment.paymentType == "CLICK"
+                            ? tPayment("click")
+                            : tPayment("card")}
                       </Badge>
                     </TableCell>
                   )}
@@ -165,14 +182,14 @@ export function PaymentHistoryTable({
                   disabled={currentPage === 1}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Oldingi
+                  {t("previous")}
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                 >
-                  Keyingi
+                  {t("next")}
                 </button>
               </div>
             </div>

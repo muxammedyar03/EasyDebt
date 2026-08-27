@@ -1,39 +1,46 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
+import { useLocale, useTranslations } from "next-intl";
 
 export function useTableUtils() {
+  const t = useTranslations("audit");
+  const locale = useLocale();
+  const dateLocale = locale === "ru" ? "ru-RU" : "uz-UZ";
+
   const getActionBadge = (action: string, entity_type: string) => {
     if (action === "DEBT_ADDED") {
-      return <Badge className="bg-blue-500">Qarz qo&apos;shildi</Badge>;
+      return <Badge className="bg-blue-500">{t("badgeDebtAdded")}</Badge>;
     }
 
     if (action === "PAYMENT_ADDED") {
-      return <Badge className="bg-green-500">To&apos;lov qo&apos;shildi</Badge>;
+      return <Badge className="bg-green-500">{t("badgePaymentAdded")}</Badge>;
     }
 
     if (action === "DEBT_UPDATED") {
-      return <Badge className="bg-blue-500">Qarz yangilandi</Badge>;
+      return <Badge className="bg-blue-500">{t("badgeDebtUpdated")}</Badge>;
     }
 
     if (action === "PAYMENT_UPDATED") {
-      return <Badge className="bg-blue-500">To&apos;lov yangilandi</Badge>;
+      return <Badge className="bg-blue-500">{t("badgePaymentUpdated")}</Badge>;
     }
 
     if (action === "IMPORT") {
-      return <Badge className="bg-purple-500">Import qilindi</Badge>;
+      return <Badge className="bg-purple-500">{t("badgeImported")}</Badge>;
     }
 
     if (action === "EXPORT") {
-      return <Badge className="bg-indigo-500">Export qilindi</Badge>;
+      return <Badge className="bg-indigo-500">{t("badgeExported")}</Badge>;
     }
 
     if (entity_type === "DEBTOR") {
       switch (action) {
         case "CREATE":
-          return <Badge className="bg-green-500">Qarzdor yaratildi</Badge>;
+          return <Badge className="bg-green-500">{t("badgeDebtorCreated")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">Qarzdor yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeDebtorUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">Qarzdor o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeDebtorDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -42,11 +49,11 @@ export function useTableUtils() {
     if (entity_type === "DEBT") {
       switch (action) {
         case "CREATE":
-          return <Badge className="bg-blue-500">Qarz qo&apos;shildi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeDebtAdded")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">Qarz yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeDebtUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">Qarz o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeDebtDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -55,11 +62,11 @@ export function useTableUtils() {
     if (entity_type === "PAYMENT") {
       switch (action) {
         case "CREATE":
-          return <Badge className="bg-green-500">To&apos;lov qo&apos;shildi</Badge>;
+          return <Badge className="bg-green-500">{t("badgePaymentAdded")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">To&apos;lov yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgePaymentUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">To&apos;lov o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgePaymentDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -68,11 +75,11 @@ export function useTableUtils() {
     if (entity_type === "COMPANY") {
       switch (action) {
         case "CREATE":
-          return <Badge className="bg-green-500">Kompaniya yaratildi</Badge>;
+          return <Badge className="bg-green-500">{t("badgeCompanyCreated")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">Kompaniya yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeCompanyUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">Kompaniya o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeCompanyDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -81,11 +88,11 @@ export function useTableUtils() {
     if (entity_type === "COMPANY_DEBT") {
       switch (action) {
         case "CREATE":
-          return <Badge className="bg-blue-500">Kompaniya qarzi qo&apos;shildi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeCompanyDebtAdded")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">Kompaniya qarzi yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeCompanyDebtUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">Kompaniya qarzi o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeCompanyDebtDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -94,11 +101,11 @@ export function useTableUtils() {
     if (entity_type === "COMPANY_PAYMENT") {
       switch (action) {
         case "CREATE":
-          return <Badge className="bg-green-500">Kompaniya to&apos;lovi qo&apos;shildi</Badge>;
+          return <Badge className="bg-green-500">{t("badgeCompanyPaymentAdded")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">Kompaniya to&apos;lovi yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeCompanyPaymentUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">Kompaniya to&apos;lovi o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeCompanyPaymentDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -107,9 +114,9 @@ export function useTableUtils() {
     if (entity_type === "COMPANY_PAYMENT_RECEIPT") {
       switch (action) {
         case "DELETE":
-          return <Badge variant="destructive">To&apos;lov cheki o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeReceiptDeleted")}</Badge>;
         case "CREATE":
-          return <Badge className="bg-green-500">To&apos;lov cheki qo&apos;shildi</Badge>;
+          return <Badge className="bg-green-500">{t("badgeReceiptAdded")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -118,15 +125,15 @@ export function useTableUtils() {
     if (entity_type === "USER") {
       switch (action) {
         case "LOGIN":
-          return <Badge className="bg-green-500">Tizimga kirish</Badge>;
+          return <Badge className="bg-green-500">{t("badgeLogin")}</Badge>;
         case "LOGOUT":
-          return <Badge className="bg-blue-500">Tizimdan chiqish</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeLogout")}</Badge>;
         case "CREATE":
-          return <Badge className="bg-green-500">Foydalanuvchi yaratildi</Badge>;
+          return <Badge className="bg-green-500">{t("badgeUserCreated")}</Badge>;
         case "UPDATE":
-          return <Badge className="bg-blue-500">Foydalanuvchi yangilandi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeUserUpdated")}</Badge>;
         case "DELETE":
-          return <Badge variant="destructive">Foydalanuvchi o&apos;chirildi</Badge>;
+          return <Badge variant="destructive">{t("badgeUserDeleted")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
@@ -135,14 +142,14 @@ export function useTableUtils() {
     if (entity_type === "SETTINGS") {
       switch (action) {
         case "UPDATE":
-          return <Badge className="bg-blue-500">O&apos;zgartirildi</Badge>;
+          return <Badge className="bg-blue-500">{t("badgeSettingsUpdated")}</Badge>;
         default:
           return <Badge variant="outline">{action}</Badge>;
       }
     }
 
     if (entity_type === "PAYMENT_REMINDER") {
-      return <Badge className="bg-amber-500">Eslatma</Badge>;
+      return <Badge className="bg-amber-500">{t("badgeReminder")}</Badge>;
     }
 
     return <Badge variant="outline">{action}</Badge>;
@@ -151,32 +158,32 @@ export function useTableUtils() {
   const getEntityTypeName = (type: string) => {
     switch (type) {
       case "DEBTOR":
-        return "Qarzdor";
+        return t("entityDebtor");
       case "DEBT":
-        return "Qarz";
+        return t("entityDebt");
       case "PAYMENT":
-        return "To'lov";
+        return t("entityPayment");
       case "USER":
-        return "Foydalanuvchi";
+        return t("entityUser");
       case "SETTINGS":
-        return "Sozlamalar";
+        return t("entitySettings");
       case "PAYMENT_REMINDER":
-        return "To'lov eslatmasi";
+        return t("entityPaymentReminder");
       case "COMPANY":
-        return "Kompaniya";
+        return t("entityCompany");
       case "COMPANY_DEBT":
-        return "Kompaniya qarzi";
+        return t("entityCompanyDebt");
       case "COMPANY_PAYMENT":
-        return "Kompaniya to'lovi";
+        return t("entityCompanyPayment");
       case "COMPANY_PAYMENT_RECEIPT":
-        return "To'lov cheki";
+        return t("entityCompanyPaymentReceipt");
       default:
         return type;
     }
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleString("uz-UZ", {
+    return new Date(date).toLocaleString(dateLocale, {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",

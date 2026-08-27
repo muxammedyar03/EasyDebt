@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import { CURRENT_USER_QUERY_KEY, useCurrentUser } from "@/hooks/use-current-user";
 
 export default function ProfilePage() {
+  const t = useTranslations("profile");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user: userData, loading, error, refetch } = useCurrentUser();
@@ -30,9 +34,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (error) {
-      toast.error("Foydalanuvchi ma'lumotlarini olishda xatolik");
+      toast.error(t("fetchError"));
     }
-  }, [error]);
+  }, [error, t]);
 
   useEffect(() => {
     if (!userData) return;
@@ -69,16 +73,16 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Ma'lumotlarni yangilashda xatolik");
+        toast.error(data.error || t("updateError"));
         return;
       }
 
-      toast.success("Ma'lumotlar muvaffaqiyatli yangilandi");
+      toast.success(t("updateSuccess"));
       await queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
       await refetch();
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Xatolik yuz berdi");
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      toast.error(tCommon("error"));
     } finally {
       setSaving(false);
     }
@@ -88,12 +92,12 @@ export default function ProfilePage() {
     e.preventDefault();
 
     if (formData.new_password !== formData.confirm_password) {
-      toast.error("Yangi parollar mos kelmaydi");
+      toast.error(t("passwordMismatch"));
       return;
     }
 
     if (formData.new_password.length < 6) {
-      toast.error("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+      toast.error(t("passwordMin"));
       return;
     }
 
@@ -112,20 +116,20 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Parolni o'zgartirishda xatolik");
+        toast.error(data.error || t("passwordChangeError"));
         return;
       }
 
-      toast.success("Parol muvaffaqiyatli o'zgartirildi");
+      toast.success(t("passwordChangeSuccess"));
       setFormData((prev) => ({
         ...prev,
         current_password: "",
         new_password: "",
         confirm_password: "",
       }));
-    } catch (error) {
-      console.error("Error changing password:", error);
-      toast.error("Xatolik yuz berdi");
+    } catch (err) {
+      console.error("Error changing password:", err);
+      toast.error(tCommon("error"));
     } finally {
       setSaving(false);
     }
@@ -139,6 +143,8 @@ export default function ProfilePage() {
     );
   }
 
+  const dateLocale = locale === "ru" ? "ru-RU" : "uz-UZ";
+
   return (
     <div className="container mx-auto max-w-4xl space-y-6 py-8">
       <div className="flex items-center gap-4">
@@ -146,58 +152,57 @@ export default function ProfilePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Profil sozlamalari</h1>
-          <p className="text-muted-foreground">Shaxsiy ma&apos;lumotlaringizni boshqaring</p>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
       </div>
 
       <Separator />
 
-      {/* Profile Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Shaxsiy ma&apos;lumotlar</CardTitle>
-          <CardDescription>Ism, familiya, username va email manzilni tahrirlash</CardDescription>
+          <CardTitle>{t("personalInfo")}</CardTitle>
+          <CardDescription>{t("personalInfoDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleProfileUpdate} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="first_name">Ism</Label>
+                <Label htmlFor="first_name">{t("firstName")}</Label>
                 <Input
                   id="first_name"
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleInputChange}
-                  placeholder="Ismingizni kiriting"
+                  placeholder={t("firstNamePlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="last_name">Familiya</Label>
+                <Label htmlFor="last_name">{t("lastName")}</Label>
                 <Input
                   id="last_name"
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleInputChange}
-                  placeholder="Familiyangizni kiriting"
+                  placeholder={t("lastNamePlaceholder")}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("username")}</Label>
               <Input
                 id="username"
                 name="username"
                 value={formData.username}
                 onChange={handleInputChange}
-                placeholder="Username kiriting"
+                placeholder={t("usernamePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 name="email"
@@ -213,12 +218,12 @@ export default function ProfilePage() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saqlanmoqda...
+                    {tCommon("saving")}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Saqlash
+                    {tCommon("save")}
                   </>
                 )}
               </Button>
@@ -227,47 +232,46 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Password Change */}
       <Card>
         <CardHeader>
-          <CardTitle>Parolni o&apos;zgartirish</CardTitle>
-          <CardDescription>Xavfsizlik uchun parolingizni yangilang</CardDescription>
+          <CardTitle>{t("passwordTitle")}</CardTitle>
+          <CardDescription>{t("passwordDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordUpdate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="current_password">Joriy parol</Label>
+              <Label htmlFor="current_password">{t("currentPassword")}</Label>
               <Input
                 id="current_password"
                 name="current_password"
                 type="password"
                 value={formData.current_password}
                 onChange={handleInputChange}
-                placeholder="Joriy parolingizni kiriting"
+                placeholder={t("currentPasswordPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="new_password">Yangi parol</Label>
+              <Label htmlFor="new_password">{t("newPassword")}</Label>
               <Input
                 id="new_password"
                 name="new_password"
                 type="password"
                 value={formData.new_password}
                 onChange={handleInputChange}
-                placeholder="Yangi parolni kiriting"
+                placeholder={t("newPasswordPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm_password">Parolni tasdiqlash</Label>
+              <Label htmlFor="confirm_password">{t("confirmPassword")}</Label>
               <Input
                 id="confirm_password"
                 name="confirm_password"
                 type="password"
                 value={formData.confirm_password}
                 onChange={handleInputChange}
-                placeholder="Yangi parolni qayta kiriting"
+                placeholder={t("confirmPasswordPlaceholder")}
               />
             </div>
 
@@ -276,12 +280,12 @@ export default function ProfilePage() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    O&apos;zgartirilmoqda...
+                    {t("changing")}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Parolni o&apos;zgartirish
+                    {t("changePassword")}
                   </>
                 )}
               </Button>
@@ -290,25 +294,24 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Account Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Hisob ma&apos;lumotlari</CardTitle>
+          <CardTitle>{t("accountInfo")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Rol:</span>
+            <span className="text-muted-foreground">{t("role")}</span>
             <span className="font-medium capitalize">{userData?.role}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Hisob yaratilgan:</span>
+            <span className="text-muted-foreground">{t("createdAt")}</span>
             <span className="font-medium">
-              {userData?.created_at ? new Date(userData.created_at).toLocaleDateString("uz-UZ") : "-"}
+              {userData?.created_at ? new Date(userData.created_at).toLocaleDateString(dateLocale) : "-"}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Holat:</span>
-            <span className="font-medium">{userData?.is_active ? "Faol" : "Nofaol"}</span>
+            <span className="text-muted-foreground">{t("status")}</span>
+            <span className="font-medium">{userData?.is_active ? t("active") : t("inactive")}</span>
           </div>
         </CardContent>
       </Card>

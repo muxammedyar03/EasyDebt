@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { TrendingDown, TrendingUp, AlertCircle, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -22,6 +23,7 @@ export function RiskAnalysisCard({
   lowRiskCount,
   overdueCount,
 }: RiskAnalysisProps) {
+  const t = useTranslations("reports");
   const highRiskPercentage = totalDebtors > 0 ? (highRiskCount / totalDebtors) * 100 : 0;
   const mediumRiskPercentage = totalDebtors > 0 ? (mediumRiskCount / totalDebtors) * 100 : 0;
   const lowRiskPercentage = totalDebtors > 0 ? (lowRiskCount / totalDebtors) * 100 : 0;
@@ -31,7 +33,7 @@ export function RiskAnalysisCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5" />
-          Risk Tahlili
+          {t("riskAnalysis")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -39,7 +41,7 @@ export function RiskAnalysisCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm font-medium">Jami qarzdorlar</span>
+            <span className="text-sm font-medium">{t("totalDebtors")}</span>
           </div>
           <span className="text-2xl font-bold">{totalDebtors}</span>
         </div>
@@ -49,7 +51,7 @@ export function RiskAnalysisCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="text-destructive h-4 w-4" />
-              <span className="text-sm font-medium">Yuqori risk (Limitdan oshgan)</span>
+              <span className="text-sm font-medium">{t("highRisk")}</span>
             </div>
             <span className="text-destructive text-sm font-semibold">
               {highRiskCount} ({highRiskPercentage.toFixed(1)}%)
@@ -63,7 +65,7 @@ export function RiskAnalysisCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-medium">Muddati o&apos;tgan</span>
+              <span className="text-sm font-medium">{t("overdue")}</span>
             </div>
             <span className="text-sm font-semibold text-orange-500">
               {overdueCount} ({totalDebtors > 0 ? ((overdueCount / totalDebtors) * 100).toFixed(1) : 0}%)
@@ -81,7 +83,7 @@ export function RiskAnalysisCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm font-medium">O&apos;rta risk (Qarzdor)</span>
+              <span className="text-sm font-medium">{t("mediumRisk")}</span>
             </div>
             <span className="text-sm font-semibold text-yellow-600">
               {mediumRiskCount} ({mediumRiskPercentage.toFixed(1)}%)
@@ -95,7 +97,7 @@ export function RiskAnalysisCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-medium">Past risk (To&apos;langan)</span>
+              <span className="text-sm font-medium">{t("lowRisk")}</span>
             </div>
             <span className="text-sm font-semibold text-green-600">
               {lowRiskCount} ({lowRiskPercentage.toFixed(1)}%)

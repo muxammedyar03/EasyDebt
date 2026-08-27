@@ -34,7 +34,7 @@ export function computeViewValueSync(debtor: DebtorDomain, overdueDays: number):
     id: `debt-${d.id}`,
     type: "DEBT" as const,
     amount: d.amount,
-    title: `Qarz qo'shildi: +${d.amount.toLocaleString()} so'm`,
+    title: "",
     subtitle: d.description ?? null,
     createdAt: new Date(d.createdAt),
   }));
@@ -42,15 +42,8 @@ export function computeViewValueSync(debtor: DebtorDomain, overdueDays: number):
     id: `payment-${p.id}`,
     type: "PAYMENT" as const,
     amount: p.amount,
-    title: `To'lov: -${p.amount.toLocaleString()} so'm`,
-    subtitle:
-      p.paymentType === "CASH"
-        ? "Naqd"
-        : p.paymentType === "CLICK"
-          ? "Click"
-          : p.paymentType === "CARD"
-            ? "Karta"
-            : "Unknown",
+    title: "",
+    subtitle: p.paymentType ?? null,
     createdAt: new Date(p.createdAt),
   }));
   const timeline = [...debtEvents, ...paymentEvents].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -97,7 +90,7 @@ export function useComputedViewValue(
       id: `debt-${d.id}`,
       type: "DEBT" as const,
       amount: d.amount,
-      title: `Qarz qo'shildi: +${d.amount.toLocaleString()} so'm`,
+      title: "",
       subtitle: d.description ?? null,
       createdAt: new Date(d.createdAt),
     }));
@@ -105,15 +98,8 @@ export function useComputedViewValue(
       id: `payment-${p.id}`,
       type: "PAYMENT" as const,
       amount: p.amount,
-      title: `To'lov: -${p.amount.toLocaleString()} so'm`,
-      subtitle:
-        p.paymentType === "CASH"
-          ? "Naqd"
-          : p.paymentType === "CLICK"
-            ? "Click"
-            : p.paymentType === "CARD"
-              ? "Karta"
-              : "Unknown",
+      title: "",
+      subtitle: p.paymentType ?? null,
       createdAt: new Date(p.createdAt),
     }));
     return [...debtEvents, ...paymentEvents].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

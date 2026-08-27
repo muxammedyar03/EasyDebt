@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { formatUzPhone } from "@/lib/format";
 
 import {
@@ -21,14 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DebtorView } from "@/types/view";
 
-const editDebtorSchema = z.object({
-  first_name: z.string().min(1, "Ism kiritish shart"),
-  last_name: z.string().min(1, "Familiya kiritish shart"),
-  phone_number: z.string().optional(),
-  address: z.string().optional(),
-});
-
-type EditDebtorFormData = z.infer<typeof editDebtorSchema>;
+type EditDebtorFormData = {
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
+  address?: string;
+};
 
 interface EditDebtorDialogProps {
   open: boolean;
@@ -38,8 +37,21 @@ interface EditDebtorDialogProps {
 }
 
 export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: EditDebtorDialogProps) {
+  const t = useTranslations("debtor");
+  const tCommon = useTranslations("common");
   const [isLoading, setIsLoading] = React.useState(false);
   const [phone, setPhone] = React.useState("");
+
+  const editDebtorSchema = React.useMemo(
+    () =>
+      z.object({
+        first_name: z.string().min(1, t("firstNameRequired")),
+        last_name: z.string().min(1, t("lastNameRequired")),
+        phone_number: z.string().optional(),
+        address: z.string().optional(),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -88,10 +100,10 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Qarzdor ma'lumotlarini o'zgartirishda xatolik yuz berdi");
+        throw new Error(errorData.error || t("editError"));
       }
 
-      toast.success("Qarzdor ma'lumotlari muvaffaqiyatli o'zgartirildi");
+      toast.success(t("editSuccess"));
       onOpenChange(false);
 
       if (onSuccess) {
@@ -99,7 +111,7 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
       }
     } catch (error) {
       console.error("Error updating debtor:", error);
-      toast.error(error instanceof Error ? error.message : "Qarzdor ma'lumotlarini o'zgartirishda xatolik yuz berdi");
+      toast.error(error instanceof Error ? error.message : t("editError"));
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +121,8 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle>Qarzdor ma&apos;lumotlarini o&apos;zgartirish</DialogTitle>
-          <DialogDescription>Qarzdor ma&apos;lumotlarini tahrirlang</DialogDescription>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
+          <DialogDescription>{t("editDescription")}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -124,22 +136,22 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="first_name">
-                Ism <span className="text-destructive">*</span>
+                {t("firstName")} <span className="text-destructive">*</span>
               </Label>
-              <Input id="first_name" placeholder="Ism" {...register("first_name")} disabled={isLoading} />
+              <Input id="first_name" placeholder={t("firstName")} {...register("first_name")} disabled={isLoading} />
               {errors.first_name && <p className="text-destructive text-sm">{errors.first_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="last_name">
-                Familiya <span className="text-destructive">*</span>
+                {t("lastName")} <span className="text-destructive">*</span>
               </Label>
-              <Input id="last_name" placeholder="Familiya" {...register("last_name")} disabled={isLoading} />
+              <Input id="last_name" placeholder={t("lastName")} {...register("last_name")} disabled={isLoading} />
               {errors.last_name && <p className="text-destructive text-sm">{errors.last_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone_number">Telefon raqami</Label>
+              <Label htmlFor="phone_number">{t("phone")}</Label>
               <Controller
                 name="phone_number"
                 control={control}
@@ -162,18 +174,18 @@ export function EditDebtorDialog({ open, onOpenChange, debtor, onSuccess }: Edit
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="address">Manzil</Label>
-              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
+              <Label htmlFor="address">{t("address")}</Label>
+              <Input id="address" placeholder={t("address")} {...register("address")} disabled={isLoading} />
             </div>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Saqlash
+              {tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

@@ -21,6 +21,7 @@ import { DebtorDomain } from "@/types/domain";
 import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { exportDebtorReceipt } from "@/lib/pdf";
+import { useTranslations } from "next-intl";
 import {
   SingleReceiptTemplate,
   TimelineReceiptTemplate,
@@ -41,6 +42,8 @@ function DebtorDetailContent({
   initialViewValue?: ViewDebtorComputed;
 }) {
   const queryClient = useQueryClient();
+  const tCommon = useTranslations("common");
+  const tDebtor = useTranslations("debtor");
   const detail = useDebtorDetail({
     debtorId: initialDebtor.id,
     overdueDays,
@@ -135,10 +138,10 @@ function DebtorDetailContent({
           : null,
         generatedAt: new Date(),
       });
-      toast.success("PDF hisobot muvaffaqiyatli yuklab olindi");
+      toast.success(tDebtor("pdfSuccess"));
     } catch (error) {
       console.error("PDF export error:", error);
-      toast.error("PDF hisobot yuklashda xatolik yuz berdi");
+      toast.error(tDebtor("pdfError"));
     }
   }, [debtor, detail.stats, detail.rating, detail.timeline, user]);
 
@@ -190,7 +193,11 @@ function DebtorDetailContent({
   }, [pendingReceiptData]);
 
   if (!debtor) {
-    return detail.isLoading ? <div className="text-muted-foreground p-4">Yuklanmoqda...</div> : <>Qarzdor topilmadi</>;
+    return detail.isLoading ? (
+      <div className="text-muted-foreground p-4">{tCommon("loading")}</div>
+    ) : (
+      <>{tDebtor("notFound")}</>
+    );
   }
 
   const value = { ...viewValue, debtor };
@@ -214,13 +221,13 @@ function DebtorDetailContent({
       <Tabs defaultValue="debts" className="w-full">
         <TabsList className="grid h-10 w-full grid-cols-3 md:w-1/2 lg:w-1/2">
           <TabsTrigger value="debts">
-            Qarzlar
+            {tDebtor("debts")}
             <Badge variant="secondary" className="border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-500">
               {debtor.debts?.length}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="payments">
-            To&apos;lovlar
+            {tDebtor("payments")}
             <Badge
               variant="secondary"
               className="border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-500"
@@ -228,7 +235,7 @@ function DebtorDetailContent({
               {debtor.payments?.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="timeline">Vaqt chizig&apos;i</TabsTrigger>
+          <TabsTrigger value="timeline">{tDebtor("timeline")}</TabsTrigger>
         </TabsList>
         <TabsContent value="debts" className="mt-4">
           {debtor.debts && (

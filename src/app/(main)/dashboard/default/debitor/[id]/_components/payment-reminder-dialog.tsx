@@ -3,7 +3,8 @@
 import * as React from "react";
 import { Bell, Calendar, Clock, Loader2, Trash2, CheckCircle2, BellOff } from "lucide-react";
 import { format } from "date-fns";
-import { uz } from "date-fns/locale";
+import { ru, uz } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import {
@@ -51,6 +52,13 @@ interface PaymentReminderDialogProps {
   onSuccess?: () => void;
 }
 
+const STATUS_KEYS = {
+  PENDING: "reminderStatusPending",
+  NOTIFIED: "reminderStatusNotified",
+  COMPLETED: "reminderStatusCompleted",
+  CANCELLED: "reminderStatusCancelled",
+} as const;
+
 export function PaymentReminderDialog({
   open,
   onOpenChange,
@@ -69,11 +77,16 @@ export function PaymentReminderDialog({
   deleteReminder,
   onSuccess,
 }: PaymentReminderDialogProps) {
+  const t = useTranslations("debtor");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "ru" ? ru : uz;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const success = await submitReminder();
     if (success) {
-      toast.success(activeReminder ? "Eslatma yangilandi" : "Eslatma yaratildi");
+      toast.success(activeReminder ? t("reminderUpdated") : t("reminderCreated"));
       onSuccess?.();
       onOpenChange(false);
     }
@@ -81,11 +94,11 @@ export function PaymentReminderDialog({
 
   const handleCancel = async () => {
     if (!activeReminder) return;
-    const confirmed = window.confirm("Eslatmani bekor qilmoqchimisiz?");
+    const confirmed = window.confirm(t("reminderConfirmCancel"));
     if (confirmed) {
       const success = await cancelReminder(activeReminder.id);
       if (success) {
-        toast.success("Eslatma bekor qilindi");
+        toast.success(t("reminderCancelled"));
         onSuccess?.();
       }
     }
@@ -95,18 +108,18 @@ export function PaymentReminderDialog({
     if (!activeReminder) return;
     const success = await completeReminder(activeReminder.id);
     if (success) {
-      toast.success("Eslatma tugallandi");
+      toast.success(t("reminderCompleted"));
       onSuccess?.();
     }
   };
 
   const handleDelete = async () => {
     if (!activeReminder) return;
-    const confirmed = window.confirm("Eslatmani o'chirmoqchimisiz?");
+    const confirmed = window.confirm(t("reminderConfirmDelete"));
     if (confirmed) {
       const success = await deleteReminder(activeReminder.id);
       if (success) {
-        toast.success("Eslatma o'chirildi");
+        toast.success(t("reminderDeleted"));
         onSuccess?.();
       }
     }
@@ -118,9 +131,9 @@ export function PaymentReminderDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            To&apos;lov eslatmasi
+            {t("reminderTitle")}
           </DialogTitle>
-          <DialogDescription>{debtorName} uchun to&apos;lov eslatmasini belgilang</DialogDescription>
+          <DialogDescription>{t("reminderDescription", { name: debtorName })}</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
@@ -128,7 +141,6 @@ export function PaymentReminderDialog({
             <Loader2 className="h-6 w-6 animate-spin" />
           </div>
         ) : activeReminder?.status === "NOTIFIED" ? (
-          /* NOTIFIED state - show completion UI */
           <div className="py-4">
             <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
               <div className="flex items-center gap-3">
@@ -137,12 +149,14 @@ export function PaymentReminderDialog({
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">Eslatma yuborilgan</span>
-                    <Badge className="border-purple-500/20 bg-purple-500/10 text-purple-700">Bildirildi</Badge>
+                    <span className="font-medium">{t("reminderSent")}</span>
+                    <Badge className="border-purple-500/20 bg-purple-500/10 text-purple-700">
+                      {t("reminderStatusNotified")}
+                    </Badge>
                   </div>
                   <p className="text-muted-foreground mt-1 text-sm">
                     {format(new Date(activeReminder.reminderAt), "d-MMMM yyyy, HH:mm", {
-                      locale: uz,
+                      locale: dateLocale,
                     })}
                   </p>
                   {activeReminder.note && <p className="text-muted-foreground mt-1 text-sm">{activeReminder.note}</p>}
@@ -150,10 +164,7 @@ export function PaymentReminderDialog({
               </div>
             </div>
 
-            <p className="text-muted-foreground mt-4 text-center text-sm">
-              Qarzdorga eslatma yuborildi. Agar muammo hal bo&apos;lgan bo&apos;lsa, &quot;Tugallash&quot; tugmasini
-              bosing.
-            </p>
+            <p className="text-muted-foreground mt-4 text-center text-sm">{t("reminderNotifiedHint")}</p>
 
             <div className="mt-6 grid gap-2 sm:grid-cols-3">
               <Button
@@ -165,7 +176,7 @@ export function PaymentReminderDialog({
                 className="h-12 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/20 hover:text-green-700"
               >
                 <CheckCircle2 className="mr-1 h-4 w-4" />
-                Tugallash
+                {t("reminderComplete")}
               </Button>
               <Button
                 type="button"
@@ -176,7 +187,7 @@ export function PaymentReminderDialog({
                 className="h-12 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/20 hover:text-yellow-700"
               >
                 <BellOff className="mr-1 h-4 w-4" />
-                Bekor qilish
+                {tCommon("cancel")}
               </Button>
               <Button
                 type="button"
@@ -187,7 +198,7 @@ export function PaymentReminderDialog({
                 className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/20"
               >
                 <Trash2 className="mr-1 h-4 w-4" />
-                O&apos;chirish
+                {tCommon("delete")}
               </Button>
             </div>
 
@@ -198,23 +209,22 @@ export function PaymentReminderDialog({
               disabled={isSubmitting}
               className="mt-4 h-12 w-full"
             >
-              Yopish
+              {tCommon("close")}
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            {/* Show active reminder info */}
             {activeReminder && (
               <div className="bg-muted/50 mb-4 rounded-lg border p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Faol eslatma</span>
+                  <span className="text-sm font-medium">{t("reminderActive")}</span>
                   <Badge className={cn(REMINDER_STATUS_BADGES[activeReminder.status].color)}>
-                    {REMINDER_STATUS_BADGES[activeReminder.status].label}
+                    {t(STATUS_KEYS[activeReminder.status])}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mt-1 text-sm">
                   {format(new Date(activeReminder.reminderAt), "d-MMMM yyyy, HH:mm", {
-                    locale: uz,
+                    locale: dateLocale,
                   })}
                 </p>
                 {activeReminder.note && <p className="mt-1 text-sm">{activeReminder.note}</p>}
@@ -222,11 +232,10 @@ export function PaymentReminderDialog({
             )}
 
             <div className="grid gap-4 py-4">
-              {/* Date picker */}
               <div className="grid gap-2">
                 <Label htmlFor="date" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Sana <span className="text-destructive">*</span>
+                  {tCommon("date")} <span className="text-destructive">*</span>
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -240,7 +249,9 @@ export function PaymentReminderDialog({
                       disabled={isSubmitting}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      {formState.date ? format(formState.date, "d-MMMM yyyy", { locale: uz }) : "Sana tanlang"}
+                      {formState.date
+                        ? format(formState.date, "d-MMMM yyyy", { locale: dateLocale })
+                        : tCommon("pickDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-2" align="start">
@@ -255,16 +266,15 @@ export function PaymentReminderDialog({
                 </Popover>
               </div>
 
-              {/* Time picker */}
               <div className="grid gap-2">
                 <Label htmlFor="time" className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  Vaqt <span className="text-destructive">*</span>
+                  {tCommon("time")} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="time"
                   type="time"
-                  placeholder="Vaqt tanlang"
+                  placeholder={tCommon("pickTime")}
                   value={formState.time}
                   onChange={(e) => setFormTime(e.target.value)}
                   disabled={isSubmitting}
@@ -272,12 +282,11 @@ export function PaymentReminderDialog({
                 />
               </div>
 
-              {/* Note input */}
               <div className="grid gap-2">
-                <Label htmlFor="note">Izoh (ixtiyoriy)</Label>
+                <Label htmlFor="note">{tCommon("noteOptional")}</Label>
                 <Textarea
                   id="note"
-                  placeholder="Eslatma haqida izoh..."
+                  placeholder={t("reminderNotePlaceholder")}
                   value={formState.note}
                   onChange={(e) => setFormNote(e.target.value)}
                   disabled={isSubmitting}
@@ -286,7 +295,6 @@ export function PaymentReminderDialog({
                 />
               </div>
 
-              {/* Error message */}
               {error && <p className="text-destructive text-sm">{error}</p>}
             </div>
 
@@ -303,7 +311,7 @@ export function PaymentReminderDialog({
                       className="h-12 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/10 hover:text-green-700 dark:border-green-500/15 dark:bg-green-500/10 dark:hover:bg-green-600/20"
                     >
                       <CheckCircle2 className="mr-1 h-4 w-4" />
-                      Tugallash
+                      {t("reminderComplete")}
                     </Button>
                     <Button
                       type="button"
@@ -314,7 +322,7 @@ export function PaymentReminderDialog({
                       className="h-12 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/10 hover:text-yellow-700 dark:border-yellow-500/15 dark:bg-yellow-500/10 dark:hover:bg-yellow-600/20"
                     >
                       <BellOff className="mr-1 h-4 w-4" />
-                      Bekor qilish
+                      {tCommon("cancel")}
                     </Button>
                     <Button
                       type="button"
@@ -325,7 +333,7 @@ export function PaymentReminderDialog({
                       className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/10 dark:border-red-500/15 dark:bg-red-500/10 dark:hover:bg-red-600/20"
                     >
                       <Trash2 className="mr-1 h-4 w-4" />
-                      O&apos;chirish
+                      {tCommon("delete")}
                     </Button>
                   </div>
                 )}
@@ -338,15 +346,14 @@ export function PaymentReminderDialog({
                     disabled={isSubmitting}
                     className="h-12"
                   >
-                    Yopish
+                    {tCommon("close")}
                   </Button>
                   <Button type="submit" disabled={isSubmitting || !formState.date} className="h-12">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {activeReminder ? "Yangilash" : "Saqlash"}
+                    {activeReminder ? tCommon("update") : tCommon("save")}
                   </Button>
                 </div>
               </div>
-              {/* Action buttons for existing reminder */}
             </DialogFooter>
           </form>
         )}

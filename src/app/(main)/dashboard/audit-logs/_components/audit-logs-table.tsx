@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,8 @@ export interface AuditLogsTableProps {
 }
 
 export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: AuditLogsTableProps) {
+  const t = useTranslations("audit");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getActionBadge, getEntityTypeName, formatDate } = useTableUtils();
@@ -62,7 +65,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      toast.loading("Excel fayl tayyorlanmoqda...");
+      toast.loading(tCommon("exportPreparing"));
 
       const params = searchParams?.toString() ?? "";
       const response = await fetch(`/api/audit-logs/export?${params}`);
@@ -72,12 +75,21 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
       }
 
       const data = await response.json();
-      const logs: ExportedAuditLog[] = data.logs;
+      const exportLogs: ExportedAuditLog[] = data.logs;
 
       // Prepare export data
       const exportData = {
-        headers: ["ID", "Sana", "Foydalanuvchi", "Email", "Harakat", "Entity turi", "Entity ID", "IP Address"],
-        rows: logs.map((log) => [
+        headers: [
+          t("headerId"),
+          t("headerDate"),
+          t("headerUser"),
+          t("headerEmail"),
+          t("headerAction"),
+          t("headerEntityType"),
+          t("headerEntityId"),
+          t("headerIp"),
+        ],
+        rows: exportLogs.map((log) => [
           log.id,
           log.sana,
           log.foydalanuvchi,
@@ -92,11 +104,11 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
 
       await exportToExcel(exportData);
       toast.dismiss();
-      toast.success(`${logs.length} ta yozuv Excel fayliga yuklandi`);
+      toast.success(tCommon("exportSuccess", { count: exportLogs.length }));
     } catch (error) {
       console.error("Export error:", error);
       toast.dismiss();
-      toast.error("Excel fayliga yuklashda xatolik yuz berdi");
+      toast.error(tCommon("exportError"));
     } finally {
       setIsExporting(false);
     }
@@ -109,7 +121,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
         <Card className="py-0 pt-6">
           <CardHeader className="px-2 md:px-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-lg md:text-xl">Audit Log ({totalCount} ta yozuv)</CardTitle>
+              <CardTitle className="text-lg md:text-xl">{t("recordsCount", { count: totalCount })}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="px-2 md:px-4">
@@ -118,7 +130,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
               <div className="relative flex-1">
                 <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
                 <Input
-                  placeholder="Harakat yoki entity bo'yicha qidirish..."
+                  placeholder={t("searchPlaceholder")}
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -129,7 +141,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                 {/* Filter button for mobile/tablet */}
                 <Button onClick={handleSearch} variant="outline" size="sm" className="h-12">
                   <Search className="mr-2 h-4 w-4" />
-                  Qidirish
+                  {tCommon("search")}
                 </Button>
                 <div className="2xl:hidden">
                   <AuditLogFilters isMobile />
@@ -142,7 +154,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   className="h-12 bg-blue-500 text-white hover:bg-blue-600"
                 >
                   <FileDown className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
+                  <span className="hidden sm:inline">{t("export")}</span>
                 </Button>
               </div>
             </div>
@@ -159,7 +171,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                       </div>
                       <div>
                         <p className="text-sm font-medium">
-                          {log.user ? `${log.user.username} (${log.user.email})` : "Tizim"}
+                          {log.user ? `${log.user.username} (${log.user.email})` : tCommon("system")}
                         </p>
                         <p className="text-muted-foreground text-xs">
                           {getEntityTypeName(log.entity_type)}
@@ -183,25 +195,21 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {/* <TableHead>Sana</TableHead> */}
-                    <TableHead>Foydalanuvchi</TableHead>
-                    <TableHead>Harakat</TableHead>
-                    {/* <TableHead>Entity</TableHead> */}
-                    <TableHead>Tafsilotlar</TableHead>
-                    {/* <TableHead>IP Address</TableHead> */}
+                    <TableHead>{t("user")}</TableHead>
+                    <TableHead>{t("action")}</TableHead>
+                    <TableHead>{t("details")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {logs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center">
-                        Ma&apos;lumot topilmadi
+                        {tCommon("noData")}
                       </TableCell>
                     </TableRow>
                   ) : (
                     logs.map((log) => (
                       <TableRow key={log.id}>
-                        {/* <TableCell className="whitespace-nowrap">{formatDate(log.created_at)}</TableCell> */}
                         <TableCell className="w-28">
                           {log.user ? (
                             <div>
@@ -214,7 +222,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                             </div>
                           ) : (
                             <div>
-                              <p className="font-medium">Tizim</p>
+                              <p className="font-medium">{tCommon("system")}</p>
                               <p className="text-muted-foreground text-xs">{formatDate(log.created_at)}</p>
                             </div>
                           )}
@@ -231,7 +239,6 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                             {log.description && <p className="text-muted-foreground text-xs">{log.description}</p>}
                           </p>
                         </TableCell>
-                        {/* <TableCell className="text-muted-foreground text-sm">{log.ip_address || "-"}</TableCell> */}
                       </TableRow>
                     ))
                   )}
@@ -243,7 +250,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
             {totalPages > 1 && (
               <div className="mt-6 mb-3 flex items-center justify-between">
                 <div className="text-muted-foreground text-sm">
-                  {currentPage} / {totalPages} sahifa
+                  {tCommon("pageOf", { current: currentPage, total: totalPages })}
                 </div>
                 <div className="flex items-center gap-4">
                   <Button
@@ -254,7 +261,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Oldingi
+                    {tCommon("previous")}
                   </Button>
                   <Button
                     variant="outline"
@@ -263,7 +270,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                     disabled={currentPage === totalPages}
                     className="h-12 px-6"
                   >
-                    Keyingi
+                    {tCommon("next")}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

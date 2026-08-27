@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +27,9 @@ type ReportsSummarySectionProps = {
   }[];
 };
 
-export function ReportsSummarySection(props: ReportsSummarySectionProps) {
+export async function ReportsSummarySection(props: ReportsSummarySectionProps) {
+  const t = await getTranslations("reports");
+  const tCommon = await getTranslations("common");
   const {
     totalDebtsAmount,
     totalDebtsCount,
@@ -43,16 +46,16 @@ export function ReportsSummarySection(props: ReportsSummarySectionProps) {
 
   return (
     <Suspense fallback={<div className="bg-muted h-64 animate-pulse rounded-xl border" />}>
-      <p className="text-muted-foreground pb-4 pl-2">Batafsil statistika va tahlil</p>
+      <p className="text-muted-foreground pb-4 pl-2">{t("detailedStats")}</p>
       <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-6 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2">
         <Card className="@container/card">
           <CardHeader>
-            <CardDescription>Umumiy qarz</CardDescription>
+            <CardDescription>{t("totalDebt")}</CardDescription>
             <CardTitle className="flex items-end gap-1">
               <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
                 {totalDebtsAmount.toLocaleString()}
               </p>
-              <span className="text-md leading-5">so&apos;m</span>
+              <span className="text-md leading-5">{tCommon("som")}</span>
             </CardTitle>
             <CardAction>
               <Badge variant="outline" className="text-red-600">
@@ -61,18 +64,18 @@ export function ReportsSummarySection(props: ReportsSummarySectionProps) {
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="text-muted-foreground">{totalDebtsCount} ta qarz yozuvi</div>
+            <div className="text-muted-foreground">{t("debtRecords", { count: totalDebtsCount })}</div>
           </CardFooter>
         </Card>
 
         <Card className="@container/card">
           <CardHeader>
-            <CardDescription>Umumiy to&apos;lovlar</CardDescription>
+            <CardDescription>{t("totalPayments")}</CardDescription>
             <CardTitle className="flex items-end gap-1">
               <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
                 {totalPaymentsAmount.toLocaleString()}
               </p>
-              <span className="text-md leading-5">so&apos;m</span>
+              <span className="text-md leading-5">{tCommon("som")}</span>
             </CardTitle>
             <CardAction>
               <Badge variant="outline" className="text-green-600">
@@ -81,7 +84,7 @@ export function ReportsSummarySection(props: ReportsSummarySectionProps) {
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="text-muted-foreground">{totalPaymentsCount} ta to&apos;lov</div>
+            <div className="text-muted-foreground">{t("paymentCount", { count: totalPaymentsCount })}</div>
           </CardFooter>
         </Card>
       </div>

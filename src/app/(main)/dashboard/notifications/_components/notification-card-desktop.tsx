@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationType } from "@prisma/client";
 import { EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { NotificationItem } from "./notifications-client";
 import { cn } from "@/lib/utils";
 import { formatDateUz } from "@/lib/format";
@@ -13,6 +14,7 @@ export function NotificationCardDesktop({
   n: NotificationItem;
   updateParams: (params: Record<string, string | undefined>) => void;
 }) {
+  const t = useTranslations("notifications");
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const textColorByType: Record<NotificationType, string> = {
     PAYMENT_REMINDER: "text-orange-700",
@@ -79,7 +81,7 @@ export function NotificationCardDesktop({
             disabled={loadingId === n.id}
           >
             <EyeOff className="h-4 w-4" />
-            O&apos;qildi
+            {t("markRead")}
           </Button>
         ) : (
           <div className="w-10"></div>

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +52,9 @@ export function CustomersTableDumb({
   onSortToggle,
   onPageChange,
 }: CustomersTableDumbProps) {
+  const t = useTranslations("customers");
+  const tCommon = useTranslations("common");
+  const tRating = useTranslations("rating");
   const router = useRouter();
   const isMobile = useIsMobile();
   const { rating } = useDebtorRatingStatus();
@@ -64,7 +68,7 @@ export function CustomersTableDumb({
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
             <Input
-              placeholder="Ism, familiya yoki telefon..."
+              placeholder={t("searchPlaceholder")}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
               className="h-12 pl-8"
@@ -72,10 +76,10 @@ export function CustomersTableDumb({
           </div>
           <SortToggleGroup
             sortOptions={[
-              { key: "date", label: "Sana" },
-              { key: "days", label: "Kunlar" },
-              { key: "payments", label: "To'lovlar" },
-              { key: "debt", label: "Qarz" },
+              { key: "date", label: t("sortDate") },
+              { key: "days", label: t("sortDays") },
+              { key: "payments", label: t("sortPayments") },
+              { key: "debt", label: t("sortDebt") },
             ]}
             currentSortField={currentSortField}
             currentSortOrder={currentSortOrder}
@@ -89,22 +93,22 @@ export function CustomersTableDumb({
           <Tabs value={currentRating} onValueChange={onRatingChange} className="w-full xl:w-1/2">
             <TabsList className="grid h-12 w-full grid-cols-4">
               <TabsTrigger value="all">
-                Barchasi
+                {tCommon("all")}
                 <span className="ml-2 text-xs">({totalDebtorsCount})</span>
               </TabsTrigger>
               <TabsTrigger value="high">
                 <TrendingUp className="mr-1 h-4 w-4" />
-                Yaxshi
+                {tRating("good")}
                 <span className="ml-2 text-xs">({goodCount})</span>
               </TabsTrigger>
               <TabsTrigger value="medium">
                 <Minus className="mr-1 h-4 w-4" />
-                O&apos;rtacha
+                {tRating("average")}
                 <span className="ml-2 text-xs">({averageCount})</span>
               </TabsTrigger>
               <TabsTrigger value="critical">
                 <TrendingDown className="mr-1 h-4 w-4" />
-                Yomon
+                {tRating("bad")}
                 <span className="ml-2 text-xs">({badCount})</span>
               </TabsTrigger>
             </TabsList>
@@ -112,13 +116,13 @@ export function CustomersTableDumb({
         ) : (
           <Select value={currentRating} onValueChange={onRatingChange}>
             <SelectTrigger className="!h-12 w-32">
-              <SelectValue placeholder="Select a rating" />
+              <SelectValue placeholder={t("selectRating")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Barchasi</SelectItem>
-              <SelectItem value="high">Yaxshi</SelectItem>
-              <SelectItem value="medium">O&apos;rtacha</SelectItem>
-              <SelectItem value="critical">Yomon</SelectItem>
+              <SelectItem value="all">{tCommon("all")}</SelectItem>
+              <SelectItem value="high">{tRating("good")}</SelectItem>
+              <SelectItem value="medium">{tRating("average")}</SelectItem>
+              <SelectItem value="critical">{tRating("bad")}</SelectItem>
             </SelectContent>
           </Select>
         )}
@@ -127,7 +131,7 @@ export function CustomersTableDumb({
       {/* Mobile Card View */}
       <div className="grid gap-4 md:hidden">
         {customers.length === 0 ? (
-          <div className="text-muted-foreground py-8 text-center">Ma&apos;lumot topilmadi</div>
+          <div className="text-muted-foreground py-8 text-center">{tCommon("noData")}</div>
         ) : (
           customers.map((customer) => (
             <Card
@@ -148,11 +152,11 @@ export function CustomersTableDumb({
                   )}
                   <div className="flex items-center justify-between pt-2">
                     <div>
-                      <p className="text-muted-foreground text-xs">O&apos;rtacha kunlar</p>
-                      <p className="text-lg font-bold">{customer.rating.score} kun</p>
+                      <p className="text-muted-foreground text-xs">{t("avgDays")}</p>
+                      <p className="text-lg font-bold">{t("daysValue", { count: customer.rating.score })}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground text-xs">To&apos;lovlar</p>
+                      <p className="text-muted-foreground text-xs">{t("payments")}</p>
                       <p className="text-lg font-bold">{customer.payments.length}</p>
                     </div>
                   </div>
@@ -168,19 +172,19 @@ export function CustomersTableDumb({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Mijoz</TableHead>
-              <TableHead>Telefon</TableHead>
-              <TableHead>Reyting</TableHead>
-              <TableHead>O&apos;rtacha kunlar</TableHead>
-              <TableHead>To&apos;lovlar soni</TableHead>
-              <TableHead>Qarz</TableHead>
+              <TableHead>{t("customer")}</TableHead>
+              <TableHead>{t("phone")}</TableHead>
+              <TableHead>{t("ratingLabel")}</TableHead>
+              <TableHead>{t("avgDays")}</TableHead>
+              <TableHead>{t("paymentsCount")}</TableHead>
+              <TableHead>{t("debt")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center">
-                  Ma&apos;lumot topilmadi
+                  {tCommon("noData")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -195,7 +199,7 @@ export function CustomersTableDumb({
                   </TableCell>
                   <TableCell>{customer.debtor.phoneNumber || "-"}</TableCell>
                   <TableCell>{rating(customer.rating.label)}</TableCell>
-                  <TableCell>{customer.rating.score} kun</TableCell>
+                  <TableCell>{t("daysValue", { count: customer.rating.score })}</TableCell>
                   <TableCell>{customer.payments.length}</TableCell>
                   <TableCell className={customer.debtor.totalDebt > 0 ? "text-red-600" : "text-green-600"}>
                     {formatCurrencyUzs(customer.debtor.totalDebt)}
@@ -211,7 +215,7 @@ export function CustomersTableDumb({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-sm">
-            {currentPage} / {totalPages} sahifa
+            {tCommon("pageOf", { current: currentPage, total: totalPages })}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -221,7 +225,7 @@ export function CustomersTableDumb({
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              Oldingi
+              {tCommon("previous")}
             </Button>
             <Button
               type="button"
@@ -230,7 +234,7 @@ export function CustomersTableDumb({
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Keyingi
+              {tCommon("next")}
             </Button>
           </div>
         </div>

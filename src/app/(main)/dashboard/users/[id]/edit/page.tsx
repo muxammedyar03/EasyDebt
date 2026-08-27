@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +10,7 @@ interface EditUserPageProps {
 }
 
 export default async function EditUserPage({ params }: EditUserPageProps) {
+  const t = await getTranslations("users");
   const session = await getSession();
 
   if (!session || session.role !== "SUPER_ADMIN") {
@@ -47,10 +49,8 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Foydalanuvchini tahrirlash</h2>
-        <p className="text-muted-foreground text-sm">
-          {serializedUser.username} — ma&apos;lumotlarni o&apos;zgartiring yoki rolni yangilang.
-        </p>
+        <h2 className="text-2xl font-bold">{t("editTitle")}</h2>
+        <p className="text-muted-foreground text-sm">{t("editSubtitle", { username: serializedUser.username })}</p>
       </div>
       <Card>
         <CardContent>

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Banknote, CreditCard, Smartphone } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,19 +15,23 @@ interface PaymentMethodsCardProps {
 }
 
 export function PaymentMethodsCard({ cash, card, click, total }: PaymentMethodsCardProps) {
+  const t = useTranslations("reports");
+  const tPayment = useTranslations("payment");
+  const tCommon = useTranslations("common");
+
   const getPercentage = (amount: number) => {
     if (total === 0) return 0;
     return (amount / total) * 100;
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
+    return new Intl.NumberFormat("uz-UZ").format(amount) + " " + tCommon("som");
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>To&apos;lov Usullari</CardTitle>
+        <CardTitle>{t("paymentMethods")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -35,7 +40,7 @@ export function PaymentMethodsCard({ cash, card, click, total }: PaymentMethodsC
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Banknote className="h-5 w-5 text-green-500" />
-                <span className="font-medium">Naqd</span>
+                <span className="font-medium">{tPayment("cash")}</span>
               </div>
               <div className="text-right">
                 <p className="font-bold">{formatCurrency(cash)}</p>
@@ -50,7 +55,7 @@ export function PaymentMethodsCard({ cash, card, click, total }: PaymentMethodsC
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-blue-500" />
-                <span className="font-medium">Karta</span>
+                <span className="font-medium">{tPayment("card")}</span>
               </div>
               <div className="text-right">
                 <p className="font-bold">{formatCurrency(card)}</p>
@@ -65,7 +70,7 @@ export function PaymentMethodsCard({ cash, card, click, total }: PaymentMethodsC
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-purple-500" />
-                <span className="font-medium">Click</span>
+                <span className="font-medium">{tPayment("click")}</span>
               </div>
               <div className="text-right">
                 <p className="font-bold">{formatCurrency(click)}</p>
@@ -78,7 +83,7 @@ export function PaymentMethodsCard({ cash, card, click, total }: PaymentMethodsC
           {/* Total */}
           <div className="border-t pt-4">
             <div className="flex items-center justify-between">
-              <span className="font-semibold">Jami</span>
+              <span className="font-semibold">{t("total")}</span>
               <span className="text-xl font-bold">{formatCurrency(total)}</span>
             </div>
           </div>

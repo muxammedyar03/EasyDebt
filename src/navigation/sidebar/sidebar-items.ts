@@ -38,64 +38,46 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "Dashboards",
+    label: "nav.dashboards",
     items: [
       {
-        title: "Bosh sahifa",
+        title: "nav.home",
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
-      // {
-      //   title: "CRM",
-      //   url: "/dashboard/crm",
-      //   icon: ChartBar,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Finance",
-      //   url: "/dashboard/finance",
-      //   icon: Banknote,
-      //   comingSoon: true,
-      // },
       {
-        title: "Qarzdorlar",
+        title: "nav.debtors",
         url: "/dashboard/debtors",
         icon: UserCog,
       },
       {
-        title: "Mening qarzlarim",
+        title: "nav.myDebts",
         url: "/dashboard/my-debts",
         icon: Building2,
       },
-      // {
-      //   title: "Qarz hisoboti",
-      //   url: "/dashboard/my-debts/report",
-      //   icon: ChartColumn,
-      // },
       {
-        title: "Mijozlar Reytingi",
+        title: "nav.customerRatings",
         url: "/dashboard/customers",
         icon: Users,
       },
       {
-        title: "Hisobotlar",
+        title: "nav.reports",
         url: "/dashboard/reports",
         icon: BarChart3,
       },
-
       {
-        title: "Audit Log",
+        title: "nav.auditLog",
         url: "/dashboard/audit-logs",
         icon: FileText,
       },
       {
-        title: "Users",
+        title: "nav.users",
         url: "/dashboard/users",
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN"],
       },
       {
-        title: "To'lov cheklari",
+        title: "nav.companyReceipts",
         url: "/dashboard/company-receipts",
         icon: ImageIcon,
         roles: ["SUPER_ADMIN"],
