@@ -1,3 +1,6 @@
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
+import { redirect } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTranslations } from "next-intl/server";
 import { reportsService } from "@/lib/services/reports.service";
@@ -5,8 +8,14 @@ import CashClient from "./_components/cash-client";
 import { debtService } from "@/lib/services/debt.service";
 
 export default async function ReportsPage() {
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
   const t = await getTranslations("reports");
-  const [report, debtLimit] = await Promise.all([reportsService.getDashboardReport(), debtService.debtLimit()]);
+  const [report, debtLimit] = await Promise.all([
+    reportsService.getDashboardReport(clientId),
+    debtService.debtLimit(clientId),
+  ]);
 
   return (
     <div className="space-y-6">

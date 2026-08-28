@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 
 export async function PUT(request: NextRequest) {
@@ -10,6 +11,8 @@ export async function PUT(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireClientId(session);
 
     const body = await request.json();
     const { first_name, last_name, username, email } = body;

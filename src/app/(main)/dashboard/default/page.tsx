@@ -6,6 +6,9 @@ import { debtService } from "@/lib/services/debt.service";
 import { paymentService } from "@/lib/services/payment.service";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { domainToViewDebtor } from "@/lib/mappers";
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
+import { redirect } from "next/navigation";
 
 // Ensure this page is always rendered dynamically so changes to is_overdue are reflected immediately
 export const dynamic = "force-dynamic";
@@ -15,12 +18,16 @@ export const revalidate = 0;
 const DASHBOARD_DEFAULT_DEBTOR_LIMIT = 100;
 
 export default async function Page() {
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
+
   const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
-    debtorService.findMany(undefined, { page: 1, limit: DASHBOARD_DEFAULT_DEBTOR_LIMIT }),
-    debtorService.getStats(),
-    debtService.debtLimit(),
-    paymentService.getPaymentsChartData(),
-    paymentReminderService.getActiveRemindersByDebtor(),
+    debtorService.findMany(clientId, undefined, { page: 1, limit: DASHBOARD_DEFAULT_DEBTOR_LIMIT }),
+    debtorService.getStats(clientId),
+    debtService.debtLimit(clientId),
+    paymentService.getPaymentsChartData(clientId),
+    paymentReminderService.getActiveRemindersByDebtor(clientId),
   ]);
 
   // Convert DebtorDomain[] to DebtorView[] and add reminder info

@@ -21,6 +21,7 @@ export type PaymentReminderStatus = "PENDING" | "NOTIFIED" | "COMPLETED" | "CANC
 export type PaymentReminderDomain = {
   // Core identity
   id: number;
+  clientId: number;
 
   // Relations
   debtorId: number;

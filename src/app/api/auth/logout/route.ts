@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { clearAuthCookie, getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 
 export async function POST() {
@@ -24,6 +25,7 @@ export async function POST() {
       await prisma.auditLog.create({
         data: {
           user_id: session.userId,
+          client_id: requireClientId(session),
           action: "LOGOUT",
           entity_type: "USER",
           new_value: {

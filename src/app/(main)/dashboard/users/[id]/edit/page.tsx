@@ -21,8 +21,8 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   const userId = parseInt(id, 10);
   if (Number.isNaN(userId)) notFound();
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
+  const user = await prisma.user.findFirst({
+    where: { id: userId, client_id: session.clientId },
     select: {
       id: true,
       username: true,

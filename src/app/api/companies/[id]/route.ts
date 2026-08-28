@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyService } from "@/lib/services/company.service";
@@ -21,13 +22,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const companyId = parseInt(id, 10);
     if (isNaN(companyId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const domain = await companyService.findById(companyId, true);
+    const domain = await companyService.findById(clientId, companyId, true);
     if (!domain) {
       return NextResponse.json({ error: "Kompaniya topilmadi" }, { status: 404 });
     }
@@ -46,6 +49,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const companyId = parseInt(id, 10);
     if (isNaN(companyId)) {
@@ -55,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validated = updateCompanySchema.parse(body);
 
-    const updated = await companyService.update(companyId, {
+    const updated = await companyService.update(clientId, companyId, {
       name: validated.name,
       contactPerson: validated.contact_person,
       phoneNumber: validated.phone_number,
@@ -63,6 +68,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "UPDATE",
       entityType: "COMPANY",
@@ -93,18 +99,21 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const companyId = parseInt(id, 10);
     if (isNaN(companyId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const company = await companyService.findById(companyId, false);
+    const company = await companyService.findById(clientId, companyId, false);
     if (!company) {
       return NextResponse.json({ error: "Kompaniya topilmadi" }, { status: 404 });
     }
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "DELETE",
       entityType: "COMPANY",
@@ -115,7 +124,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       userAgent: request.headers.get("user-agent") || "",
     });
 
-    await companyService.delete(companyId);
+    await companyService.delete(clientId, companyId);
 
     revalidatePath("/dashboard/my-debts");
 

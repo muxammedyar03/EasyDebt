@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     const contentType = request.headers.get("content-type") || "";
     let companyId: number;
@@ -63,12 +66,12 @@ export async function POST(request: NextRequest) {
       note = validated.note;
     }
 
-    const company = await companyService.findById(companyId, false);
+    const company = await companyService.findById(clientId, companyId, false);
     if (!company) {
       return NextResponse.json({ error: "Kompaniya topilmadi" }, { status: 404 });
     }
 
-    const payment = await companyPaymentService.create({
+    const payment = await companyPaymentService.create(clientId, {
       companyId,
       amount,
       paymentType: PaymentTypeDomain[paymentType],
@@ -85,11 +88,12 @@ export async function POST(request: NextRequest) {
         mime: receiptMeta.receiptMime,
         receiptPath: receiptMeta.receiptPath,
       });
-      await companyPaymentService.update(payment.id, { receiptName });
+      await companyPaymentService.update(clientId, payment.id, { receiptName });
       payment.receiptName = receiptName;
     }
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "CREATE",
       entityType: "COMPANY_PAYMENT",

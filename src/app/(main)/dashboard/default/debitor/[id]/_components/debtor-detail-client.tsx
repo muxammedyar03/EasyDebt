@@ -143,7 +143,7 @@ function DebtorDetailContent({
       console.error("PDF export error:", error);
       toast.error(tDebtor("pdfError"));
     }
-  }, [debtor, detail.stats, detail.rating, detail.timeline, user]);
+  }, [debtor, detail.stats, detail.rating, detail.timeline, user, tDebtor]);
 
   // ─── Timeline Receipt Print Handler ─────────────────────────
   const handlePrintTimelineReceipt = React.useCallback(() => {

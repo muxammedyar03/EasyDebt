@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { createPrismaAdapter } from "./adapter";
 import { createMigrationBuilder } from "./builder";
+import { assertClientTenantIntegrity } from "./assert-client-tenant";
 
 /**
  * Custom Migration System for EasyDebt
@@ -94,6 +95,9 @@ export async function runCustomMigrations(prisma: PrismaClient) {
     .commit();
 
   console.log("PushSubscription table and UserPushPreferences table created successfully");
+
+  // Fail migrate container if tenant backfill is incomplete (blocks app start)
+  await assertClientTenantIntegrity(prisma);
 
   console.log("✅ All custom migrations completed successfully!");
 }

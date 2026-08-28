@@ -73,6 +73,7 @@ export async function checkPaymentReminders(): Promise<number> {
 
         // Create notification
         await createNotification({
+          clientId: reminder.clientId,
           userId: reminder.createdBy,
           debtorId: reminder.debtorId,
           type: "PAYMENT_REMINDER",

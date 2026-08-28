@@ -84,7 +84,7 @@ export class DebtorRepository {
    * phone matches by digits only (any format: +1 114, 4123, 1445).
    * Returns IDs in creation order (newest first), limited.
    */
-  async searchIds(searchTerms: string[], limit: number): Promise<number[]> {
+  async searchIds(clientId: number, searchTerms: string[], limit: number): Promise<number[]> {
     if (searchTerms.length === 0) return [];
     const conditions = searchTerms.map((term) => {
       const namePattern = `%${escapeLike(term)}%`;
@@ -95,9 +95,9 @@ export class DebtorRepository {
         digitPattern,
       };
     });
-    const params: (string | number)[] = [];
+    const params: (string | number)[] = [clientId];
     const parts: string[] = [];
-    let idx = 0;
+    let idx = 1;
     for (const c of conditions) {
       const orClauses: string[] = [
         `first_name ILIKE $${++idx}`,
@@ -114,7 +114,7 @@ export class DebtorRepository {
     params.push(limit);
     const whereClause = parts.join(" AND ");
     const result = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      `SELECT id FROM debtors WHERE ${whereClause} ORDER BY created_at DESC LIMIT $${idx + 1}`,
+      `SELECT id FROM debtors WHERE client_id = $1 AND ${whereClause} ORDER BY created_at DESC LIMIT $${idx + 1}`,
       ...params,
     );
     return result.map((r) => r.id);

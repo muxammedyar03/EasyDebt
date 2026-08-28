@@ -13,6 +13,7 @@ jest.mock("../../api/fetch-debtor", () => ({
 const mockDebtor: DebtorDomain = {
   id: 1,
   externalId: "e1",
+  clientId: 1,
   firstName: "Test",
   lastName: "User",
   phoneNumber: null,

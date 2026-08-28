@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { getApiErrorMessage } from "@/lib/errors";
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const body = await request.json();
     const validatedData = createDebtSchema.parse(body);
 
@@ -31,8 +34,8 @@ export async function POST(request: NextRequest) {
     // Use transaction to create debt and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
       // Get debtor info
-      const debtor = await tx.debtor.findUnique({
-        where: { id: validatedData.debtor_id },
+      const debtor = await tx.debtor.findFirst({
+        where: { id: validatedData.debtor_id, client_id: clientId },
       });
 
       if (!debtor) {
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
       const debt = await tx.debt.create({
         data: {
           debtor_id: validatedData.debtor_id,
+          client_id: clientId,
           amount: validatedData.amount,
           description: validatedData.description || null,
           created_by: userId,
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Get debt limit from settings (inside transaction)
-      const debtLimit = await settingsRepository.getDebtLimit(tx);
+      const debtLimit = await settingsRepository.getDebtLimit(clientId, tx);
 
       // Update debtor's total_debt
       const updatedDebtor = await tx.debtor.update({
@@ -83,6 +87,7 @@ export async function POST(request: NextRequest) {
 
     // Create audit log
     await createAuditLog({
+      clientId,
       userId,
       action: "DEBT_ADDED",
       entityType: "DEBT",
@@ -100,6 +105,7 @@ export async function POST(request: NextRequest) {
     const limitExceeded = newTotalDebt > result.debtLimit;
     if (limitExceeded) {
       await createNotification({
+        clientId,
         userId,
         debtorId: validatedData.debtor_id,
         type: "DEBT_LIMIT_EXCEEDED",

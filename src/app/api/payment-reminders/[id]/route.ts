@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { createAuditLog } from "@/lib/audit";
 
@@ -26,6 +27,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const reminderId = parseInt(id, 10);
 
@@ -33,7 +36,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const reminder = await paymentReminderService.findById(reminderId);
+    const reminder = await paymentReminderService.findById(clientId, reminderId);
 
     if (!reminder) {
       return NextResponse.json({ error: "Eslatma topilmadi" }, { status: 404 });
@@ -57,6 +60,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const reminderId = parseInt(id, 10);
 
@@ -64,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const existingReminder = await paymentReminderService.findById(reminderId);
+    const existingReminder = await paymentReminderService.findById(clientId, reminderId);
     if (!existingReminder) {
       return NextResponse.json({ error: "Eslatma topilmadi" }, { status: 404 });
     }
@@ -72,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const validatedData = updateReminderSchema.parse(body);
 
-    const reminder = await paymentReminderService.update(reminderId, {
+    const reminder = await paymentReminderService.update(clientId, reminderId, {
       reminderAt: validatedData.reminder_at,
       note: validatedData.note ?? undefined,
       status: validatedData.status,
@@ -80,6 +85,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Create audit log
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "UPDATE",
       entityType: "PAYMENT_REMINDER",
@@ -119,6 +125,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const reminderId = parseInt(id, 10);
 
@@ -126,15 +134,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const existingReminder = await paymentReminderService.findById(reminderId);
+    const existingReminder = await paymentReminderService.findById(clientId, reminderId);
     if (!existingReminder) {
       return NextResponse.json({ error: "Eslatma topilmadi" }, { status: 404 });
     }
 
-    await paymentReminderService.delete(reminderId);
+    await paymentReminderService.delete(clientId, reminderId);
 
     // Create audit log
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "DELETE",
       entityType: "PAYMENT_REMINDER",

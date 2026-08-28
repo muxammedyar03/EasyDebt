@@ -4,7 +4,36 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url       = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CLIENT (tenant / shop / magazin)
+// ============================================================================
+
+model Client {
+  id         Int      @id @default(autoincrement())
+  name       String
+  slug       String   @unique
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  users                   User[]
+  debtors                 Debtor[]
+  debts                   Debt[]
+  payments                Payment[]
+  settings                Settings[]
+  audit_logs              AuditLog[]
+  notifications           Notification[]
+  payment_reminders       PaymentReminder[]
+  import_histories        ImportHistory[]
+  companies               Company[]
+  company_debts           CompanyDebt[]
+  company_payments        CompanyPayment[]
+  company_daily_snapshots CompanyDailySnapshot[]
+
+  @@map("clients")
 }
 
 model User {
@@ -18,21 +47,21 @@ model User {
   is_active  Boolean  @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  pin        String?
+  client_id  Int
 
-  // Add PIN (hashed) - nullable
-  pin        String? 
-
-  // Relations
-  created_debtors              Debtor[]                @relation("CreatedBy")
-  created_debts                Debt[]                  @relation("DebtCreatedBy")
-  created_payments             Payment[]               @relation("PaymentCreatedBy")
-  created_reminders            PaymentReminder[]       @relation("ReminderCreatedBy")
-  created_companies            Company[]               @relation("CompanyCreatedBy")
-  created_company_debts        CompanyDebt[]           @relation("CompanyDebtCreatedBy")
-  created_company_payments     CompanyPayment[]        @relation("CompanyPaymentCreatedBy")
+  client                       Client               @relation(fields: [client_id], references: [id])
+  created_debtors              Debtor[]             @relation("CreatedBy")
+  created_debts                Debt[]               @relation("DebtCreatedBy")
+  created_payments             Payment[]            @relation("PaymentCreatedBy")
+  created_reminders            PaymentReminder[]    @relation("ReminderCreatedBy")
+  created_companies            Company[]            @relation("CompanyCreatedBy")
+  created_company_debts        CompanyDebt[]        @relation("CompanyDebtCreatedBy")
+  created_company_payments     CompanyPayment[]     @relation("CompanyPaymentCreatedBy")
   push_subscriptions           PushSubscription[]
   user_push_preferences        UserPushPreferences?
 
+  @@index([client_id])
   @@map("users")
 }
 
@@ -49,20 +78,21 @@ model Debtor {
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   created_by        Int
+  client_id         Int
 
-  // Relations
+  client    Client            @relation(fields: [client_id], references: [id])
   creator   User              @relation("CreatedBy", fields: [created_by], references: [id])
   debts     Debt[]
   payments  Payment[]
   reminders PaymentReminder[]
 
-  // Indexes for performance
   @@index([total_debt])
   @@index([created_by])
   @@index([created_at])
   @@index([is_overdue])
   @@index([last_payment_date])
   @@index([external_id])
+  @@index([client_id])
   @@map("debtors")
 }
 
@@ -72,18 +102,19 @@ model Debt {
   debtor_id   Int
   amount      Decimal  @db.Decimal(10, 2)
   description String?
-  items       Json?    // Store array of items with prices
+  items       Json?
   created_at  DateTime @default(now())
   created_by  Int
+  client_id   Int
 
-  // Relations
+  client  Client @relation(fields: [client_id], references: [id])
   debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
 
-  // Indexes for performance
   @@index([debtor_id])
   @@index([created_at])
   @@index([external_id])
+  @@index([client_id])
   @@map("debts")
 }
 
@@ -97,15 +128,16 @@ model Payment {
   resets_rating Boolean     @default(false)
   created_at    DateTime    @default(now())
   created_by    Int
+  client_id     Int
 
-  // Relations
+  client  Client @relation(fields: [client_id], references: [id])
   debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("PaymentCreatedBy", fields: [created_by], references: [id])
 
-  // Indexes for performance
   @@index([debtor_id])
   @@index([created_at])
   @@index([external_id])
+  @@index([client_id])
   @@map("payments")
 }
 
@@ -123,11 +155,16 @@ enum PaymentType {
 
 model Settings {
   id         Int      @id @default(autoincrement())
-  key        String   @unique
+  key        String
   value      String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  client_id  Int
 
+  client Client @relation(fields: [client_id], references: [id])
+
+  @@unique([client_id, key])
+  @@index([client_id])
   @@map("settings")
 }
 
@@ -143,10 +180,14 @@ model AuditLog {
   ip_address  String?
   user_agent  String?
   created_at  DateTime @default(now())
+  client_id   Int
+
+  client Client @relation(fields: [client_id], references: [id])
 
   @@index([user_id])
   @@index([entity_type, entity_id])
   @@index([created_at])
+  @@index([client_id])
   @@map("audit_logs")
 }
 
@@ -159,11 +200,15 @@ model Notification {
   message    String
   is_read    Boolean          @default(false)
   created_at DateTime         @default(now())
+  client_id  Int
+
+  client Client @relation(fields: [client_id], references: [id])
 
   @@index([user_id])
   @@index([debtor_id])
   @@index([is_read])
   @@index([created_at])
+  @@index([client_id])
   @@map("notifications")
 }
 
@@ -177,17 +222,18 @@ enum NotificationType {
 }
 
 model PaymentReminder {
-  id           Int                   @id @default(autoincrement())
-  debtor_id    Int
-  created_by   Int
-  reminder_at  DateTime
-  note         String?
-  status       PaymentReminderStatus @default(PENDING)
-  notified_at  DateTime?
-  created_at   DateTime              @default(now())
-  updated_at   DateTime              @updatedAt
+  id          Int                   @id @default(autoincrement())
+  debtor_id   Int
+  created_by  Int
+  reminder_at DateTime
+  note        String?
+  status      PaymentReminderStatus @default(PENDING)
+  notified_at DateTime?
+  created_at  DateTime              @default(now())
+  updated_at  DateTime              @updatedAt
+  client_id   Int
 
-  // Relations
+  client  Client @relation(fields: [client_id], references: [id])
   debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
   creator User   @relation("ReminderCreatedBy", fields: [created_by], references: [id])
 
@@ -195,6 +241,7 @@ model PaymentReminder {
   @@index([reminder_at])
   @@index([status])
   @@index([created_by])
+  @@index([client_id])
   @@map("payment_reminders")
 }
 
@@ -206,18 +253,22 @@ enum PaymentReminderStatus {
 }
 
 model ImportHistory {
-  id           Int      @id @default(autoincrement())
-  user_id      Int
-  file_hash    String   @unique
-  debtors_count Int
-  debts_count  Int
+  id             Int          @id @default(autoincrement())
+  user_id        Int
+  file_hash      String       @unique
+  debtors_count  Int
+  debts_count    Int
   payments_count Int
-  status       ImportStatus @default(SUCCESS)
-  error_message String?
-  created_at   DateTime @default(now())
+  status         ImportStatus @default(SUCCESS)
+  error_message  String?
+  created_at     DateTime     @default(now())
+  client_id      Int
+
+  client Client @relation(fields: [client_id], references: [id])
 
   @@index([user_id])
   @@index([created_at])
+  @@index([client_id])
   @@map("import_history")
 }
 
@@ -244,12 +295,12 @@ model PushSubscription {
 }
 
 model UserPushPreferences {
-  id                  Int      @id @default(autoincrement())
-  user_id             Int      @unique
-  enabled             Boolean  @default(false)
-  notification_types  Json     @default("[]")
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  user_id            Int      @unique
+  enabled            Boolean  @default(false)
+  notification_types Json     @default("[]")
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -275,7 +326,9 @@ model Company {
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   created_by        Int
+  client_id         Int
 
+  client   Client           @relation(fields: [client_id], references: [id])
   creator  User             @relation("CompanyCreatedBy", fields: [created_by], references: [id])
   debts    CompanyDebt[]
   payments CompanyPayment[]
@@ -288,6 +341,7 @@ model Company {
   @@index([last_debt_date])
   @@index([external_id])
   @@index([name])
+  @@index([client_id])
   @@map("companies")
 }
 
@@ -300,30 +354,35 @@ model CompanyDebt {
   items       Json?
   created_at  DateTime @default(now())
   created_by  Int
+  client_id   Int
 
+  client  Client  @relation(fields: [client_id], references: [id])
   company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
   creator User    @relation("CompanyDebtCreatedBy", fields: [created_by], references: [id])
 
   @@index([company_id])
   @@index([created_at])
   @@index([external_id])
+  @@index([client_id])
   @@map("company_debts")
 }
 
 model CompanyPayment {
-  id            Int         @id @default(autoincrement())
-  external_id   String      @unique @default(uuid())
-  company_id    Int
-  amount        Decimal     @db.Decimal(10, 2)
-  payment_type  PaymentType @default(CASH)
-  note          String?
-  receipt_path  String?
-  receipt_name  String?
-  receipt_mime  String?
-  receipt_size  Int?
-  created_at    DateTime    @default(now())
-  created_by    Int
+  id           Int         @id @default(autoincrement())
+  external_id  String      @unique @default(uuid())
+  company_id   Int
+  amount       Decimal     @db.Decimal(10, 2)
+  payment_type PaymentType @default(CASH)
+  note         String?
+  receipt_path String?
+  receipt_name String?
+  receipt_mime String?
+  receipt_size Int?
+  created_at   DateTime    @default(now())
+  created_by   Int
+  client_id    Int
 
+  client  Client  @relation(fields: [client_id], references: [id])
   company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
   creator User    @relation("CompanyPaymentCreatedBy", fields: [created_by], references: [id])
 
@@ -331,21 +390,26 @@ model CompanyPayment {
   @@index([created_at])
   @@index([external_id])
   @@index([receipt_path])
+  @@index([client_id])
   @@map("company_payments")
 }
 
 model CompanyDailySnapshot {
-  id                      Int      @id @default(autoincrement())
-  date                    DateTime @db.Date
-  total_outstanding_debt  Decimal  @db.Decimal(12, 2)
-  debts_sum               Decimal  @default(0) @db.Decimal(12, 2)
-  debts_count             Int      @default(0)
-  payments_sum            Decimal  @default(0) @db.Decimal(12, 2)
-  payments_count          Int      @default(0)
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
+  id                     Int      @id @default(autoincrement())
+  date                   DateTime @db.Date
+  total_outstanding_debt Decimal  @db.Decimal(12, 2)
+  debts_sum              Decimal  @default(0) @db.Decimal(12, 2)
+  debts_count            Int      @default(0)
+  payments_sum           Decimal  @default(0) @db.Decimal(12, 2)
+  payments_count         Int      @default(0)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+  client_id              Int
 
-  @@unique([date])
+  client Client @relation(fields: [client_id], references: [id])
+
+  @@unique([client_id, date])
   @@index([date])
+  @@index([client_id])
   @@map("company_daily_snapshots")
 }

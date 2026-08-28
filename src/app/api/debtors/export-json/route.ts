@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { createAuditLog } from "@/lib/audit";
 import { debtorRepository } from "@/entities/debtor/api";
@@ -51,6 +52,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     // Faqat SUPER_ADMIN va ADMIN export qila oladi
     if (session.role === "USER") {
       return NextResponse.json({ error: "Faqat admin foydalanuvchilar export qila oladi" }, { status: 403 });
@@ -64,7 +67,7 @@ export async function GET() {
 
     while (hasMore) {
       const debtors = await debtorRepository.findMany(
-        {},
+        { client_id: clientId },
         {
           take: BATCH_SIZE,
           skip,
@@ -152,6 +155,7 @@ export async function GET() {
     };
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "EXPORT",
       entityType: "DEBTOR",

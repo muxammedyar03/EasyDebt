@@ -24,10 +24,12 @@ export type EntityType =
   | "COMPANY"
   | "COMPANY_DEBT"
   | "COMPANY_PAYMENT"
-  | "COMPANY_PAYMENT_RECEIPT";
+  | "COMPANY_PAYMENT_RECEIPT"
+  | "CLIENT";
 
 interface AuditLogData {
   userId?: number;
+  clientId: number;
   action: AuditAction;
   entityType: EntityType;
   entityId?: number;
@@ -43,6 +45,7 @@ export async function createAuditLog(data: AuditLogData) {
     await prisma.auditLog.create({
       data: {
         user_id: data.userId,
+        client_id: data.clientId,
         action: data.action,
         entity_type: data.entityType,
         entity_id: data.entityId,
@@ -59,6 +62,7 @@ export async function createAuditLog(data: AuditLogData) {
 }
 
 export async function getAuditLogs(filters?: {
+  clientId: number;
   userId?: number;
   entityType?: EntityType;
   entityId?: number;
@@ -66,10 +70,13 @@ export async function getAuditLogs(filters?: {
   offset?: number;
 }) {
   const where: {
+    client_id: number;
     user_id?: number;
     entity_type?: string;
     entity_id?: number;
-  } = {};
+  } = {
+    client_id: filters!.clientId,
+  };
 
   if (filters?.userId) where.user_id = filters.userId;
   if (filters?.entityType) where.entity_type = filters.entityType;

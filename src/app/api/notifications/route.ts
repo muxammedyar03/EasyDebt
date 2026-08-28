@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { markAllNotificationsAsRead } from "@/lib/notifications";
 import { buildHeaderNotificationsWhere, HEADER_NOTIFICATION_TYPES } from "@/lib/notifications/header-query";
@@ -15,6 +16,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(parseInt(searchParams.get("page") ?? "1", 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(searchParams.get("pageSize") ?? "10", 10) || 10, 1), 50);
@@ -27,9 +30,9 @@ export async function GET(request: NextRequest) {
     let where: Prisma.NotificationWhereInput;
 
     if (isHeaderPreview) {
-      where = buildHeaderNotificationsWhere(session.userId, true);
+      where = buildHeaderNotificationsWhere(clientId, session.userId, true);
     } else {
-      where = {};
+      where = { client_id: clientId };
       const andConditions: Prisma.NotificationWhereInput[] = [];
 
       if (session.userId) {
@@ -71,7 +74,10 @@ export async function GET(request: NextRequest) {
     const debtorIds = [...new Set(itemsRaw.map((n) => n.debtor_id).filter(Boolean))] as number[];
     const idToExternalId = new Map<number, string>();
     if (debtorIds.length > 0) {
-      const debtors = await debtorRepository.findMany({ id: { in: debtorIds } }, { take: debtorIds.length });
+      const debtors = await debtorRepository.findMany(
+        { id: { in: debtorIds }, client_id: clientId },
+        { take: debtorIds.length },
+      );
       debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
     }
     const notifications = itemsRaw.map((n) => ({
@@ -92,6 +98,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireClientId(session);
 
     const body = await request.json();
     const { action } = body;

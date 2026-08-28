@@ -66,12 +66,13 @@ export default async function PublicDebtorPage({ params, searchParams }: PagePro
     return <ExpiredView />;
   }
 
-  const debtor = await debtorService.findByExternalId(id, true);
-  const overdueDays = await debtorService.getOverdueDays();
+  const debtor = await debtorService.findByExternalId(null, id, true);
 
   if (!debtor) {
     notFound();
   }
+
+  const overdueDays = await debtorService.getOverdueDays(debtor.clientId);
 
   const initialViewValue = computeViewValueSync(debtor, overdueDays);
   return <PublicDebtorClient debtor={debtor} initialViewValue={initialViewValue} />;

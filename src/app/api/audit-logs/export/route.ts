@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
@@ -10,6 +11,8 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     // Faqat SUPER_ADMIN va ADMIN export qila oladi
     if (session.role === "USER") {
@@ -25,7 +28,9 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get("dateTo") || "";
 
     // Build where clause
-    const where: Prisma.AuditLogWhereInput = {};
+    const where: Prisma.AuditLogWhereInput = {
+      client_id: clientId,
+    };
 
     if (search) {
       where.OR = [

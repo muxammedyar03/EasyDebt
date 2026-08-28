@@ -15,21 +15,34 @@ export default async function UsersPage() {
     redirect("/unauthorized");
   }
 
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      role: true,
-      first_name: true,
-      last_name: true,
-      is_active: true,
-      created_at: true,
-    },
-    orderBy: {
-      created_at: "desc",
-    },
-  });
+  const isSuperAdmin = session.role === "SUPER_ADMIN";
+
+  const [users, clients] = await Promise.all([
+    prisma.user.findMany({
+      where: { client_id: session.clientId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        first_name: true,
+        last_name: true,
+        is_active: true,
+        created_at: true,
+        client_id: true,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    }),
+    isSuperAdmin
+      ? prisma.client.findMany({
+          where: { is_active: true },
+          select: { id: true, name: true, slug: true },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const serializedUsers = users.map((user) => ({
     id: user.id,
@@ -40,6 +53,7 @@ export default async function UsersPage() {
     last_name: user.last_name,
     is_active: user.is_active,
     created_at: user.created_at.toISOString(),
+    client_id: user.client_id,
   }));
 
   return (
@@ -49,10 +63,10 @@ export default async function UsersPage() {
           <CardTitle>{t("title")}</CardTitle>
           <p className="text-muted-foreground mt-2 text-sm">{t("subtitle")}</p>
         </div>
-        {session?.role === "SUPER_ADMIN" && <CreateUserForm />}
+        {isSuperAdmin && <CreateUserForm clients={clients} defaultClientId={session.clientId} />}
       </div>
       <div className="rounded-md border">
-        <UsersList users={serializedUsers} role={session?.role} />
+        <UsersList users={serializedUsers} role={session.role} />
       </div>
     </div>
   );

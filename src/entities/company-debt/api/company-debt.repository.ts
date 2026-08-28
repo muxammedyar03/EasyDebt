@@ -12,6 +12,13 @@ export class CompanyDebtRepository {
     });
   }
 
+  async findFirst(where: Prisma.CompanyDebtWhereInput, include?: Prisma.CompanyDebtInclude) {
+    return prisma.companyDebt.findFirst({
+      where,
+      include,
+    });
+  }
+
   async findMany(
     where: Prisma.CompanyDebtWhereInput,
     options?: {

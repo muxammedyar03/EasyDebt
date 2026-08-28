@@ -12,6 +12,13 @@ export class CompanyPaymentRepository {
     });
   }
 
+  async findFirst(where: Prisma.CompanyPaymentWhereInput, include?: Prisma.CompanyPaymentInclude) {
+    return prisma.companyPayment.findFirst({
+      where,
+      include,
+    });
+  }
+
   async findMany(
     where: Prisma.CompanyPaymentWhereInput,
     options?: {

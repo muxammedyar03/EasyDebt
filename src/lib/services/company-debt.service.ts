@@ -14,14 +14,14 @@ import type {
 import type { Prisma } from "@prisma/client";
 
 export class CompanyDebtService {
-  async findById(id: number): Promise<CompanyDebtDomain | null> {
-    const row = await companyDebtRepository.findById(id);
+  async findById(clientId: number, id: number): Promise<CompanyDebtDomain | null> {
+    const row = await companyDebtRepository.findFirst({ id, client_id: clientId });
     return row ? prismaToDomainCompanyDebt(row) : null;
   }
 
-  async create(input: CreateCompanyDebtDomainInput): Promise<CompanyDebtDomain> {
+  async create(clientId: number, input: CreateCompanyDebtDomainInput): Promise<CompanyDebtDomain> {
     const result = await prisma.$transaction(async (tx) => {
-      const company = await tx.company.findUnique({ where: { id: input.companyId } });
+      const company = await tx.company.findFirst({ where: { id: input.companyId, client_id: clientId } });
       if (!company) {
         throw new Error("Kompaniya topilmadi");
       }
@@ -29,6 +29,7 @@ export class CompanyDebtService {
       const debt = await tx.companyDebt.create({
         data: {
           company_id: input.companyId,
+          client_id: clientId,
           amount: input.amount,
           note: input.note?.trim() || null,
           items: input.items === undefined ? undefined : (input.items as Prisma.InputJsonValue),
@@ -48,13 +49,13 @@ export class CompanyDebtService {
       return debt;
     });
 
-    await companyDailySnapshotService.refreshForDate(new Date());
+    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyDebt(result);
   }
 
-  async update(id: number, input: UpdateCompanyDebtDomainInput): Promise<CompanyDebtDomain> {
+  async update(clientId: number, id: number, input: UpdateCompanyDebtDomainInput): Promise<CompanyDebtDomain> {
     const result = await prisma.$transaction(async (tx) => {
-      const existing = await tx.companyDebt.findUnique({ where: { id } });
+      const existing = await tx.companyDebt.findFirst({ where: { id, client_id: clientId } });
       if (!existing) {
         throw new Error("Qarz topilmadi");
       }
@@ -81,13 +82,13 @@ export class CompanyDebtService {
       return debt;
     });
 
-    await companyDailySnapshotService.refreshForDate(new Date());
+    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyDebt(result);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(clientId: number, id: number): Promise<void> {
     await prisma.$transaction(async (tx) => {
-      const existing = await tx.companyDebt.findUnique({ where: { id } });
+      const existing = await tx.companyDebt.findFirst({ where: { id, client_id: clientId } });
       if (!existing) {
         throw new Error("Qarz topilmadi");
       }
@@ -99,7 +100,7 @@ export class CompanyDebtService {
       });
     });
 
-    await companyDailySnapshotService.refreshForDate(new Date());
+    await companyDailySnapshotService.refreshForDate(clientId, new Date());
   }
 }
 

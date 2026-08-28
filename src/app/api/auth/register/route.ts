@@ -41,6 +41,14 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(validatedData.password);
 
+    const defaultClient = await prisma.client.findFirst({
+      where: { slug: "default" },
+      select: { id: true },
+    });
+    if (!defaultClient) {
+      return NextResponse.json({ error: "Default client not found" }, { status: 500 });
+    }
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -50,6 +58,7 @@ export async function POST(req: NextRequest) {
         first_name: validatedData.firstName,
         last_name: validatedData.lastName,
         role: validatedData.role,
+        client_id: defaultClient.id,
       },
       select: {
         id: true,

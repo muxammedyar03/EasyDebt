@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { parseInputDate, todayInputDate } from "@/lib/period-date-range";
 import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     const sp = request.nextUrl.searchParams;
     const paymentsPage = Number(sp.get("paymentsPage") || 1);
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Boshlanish sanasi tugash sanasidan katta" }, { status: 400 });
     }
 
-    const report = await companyDailySnapshotService.getPeriodReportQuery(dateFrom, dateTo, {
+    const report = await companyDailySnapshotService.getPeriodReportQuery(clientId, dateFrom, dateTo, {
       paymentsPage,
       debtsPage,
       limit,

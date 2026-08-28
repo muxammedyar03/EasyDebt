@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -10,6 +11,8 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireClientId(session);
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
@@ -22,6 +25,7 @@ export async function GET() {
         last_name: true,
         is_active: true,
         created_at: true,
+        client_id: true,
       },
     });
 
@@ -29,7 +33,12 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json({
+      user: {
+        ...user,
+        clientId: user.client_id,
+      },
+    });
   } catch (error) {
     console.error("Get user error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -70,7 +70,7 @@ export class CompanyRepository {
   /**
    * Search companies by name, contact_person, address; phone by digits.
    */
-  async searchIds(searchTerms: string[], limit: number): Promise<number[]> {
+  async searchIds(clientId: number, searchTerms: string[], limit: number): Promise<number[]> {
     if (searchTerms.length === 0) return [];
 
     const conditions = searchTerms.map((term) => {
@@ -80,9 +80,9 @@ export class CompanyRepository {
       return { namePattern, digitPattern };
     });
 
-    const params: (string | number)[] = [];
+    const params: (string | number)[] = [clientId];
     const parts: string[] = [];
-    let idx = 0;
+    let idx = 1;
 
     for (const c of conditions) {
       const orClauses: string[] = [`name ILIKE $${++idx}`, `contact_person ILIKE $${++idx}`, `address ILIKE $${++idx}`];
@@ -97,7 +97,7 @@ export class CompanyRepository {
     params.push(limit);
     const whereClause = parts.join(" AND ");
     const result = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      `SELECT id FROM companies WHERE ${whereClause} ORDER BY created_at DESC LIMIT $${idx + 1}`,
+      `SELECT id FROM companies WHERE client_id = $1 AND ${whereClause} ORDER BY created_at DESC LIMIT $${idx + 1}`,
       ...params,
     );
     return result.map((r) => r.id);

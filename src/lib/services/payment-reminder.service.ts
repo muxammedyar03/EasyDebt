@@ -31,6 +31,7 @@ function prismaToDomainReminder(
 ): PaymentReminderDomain {
   return {
     id: reminder.id,
+    clientId: reminder.client_id,
     debtorId: reminder.debtor_id,
     createdBy: reminder.created_by,
     reminderAt: reminder.reminder_at,
@@ -43,6 +44,7 @@ function prismaToDomainReminder(
       ? {
           id: reminder.debtor.id,
           externalId: reminder.debtor.external_id,
+          clientId: reminder.client_id,
           firstName: reminder.debtor.first_name,
           lastName: reminder.debtor.last_name,
           phoneNumber: reminder.debtor.phone_number,
@@ -120,8 +122,8 @@ export class PaymentReminderService {
   /**
    * Find reminder by ID
    */
-  async findById(id: number): Promise<PaymentReminderDomain | null> {
-    const reminder = await paymentReminderRepository.findById(id);
+  async findById(clientId: number, id: number): Promise<PaymentReminderDomain | null> {
+    const reminder = await paymentReminderRepository.findFirst({ id, client_id: clientId });
     if (!reminder) return null;
     return prismaToDomainReminder(reminder);
   }
@@ -130,10 +132,11 @@ export class PaymentReminderService {
    * Find reminders with filters and pagination
    */
   async findMany(
+    clientId: number,
     filters?: PaymentReminderFilters,
     pagination?: PaginationOptions,
   ): Promise<PaginatedResult<PaymentReminderDomain>> {
-    const where = this.buildWhereClause(filters);
+    const where = this.buildWhereClause(clientId, filters);
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
 
     const total = await paymentReminderRepository.count(where);
@@ -160,9 +163,9 @@ export class PaymentReminderService {
   /**
    * Find reminders for a specific debtor
    */
-  async findByDebtorId(debtorId: number): Promise<PaymentReminderDomain[]> {
+  async findByDebtorId(clientId: number, debtorId: number): Promise<PaymentReminderDomain[]> {
     const reminders = await paymentReminderRepository.findMany(
-      { debtor_id: debtorId },
+      { client_id: clientId, debtor_id: debtorId },
       { orderBy: { reminder_at: "asc" } },
     );
     return reminders.map(prismaToDomainReminder);
@@ -171,9 +174,10 @@ export class PaymentReminderService {
   /**
    * Find pending reminders that are due (for cron job)
    */
-  async findDueReminders(): Promise<PaymentReminderDomain[]> {
+  async findDueReminders(clientId?: number): Promise<PaymentReminderDomain[]> {
     const now = new Date();
     const reminders = await paymentReminderRepository.findMany({
+      ...(clientId !== undefined ? { client_id: clientId } : {}),
       status: "PENDING",
       reminder_at: { lte: now },
     });
@@ -183,8 +187,9 @@ export class PaymentReminderService {
   /**
    * Create a new payment reminder
    */
-  async create(input: CreatePaymentReminderInput): Promise<PaymentReminderDomain> {
+  async create(clientId: number, input: CreatePaymentReminderInput): Promise<PaymentReminderDomain> {
     const reminder = await paymentReminderRepository.create({
+      client: { connect: { id: clientId } },
       debtor: { connect: { id: input.debtorId } },
       creator: { connect: { id: input.createdBy } },
       reminder_at: input.reminderAt,
@@ -197,12 +202,14 @@ export class PaymentReminderService {
   /**
    * Update a payment reminder
    */
-  async update(id: number, input: UpdatePaymentReminderInput): Promise<PaymentReminderDomain> {
+  async update(clientId: number, id: number, input: UpdatePaymentReminderInput): Promise<PaymentReminderDomain> {
     const data: Prisma.PaymentReminderUpdateInput = {};
     if (input.reminderAt !== undefined) data.reminder_at = input.reminderAt;
     if (input.note !== undefined) data.note = input.note;
     if (input.status !== undefined) data.status = input.status;
 
+    const existing = await paymentReminderRepository.findFirst({ id, client_id: clientId });
+    if (!existing) throw new Error("Reminder not found");
     const reminder = await paymentReminderRepository.update(id, data);
     return prismaToDomainReminder(reminder);
   }
@@ -221,7 +228,7 @@ export class PaymentReminderService {
   /**
    * Mark reminder as completed
    */
-  async markAsCompleted(id: number): Promise<PaymentReminderDomain> {
+  async markAsCompleted(clientId: number, id: number): Promise<PaymentReminderDomain> {
     const reminder = await paymentReminderRepository.update(id, { status: "COMPLETED" });
     return prismaToDomainReminder(reminder);
   }
@@ -229,7 +236,7 @@ export class PaymentReminderService {
   /**
    * Cancel a reminder
    */
-  async cancel(id: number): Promise<PaymentReminderDomain> {
+  async cancel(clientId: number, id: number): Promise<PaymentReminderDomain> {
     const reminder = await paymentReminderRepository.update(id, { status: "CANCELLED" });
     return prismaToDomainReminder(reminder);
   }
@@ -237,23 +244,25 @@ export class PaymentReminderService {
   /**
    * Delete a reminder
    */
-  async delete(id: number): Promise<void> {
+  async delete(clientId: number, id: number): Promise<void> {
+    const existing = await paymentReminderRepository.findFirst({ id, client_id: clientId });
+    if (!existing) throw new Error("Reminder not found");
     await paymentReminderRepository.delete(id);
   }
 
   /**
    * Get reminders as View types (for UI)
    */
-  async getViewByDebtorId(debtorId: number): Promise<PaymentReminderView[]> {
-    const reminders = await this.findByDebtorId(debtorId);
+  async getViewByDebtorId(clientId: number, debtorId: number): Promise<PaymentReminderView[]> {
+    const reminders = await this.findByDebtorId(clientId, debtorId);
     return reminders.map(domainToViewReminder);
   }
 
   /**
    * Get single reminder as View type
    */
-  async getView(id: number): Promise<PaymentReminderView | null> {
-    const domain = await this.findById(id);
+  async getView(clientId: number, id: number): Promise<PaymentReminderView | null> {
+    const domain = await this.findById(clientId, id);
     if (!domain) return null;
     return domainToViewReminder(domain);
   }
@@ -261,9 +270,9 @@ export class PaymentReminderService {
   /**
    * Get active (pending) reminder for debtor
    */
-  async getActiveReminderForDebtor(debtorId: number): Promise<PaymentReminderDomain | null> {
+  async getActiveReminderForDebtor(clientId: number, debtorId: number): Promise<PaymentReminderDomain | null> {
     const reminder = await paymentReminderRepository.findFirst(
-      { debtor_id: debtorId, status: "PENDING" },
+      { client_id: clientId, debtor_id: debtorId, status: "PENDING" },
       { orderBy: { reminder_at: "asc" } },
     );
     if (!reminder) return null;
@@ -273,8 +282,8 @@ export class PaymentReminderService {
   /**
    * Build Prisma where clause from filters
    */
-  private buildWhereClause(filters?: PaymentReminderFilters): Prisma.PaymentReminderWhereInput {
-    const where: Prisma.PaymentReminderWhereInput = {};
+  private buildWhereClause(clientId: number, filters?: PaymentReminderFilters): Prisma.PaymentReminderWhereInput {
+    const where: Prisma.PaymentReminderWhereInput = { client_id: clientId };
 
     if (filters?.debtorId) {
       where.debtor_id = filters.debtorId;
@@ -325,9 +334,9 @@ export class PaymentReminderService {
    * Get all active reminders (PENDING and NOTIFIED) grouped by debtor_id
    * Used for dashboard display
    */
-  async getActiveRemindersByDebtor(): Promise<Map<number, PaymentReminderDomain>> {
+  async getActiveRemindersByDebtor(clientId: number): Promise<Map<number, PaymentReminderDomain>> {
     const reminders = await paymentReminderRepository.findMany(
-      { status: { in: ["PENDING", "NOTIFIED"] } },
+      { client_id: clientId, status: { in: ["PENDING", "NOTIFIED"] } },
       { orderBy: { reminder_at: "asc" } },
     );
     const reminderMap = new Map<number, PaymentReminderDomain>();

@@ -3,17 +3,18 @@ import type { Prisma } from "@prisma/client";
 
 /**
  * CompanyDailySnapshot entity – API (repository).
+ * Unique key is [client_id, date].
  */
 export class CompanyDailySnapshotRepository {
-  async findByDate(date: Date) {
+  async findByDate(clientId: number, date: Date) {
     return prisma.companyDailySnapshot.findUnique({
-      where: { date },
+      where: { client_id_date: { client_id: clientId, date } },
     });
   }
 
-  async findFirstOnOrBefore(date: Date) {
+  async findFirstOnOrBefore(clientId: number, date: Date) {
     return prisma.companyDailySnapshot.findFirst({
-      where: { date: { lte: date } },
+      where: { client_id: clientId, date: { lte: date } },
       orderBy: { date: "desc" },
     });
   }
@@ -33,6 +34,7 @@ export class CompanyDailySnapshotRepository {
   }
 
   async upsertByDate(
+    clientId: number,
     date: Date,
     data: {
       total_outstanding_debt: number | Prisma.Decimal;
@@ -43,8 +45,9 @@ export class CompanyDailySnapshotRepository {
     },
   ) {
     return prisma.companyDailySnapshot.upsert({
-      where: { date },
+      where: { client_id_date: { client_id: clientId, date } },
       create: {
+        client_id: clientId,
         date,
         total_outstanding_debt: data.total_outstanding_debt,
         debts_sum: data.debts_sum,

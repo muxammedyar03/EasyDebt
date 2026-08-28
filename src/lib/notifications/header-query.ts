@@ -8,8 +8,15 @@ export const HEADER_NOTIFICATION_TYPES: NotificationType[] = [
   "PAYMENT_REMINDER",
 ];
 
-export function buildHeaderNotificationsWhere(userId?: number, unreadOnly = true): Prisma.NotificationWhereInput {
-  const andConditions: Prisma.NotificationWhereInput[] = [{ type: { in: HEADER_NOTIFICATION_TYPES } }];
+export function buildHeaderNotificationsWhere(
+  clientId: number,
+  userId?: number,
+  unreadOnly = true,
+): Prisma.NotificationWhereInput {
+  const andConditions: Prisma.NotificationWhereInput[] = [
+    { client_id: clientId },
+    { type: { in: HEADER_NOTIFICATION_TYPES } },
+  ];
 
   if (unreadOnly) {
     andConditions.push({ is_read: false });

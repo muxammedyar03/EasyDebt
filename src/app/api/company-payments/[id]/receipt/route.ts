@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
 import { getCompanyReceiptAbsolutePath } from "@/lib/companies/receipt-storage";
@@ -14,13 +15,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const paymentId = parseInt(id, 10);
     if (isNaN(paymentId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const payment = await companyPaymentService.findById(paymentId);
+    const payment = await companyPaymentService.findById(clientId, paymentId);
     if (!payment?.receiptPath) {
       return NextResponse.json({ error: "Chek topilmadi" }, { status: 404 });
     }

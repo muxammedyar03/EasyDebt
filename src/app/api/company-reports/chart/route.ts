@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { ChartPeriod } from "@/lib/period-date-range";
 import type { CompanyChartMetric } from "@/types/domain/company-daily-snapshot.domain";
@@ -16,13 +17,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const sp = request.nextUrl.searchParams;
     const periodRaw = sp.get("period") || "week";
     const typeRaw = sp.get("type") || "debt";
     const period = PERIODS.has(periodRaw as ChartPeriod) ? (periodRaw as ChartPeriod) : "week";
     const type = METRICS.has(typeRaw as CompanyChartMetric) ? (typeRaw as CompanyChartMetric) : "debt";
 
-    const points = await companyDailySnapshotService.getOverviewChartSeries(period, type);
+    const points = await companyDailySnapshotService.getOverviewChartSeries(clientId, period, type);
     return NextResponse.json({ period, type, points });
   } catch (error) {
     console.error("Error fetching company chart:", error);

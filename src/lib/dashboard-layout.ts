@@ -1,6 +1,7 @@
 import type { NotificationType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { settingsRepository } from "@/entities/settings/api";
 import { buildHeaderNotificationsWhere } from "@/lib/notifications/header-query";
 
@@ -25,6 +26,13 @@ export type DashboardLayoutNotification = {
   is_read: boolean;
 };
 
+export type DashboardLayoutClient = {
+  id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+};
+
 export type DashboardLayoutData = {
   session: Awaited<ReturnType<typeof getSession>>;
   debtLimit: number;
@@ -32,6 +40,8 @@ export type DashboardLayoutData = {
   activeUser: DashboardLayoutUser;
   notifications: DashboardLayoutNotification[];
   unreadCount: number;
+  currentClient: DashboardLayoutClient | null;
+  clients: DashboardLayoutClient[];
 };
 
 const DEFAULT_ACTIVE_USER: DashboardLayoutUser = {
@@ -45,14 +55,16 @@ const DEFAULT_ACTIVE_USER: DashboardLayoutUser = {
 
 /**
  * Single data fetch for dashboard layout: session, settings, user, notifications with debtor external IDs.
- * Use this in dashboard layout instead of multiple separate prisma/settings calls.
  */
 export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
   const session = await getSession();
+  const clientId = session ? requireClientId(session) : null;
 
-  const [debtLimit, overdueDays, user] = await Promise.all([
-    settingsRepository.getDebtLimit(),
-    settingsRepository.getOverdueDays(),
+  const isSuperAdmin = session?.role === "SUPER_ADMIN";
+
+  const [debtLimit, overdueDays, user, currentClient, clients] = await Promise.all([
+    clientId ? settingsRepository.getDebtLimit(clientId) : Promise.resolve(2_000_000),
+    clientId ? settingsRepository.getOverdueDays(clientId) : Promise.resolve(45),
     session
       ? prisma.user.findUnique({
           where: { id: session.userId },
@@ -66,9 +78,34 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
           },
         })
       : null,
+    clientId
+      ? prisma.client.findUnique({
+          where: { id: clientId },
+          select: { id: true, name: true, slug: true, is_active: true },
+        })
+      : null,
+    isSuperAdmin
+      ? prisma.client.findMany({
+          orderBy: { name: "asc" },
+          select: { id: true, name: true, slug: true, is_active: true },
+        })
+      : Promise.resolve([]),
   ]);
 
-  const headerWhere = buildHeaderNotificationsWhere(session?.userId, true);
+  if (!session || !clientId) {
+    return {
+      session,
+      debtLimit,
+      overdueDays,
+      activeUser: DEFAULT_ACTIVE_USER,
+      notifications: [],
+      unreadCount: 0,
+      currentClient: null,
+      clients: [],
+    };
+  }
+
+  const headerWhere = buildHeaderNotificationsWhere(clientId, session.userId, true);
 
   const [notificationsRaw, unreadCount] = await Promise.all([
     prisma.notification.findMany({
@@ -83,7 +120,7 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
   const idToExternalId = new Map<number, string>();
   if (debtorIds.length > 0) {
     const debtors = await prisma.debtor.findMany({
-      where: { id: { in: debtorIds } },
+      where: { id: { in: debtorIds }, client_id: clientId },
       select: { id: true, external_id: true },
     });
     debtors.forEach((d) => idToExternalId.set(d.id, d.external_id));
@@ -112,5 +149,7 @@ export async function getDashboardLayoutData(): Promise<DashboardLayoutData> {
     activeUser,
     notifications,
     unreadCount,
+    currentClient,
+    clients,
   };
 }

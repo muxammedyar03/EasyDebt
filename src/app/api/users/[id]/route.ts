@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { Prisma } from "@prisma/client";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,9 +12,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
     const userId = parseInt(id);
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const user = await prisma.user.findFirst({
+      where: { id: userId, client_id: clientId },
       select: { id: true, username: true, email: true, pin: true, role: true },
     });
 
@@ -49,8 +52,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const action = body.action as string;
 
       // Load target user
-      const targetUser = await prisma.user.findUnique({
-        where: { id: userId },
+      const targetUser = await prisma.user.findFirst({
+        where: { id: userId, ...(session?.clientId ? { client_id: session.clientId } : {}) },
         select: { id: true, pin: true, role: true },
       });
       if (!targetUser) {
@@ -71,6 +74,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         if (!session || session.userId !== userId) {
           return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
         }
+
         if (targetUser.pin) {
           return NextResponse.json(
             { error: "Pin allaqachon o'rnatilgan. Pinni yangilash uchun change_pin foydalaning." },

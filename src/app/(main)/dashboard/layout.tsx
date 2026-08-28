@@ -24,6 +24,7 @@ import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
+import { ClientSwitcher } from "./_components/client-switcher";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
 
@@ -39,7 +40,16 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
   ]);
 
-  const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications, unreadCount } = layoutData;
+  const {
+    session,
+    debtLimit,
+    overdueDays,
+    activeUser: formattedActiveUser,
+    notifications,
+    unreadCount,
+    currentClient,
+    clients,
+  } = layoutData;
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
@@ -66,6 +76,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <div>{session?.userId && <HeaderLockButton />}</div>
             </div>
             <div className="flex items-center gap-2">
+              {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
               <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
               <LanguageSwitcher />
               <ThemeSwitcher />

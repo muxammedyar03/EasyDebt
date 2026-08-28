@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyService } from "@/lib/services/company.service";
@@ -22,6 +23,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const sp = request.nextUrl.searchParams;
     const page = Number(sp.get("page") || 1);
     const limit = Number(sp.get("limit") || 10);
@@ -35,6 +38,7 @@ export async function GET(request: NextRequest) {
     const maxAmount = sp.get("maxAmount") ? Number(sp.get("maxAmount")) : undefined;
 
     const result = await companyService.findMany(
+      clientId,
       {
         search,
         status,
@@ -60,10 +64,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const body = await request.json();
     const validated = createCompanySchema.parse(body);
 
-    const company = await companyService.create({
+    const company = await companyService.create(clientId, {
       name: validated.name,
       contactPerson: validated.contact_person,
       phoneNumber: validated.phone_number,
@@ -72,6 +78,7 @@ export async function POST(request: NextRequest) {
     });
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "CREATE",
       entityType: "COMPANY",

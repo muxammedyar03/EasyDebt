@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       username: user.username,
       email: user.email,
       role: user.role,
+      clientId: user.client_id,
     });
 
     // Set HTTP-only cookie
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
     await prisma.auditLog.create({
       data: {
         user_id: user.id,
+        client_id: user.client_id,
         action: "LOGIN",
         entity_type: "USER",
         new_value: {
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
         role: user.role,
         first_name: user.first_name,
         last_name: user.last_name,
+        client_id: user.client_id,
       },
     });
   } catch (error) {

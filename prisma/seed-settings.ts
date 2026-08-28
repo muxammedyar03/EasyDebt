@@ -3,23 +3,28 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create default debt limit setting
+  const client = await prisma.client.findFirst({ where: { slug: "default" } });
+  if (!client) {
+    throw new Error("Default client not found — run tenant migration/seed first");
+  }
+
   await prisma.settings.upsert({
-    where: { key: "debt_limit" },
+    where: { client_id_key: { client_id: client.id, key: "debt_limit" } },
     update: {},
     create: {
+      client_id: client.id,
       key: "debt_limit",
-      value: "2000000", // 2 million som default
+      value: "2000000",
     },
   });
 
-  // Create default overdue days setting
   await prisma.settings.upsert({
-    where: { key: "overdue_days" },
+    where: { client_id_key: { client_id: client.id, key: "overdue_days" } },
     update: {},
     create: {
+      client_id: client.id,
       key: "overdue_days",
-      value: "45", // 45 days default
+      value: "45",
     },
   });
 

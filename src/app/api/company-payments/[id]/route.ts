@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
@@ -22,6 +23,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const paymentId = parseInt(id, 10);
     if (isNaN(paymentId)) {
@@ -31,15 +34,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validated = updateSchema.parse(body);
 
-    const updated = await companyPaymentService.update(paymentId, {
+    const updated = await companyPaymentService.update(clientId, paymentId, {
       amount: validated.amount,
       paymentType: validated.payment_type ? PaymentTypeDomain[validated.payment_type] : undefined,
       note: validated.note,
     });
 
-    const company = await companyService.findById(updated.companyId, false);
+    const company = await companyService.findById(clientId, updated.companyId, false);
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "UPDATE",
       entityType: "COMPANY_PAYMENT",

@@ -91,19 +91,19 @@ export class CompanyDailySnapshotService {
   /**
    * Recompute and upsert today's (or given day's) snapshot from live aggregates.
    */
-  async refreshForDate(date: Date = new Date()): Promise<CompanyDailySnapshotDomain> {
+  async refreshForDate(clientId: number, date: Date = new Date()): Promise<CompanyDailySnapshotDomain> {
     const snapshotDate = toSnapshotDate(date);
     const range = dayRange(date);
 
     const [outstanding, debtsAgg, debtsCount, paymentsAgg, paymentsCount] = await Promise.all([
-      companyRepository.aggregate({}),
-      companyDebtRepository.aggregate({ created_at: range }),
-      companyDebtRepository.count({ created_at: range }),
-      companyPaymentRepository.aggregate({ created_at: range }),
-      companyPaymentRepository.count({ created_at: range }),
+      companyRepository.aggregate({ client_id: clientId }),
+      companyDebtRepository.aggregate({ client_id: clientId, created_at: range }),
+      companyDebtRepository.count({ client_id: clientId, created_at: range }),
+      companyPaymentRepository.aggregate({ client_id: clientId, created_at: range }),
+      companyPaymentRepository.count({ client_id: clientId, created_at: range }),
     ]);
 
-    const row = await companyDailySnapshotRepository.upsertByDate(snapshotDate, {
+    const row = await companyDailySnapshotRepository.upsertByDate(clientId, snapshotDate, {
       total_outstanding_debt: outstanding._sum.total_debt?.toNumber() ?? 0,
       debts_sum: debtsAgg._sum.amount?.toNumber() ?? 0,
       debts_count: debtsCount,
@@ -114,20 +114,23 @@ export class CompanyDailySnapshotService {
     return prismaToDomainCompanyDailySnapshot(row);
   }
 
-  async getSnapshotOn(date: Date): Promise<CompanyDailySnapshotDomain | null> {
+  async getSnapshotOn(clientId: number, date: Date): Promise<CompanyDailySnapshotDomain | null> {
     const snapshotDate = toSnapshotDate(date);
-    const exact = await companyDailySnapshotRepository.findByDate(snapshotDate);
+    const exact = await companyDailySnapshotRepository.findByDate(clientId, snapshotDate);
     if (exact) return prismaToDomainCompanyDailySnapshot(exact);
 
-    const nearest = await companyDailySnapshotRepository.findFirstOnOrBefore(snapshotDate);
+    const nearest = await companyDailySnapshotRepository.findFirstOnOrBefore(clientId, snapshotDate);
     return nearest ? prismaToDomainCompanyDailySnapshot(nearest) : null;
   }
 
   /** Outstanding debt as of ~1 month ago (nearest snapshot on or before). */
-  async getOutstandingOneMonthAgo(from: Date = new Date()): Promise<CompanyDailySnapshotDomain | null> {
+  async getOutstandingOneMonthAgo(
+    clientId: number,
+    from: Date = new Date(),
+  ): Promise<CompanyDailySnapshotDomain | null> {
     const target = new Date(from);
     target.setMonth(target.getMonth() - 1);
-    return this.getSnapshotOn(target);
+    return this.getSnapshotOn(clientId, target);
   }
 
   /** First day of previous calendar month. */
@@ -135,17 +138,17 @@ export class CompanyDailySnapshotService {
     return new Date(from.getFullYear(), from.getMonth() - 1, 1);
   }
 
-  async getDayActivity(date: Date): Promise<CompanyDayActivityDomain> {
+  async getDayActivity(clientId: number, date: Date): Promise<CompanyDayActivityDomain> {
     const range = dayRange(date);
-    const snapshot = await this.getSnapshotOn(date);
+    const snapshot = await this.getSnapshotOn(clientId, date);
 
     const [debts, payments] = await Promise.all([
       companyDebtRepository.findMany(
-        { created_at: range },
+        { client_id: clientId, created_at: range },
         { include: { company: true }, orderBy: { created_at: "desc" } },
       ) as Promise<CompanyDebtWithCompany[]>,
       companyPaymentRepository.findMany(
-        { created_at: range },
+        { client_id: clientId, created_at: range },
         { include: { company: true }, orderBy: { created_at: "desc" } },
       ) as Promise<CompanyPaymentWithCompany[]>,
     ]);
@@ -177,9 +180,9 @@ export class CompanyDailySnapshotService {
     };
   }
 
-  async getPreviousMonthFirstDayReport(from: Date = new Date()) {
+  async getPreviousMonthFirstDayReport(clientId: number, from: Date = new Date()) {
     const day = this.getFirstDayOfPreviousMonth(from);
-    return this.getDayActivity(day);
+    return this.getDayActivity(clientId, day);
   }
 
   private periodRange(dateFrom: Date, dateTo: Date): { gte: Date; lte: Date } {
@@ -193,25 +196,25 @@ export class CompanyDailySnapshotService {
   /**
    * Period report: outstanding at start/end + debts/payments activity in range.
    */
-  async getPeriodReport(dateFrom: Date, dateTo: Date): Promise<CompanyPeriodReportDomain> {
+  async getPeriodReport(clientId: number, dateFrom: Date, dateTo: Date): Promise<CompanyPeriodReportDomain> {
     const range = this.periodRange(dateFrom, dateTo);
     const dayBeforeStart = new Date(range.gte);
     dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
 
     const [startSnapshot, endSnapshot, debtsAgg, debtsCount, paymentsAgg, paymentsCount, debts, payments] =
       await Promise.all([
-        this.getSnapshotOn(dayBeforeStart),
-        this.getSnapshotOn(range.lte),
-        companyDebtRepository.aggregate({ created_at: range }),
-        companyDebtRepository.count({ created_at: range }),
-        companyPaymentRepository.aggregate({ created_at: range }),
-        companyPaymentRepository.count({ created_at: range }),
+        this.getSnapshotOn(clientId, dayBeforeStart),
+        this.getSnapshotOn(clientId, range.lte),
+        companyDebtRepository.aggregate({ client_id: clientId, created_at: range }),
+        companyDebtRepository.count({ client_id: clientId, created_at: range }),
+        companyPaymentRepository.aggregate({ client_id: clientId, created_at: range }),
+        companyPaymentRepository.count({ client_id: clientId, created_at: range }),
         companyDebtRepository.findMany(
-          { created_at: range },
+          { client_id: clientId, created_at: range },
           { include: { company: true }, orderBy: { created_at: "desc" }, take: 2000 },
         ) as Promise<CompanyDebtWithCompany[]>,
         companyPaymentRepository.findMany(
-          { created_at: range },
+          { client_id: clientId, created_at: range },
           { include: { company: true }, orderBy: { created_at: "desc" }, take: 2000 },
         ) as Promise<CompanyPaymentWithCompany[]>,
       ]);
@@ -247,6 +250,7 @@ export class CompanyDailySnapshotService {
   }
 
   async getPeriodReportQuery(
+    clientId: number,
     dateFrom: Date,
     dateTo: Date,
     options?: PeriodReportQueryOptions,
@@ -260,8 +264,8 @@ export class CompanyDailySnapshotService {
     const paymentsSkip = (paymentsPage - 1) * limit;
     const debtsSkip = (debtsPage - 1) * limit;
 
-    const paymentWhere = applyCompanySearch({ created_at: range }, options?.search);
-    const debtWhere = applyCompanySearch({ created_at: range }, options?.search);
+    const paymentWhere = applyCompanySearch({ client_id: clientId, created_at: range }, options?.search);
+    const debtWhere = applyCompanySearch({ client_id: clientId, created_at: range }, options?.search);
 
     const dayBeforeStart = new Date(range.gte);
     dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
@@ -279,12 +283,12 @@ export class CompanyDailySnapshotService {
       paymentsTotal,
       groupBy,
     ] = await Promise.all([
-      this.getSnapshotOn(dayBeforeStart),
-      this.getSnapshotOn(range.lte),
-      companyDebtRepository.aggregate({ created_at: range }),
-      companyDebtRepository.count({ created_at: range }),
-      companyPaymentRepository.aggregate({ created_at: range }),
-      companyPaymentRepository.count({ created_at: range }),
+      this.getSnapshotOn(clientId, dayBeforeStart),
+      this.getSnapshotOn(clientId, range.lte),
+      companyDebtRepository.aggregate({ client_id: clientId, created_at: range }),
+      companyDebtRepository.count({ client_id: clientId, created_at: range }),
+      companyPaymentRepository.aggregate({ client_id: clientId, created_at: range }),
+      companyPaymentRepository.count({ client_id: clientId, created_at: range }),
       companyDebtRepository.findMany(debtWhere, {
         include: { company: true },
         orderBy: buildDebtOrder(sort, sortAsc),
@@ -301,7 +305,7 @@ export class CompanyDailySnapshotService {
       companyPaymentRepository.count(paymentWhere),
       prisma.companyPayment.groupBy({
         by: ["payment_type"],
-        where: { created_at: range },
+        where: { client_id: clientId, created_at: range },
         _sum: { amount: true },
       }),
     ]);
@@ -358,17 +362,21 @@ export class CompanyDailySnapshotService {
     };
   }
 
-  async getOverviewChartSeries(period: ChartPeriod, metric: CompanyChartMetric): Promise<CompanyChartPoint[]> {
+  async getOverviewChartSeries(
+    clientId: number,
+    period: ChartPeriod,
+    metric: CompanyChartMetric,
+  ): Promise<CompanyChartPoint[]> {
     const { dateFrom, dateTo } = getChartPeriodBounds(period);
     const rangeStart = toSnapshotDate(dateFrom);
     const rangeEnd = toSnapshotDate(dateTo);
 
     const [snapshots, beforeStart] = await Promise.all([
       companyDailySnapshotRepository.findMany(
-        { date: { gte: rangeStart, lte: rangeEnd } },
+        { client_id: clientId, date: { gte: rangeStart, lte: rangeEnd } },
         { orderBy: { date: "asc" } },
       ),
-      companyDailySnapshotRepository.findFirstOnOrBefore(rangeStart),
+      companyDailySnapshotRepository.findFirstOnOrBefore(clientId, rangeStart),
     ]);
 
     const snapshotByDay = new Map<string, (typeof snapshots)[number]>();

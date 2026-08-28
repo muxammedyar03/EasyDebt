@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +22,12 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+
+export type ClientOption = {
+  id: number;
+  name: string;
+  slug: string;
+};
 
 type FormValues = {
   username: string;
@@ -32,9 +38,15 @@ type FormValues = {
   first_name?: string;
   last_name?: string;
   is_active: boolean;
+  client_id: number;
 };
 
-export function CreateUserForm() {
+type CreateUserFormProps = {
+  clients: ClientOption[];
+  defaultClientId: number;
+};
+
+export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps) {
   const t = useTranslations("users");
   const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
@@ -53,6 +65,7 @@ export function CreateUserForm() {
           first_name: z.string().optional(),
           last_name: z.string().optional(),
           is_active: z.boolean().default(true),
+          client_id: z.number().int().positive(),
         })
         .refine((data) => data.password === data.confirmPassword, {
           message: t("passwordMismatch"),
@@ -72,8 +85,15 @@ export function CreateUserForm() {
       first_name: "",
       last_name: "",
       is_active: true,
+      client_id: defaultClientId,
     },
   });
+
+  React.useEffect(() => {
+    if (open) {
+      form.setValue("client_id", defaultClientId);
+    }
+  }, [open, defaultClientId, form]);
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
@@ -89,6 +109,7 @@ export function CreateUserForm() {
           first_name: values.first_name || null,
           last_name: values.last_name || null,
           is_active: values.is_active,
+          client_id: values.client_id,
         }),
       });
 
@@ -102,7 +123,17 @@ export function CreateUserForm() {
         description: t("createSuccess"),
       });
 
-      form.reset();
+      form.reset({
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "USER",
+        first_name: "",
+        last_name: "",
+        is_active: true,
+        client_id: defaultClientId,
+      });
       setOpen(false);
       router.refresh();
     } catch (error) {
@@ -234,6 +265,32 @@ export function CreateUserForm() {
                       </SelectContent>
                     </Select>
                     <FormDescription>{t("roleHint")}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="client_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("client")}</FormLabel>
+                    <Select value={String(field.value)} onValueChange={(value) => field.onChange(Number(value))}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectClient")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={String(client.id)}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>{t("clientHint")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

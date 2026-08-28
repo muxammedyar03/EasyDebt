@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,9 +13,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { username, email, password, role, first_name, last_name, is_active } = body;
+    const { username, email, password, role, first_name, last_name, is_active, client_id } = body;
 
-    // Validation
     if (!username || !password || !role) {
       return NextResponse.json({ error: "Username, parol va rol majburiy" }, { status: 400 });
     }
@@ -23,7 +23,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Parol kamida 6 ta belgidan iborat bo'lishi kerak" }, { status: 400 });
     }
 
-    // Check if username exists
+    const targetClientId =
+      typeof client_id === "number" && Number.isFinite(client_id) ? client_id : requireClientId(session);
+
+    const clientExists = await prisma.client.findUnique({ where: { id: targetClientId } });
+    if (!clientExists || !clientExists.is_active) {
+      return NextResponse.json({ error: "Client topilmadi" }, { status: 400 });
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { username },
     });
@@ -32,7 +39,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Bu username allaqachon mavjud" }, { status: 400 });
     }
 
-    // Check if email exists (if provided)
     if (email) {
       const existingEmail = await prisma.user.findUnique({
         where: { email },
@@ -43,10 +49,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         username,
@@ -56,6 +60,7 @@ export async function POST(request: NextRequest) {
         first_name: first_name || null,
         last_name: last_name || null,
         is_active: is_active ?? true,
+        client_id: targetClientId,
       },
       select: {
         id: true,
@@ -66,6 +71,7 @@ export async function POST(request: NextRequest) {
         last_name: true,
         is_active: true,
         created_at: true,
+        client_id: true,
       },
     });
 
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
 
@@ -84,7 +90,13 @@ export async function GET() {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const filterClientId = searchParams.get("client_id");
+    const where =
+      filterClientId && Number.isFinite(Number(filterClientId)) ? { client_id: Number(filterClientId) } : undefined;
+
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         username: true,
@@ -94,6 +106,7 @@ export async function GET() {
         last_name: true,
         is_active: true,
         created_at: true,
+        client_id: true,
       },
       orderBy: {
         created_at: "desc",

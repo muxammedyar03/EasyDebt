@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getAuditLogs } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
@@ -9,6 +10,8 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     // Only admins can view audit logs
     if (session.role !== "ADMIN" && session.role !== "SUPER_ADMIN") {
@@ -22,6 +25,7 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get("offset");
 
     const logs = await getAuditLogs({
+      clientId,
       entityType: entityType || undefined,
       entityId: entityId ? parseInt(entityId) : undefined,
       limit: limit ? parseInt(limit) : 50,

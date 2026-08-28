@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 
 const subscribeSchema = z.object({
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireClientId(session);
     if (!(prisma as { pushSubscription?: unknown }).pushSubscription) {
       return NextResponse.json({ error: "Push notifications not available" }, { status: 503 });
     }
@@ -80,6 +83,8 @@ export async function DELETE(request: NextRequest) {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireClientId(session);
     if (!(prisma as { pushSubscription?: unknown }).pushSubscription) {
       return NextResponse.json({ error: "Push notifications not available" }, { status: 503 });
     }
@@ -116,6 +121,8 @@ export async function GET() {
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    requireClientId(session);
 
     // Guard: push models may be missing if migration not run or client stale
     const pushSubscription = (prisma as { pushSubscription?: { findMany: (args: unknown) => Promise<unknown[]> } })

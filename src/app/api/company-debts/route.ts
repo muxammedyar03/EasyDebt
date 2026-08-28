@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyDebtService } from "@/lib/services/company-debt.service";
@@ -16,15 +17,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const body = await request.json();
     const validated = createCompanyDebtApiSchema.parse(body);
 
-    const company = await companyService.findById(validated.company_id, false);
+    const company = await companyService.findById(clientId, validated.company_id, false);
     if (!company) {
       return NextResponse.json({ error: "Kompaniya topilmadi" }, { status: 404 });
     }
 
-    const debt = await companyDebtService.create({
+    const debt = await companyDebtService.create(clientId, {
       companyId: validated.company_id,
       amount: validated.amount,
       note: validated.note,
@@ -33,6 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "CREATE",
       entityType: "COMPANY_DEBT",

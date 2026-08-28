@@ -18,34 +18,14 @@ export type DebtReportItem = {
 };
 
 class DebtService {
-  async debtLimit(): Promise<number> {
-    return settingsRepository.getDebtLimit();
+  async debtLimit(clientId: number): Promise<number> {
+    return settingsRepository.getDebtLimit(clientId);
   }
 
-  // async getTotalCount(): Promise<number> {
-  //   return prisma.debt.count();
-  // }
-
-  // async getDebtsInDateRange(from: Date, to: Date): Promise<{ sum: number; count: number }> {
-  //   const [debts, agg] = await Promise.all([
-  //     prisma.debt.findMany({
-  //       where: { created_at: { gte: from, lte: to } },
-  //     }),
-  //     prisma.debt.aggregate({
-  //       _sum: { amount: true },
-  //       where: { created_at: { gte: from, lte: to } },
-  //     }),
-  //   ]);
-  //   return {
-  //     sum: agg._sum.amount?.toNumber() ?? 0,
-  //     count: debts.length,
-  //   };
-  // }
-
   /** Task 4.2a: limit to avoid loading unbounded rows (default 2000). */
-  async getDebtsWithDebtorForReport(limit = 2000): Promise<DebtReportItem[]> {
+  async getDebtsWithDebtorForReport(clientId: number, limit = 2000): Promise<DebtReportItem[]> {
     const debts = (await debtRepository.findMany(
-      {},
+      { client_id: clientId },
       { include: { debtor: true }, orderBy: { created_at: "desc" }, take: limit },
     )) as DebtWithDebtor[];
     return debts.map((d) => ({

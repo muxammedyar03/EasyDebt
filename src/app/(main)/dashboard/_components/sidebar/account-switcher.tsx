@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { BadgeCheck, Bell, CreditCard, LogOut, Settings } from "lucide-react";
+import { BadgeCheck, CreditCard, LogOut, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

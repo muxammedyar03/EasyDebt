@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
@@ -19,6 +20,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     // Only allow in development mode
     if (process.env.NODE_ENV !== "development") {
@@ -40,8 +43,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Use transaction to update payment and recalculate debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
       // Get old payment info
-      const oldPayment = await tx.payment.findUnique({
-        where: { id: paymentId },
+      const oldPayment = await tx.payment.findFirst({
+        where: { id: paymentId, client_id: clientId },
         include: { debtor: true },
       });
 
@@ -94,6 +97,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Create audit log
     await createAuditLog({
+      clientId,
       userId,
       action: "PAYMENT_UPDATED",
       entityType: "PAYMENT",

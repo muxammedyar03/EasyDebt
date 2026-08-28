@@ -11,6 +11,7 @@ export type NotificationType =
 
 interface CreateNotificationData {
   userId?: number;
+  clientId: number;
   debtorId?: number;
   type: NotificationType;
   title: string;
@@ -22,6 +23,7 @@ export async function createNotification(data: CreateNotificationData) {
     const notification = await prisma.notification.create({
       data: {
         user_id: data.userId,
+        client_id: data.clientId,
         debtor_id: data.debtorId,
         type: data.type,
         title: data.title,
@@ -33,8 +35,8 @@ export async function createNotification(data: CreateNotificationData) {
     if (data.userId) {
       let url = "/dashboard/notifications";
       if (data.debtorId) {
-        const debtor = await prisma.debtor.findUnique({
-          where: { id: data.debtorId },
+        const debtor = await prisma.debtor.findFirst({
+          where: { id: data.debtorId, client_id: data.clientId },
           select: { external_id: true },
         });
         url = debtor ? `/dashboard/default/debitor/${debtor.external_id}` : url;
@@ -48,8 +50,11 @@ export async function createNotification(data: CreateNotificationData) {
   }
 }
 
-export async function getUnreadNotifications(userId?: number) {
-  const where: { user_id?: number; is_read: boolean } = { is_read: false };
+export async function getUnreadNotifications(clientId: number, userId?: number) {
+  const where: { client_id: number; user_id?: number; is_read: boolean } = {
+    client_id: clientId,
+    is_read: false,
+  };
 
   if (userId) {
     where.user_id = userId;
@@ -62,10 +67,10 @@ export async function getUnreadNotifications(userId?: number) {
   });
 }
 
-export async function markNotificationAsRead(notificationId: number) {
+export async function markNotificationAsRead(clientId: number, notificationId: number) {
   try {
-    await prisma.notification.update({
-      where: { id: notificationId },
+    await prisma.notification.updateMany({
+      where: { id: notificationId, client_id: clientId },
       data: { is_read: true },
     });
   } catch (error) {
@@ -73,9 +78,9 @@ export async function markNotificationAsRead(notificationId: number) {
   }
 }
 
-export async function markAllNotificationsAsRead(userId?: number) {
+export async function markAllNotificationsAsRead(clientId: number, userId?: number) {
   try {
-    const where: { user_id?: number } = {};
+    const where: { client_id: number; user_id?: number } = { client_id: clientId };
     if (userId) {
       where.user_id = userId;
     }

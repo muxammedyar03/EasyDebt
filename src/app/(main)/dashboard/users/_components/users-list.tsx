@@ -38,6 +38,7 @@ interface User {
   last_name: string | null;
   is_active: boolean;
   created_at: string;
+  client_id?: number;
 }
 
 interface UsersListProps {

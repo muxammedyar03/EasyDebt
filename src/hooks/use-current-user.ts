@@ -11,6 +11,8 @@ export interface CurrentUser {
   last_name: string | null;
   is_active: boolean;
   created_at: string;
+  client_id: number;
+  clientId: number;
 }
 
 export const CURRENT_USER_QUERY_KEY = ["current-user"] as const;

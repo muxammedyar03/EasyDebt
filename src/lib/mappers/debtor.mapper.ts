@@ -58,6 +58,7 @@ export function prismaToDomainDebtor(
   return {
     id: prismaDebtor.id,
     externalId: prismaDebtor.external_id,
+    clientId: prismaDebtor.client_id,
     firstName: prismaDebtor.first_name,
     lastName: prismaDebtor.last_name,
     phoneNumber: prismaDebtor.phone_number,

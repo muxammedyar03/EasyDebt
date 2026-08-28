@@ -64,7 +64,7 @@ describe("DebtorService", () => {
       mockPaymentCount.mockResolvedValue(4);
       mockPaymentAggregate.mockResolvedValue({ _sum: { amount: decimal(2_000_000) } });
 
-      const result = await service.getStats();
+      const result = await service.getStats(1);
 
       expect(result).toEqual({
         totalDebtors: 10,
@@ -75,7 +75,7 @@ describe("DebtorService", () => {
         todayPaymentsCount: 4,
         todayPaymentsAmount: 2_000_000,
       });
-      expect(mockDebtorCount).toHaveBeenCalledWith({});
+      expect(mockDebtorCount).toHaveBeenCalledWith({ client_id: 1 });
       expect(mockDebtCount).toHaveBeenCalled();
       expect(mockPaymentCount).toHaveBeenCalled();
     });
@@ -88,7 +88,7 @@ describe("DebtorService", () => {
       mockPaymentCount.mockResolvedValue(0);
       mockPaymentAggregate.mockResolvedValue({ _sum: { amount: null } });
 
-      const result = await service.getStats();
+      const result = await service.getStats(1);
 
       expect(result.totalDebtors).toBe(0);
       expect(result.totalDebt).toBe(0);
@@ -116,6 +116,7 @@ describe("DebtorService", () => {
         created_at: created,
         updated_at: created,
         created_by: 1,
+        client_id: 1,
       };
 
       mockDebtFindMany.mockResolvedValue([
@@ -140,7 +141,7 @@ describe("DebtorService", () => {
         },
       ]);
 
-      const result = await service.getCustomerRatings({}, { page: 1, limit: 20 });
+      const result = await service.getCustomerRatings(1, {}, { page: 1, limit: 20 });
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].debtorId).toBe(1);
@@ -166,7 +167,7 @@ describe("DebtorService", () => {
       mockDebtFindMany.mockResolvedValue([]);
       mockPaymentFindMany.mockResolvedValue([]);
 
-      const result = await service.getCustomerRatings();
+      const result = await service.getCustomerRatings(1);
 
       expect(result.data).toHaveLength(0);
       expect(result.total).toBe(0);

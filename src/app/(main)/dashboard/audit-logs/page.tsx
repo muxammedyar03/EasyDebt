@@ -4,6 +4,9 @@ import { AuditLogsTable } from "./_components/audit-logs-table";
 import { AuditLog, Prisma } from "@prisma/client";
 import { AuditLogTableProps } from "@/types/types";
 import { toast } from "sonner";
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,6 +16,10 @@ export default async function AuditLogsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
+
   const t = await getTranslations("audit");
   const params = await searchParams;
   const page = Number(params.page) || 1;
@@ -24,7 +31,9 @@ export default async function AuditLogsPage({
   const dateTo = (params.dateTo as string) || "";
 
   // Build where clause
-  const where: Prisma.AuditLogWhereInput = {};
+  const where: Prisma.AuditLogWhereInput = {
+    client_id: clientId,
+  };
 
   // Search filter (user, action, entity)
   if (search) {

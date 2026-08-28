@@ -57,31 +57,31 @@ export class DebtorService {
   /**
    * Get settings needed for domain calculations
    */
-  private async getSettings() {
+  private async getSettings(clientId: number) {
     const [debtLimit, overdueDays] = await Promise.all([
-      settingsRepository.getDebtLimit(),
-      settingsRepository.getOverdueDays(),
+      settingsRepository.getDebtLimit(clientId),
+      settingsRepository.getOverdueDays(clientId),
     ]);
     return { debtLimit, overdueDays };
   }
 
-  public async getOverdueDays(): Promise<number> {
-    const settings = await this.getSettings();
+  public async getOverdueDays(clientId: number): Promise<number> {
+    const settings = await this.getSettings(clientId);
     return settings.overdueDays;
   }
 
   /**
    * Get all debtors with debts/payments and computed is_overdue for API list (e.g. GET /api/debtors)
    */
-  async getDebtorsWithOverdueForApi(): Promise<
+  async getDebtorsWithOverdueForApi(clientId: number): Promise<
     (Omit<Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>, "total_debt"> & {
       total_debt: number;
       is_overdue: boolean;
     })[]
   > {
-    const { overdueDays } = await this.getSettings();
+    const { overdueDays } = await this.getSettings(clientId);
     const debtorsRaw = (await debtorRepository.findMany(
-      {},
+      { client_id: clientId },
       { orderBy: { created_at: "desc" }, include: { debts: true, payments: true } },
     )) as Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>[];
 
@@ -109,28 +109,11 @@ export class DebtorService {
   /**
    * Find debtor by ID (returns Domain type)
    */
-  async findById(id: number, includeRelations = false): Promise<DebtorDomain | null> {
-    const settings = await this.getSettings();
-
-    const debtor = await debtorRepository.findById(id, {
-      debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
-      payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
-      creator: includeRelations,
-    });
-
-    if (!debtor) return null;
-
-    return prismaToDomainDebtor(debtor, settings);
-  }
-
-  /**
-   * Find debtor by external_id (UUID) — for URL-safe lookups
-   */
-  async findByExternalId(externalId: string, includeRelations = false): Promise<DebtorDomain | null> {
-    const settings = await this.getSettings();
+  async findById(clientId: number, id: number, includeRelations = false): Promise<DebtorDomain | null> {
+    const settings = await this.getSettings(clientId);
 
     const debtor = await debtorRepository.findFirst(
-      { external_id: externalId },
+      { id, client_id: clientId },
       {
         debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
         payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
@@ -144,20 +127,47 @@ export class DebtorService {
   }
 
   /**
+   * Find debtor by external_id (UUID) — for URL-safe lookups
+   */
+  async findByExternalId(
+    clientId: number | null,
+    externalId: string,
+    includeRelations = false,
+  ): Promise<DebtorDomain | null> {
+    const debtor = await debtorRepository.findFirst(
+      {
+        external_id: externalId,
+        ...(clientId !== null ? { client_id: clientId } : {}),
+      },
+      {
+        debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+        payments: includeRelations ? { orderBy: { created_at: "desc" } } : false,
+        creator: includeRelations,
+      },
+    );
+
+    if (!debtor) return null;
+
+    const settings = await this.getSettings(debtor.client_id);
+    return prismaToDomainDebtor(debtor, settings);
+  }
+
+  /**
    * Find debtors with filters and pagination (returns Domain types)
    */
   async findMany(
+    clientId: number,
     filters?: DebtorDomainFilters,
     pagination?: PaginationOptions,
   ): Promise<PaginatedResult<DebtorDomain>> {
-    const settings = await this.getSettings();
+    const settings = await this.getSettings(clientId);
 
     // Special handling for isOverdue filter - need to compute it runtime
     const isOverdueFilter = filters?.isOverdue;
     const filtersWithoutOverdue = { ...filters, isOverdue: undefined };
 
     // Build Prisma where clause from domain filters (without isOverdue)
-    const where = this.buildWhereClause(filtersWithoutOverdue);
+    const where = this.buildWhereClause(clientId, filtersWithoutOverdue);
 
     // Build orderBy
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
@@ -168,12 +178,12 @@ export class DebtorService {
     if (filters?.search?.trim()) {
       const searchTerms = filters.search.trim().split(/\s+/).filter(Boolean);
       const searchLimit = Math.min(pagination?.limit ?? 250, 250);
-      const ids = await debtorRepository.searchIds(searchTerms, searchLimit);
+      const ids = await debtorRepository.searchIds(clientId, searchTerms, searchLimit);
       if (ids.length === 0) {
         return { data: [], total: 0, page: 1, limit: searchLimit, totalPages: 0 };
       }
       const debtors = (await debtorRepository.findMany(
-        { id: { in: ids } },
+        { id: { in: ids }, client_id: clientId },
         { include: { debts: true, payments: true, creator: true }, take: ids.length },
       )) as DebtorWithRelations[];
       const orderMap = new Map(ids.map((id, i) => [id, i]));
@@ -314,22 +324,22 @@ export class DebtorService {
     };
   }
 
-  async debtorsCount(): Promise<number> {
-    return debtorRepository.count({});
+  async debtorsCount(clientId: number): Promise<number> {
+    return debtorRepository.count({ client_id: clientId });
   }
 
-  async debtorsTotalDebt(): Promise<number> {
-    const result = await debtorRepository.aggregate({});
+  async debtorsTotalDebt(clientId: number): Promise<number> {
+    const result = await debtorRepository.aggregate({ client_id: clientId });
     return result._sum.total_debt?.toNumber() ?? 0;
   }
 
-  async debtorsTotalPayments(): Promise<number> {
-    const result = await paymentRepository.aggregate({});
+  async debtorsTotalPayments(clientId: number): Promise<number> {
+    const result = await paymentRepository.aggregate({ client_id: clientId });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
-  async debtorsTotalDebts(): Promise<number> {
-    const result = await debtRepository.aggregate({});
+  async debtorsTotalDebts(clientId: number): Promise<number> {
+    const result = await debtRepository.aggregate({ client_id: clientId });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
@@ -340,27 +350,31 @@ export class DebtorService {
     };
   }
 
-  async todayDebtsCount(): Promise<number> {
+  async todayDebtsCount(clientId: number): Promise<number> {
     return debtRepository.count({
+      client_id: clientId,
       created_at: this.getTodayDateRange(),
     });
   }
 
-  async todayDebtsAmount(): Promise<number> {
+  async todayDebtsAmount(clientId: number): Promise<number> {
     const result = await debtRepository.aggregate({
+      client_id: clientId,
       created_at: this.getTodayDateRange(),
     });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
-  async todayPaymentsCount(): Promise<number> {
+  async todayPaymentsCount(clientId: number): Promise<number> {
     return paymentRepository.count({
+      client_id: clientId,
       created_at: this.getTodayDateRange(),
     });
   }
 
-  async todayPaymentsAmount(): Promise<number> {
+  async todayPaymentsAmount(clientId: number): Promise<number> {
     const result = await paymentRepository.aggregate({
+      client_id: clientId,
       created_at: this.getTodayDateRange(),
     });
     return result._sum.amount?.toNumber() ?? 0;
@@ -369,15 +383,15 @@ export class DebtorService {
   /**
    * Get stats for debtors (Task 4.1b: parallel queries instead of sequential).
    */
-  async getStats(): Promise<DebtorStats> {
+  async getStats(clientId: number): Promise<DebtorStats> {
     const [totalDebtors, totalDebt, todayDebtsCount, todayDebtsAmount, todayPaymentsCount, todayPaymentsAmount] =
       await Promise.all([
-        this.debtorsCount(),
-        this.debtorsTotalDebt(),
-        this.todayDebtsCount(),
-        this.todayDebtsAmount(),
-        this.todayPaymentsCount(),
-        this.todayPaymentsAmount(),
+        this.debtorsCount(clientId),
+        this.debtorsTotalDebt(clientId),
+        this.todayDebtsCount(clientId),
+        this.todayDebtsAmount(clientId),
+        this.todayPaymentsCount(clientId),
+        this.todayPaymentsAmount(clientId),
       ]);
     return buildDebtorStats({
       totalDebtors,
@@ -393,8 +407,8 @@ export class DebtorService {
   /**
    * Create a new debtor (returns Domain type)
    */
-  async create(input: CreateDebtorDomainInput): Promise<DebtorDomain> {
-    const settings = await this.getSettings();
+  async create(clientId: number, input: CreateDebtorDomainInput): Promise<DebtorDomain> {
+    const settings = await this.getSettings(clientId);
 
     const debtor = await debtorRepository.create(
       {
@@ -402,6 +416,7 @@ export class DebtorService {
         last_name: input.lastName,
         phone_number: input.phoneNumber,
         address: input.address,
+        client: { connect: { id: clientId } },
         creator: { connect: { id: input.createdBy } },
       },
       { creator: true },
@@ -413,8 +428,10 @@ export class DebtorService {
   /**
    * Update a debtor (returns Domain type)
    */
-  async update(id: number, input: UpdateDebtorDomainInput): Promise<DebtorDomain> {
-    const settings = await this.getSettings();
+  async update(clientId: number, id: number, input: UpdateDebtorDomainInput): Promise<DebtorDomain> {
+    const settings = await this.getSettings(clientId);
+    const existing = await debtorRepository.findFirst({ id, client_id: clientId });
+    if (!existing) throw new Error("Debtor not found");
 
     const debtor = await debtorRepository.update(
       id,
@@ -433,15 +450,17 @@ export class DebtorService {
   /**
    * Delete a debtor
    */
-  async delete(id: number): Promise<void> {
+  async delete(clientId: number, id: number): Promise<void> {
+    const existing = await debtorRepository.findFirst({ id, client_id: clientId });
+    if (!existing) throw new Error("Debtor not found");
     await debtorRepository.delete(id);
   }
 
   /**
    * Get debtor as View type (for UI)
    */
-  async getView(id: number): Promise<DebtorDetailView | null> {
-    const domain = await this.findById(id, true);
+  async getView(clientId: number, id: number): Promise<DebtorDetailView | null> {
+    const domain = await this.findById(clientId, id, true);
     if (!domain) return null;
     return domainToDetailViewDebtor(domain);
   }
@@ -450,10 +469,11 @@ export class DebtorService {
    * Get debtors as View types (for UI tables)
    */
   async getTableView(
+    clientId: number,
     filters?: DebtorDomainFilters,
     pagination?: PaginationOptions,
   ): Promise<PaginatedResult<DebtorTableView>> {
-    const result = await this.findMany(filters, pagination);
+    const result = await this.findMany(clientId, filters, pagination);
     return {
       ...result,
       data: result.data.map(domainToTableViewDebtor),
@@ -466,16 +486,20 @@ export class DebtorService {
    * Calculates average days from debt to payment for each debtor and assigns ratings
    */
   async getCustomerRatings(
+    clientId: number,
     filters?: CustomerRatingFilters,
     pagination?: PaginationOptions,
   ): Promise<PaginatedCustomerRatingsView> {
-    const settings = await this.getSettings();
+    const settings = await this.getSettings(clientId);
     const overdueDays = settings.overdueDays;
 
     // Get all debts and payments in 2 queries (include debtor to avoid N+1); then group in memory
     const [debtsRaw, paymentsRaw] = (await Promise.all([
-      debtRepository.findMany({}, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
-      paymentRepository.findMany({}, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
+      debtRepository.findMany({ client_id: clientId }, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
+      paymentRepository.findMany(
+        { client_id: clientId },
+        { include: { debtor: true }, orderBy: { created_at: "asc" } },
+      ),
     ])) as [DebtWithDebtor[], PaymentWithDebtor[]];
 
     // Group debts and payments by debtor
@@ -639,8 +663,8 @@ export class DebtorService {
   /**
    * Build Prisma where clause from domain filters
    */
-  private buildWhereClause(filters?: DebtorDomainFilters): Prisma.DebtorWhereInput {
-    const where: Prisma.DebtorWhereInput = {};
+  private buildWhereClause(clientId: number, filters?: DebtorDomainFilters): Prisma.DebtorWhereInput {
+    const where: Prisma.DebtorWhereInput = { client_id: clientId };
 
     if (filters?.search) {
       // Split search by spaces and filter empty strings

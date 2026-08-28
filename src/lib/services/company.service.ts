@@ -26,36 +26,40 @@ type CompanyWithRelations = Prisma.CompanyGetPayload<{
 }>;
 
 export class CompanyService {
-  private async getSettings() {
+  private async getSettings(clientId: number) {
     const [debtLimit, overdueDays] = await Promise.all([
-      settingsRepository.getDebtLimit(),
-      settingsRepository.getOverdueDays(),
+      settingsRepository.getDebtLimit(clientId),
+      settingsRepository.getOverdueDays(clientId),
     ]);
     return { debtLimit, overdueDays };
   }
 
-  async getOverdueDays(): Promise<number> {
-    return settingsRepository.getOverdueDays();
+  async getOverdueDays(clientId: number): Promise<number> {
+    return settingsRepository.getOverdueDays(clientId);
   }
 
-  async debtLimit(): Promise<number> {
-    return settingsRepository.getDebtLimit();
+  async debtLimit(clientId: number): Promise<number> {
+    return settingsRepository.getDebtLimit(clientId);
   }
 
-  async findById(id: number, includeRelations = false): Promise<CompanyDomain | null> {
-    const settings = await this.getSettings();
-    const row = await companyRepository.findById(
-      id,
+  async findById(clientId: number, id: number, includeRelations = false): Promise<CompanyDomain | null> {
+    const settings = await this.getSettings(clientId);
+    const row = await companyRepository.findFirst(
+      { id, client_id: clientId },
       includeRelations ? { debts: true, payments: true, creator: true } : { creator: true },
     );
     if (!row) return null;
     return prismaToDomainCompany(row, settings);
   }
 
-  async findByExternalId(externalId: string, includeRelations = false): Promise<CompanyDomain | null> {
-    const settings = await this.getSettings();
+  async findByExternalId(
+    clientId: number,
+    externalId: string,
+    includeRelations = false,
+  ): Promise<CompanyDomain | null> {
+    const settings = await this.getSettings(clientId);
     const row = await companyRepository.findFirst(
-      { external_id: externalId },
+      { external_id: externalId, client_id: clientId },
       includeRelations
         ? {
             debts: { orderBy: { created_at: "desc" } },
@@ -87,9 +91,9 @@ export class CompanyService {
     }
   }
 
-  private async buildWhere(filters?: CompanyDomainFilters): Promise<Prisma.CompanyWhereInput> {
-    const settings = await this.getSettings();
-    const where: Prisma.CompanyWhereInput = {};
+  private async buildWhere(clientId: number, filters?: CompanyDomainFilters): Promise<Prisma.CompanyWhereInput> {
+    const settings = await this.getSettings(clientId);
+    const where: Prisma.CompanyWhereInput = { client_id: clientId };
 
     if (filters?.createdBy !== undefined) {
       where.created_by = filters.createdBy;
@@ -97,7 +101,7 @@ export class CompanyService {
 
     if (filters?.search?.trim()) {
       const terms = filters.search.trim().split(/\s+/).filter(Boolean);
-      const ids = await companyRepository.searchIds(terms, 500);
+      const ids = await companyRepository.searchIds(clientId, terms, 500);
       where.id = { in: ids.length > 0 ? ids : [-1] };
     }
 
@@ -165,11 +169,12 @@ export class CompanyService {
   }
 
   async findMany(
+    clientId: number,
     filters?: CompanyDomainFilters,
     pagination?: CompanyPaginationOptions,
   ): Promise<PaginatedResult<CompanyDomain>> {
-    const settings = await this.getSettings();
-    const where = await this.buildWhere(filters);
+    const settings = await this.getSettings(clientId);
+    const where = await this.buildWhere(clientId, filters);
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder ?? "desc");
 
     const page = pagination?.page ?? 1;
@@ -219,44 +224,50 @@ export class CompanyService {
     };
   }
 
-  async companiesCount(): Promise<number> {
-    return companyRepository.count({});
+  async companiesCount(clientId: number): Promise<number> {
+    return companyRepository.count({ client_id: clientId });
   }
 
-  async companiesTotalDebt(): Promise<number> {
-    const result = await companyRepository.aggregate({});
+  async companiesTotalDebt(clientId: number): Promise<number> {
+    const result = await companyRepository.aggregate({ client_id: clientId });
     return result._sum.total_debt?.toNumber() ?? 0;
   }
 
-  async companiesTotalPayments(): Promise<number> {
-    const result = await companyPaymentRepository.aggregate({});
+  async companiesTotalPayments(clientId: number): Promise<number> {
+    const result = await companyPaymentRepository.aggregate({ client_id: clientId });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
-  async companiesTotalDebtsAmount(): Promise<number> {
-    const result = await companyDebtRepository.aggregate({});
+  async companiesTotalDebtsAmount(clientId: number): Promise<number> {
+    const result = await companyDebtRepository.aggregate({ client_id: clientId });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
-  async todayDebtsCount(): Promise<number> {
-    return companyDebtRepository.count({ created_at: this.getTodayDateRange() });
+  async todayDebtsCount(clientId: number): Promise<number> {
+    return companyDebtRepository.count({ client_id: clientId, created_at: this.getTodayDateRange() });
   }
 
-  async todayDebtsAmount(): Promise<number> {
-    const result = await companyDebtRepository.aggregate({ created_at: this.getTodayDateRange() });
+  async todayDebtsAmount(clientId: number): Promise<number> {
+    const result = await companyDebtRepository.aggregate({
+      client_id: clientId,
+      created_at: this.getTodayDateRange(),
+    });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
-  async todayPaymentsCount(): Promise<number> {
-    return companyPaymentRepository.count({ created_at: this.getTodayDateRange() });
+  async todayPaymentsCount(clientId: number): Promise<number> {
+    return companyPaymentRepository.count({ client_id: clientId, created_at: this.getTodayDateRange() });
   }
 
-  async todayPaymentsAmount(): Promise<number> {
-    const result = await companyPaymentRepository.aggregate({ created_at: this.getTodayDateRange() });
+  async todayPaymentsAmount(clientId: number): Promise<number> {
+    const result = await companyPaymentRepository.aggregate({
+      client_id: clientId,
+      created_at: this.getTodayDateRange(),
+    });
     return result._sum.amount?.toNumber() ?? 0;
   }
 
-  async getStats(): Promise<CompanyStats> {
+  async getStats(clientId: number): Promise<CompanyStats> {
     const [
       totalCompanies,
       totalDebt,
@@ -267,14 +278,14 @@ export class CompanyService {
       todayPaymentsCount,
       todayPaymentsAmount,
     ] = await Promise.all([
-      this.companiesCount(),
-      this.companiesTotalDebt(),
-      companyDebtRepository.count({}),
-      this.companiesTotalPayments(),
-      this.todayDebtsCount(),
-      this.todayDebtsAmount(),
-      this.todayPaymentsCount(),
-      this.todayPaymentsAmount(),
+      this.companiesCount(clientId),
+      this.companiesTotalDebt(clientId),
+      companyDebtRepository.count({ client_id: clientId }),
+      this.companiesTotalPayments(clientId),
+      this.todayDebtsCount(clientId),
+      this.todayDebtsAmount(clientId),
+      this.todayPaymentsCount(clientId),
+      this.todayPaymentsAmount(clientId),
     ]);
 
     return buildCompanyStats({
@@ -289,14 +300,15 @@ export class CompanyService {
     });
   }
 
-  async create(input: CreateCompanyDomainInput): Promise<CompanyDomain> {
-    const settings = await this.getSettings();
+  async create(clientId: number, input: CreateCompanyDomainInput): Promise<CompanyDomain> {
+    const settings = await this.getSettings(clientId);
     const row = await companyRepository.create(
       {
         name: input.name,
         contact_person: input.contactPerson,
         phone_number: input.phoneNumber,
         address: input.address,
+        client: { connect: { id: clientId } },
         creator: { connect: { id: input.createdBy } },
       },
       { creator: true },
@@ -304,8 +316,10 @@ export class CompanyService {
     return prismaToDomainCompany(row, settings);
   }
 
-  async update(id: number, input: UpdateCompanyDomainInput): Promise<CompanyDomain> {
-    const settings = await this.getSettings();
+  async update(clientId: number, id: number, input: UpdateCompanyDomainInput): Promise<CompanyDomain> {
+    const settings = await this.getSettings(clientId);
+    const existing = await companyRepository.findFirst({ id, client_id: clientId });
+    if (!existing) throw new Error("Company not found");
     const row = await companyRepository.update(
       id,
       {
@@ -319,21 +333,24 @@ export class CompanyService {
     return prismaToDomainCompany(row, settings);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(clientId: number, id: number): Promise<void> {
+    const existing = await companyRepository.findFirst({ id, client_id: clientId });
+    if (!existing) throw new Error("Company not found");
     await companyRepository.delete(id);
   }
 
-  async getView(id: number): Promise<CompanyDetailView | null> {
-    const domain = await this.findById(id, true);
+  async getView(clientId: number, id: number): Promise<CompanyDetailView | null> {
+    const domain = await this.findById(clientId, id, true);
     if (!domain) return null;
     return domainToDetailViewCompany(domain);
   }
 
   async getListView(
+    clientId: number,
     filters?: CompanyDomainFilters,
     pagination?: CompanyPaginationOptions,
   ): Promise<PaginatedResult<CompanyView>> {
-    const result = await this.findMany(filters, pagination);
+    const result = await this.findMany(clientId, filters, pagination);
     return {
       ...result,
       data: result.data.map(domainToViewCompany),
@@ -343,9 +360,9 @@ export class CompanyService {
   /**
    * Sync persisted is_overdue flags from computed overdue status.
    */
-  async syncOverdueFlags(): Promise<number> {
-    const settings = await this.getSettings();
-    const companies = await companyRepository.findMany({});
+  async syncOverdueFlags(clientId: number): Promise<number> {
+    const settings = await this.getSettings(clientId);
+    const companies = await companyRepository.findMany({ client_id: clientId });
     let updated = 0;
 
     for (const company of companies) {

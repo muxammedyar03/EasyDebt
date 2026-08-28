@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gunzipSync } from "zlib";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { PaymentType, Prisma } from "@prisma/client";
@@ -67,6 +68,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     // Faqat SUPER_ADMIN va ADMIN import qila oladi
     if (session.role === "USER") {
@@ -151,6 +154,7 @@ export async function POST(request: NextRequest) {
                 phone_number: debtorData.phone_number,
                 address: debtorData.address,
                 created_by: session.userId,
+                client_id: clientId,
                 total_debt: 0,
               },
             });
@@ -178,6 +182,7 @@ export async function POST(request: NextRequest) {
               debtsToCreate.push({
                 external_id: debtData.external_id,
                 debtor_id: debtorId,
+                client_id: clientId,
                 amount: new Prisma.Decimal(debtData.amount),
                 description: debtData.description,
                 items: debtData.items as DebtItem[],
@@ -210,6 +215,7 @@ export async function POST(request: NextRequest) {
               paymentsToCreate.push({
                 external_id: paymentData.external_id,
                 debtor_id: debtorId,
+                client_id: clientId,
                 amount: new Prisma.Decimal(paymentData.amount),
                 payment_type: paymentData.payment_type as PaymentType,
                 note: paymentData.note,
@@ -264,6 +270,7 @@ export async function POST(request: NextRequest) {
         await tx.importHistory.create({
           data: {
             user_id: session.userId,
+            client_id: clientId,
             file_hash: fileHash,
             debtors_count: createdDebtors,
             debts_count: createdDebts,
@@ -276,6 +283,7 @@ export async function POST(request: NextRequest) {
         await tx.auditLog.create({
           data: {
             user_id: session.userId,
+            client_id: clientId,
             action: "IMPORT",
             entity_type: "DEBTOR",
             description: `${createdDebtors} qarzdor, ${createdDebts} qarz va ${createdPayments} to'lov muvaffaqiyatli import qilindi`,
@@ -314,6 +322,7 @@ export async function POST(request: NextRequest) {
         await prisma.importHistory.create({
           data: {
             user_id: session.userId,
+            client_id: requireClientId(session),
             file_hash: fileHash,
             debtors_count: 0,
             debts_count: 0,

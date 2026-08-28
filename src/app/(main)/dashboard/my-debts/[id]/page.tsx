@@ -1,5 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { companyService } from "@/lib/services/company.service";
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { CompanyDetailClient } from "./_components/company-detail-client";
 
 interface PageProps {
@@ -12,13 +14,16 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function CompanyDetailPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
   const { id } = await params;
 
   if (!id || !UUID_REGEX.test(id)) {
     notFound();
   }
 
-  const company = await companyService.findByExternalId(id, true);
+  const company = await companyService.findByExternalId(clientId, id, true);
   if (!company) {
     notFound();
   }

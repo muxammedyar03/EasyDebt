@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { createAuditLog } from "@/lib/audit";
 
@@ -28,6 +29,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { searchParams } = new URL(request.url);
     const params = querySchema.parse({
       debtor_id: searchParams.get("debtor_id") ?? undefined,
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       limit: parseInt(params.limit, 10),
     };
 
-    const result = await paymentReminderService.findMany(filters, pagination);
+    const result = await paymentReminderService.findMany(clientId, filters, pagination);
 
     return NextResponse.json(result);
   } catch (error) {
@@ -66,10 +69,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const body = await request.json();
     const validatedData = createReminderSchema.parse(body);
 
-    const reminder = await paymentReminderService.create({
+    const reminder = await paymentReminderService.create(clientId, {
       debtorId: validatedData.debtor_id,
       createdBy: session.userId,
       reminderAt: validatedData.reminder_at,
@@ -78,6 +83,7 @@ export async function POST(request: NextRequest) {
 
     // Create audit log
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "CREATE",
       entityType: "PAYMENT_REMINDER",

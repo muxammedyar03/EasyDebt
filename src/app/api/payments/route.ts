@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const body = await request.json();
     const validatedData = createPaymentSchema.parse(body);
 
@@ -31,8 +34,8 @@ export async function POST(request: NextRequest) {
     // Use transaction to create payment and update debtor's total_debt
     const result = await prisma.$transaction(async (tx) => {
       // Get current debtor to check debt amount
-      const debtor = await tx.debtor.findUnique({
-        where: { id: validatedData.debtor_id },
+      const debtor = await tx.debtor.findFirst({
+        where: { id: validatedData.debtor_id, client_id: clientId },
       });
 
       if (!debtor) {
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
       const payment = await tx.payment.create({
         data: {
           debtor_id: validatedData.debtor_id,
+          client_id: clientId,
           amount: validatedData.amount,
           payment_type: validatedData.payment_type,
           note: validatedData.note || null,
@@ -84,6 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Create audit log
     await createAuditLog({
+      clientId,
       userId,
       action: "UPDATE",
       entityType: "PAYMENT",

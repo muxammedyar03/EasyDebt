@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { markNotificationAsRead } from "@/lib/notifications";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -10,10 +11,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const notificationId = parseInt(id);
 
-    await markNotificationAsRead(notificationId);
+    await markNotificationAsRead(clientId, notificationId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

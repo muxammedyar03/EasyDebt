@@ -16,19 +16,20 @@ import type {
 type CompanyPaymentWithCompany = Prisma.CompanyPaymentGetPayload<{ include: { company: true } }>;
 
 export class CompanyPaymentService {
-  async findById(id: number): Promise<CompanyPaymentDomain | null> {
-    const row = (await companyPaymentRepository.findById(id, {
-      company: true,
-    })) as CompanyPaymentWithCompany | null;
+  async findById(clientId: number, id: number): Promise<CompanyPaymentDomain | null> {
+    const row = (await companyPaymentRepository.findFirst(
+      { id, client_id: clientId },
+      { company: true },
+    )) as CompanyPaymentWithCompany | null;
     if (!row) return null;
     const domain = prismaToDomainCompanyPayment(row);
     domain.company = prismaToDomainCompany(row.company);
     return domain;
   }
 
-  async create(input: CreateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
+  async create(clientId: number, input: CreateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
     const result = await prisma.$transaction(async (tx) => {
-      const company = await tx.company.findUnique({ where: { id: input.companyId } });
+      const company = await tx.company.findFirst({ where: { id: input.companyId, client_id: clientId } });
       if (!company) {
         throw new Error("Kompaniya topilmadi");
       }
@@ -36,6 +37,7 @@ export class CompanyPaymentService {
       const payment = await tx.companyPayment.create({
         data: {
           company_id: input.companyId,
+          client_id: clientId,
           amount: input.amount,
           payment_type: input.paymentType as PaymentType,
           note: input.note?.trim() || null,
@@ -59,13 +61,13 @@ export class CompanyPaymentService {
       return payment;
     });
 
-    await companyDailySnapshotService.refreshForDate(new Date());
+    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyPayment(result);
   }
 
-  async update(id: number, input: UpdateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
+  async update(clientId: number, id: number, input: UpdateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
     const result = await prisma.$transaction(async (tx) => {
-      const existing = await tx.companyPayment.findUnique({ where: { id } });
+      const existing = await tx.companyPayment.findFirst({ where: { id, client_id: clientId } });
       if (!existing) {
         throw new Error("To'lov topilmadi");
       }
@@ -96,14 +98,14 @@ export class CompanyPaymentService {
       return payment;
     });
 
-    await companyDailySnapshotService.refreshForDate(new Date());
+    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyPayment(result);
   }
 
-  async delete(id: number): Promise<CompanyPaymentDomain> {
+  async delete(clientId: number, id: number): Promise<CompanyPaymentDomain> {
     const result = await prisma.$transaction(async (tx) => {
-      const existing = await tx.companyPayment.findUnique({
-        where: { id },
+      const existing = await tx.companyPayment.findFirst({
+        where: { id, client_id: clientId },
         include: { company: true },
       });
       if (!existing) {
@@ -119,16 +121,16 @@ export class CompanyPaymentService {
       return existing;
     });
 
-    await companyDailySnapshotService.refreshForDate(new Date());
+    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyPayment(result);
   }
 
-  async listWithReceipts(options?: { page?: number; limit?: number }) {
+  async listWithReceipts(clientId: number, options?: { page?: number; limit?: number }) {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where = { receipt_path: { not: null } };
+    const where = { client_id: clientId, receipt_path: { not: null } };
     const [rows, total] = await Promise.all([
       companyPaymentRepository.findWithReceipt(where, {
         skip,

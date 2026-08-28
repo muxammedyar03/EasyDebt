@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
@@ -21,13 +22,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const domain = await debtorService.findById(debtorId, true);
+    const domain = await debtorService.findById(clientId, debtorId, true);
     if (!domain) {
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
@@ -47,6 +50,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
@@ -56,7 +61,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validatedData = updateDebtorSchema.parse(body);
 
-    const updated = await debtorService.update(debtorId, {
+    const updated = await debtorService.update(clientId, debtorId, {
       firstName: validatedData.first_name,
       lastName: validatedData.last_name,
       phoneNumber: validatedData.phone_number,
@@ -64,6 +69,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "UPDATE",
       entityType: "DEBTOR",
@@ -102,18 +108,21 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const { id } = await params;
     const debtorId = parseInt(id);
     if (isNaN(debtorId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const debtor = await debtorService.findById(debtorId, false);
+    const debtor = await debtorService.findById(clientId, debtorId, false);
     if (!debtor) {
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "DELETE",
       entityType: "DEBTOR",
@@ -130,7 +139,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       userAgent: request.headers.get("user-agent") || "",
     });
 
-    await debtorService.delete(debtorId);
+    await debtorService.delete(clientId, debtorId);
 
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");

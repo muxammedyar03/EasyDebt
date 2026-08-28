@@ -6,6 +6,7 @@ import {
   BarChart3,
   Building2,
   ImageIcon,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -75,6 +76,12 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/users",
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN"],
+      },
+      {
+        title: "nav.clients",
+        url: "/dashboard/clients",
+        icon: Store,
+        roles: ["SUPER_ADMIN"],
       },
       {
         title: "nav.companyReceipts",

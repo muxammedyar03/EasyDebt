@@ -13,30 +13,38 @@ export async function checkHostingReminder(): Promise<number> {
     const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 5, 0, 0, 0));
     const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59));
 
-    const existing = await prisma.notification.findFirst({
-      where: {
-        type: "HOSTING_REMINDER",
-        created_at: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
-      select: { id: true },
-    });
+    const clients = await prisma.client.findMany({ where: { is_active: true }, select: { id: true } });
+    let created = 0;
 
-    if (existing) {
-      console.log(`Hosting reminder already exists for this month: ${existing.id}`);
-      return 0;
+    for (const client of clients) {
+      const existing = await prisma.notification.findFirst({
+        where: {
+          client_id: client.id,
+          type: "HOSTING_REMINDER",
+          created_at: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        console.log(`Hosting reminder already exists for client ${client.id}: ${existing.id}`);
+        continue;
+      }
+
+      await createNotification({
+        clientId: client.id,
+        type: "HOSTING_REMINDER",
+        title: "Hosting uchun to'lov yaqinlashmoqda",
+        message: `${now.getUTCFullYear()}-yil ${now.getUTCMonth() + 1}-oyning hosting to'lovi haqida eslatma.`,
+      });
+      created += 1;
     }
 
-    await createNotification({
-      type: "HOSTING_REMINDER",
-      title: "Hosting uchun to'lov yaqinlashmoqda",
-      message: `${now.getUTCFullYear()}-yil ${now.getUTCMonth() + 1}-oyning hosting to'lovi haqida eslatma.`,
-    });
-
-    console.log(`Hosting reminder created successfully for ${now.toISOString()}`);
-    return 1;
+    console.log(`Hosting reminders created: ${created}`);
+    return created;
   } catch (error) {
     console.error("Failed to create hosting reminder:", error);
     return 0;

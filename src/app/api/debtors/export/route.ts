@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { Prisma } from "@prisma/client";
 import { debtorRepository } from "@/entities/debtor/api";
@@ -48,16 +49,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "all";
 
     // Get debt limit from settings
-    const debtLimit = await settingsRepository.getDebtLimit();
+    const debtLimit = await settingsRepository.getDebtLimit(clientId);
 
     // Build where clause
-    const where: Prisma.DebtorWhereInput = {};
+    const where: Prisma.DebtorWhereInput = { client_id: clientId };
 
     if (search) {
       where.OR = [

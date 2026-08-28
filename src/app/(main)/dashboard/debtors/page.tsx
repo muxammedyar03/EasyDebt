@@ -7,6 +7,9 @@ import { domainToViewDebtor } from "@/lib/mappers";
 import type { DebtorDomainFilters, DebtorStatus } from "@/types/domain/debtor.domain";
 import type { DebtorView } from "@/types/view";
 import { debtService } from "@/lib/services/debt.service";
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
+import { redirect } from "next/navigation";
 
 // Ensure this page is always dynamic and not cached
 export const dynamic = "force-dynamic";
@@ -18,6 +21,9 @@ export default async function DebtorsPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const t = await getTranslations("debtorsPage");
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || 10;
@@ -25,7 +31,7 @@ export default async function DebtorsPage({
   const sortBy = (params.sortBy as string) || "created_at";
   const sortOrder = (params.sortOrder === "asc" ? "asc" : "desc") as "asc" | "desc";
   const status = (params.status as string) || "all";
-  const debtLimit = await debtService.debtLimit();
+  const debtLimit = await debtService.debtLimit(clientId);
 
   let domainStatus: DebtorStatus | undefined;
   switch (status) {
@@ -47,11 +53,11 @@ export default async function DebtorsPage({
     createdBy: undefined,
   };
 
-  const debtorsFromService = await debtorService.findMany(filters, { page, limit, sortBy, sortOrder });
+  const debtorsFromService = await debtorService.findMany(clientId, filters, { page, limit, sortBy, sortOrder });
 
   const debtorViews: DebtorView[] = debtorsFromService.data.map((debtor) => domainToViewDebtor(debtor));
-  const totalDebt = await debtorService.debtorsTotalDebt();
-  const totalPayments = await debtorService.debtorsTotalPayments();
+  const totalDebt = await debtorService.debtorsTotalDebt(clientId);
+  const totalPayments = await debtorService.debtorsTotalPayments(clientId);
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">

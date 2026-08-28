@@ -26,6 +26,11 @@ async function main() {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  const defaultClient = await prisma.client.findFirst({ where: { slug: "default" } });
+  if (!defaultClient) {
+    throw new Error("Default client not found — run tenant migration/seed first");
+  }
+
   // Create admin user
   const user = await prisma.user.create({
     data: {
@@ -36,6 +41,7 @@ async function main() {
       first_name: "Admin",
       last_name: "User",
       is_active: true,
+      client_id: defaultClient.id,
     },
   });
 

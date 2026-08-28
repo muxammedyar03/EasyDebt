@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyService } from "@/lib/services/company.service";
 import type { CompanyFilterStatus } from "@/types/domain/company.domain";
@@ -13,11 +14,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const sp = request.nextUrl.searchParams;
     const search = sp.get("search") || undefined;
     const status = (sp.get("status") as CompanyFilterStatus) || "all";
 
     const result = await companyService.findMany(
+      clientId,
       { search, status },
       { page: 1, limit: 5000, sortBy: "name", sortOrder: "asc" },
     );

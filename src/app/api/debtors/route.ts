@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -51,14 +52,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const clientId = requireClientId(session);
+
     const search = request.nextUrl.searchParams.get("search")?.trim();
     if (search) {
-      const result = await debtorService.findMany({ search }, { page: 1, limit: 250 });
+      const result = await debtorService.findMany(clientId, { search }, { page: 1, limit: 250 });
       const debtors = result.data.map(domainToApiRow);
       return NextResponse.json(debtors);
     }
 
-    const debtors = await debtorService.getDebtorsWithOverdueForApi();
+    const debtors = await debtorService.getDebtorsWithOverdueForApi(clientId);
     return NextResponse.json(debtors);
   } catch (error) {
     console.error("Error fetching debtors:", error);
@@ -73,6 +76,8 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
 
     const body = await request.json();
     const validatedData = createDebtorSchema.parse(body);
@@ -90,6 +95,7 @@ export async function POST(request: NextRequest) {
           address: validatedData.address || null,
           total_debt: validatedData.debt_amount || 0,
           created_by: userId,
+          client_id: clientId,
         },
       });
 
@@ -98,6 +104,7 @@ export async function POST(request: NextRequest) {
         await tx.debt.create({
           data: {
             debtor_id: debtor.id,
+            client_id: clientId,
             amount: validatedData.debt_amount,
             description: validatedData.debt_description || null,
             created_by: userId,
@@ -111,6 +118,7 @@ export async function POST(request: NextRequest) {
       await tx.auditLog.create({
         data: {
           user_id: session.userId,
+          client_id: clientId,
           action: "CREATE",
           entity_type: "DEBTOR",
           new_value: {

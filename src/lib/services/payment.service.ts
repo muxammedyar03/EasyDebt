@@ -31,30 +31,10 @@ export type PaymentReportItem = {
 };
 
 export class PaymentService {
-  // async getTotalCount(): Promise<number> {
-  //   return prisma.payment.count();
-  // }
-
-  // async getPaymentsInDateRange(from: Date, to: Date): Promise<{ sum: number; count: number }> {
-  //   const [payments, agg] = await Promise.all([
-  //     prisma.payment.findMany({
-  //       where: { created_at: { gte: from, lte: to } },
-  //     }),
-  //     prisma.payment.aggregate({
-  //       _sum: { amount: true },
-  //       where: { created_at: { gte: from, lte: to } },
-  //     }),
-  //   ]);
-  //   return {
-  //     sum: agg._sum.amount?.toNumber() ?? 0,
-  //     count: payments.length,
-  //   };
-  // }
-
   /** Task 4.2a: limit to avoid loading unbounded rows (default 2000). */
-  async getPaymentsWithDebtorForReport(limit = 2000): Promise<PaymentReportItem[]> {
+  async getPaymentsWithDebtorForReport(clientId: number, limit = 2000): Promise<PaymentReportItem[]> {
     const payments = (await paymentRepository.findMany(
-      {},
+      { client_id: clientId },
       { include: { debtor: true }, orderBy: { created_at: "desc" }, take: limit },
     )) as PaymentWithDebtor[];
     return payments.map((p) => ({
@@ -74,14 +54,9 @@ export class PaymentService {
 
   /**
    * Get aggregated payments per day by payment type for the dashboard chart.
-   *
-   * - Groups by date (YYYY-MM-DD)
-   * - Sums amounts per payment_type
-   * - Returns sorted by date asc
-   * - If no data, returns last 30 days with zeros (for stable chart)
    */
-  async getPaymentsChartData(): Promise<PaymentChartPoint[]> {
-    const allPayments = await paymentRepository.findMany({}, { orderBy: { created_at: "asc" } });
+  async getPaymentsChartData(clientId: number): Promise<PaymentChartPoint[]> {
+    const allPayments = await paymentRepository.findMany({ client_id: clientId }, { orderBy: { created_at: "asc" } });
     const chartData = aggregatePaymentsForChart(allPayments);
     return chartData.length === 0 ? getEmptyChartPlaceholder(30) : chartData;
   }

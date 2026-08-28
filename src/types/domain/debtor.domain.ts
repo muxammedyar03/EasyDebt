@@ -35,6 +35,7 @@ export type DebtorDomain = {
   // Core identity
   id: number;
   externalId: string;
+  clientId: number;
 
   // Personal information
   firstName: string;

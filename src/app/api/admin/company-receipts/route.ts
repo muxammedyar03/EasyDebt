@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
 import { prismaToDomainCompanyPayment } from "@/lib/mappers/company.mapper";
@@ -14,6 +15,8 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
     if (session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
     const page = Number(sp.get("page") || 1);
     const limit = Number(sp.get("limit") || 20);
 
-    const result = await companyPaymentService.listWithReceipts({ page, limit });
+    const result = await companyPaymentService.listWithReceipts(clientId, { page, limit });
     const rows = result.rows as PaymentWithCompany[];
 
     return NextResponse.json({

@@ -1,10 +1,17 @@
 import { debtorService } from "@/lib/services/debtor.service";
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { CustomersTableWrap } from "./_components/customers-table-wrap";
 
 export default async function CustomersPage(props: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
+
   const t = await getTranslations("customers");
   const searchParams = (props.searchParams ? await props.searchParams : {}) as Record<
     string,
@@ -28,8 +35,8 @@ export default async function CustomersPage(props: {
   const sortField = (rawSortField || "date") as "date" | "name" | "days" | "payments" | "debt";
   const sortOrder = (rawSortOrder === "asc" || rawSortOrder === "desc" ? rawSortOrder : "desc") as "asc" | "desc";
 
-  // Get customer ratings from service with filtering and pagination
   const result = await debtorService.getCustomerRatings(
+    clientId,
     {
       search: search || undefined,
       rating: rating === "all" ? undefined : rating,
@@ -43,9 +50,7 @@ export default async function CustomersPage(props: {
   );
 
   const { data: customerRatings, counts, total: totalCustomers } = result;
-
-  // Get total debtors count
-  const totalDebtorsCount = await debtorService.debtorsCount();
+  const totalDebtorsCount = await debtorService.debtorsCount(clientId);
 
   return (
     <div className="space-y-6">

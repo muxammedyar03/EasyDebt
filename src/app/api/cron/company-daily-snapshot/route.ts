@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronAuth } from "@/lib/cron-auth";
+import { prisma } from "@/lib/prisma";
 import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
 import { companyService } from "@/lib/services/company.service";
 
@@ -19,15 +20,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [snapshot, overdueUpdated] = await Promise.all([
-      companyDailySnapshotService.refreshForDate(new Date()),
-      companyService.syncOverdueFlags(),
-    ]);
+    const clients = await prisma.client.findMany({ where: { is_active: true }, select: { id: true } });
+    const results = [];
+    for (const client of clients) {
+      const [snapshot, overdueUpdated] = await Promise.all([
+        companyDailySnapshotService.refreshForDate(client.id, new Date()),
+        companyService.syncOverdueFlags(client.id),
+      ]);
+      results.push({ clientId: client.id, snapshot, overdueUpdated });
+    }
 
     return NextResponse.json({
       success: true,
-      snapshot,
-      overdueUpdated,
+      results,
     });
   } catch (error) {
     console.error("Error refreshing company daily snapshot:", error);

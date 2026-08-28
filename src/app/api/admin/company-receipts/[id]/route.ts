@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 
 import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
 import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
@@ -14,6 +15,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
     if (session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -24,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const payment = await companyPaymentService.findById(paymentId);
+    const payment = await companyPaymentService.findById(clientId, paymentId);
     if (!payment?.receiptPath) {
       return NextResponse.json({ error: "Chek topilmadi" }, { status: 404 });
     }
@@ -58,6 +61,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const clientId = requireClientId(session);
     if (session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -68,13 +73,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const payment = await companyPaymentService.findById(paymentId);
+    const payment = await companyPaymentService.findById(clientId, paymentId);
     if (!payment) {
       return NextResponse.json({ error: "To'lov topilmadi" }, { status: 404 });
     }
 
     await deleteCompanyReceiptFile(payment.receiptPath);
-    await companyPaymentService.update(paymentId, {
+    await companyPaymentService.update(clientId, paymentId, {
       receiptPath: null,
       receiptName: null,
       receiptMime: null,
@@ -82,6 +87,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     });
 
     await createAuditLog({
+      clientId,
       userId: session.userId,
       action: "DELETE",
       entityType: "COMPANY_PAYMENT_RECEIPT",

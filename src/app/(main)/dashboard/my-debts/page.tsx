@@ -3,6 +3,9 @@ import { getTranslations } from "next-intl/server";
 
 import { SectionCard } from "../_components/section-card";
 import { companyService } from "@/lib/services/company.service";
+import { getSession } from "@/lib/auth";
+import { requireClientId } from "@/lib/tenant";
+import { redirect } from "next/navigation";
 import { domainToViewCompany } from "@/lib/mappers/company.mapper";
 import type { CompanyFilterStatus, CompanySortBy } from "@/types/domain/company.domain";
 import { CompaniesClient } from "./_components/companies-client";
@@ -15,6 +18,9 @@ export default async function MyDebtsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const session = await getSession();
+  if (!session) redirect("/auth/login");
+  const clientId = requireClientId(session);
   const t = await getTranslations("myDebts");
   const params = await searchParams;
   const page = Number(params.page) || 1;
@@ -30,6 +36,7 @@ export default async function MyDebtsPage({
 
   const [result, stats] = await Promise.all([
     companyService.findMany(
+      clientId,
       {
         search,
         status,
@@ -40,7 +47,7 @@ export default async function MyDebtsPage({
       },
       { page, limit, sortBy, sortOrder },
     ),
-    companyService.getStats(),
+    companyService.getStats(clientId),
   ]);
 
   const companies = result.data.map(domainToViewCompany);
