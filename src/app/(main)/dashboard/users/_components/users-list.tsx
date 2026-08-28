@@ -231,7 +231,7 @@ export function UsersList({ users, role }: UsersListProps) {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleToggleActive(user.id, user.is_active)}
-                          disabled={isLoading}
+                          disabled={isLoading || (role === "ADMIN" && user.role === "SUPER_ADMIN")}
                         >
                           {user.is_active ? (
                             <>

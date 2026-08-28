@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -10,6 +11,7 @@ import { setValueToCookie } from "@/server/server-actions";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 import type { ContentLayout, NavbarStyle, SidebarCollapsible, SidebarVariant } from "@/types/preferences/layout";
 import { THEME_PRESET_OPTIONS, type ThemeMode, type ThemePreset } from "@/types/preferences/theme";
+import { LOCALE_COOKIE, type AppLocale } from "@/i18n/config";
 
 import { LayoutPreview } from "./layout-preview";
 import "./layout-preview.css";
@@ -73,6 +75,8 @@ export function LayoutSettingsClient({
 }: LayoutSettingsClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const locale = useLocale() as AppLocale;
+  const tCommon = useTranslations("common");
 
   const themeMode = usePreferencesStore((s) => s.themeMode);
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
@@ -134,6 +138,13 @@ export function LayoutSettingsClient({
     void persist("content_layout", value);
   };
 
+  const handleLocale = (value: AppLocale) => {
+    if (value === locale) return;
+    void setValueToCookie(LOCALE_COOKIE, value, { maxAge: 60 * 60 * 24 * 365 }).then(() => {
+      startTransition(() => router.refresh());
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -148,8 +159,13 @@ export function LayoutSettingsClient({
         </div>
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(300px,400px)_1fr]">
-        <div className={cn("bg-card flex flex-col gap-5 rounded-2xl border p-5", isPending && "opacity-90")}>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(300px,400px)_1fr]">
+        <div
+          className={cn(
+            "bg-card order-2 flex flex-col gap-5 rounded-2xl border p-5 lg:order-1",
+            isPending && "opacity-90",
+          )}
+        >
           <section className="space-y-2.5">
             <h2 className="text-sm font-semibold">Шаблон</h2>
             <div className="grid grid-cols-2 gap-2">
@@ -199,6 +215,18 @@ export function LayoutSettingsClient({
               options={[
                 { value: "light", label: "Светлый" },
                 { value: "dark", label: "Тёмный" },
+              ]}
+            />
+          </section>
+
+          <section className="space-y-2.5 sm:hidden">
+            <h2 className="text-sm font-semibold">{tCommon("language")}</h2>
+            <SegmentGroup
+              value={locale}
+              onChange={handleLocale}
+              options={[
+                { value: "uz", label: tCommon("uzbek") },
+                { value: "ru", label: tCommon("russian") },
               ]}
             />
           </section>
@@ -253,7 +281,7 @@ export function LayoutSettingsClient({
           </section>
         </div>
 
-        <div className="bg-card sticky top-20 flex flex-col gap-3 rounded-2xl border p-4 lg:min-h-[560px]">
+        <div className="bg-card order-1 flex min-h-[min(520px,72vh)] flex-col gap-3 rounded-2xl border p-4 lg:sticky lg:top-20 lg:order-2 lg:min-h-[560px]">
           <div className="flex items-center justify-between gap-3">
             <span className="layout-preview-live-badge rounded-md bg-teal-100 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-teal-800 uppercase dark:bg-teal-950/50 dark:text-teal-300">
               Live preview
@@ -269,7 +297,7 @@ export function LayoutSettingsClient({
             collapsible={collapsible}
             navbarStyle={navbarStyle}
             contentLayout={contentLayout}
-            className="flex-1"
+            className="h-[min(460px,55vh)] w-full shrink-0 lg:h-[460px]"
           />
         </div>
       </div>

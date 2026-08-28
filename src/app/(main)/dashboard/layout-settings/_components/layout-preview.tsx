@@ -40,7 +40,7 @@ export function LayoutPreview({
   return (
     <div
       className={cn(
-        "layout-preview relative h-[460px] overflow-hidden rounded-[10px] border transition-all duration-350",
+        "layout-preview relative w-full overflow-hidden rounded-[10px] border transition-all duration-350",
         isDark ? "border-[#2a2f3a] bg-[#0c0e12]" : "border-border bg-[#eef0f3]",
         className,
       )}

@@ -73,13 +73,22 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-1 lg:gap-2">
               <SidebarTrigger className="text-2xl md:-ml-4" />
               <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-              <div>{session?.userId && <HeaderLockButton />}</div>
+              <div className="block sm:hidden">
+                {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
+              </div>
+              <div className="hidden sm:block">{session?.userId && <HeaderLockButton />}</div>
             </div>
             <div className="flex items-center gap-2">
-              {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
+              <div className="hidden sm:block">
+                {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
+              </div>
               <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
-              <LanguageSwitcher />
-              <ThemeSwitcher />
+              <div className="hidden sm:block">
+                <LanguageSwitcher />
+              </div>
+              <div className="hidden sm:block">
+                <ThemeSwitcher />
+              </div>
               <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
             </div>
           </div>

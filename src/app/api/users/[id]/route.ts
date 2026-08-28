@@ -46,6 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const userId = parseInt(id);
     const body = await request.json();
+    const clientId = session ? requireClientId(session) : null;
 
     // PIN-specific actions (verify/set/change/reset)
     if (body?.action) {
@@ -136,7 +137,58 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Noma'lum action" }, { status: 400 });
     }
 
-    if (!session || session.role !== "SUPER_ADMIN") {
+    if (!session) {
+      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+    }
+
+    const isSuperAdmin = session.role === "SUPER_ADMIN";
+    const isAdmin = session.role === "ADMIN";
+
+    if (!isSuperAdmin && !isAdmin) {
+      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+    }
+
+    const targetUser = await prisma.user.findFirst({
+      where: { id: userId, client_id: clientId! },
+      select: { id: true, role: true },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "Foydalanuvchi topilmadi" }, { status: 404 });
+    }
+
+    // ADMIN: only toggle is_active within own client
+    if (isAdmin && !isSuperAdmin) {
+      const bodyKeys = Object.keys(body).filter((key) => body[key] !== undefined);
+      const hasOnlyActiveToggle = bodyKeys.length === 1 && bodyKeys[0] === "is_active";
+
+      if (!hasOnlyActiveToggle) {
+        return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+      }
+
+      if (body.role === "SUPER_ADMIN" || targetUser.role === "SUPER_ADMIN") {
+        return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { is_active: Boolean(body.is_active) },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          first_name: true,
+          last_name: true,
+          is_active: true,
+          updated_at: true,
+        },
+      });
+
+      return NextResponse.json(user);
+    }
+
+    if (!isSuperAdmin) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
 

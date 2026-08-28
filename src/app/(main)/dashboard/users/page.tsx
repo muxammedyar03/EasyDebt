@@ -63,7 +63,13 @@ export default async function UsersPage() {
           <CardTitle>{t("title")}</CardTitle>
           <p className="text-muted-foreground mt-2 text-sm">{t("subtitle")}</p>
         </div>
-        {isSuperAdmin && <CreateUserForm clients={clients} defaultClientId={session.clientId} />}
+        {(isSuperAdmin || session.role === "ADMIN") && (
+          <CreateUserForm
+            clients={clients}
+            defaultClientId={session.clientId}
+            actorRole={session.role as "SUPER_ADMIN" | "ADMIN"}
+          />
+        )}
       </div>
       <div className="rounded-md border">
         <UsersList users={serializedUsers} role={session.role} />

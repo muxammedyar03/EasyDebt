@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type ClientOption = {
@@ -44,9 +45,11 @@ type FormValues = {
 type CreateUserFormProps = {
   clients: ClientOption[];
   defaultClientId: number;
+  actorRole: "SUPER_ADMIN" | "ADMIN";
 };
 
-export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps) {
+export function CreateUserForm({ clients, defaultClientId, actorRole }: CreateUserFormProps) {
+  const isSuperAdmin = actorRole === "SUPER_ADMIN";
   const t = useTranslations("users");
   const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
@@ -96,6 +99,11 @@ export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps
   }, [open, defaultClientId, form]);
 
   async function onSubmit(values: FormValues) {
+    if (!isSuperAdmin && values.role === "SUPER_ADMIN") {
+      toast.error(tCommon("error"), { description: t("roleForbidden") });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch("/api/users", {
@@ -225,7 +233,7 @@ export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps
                   <FormItem>
                     <FormLabel>{t("password")}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
+                      <PasswordInput placeholder="******" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -239,7 +247,7 @@ export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps
                   <FormItem>
                     <FormLabel>{t("confirmPassword")}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
+                      <PasswordInput placeholder="******" autoComplete="new-password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -261,7 +269,7 @@ export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps
                       <SelectContent>
                         <SelectItem value="USER">{t("roleUser")}</SelectItem>
                         <SelectItem value="ADMIN">{t("roleAdmin")}</SelectItem>
-                        <SelectItem value="SUPER_ADMIN">{t("roleSuperAdmin")}</SelectItem>
+                        {isSuperAdmin && <SelectItem value="SUPER_ADMIN">{t("roleSuperAdmin")}</SelectItem>}
                       </SelectContent>
                     </Select>
                     <FormDescription>{t("roleHint")}</FormDescription>
@@ -270,31 +278,33 @@ export function CreateUserForm({ clients, defaultClientId }: CreateUserFormProps
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="client_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("client")}</FormLabel>
-                    <Select value={String(field.value)} onValueChange={(value) => field.onChange(Number(value))}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("selectClient")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={String(client.id)}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>{t("clientHint")}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {isSuperAdmin && (
+                <FormField
+                  control={form.control}
+                  name="client_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("client")}</FormLabel>
+                      <Select value={String(field.value)} onValueChange={(value) => field.onChange(Number(value))}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("selectClient")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={String(client.id)}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>{t("clientHint")}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <div className="flex justify-end space-x-4">

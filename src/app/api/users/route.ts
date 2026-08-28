@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
 
-    if (!session || session.role !== "SUPER_ADMIN") {
+    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
 
@@ -19,12 +19,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Username, parol va rol majburiy" }, { status: 400 });
     }
 
+    if (session.role === "ADMIN" && role === "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Super Admin rolini yaratish mumkin emas" }, { status: 403 });
+    }
+
     if (password.length < 6) {
       return NextResponse.json({ error: "Parol kamida 6 ta belgidan iborat bo'lishi kerak" }, { status: 400 });
     }
 
+    const sessionClientId = requireClientId(session);
     const targetClientId =
-      typeof client_id === "number" && Number.isFinite(client_id) ? client_id : requireClientId(session);
+      session.role === "SUPER_ADMIN" && typeof client_id === "number" && Number.isFinite(client_id)
+        ? client_id
+        : sessionClientId;
 
     const clientExists = await prisma.client.findUnique({ where: { id: targetClientId } });
     if (!clientExists || !clientExists.is_active) {
@@ -86,14 +93,17 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
 
-    if (!session || session.role !== "SUPER_ADMIN") {
+    if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
 
+    const clientId = requireClientId(session);
     const { searchParams } = new URL(request.url);
     const filterClientId = searchParams.get("client_id");
     const where =
-      filterClientId && Number.isFinite(Number(filterClientId)) ? { client_id: Number(filterClientId) } : undefined;
+      session.role === "SUPER_ADMIN" && filterClientId && Number.isFinite(Number(filterClientId))
+        ? { client_id: Number(filterClientId) }
+        : { client_id: clientId };
 
     const users = await prisma.user.findMany({
       where,

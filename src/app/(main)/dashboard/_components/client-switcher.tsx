@@ -37,7 +37,7 @@ export function ClientSwitcher({ role, currentClient, clients, className }: Clie
     return (
       <div
         className={cn(
-          "border-border bg-muted/40 flex h-9 max-w-[200px] items-center gap-2 rounded-md border px-3 text-sm",
+          "border-border bg-muted/40 flex h-14 max-w-[200px] items-center gap-2 rounded-md border px-3 text-sm",
           className,
         )}
         title={currentClient?.name}
@@ -77,13 +77,13 @@ export function ClientSwitcher({ role, currentClient, clients, className }: Clie
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex !h-12 items-center gap-2", className)}>
       <Select
         value={currentClient ? String(currentClient.id) : undefined}
         onValueChange={handleChange}
         disabled={switching || clients.length === 0}
       >
-        <SelectTrigger className="h-9 w-[180px] sm:w-[220px]">
+        <SelectTrigger className="!h-12 w-32 sm:w-44">
           {switching ? (
             <span className="flex items-center gap-2 text-sm">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -98,8 +98,8 @@ export function ClientSwitcher({ role, currentClient, clients, className }: Clie
         </SelectTrigger>
         <SelectContent>
           {clients.map((client) => (
-            <SelectItem key={client.id} value={String(client.id)}>
-              <span className="flex items-center gap-2">
+            <SelectItem key={client.id} value={String(client.id)} className="!h-10">
+              <span className="flex items-center gap-2 p-2">
                 <span className="truncate">{client.name}</span>
                 {!client.is_active && <span className="text-muted-foreground text-xs">({t("inactive")})</span>}
               </span>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { EditClientDialog } from "./edit-client-dialog";
 
 export type ClientRow = {
   id: number;
@@ -35,6 +37,7 @@ export function ClientsList({ clients, currentClientId }: ClientsListProps) {
   const t = useTranslations("clients");
   const router = useRouter();
   const [pendingId, setPendingId] = React.useState<number | null>(null);
+  const [editingClient, setEditingClient] = React.useState<ClientRow | null>(null);
 
   const toggleActive = async (client: ClientRow) => {
     setPendingId(client.id);
@@ -83,64 +86,77 @@ export function ClientsList({ clients, currentClientId }: ClientsListProps) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t("name")}</TableHead>
-          <TableHead>{t("slug")}</TableHead>
-          <TableHead>{t("usersCount")}</TableHead>
-          <TableHead>{t("debtorsCount")}</TableHead>
-          <TableHead>{t("status")}</TableHead>
-          <TableHead>{t("created")}</TableHead>
-          <TableHead className="w-[60px]" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {clients.map((client) => (
-          <TableRow key={client.id} data-state={client.id === currentClientId ? "selected" : undefined}>
-            <TableCell className="font-medium">
-              {client.name}
-              {client.id === currentClientId && (
-                <Badge variant="secondary" className="ml-2">
-                  {t("current")}
-                </Badge>
-              )}
-            </TableCell>
-            <TableCell className="text-muted-foreground">{client.slug}</TableCell>
-            <TableCell>{client.users_count}</TableCell>
-            <TableCell>{client.debtors_count}</TableCell>
-            <TableCell>
-              <Badge variant={client.is_active ? "default" : "outline"}>
-                {client.is_active ? t("active") : t("inactive")}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              {new Date(client.created_at).toLocaleDateString(undefined, {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={pendingId === client.id}>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => switchTo(client)} disabled={client.id === currentClientId}>
-                    {t("enterStore")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toggleActive(client)}>
-                    {client.is_active ? t("deactivate") : t("activate")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
+    <>
+      <EditClientDialog
+        client={editingClient}
+        open={editingClient !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingClient(null);
+        }}
+      />
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("name")}</TableHead>
+            <TableHead>{t("slug")}</TableHead>
+            <TableHead>{t("usersCount")}</TableHead>
+            <TableHead>{t("debtorsCount")}</TableHead>
+            <TableHead>{t("status")}</TableHead>
+            <TableHead>{t("created")}</TableHead>
+            <TableHead className="w-[60px]" />
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {clients.map((client) => (
+            <TableRow key={client.id} data-state={client.id === currentClientId ? "selected" : undefined}>
+              <TableCell className="font-medium">
+                {client.name}
+                {client.id === currentClientId && (
+                  <Badge variant="secondary" className="ml-2">
+                    {t("current")}
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-muted-foreground">{client.slug}</TableCell>
+              <TableCell>{client.users_count}</TableCell>
+              <TableCell>{client.debtors_count}</TableCell>
+              <TableCell>
+                <Badge variant={client.is_active ? "default" : "outline"}>
+                  {client.is_active ? t("active") : t("inactive")}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {new Date(client.created_at).toLocaleDateString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={pendingId === client.id}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingClient(client)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      {t("edit")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => switchTo(client)} disabled={client.id === currentClientId}>
+                      {t("enterStore")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => toggleActive(client)}>
+                      {client.is_active ? t("deactivate") : t("activate")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </>
   );
 }
