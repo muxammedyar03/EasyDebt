@@ -15,7 +15,7 @@ export default function LoginV2() {
           <LoginForm />
           <p className="text-muted-foreground text-center text-xs">или</p>
           <a
-            href="https://demoeasy-debt-git-dev-muxammedyars-projects-8ab207c3.vercel.app/"
+            href="https://easy-debt-demo.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex h-12 items-center justify-center gap-x-2 rounded-lg bg-blue-100 px-4 text-center text-sm font-medium text-blue-500 hover:bg-blue-100/80 hover:underline dark:bg-blue-900/10"
