@@ -27,10 +27,10 @@ export async function authMiddleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  // Redirect authenticated users away from login/register
+  // Redirect authenticated users away from login
   if (
     isAuthenticated &&
-    (pathname === "/auth/login" || pathname === "/auth/v2/register" || pathname.startsWith("/auth/v2"))
+    pathname === "/auth/login"
   ) {
     return NextResponse.redirect(new URL("/dashboard/default", req.url));
   }
