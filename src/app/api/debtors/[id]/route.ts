@@ -1,3 +1,5 @@
+import { deleteEmptyRecords, RecordDeletionError } from "@/lib/security/delete-records";
+import { can } from "@/lib/security/permissions";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
@@ -108,6 +110,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!can(session, "records.delete")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const clientId = requireClientId(session);
 
     const { id } = await params;
@@ -121,25 +124,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
     }
 
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "DELETE",
-      entityType: "DEBTOR",
-      entityId: debtorId,
-      newValue: {
-        debtor_id: debtorId,
-        first_name: debtor.firstName,
-        last_name: debtor.lastName,
-        phone_number: debtor.phoneNumber,
-        address: debtor.address,
-      },
-      description: `Qarzdor ${debtor.firstName} ${debtor.lastName} o'chirildi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
-
-    await debtorService.delete(clientId, debtorId);
+    await deleteEmptyRecords("debtor", clientId, [debtorId], session.userId);
 
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
@@ -147,6 +132,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     return NextResponse.json({ message: "Qarzdor o'chirildi" });
   } catch (error) {
+    if (error instanceof RecordDeletionError)
+      return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("Error deleting debtor:", error);
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }

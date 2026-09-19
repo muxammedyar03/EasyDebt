@@ -3,7 +3,26 @@ import { cookies } from "next/headers";
 
 import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
+import { createHmac } from "crypto";
+import { getJwtKey } from "@/lib/security/secrets";
+
+const authUserSelect = {
+  id: true,
+  username: true,
+  email: true,
+  role: true,
+  password: true,
+  client_id: true,
+  is_active: true,
+  updated_at: true,
+  client: { select: { is_active: true } },
+} as const;
+
+function authState(user: { password: string; role: string; client_id: number; updated_at: Date }) {
+  return createHmac("sha256", getJwtKey())
+    .update(JSON.stringify([user.password, user.role, user.client_id, user.updated_at.toISOString()]))
+    .digest("hex");
+}
 
 export interface JWTPayload {
   userId: number;
@@ -14,79 +33,58 @@ export interface JWTPayload {
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
-  return await new SignJWT({ ...payload })
+  const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: authUserSelect });
+  if (!user?.is_active || !user.client.is_active) throw new Error("Account unavailable");
+  if (user.role !== "SUPER_ADMIN" && payload.clientId !== user.client_id) throw new Error("Forbidden tenant");
+  const tenant = await prisma.client.findFirst({
+    where: { id: payload.clientId, is_active: true },
+    select: { id: true },
+  });
+  if (!tenant) throw new Error("Tenant unavailable");
+  return new SignJWT({
+    userId: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    clientId: tenant.id,
+    authState: authState(user),
+  })
     .setProtectedHeader({ alg: "HS256" })
+    .setAudience("easydebt-session")
     .setIssuedAt()
-    .setExpirationTime("7d") // Token expires in 7 days
-    .sign(JWT_SECRET);
-}
-
-function isBasePayload(payload: Record<string, unknown>): boolean {
-  return typeof payload.userId === "number" && typeof payload.username === "string" && typeof payload.role === "string";
+    .setExpirationTime("7d")
+    .sign(getJwtKey());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    const data = payload as Record<string, unknown>;
-
-    if (!isBasePayload(data)) {
-      console.error("Invalid token payload structure");
+    const { payload } = await jwtVerify(token, getJwtKey(), { algorithms: ["HS256"], audience: "easydebt-session" });
+    if (
+      !Number.isSafeInteger(payload.userId) ||
+      !Number.isSafeInteger(payload.clientId) ||
+      Number(payload.userId) <= 0 ||
+      Number(payload.clientId) <= 0 ||
+      typeof payload.authState !== "string"
+    )
       return null;
-    }
-
-    if (typeof data.clientId === "number") {
-      return data as unknown as JWTPayload;
-    }
-
-    // Legacy tokens (pre multi-tenant): hydrate clientId from DB
-    const user = await prisma.user.findUnique({
-      where: { id: data.userId as number },
-      select: { client_id: true, is_active: true },
+    const user = await prisma.user.findUnique({ where: { id: payload.userId as number }, select: authUserSelect });
+    if (!user?.is_active || !user.client.is_active || authState(user) !== payload.authState) return null;
+    if (user.role !== "SUPER_ADMIN" && payload.clientId !== user.client_id) return null;
+    const tenant = await prisma.client.findFirst({
+      where: { id: payload.clientId as number, is_active: true },
+      select: { id: true },
     });
-
-    if (!user?.is_active || user.client_id == null) {
-      return null;
-    }
-
-    return {
-      userId: data.userId as number,
-      username: data.username as string,
-      email: (data.email as string | null | undefined) ?? null,
-      role: data.role as string,
-      clientId: user.client_id,
-    };
-  } catch (error) {
-    console.error("Token verification failed:", error);
+    if (!tenant) return null;
+    return { userId: user.id, username: user.username, email: user.email, role: user.role, clientId: tenant.id };
+  } catch {
+    // Malformed/expired tokens and DB failures fail closed, without logging tokens.
     return null;
   }
 }
 
 export async function getSession(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth-token")?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  const session = await verifyToken(token);
-  if (!session) {
-    return null;
-  }
-
-  // Re-issue cookie if legacy token lacked clientId (only works in Route Handlers / Server Actions)
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    if (typeof (payload as Record<string, unknown>).clientId !== "number") {
-      const fresh = await signToken(session);
-      await setAuthCookie(fresh);
-    }
-  } catch {
-    // Cookie may be read-only in RSC — hydrated session is still valid
-  }
-
-  return session;
+  const token = (await cookies()).get("auth-token")?.value;
+  return token ? verifyToken(token) : null;
 }
 
 export async function setAuthCookie(token: string) {

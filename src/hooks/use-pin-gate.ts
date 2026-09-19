@@ -69,18 +69,24 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     if (!isFourDigitPin(pin)) return setMsg(t("pinMustBeDigits", { length: pinLength }));
     if (pin !== pinConfirm) return setMsg(t("pinMismatch"));
     setLoading(true);
-    const res = await fetch(`/api/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "set_pin", pin }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok && data.ok) {
-      onUnlock?.();
-    } else {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_pin", pin }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        onUnlock?.();
+      } else {
+        clearPinOnly();
+        setMsg(data?.error || tCommon("error"));
+      }
+    } catch {
       clearPinOnly();
-      setMsg(data?.error || tCommon("error"));
+      setMsg(t("pinWrong"));
+    } finally {
+      setLoading(false);
     }
   }, [userId, pin, pinConfirm, pinLength, onUnlock, loading, clearPinOnly, t, tCommon]);
 
@@ -89,18 +95,24 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     setMsg(null);
     if (!isFourDigitPin(pin)) return setMsg(t("pinMustBeDigits", { length: pinLength }));
     setLoading(true);
-    const res = await fetch(`/api/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "verify_pin", pin }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok && data.ok) {
-      onUnlock?.();
-    } else {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify_pin", pin }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        onUnlock?.();
+      } else {
+        clearPinOnly();
+        setMsg(data?.error || t("pinWrong"));
+      }
+    } catch {
       clearPinOnly();
-      setMsg(data?.error || t("pinWrong"));
+      setMsg(t("pinWrong"));
+    } finally {
+      setLoading(false);
     }
   }, [userId, pin, pinLength, onUnlock, loading, clearPinOnly, t]);
 
@@ -110,26 +122,32 @@ export function usePinGate({ userId, pinLength = 4, locked, onUnlock }: UsePinGa
     if (!credentials.login || !credentials.password) return setMsg(t("enterLoginPassword"));
     if (!isFourDigitPin(pin)) return setMsg(t("newPinMustBeDigits", { length: pinLength }));
     setLoading(true);
-    const res = await fetch(`/api/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "reset_pin",
-        login: credentials.login,
-        password: credentials.password,
-        pin,
-      }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok && data.ok) {
-      onUnlock?.();
-      setResetMode(false);
-      setMsg(t("pinResetSuccess"));
-    } else {
-      setMsg(data?.error || tCommon("error"));
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reset_pin",
+          login: credentials.login,
+          password: credentials.password,
+          pin,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        onUnlock?.();
+        setResetMode(false);
+        setMsg(t("pinResetSuccess"));
+      } else {
+        setMsg(data?.error || tCommon("error"));
+      }
+    } catch {
+      clearPinOnly();
+      setMsg(t("pinWrong"));
+    } finally {
+      setLoading(false);
     }
-  }, [userId, credentials, pin, pinLength, onUnlock, loading, t, tCommon]);
+  }, [userId, credentials, pin, pinLength, onUnlock, loading, t, tCommon, clearPinOnly]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

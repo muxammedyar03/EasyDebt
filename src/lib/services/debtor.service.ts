@@ -130,14 +130,14 @@ export class DebtorService {
    * Find debtor by external_id (UUID) — for URL-safe lookups
    */
   async findByExternalId(
-    clientId: number | null,
+    clientId: number,
     externalId: string,
     includeRelations = false,
   ): Promise<DebtorDomain | null> {
     const debtor = await debtorRepository.findFirst(
       {
         external_id: externalId,
-        ...(clientId !== null ? { client_id: clientId } : {}),
+        client_id: clientId,
       },
       {
         debts: includeRelations ? { orderBy: { created_at: "desc" } } : false,

@@ -1,3 +1,4 @@
+import { can } from "@/lib/security/permissions";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { settingsRepository } from "@/entities/settings/api";
@@ -14,10 +15,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!can(session, "settings.manage")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const clientId = requireClientId(session);
     const { key, value } = await request.json();
 
-    if (!key || !value) {
+    const numeric = typeof value === "string" && value.trim() !== "" ? Number(value) : NaN;
+    const valid =
+      key === "debt_limit"
+        ? Number.isFinite(numeric) && numeric >= 0 && numeric <= 99999999.99
+        : key === "overdue_days"
+          ? Number.isInteger(numeric) && numeric >= 1 && numeric <= 3650
+          : false;
+    if (!valid) {
       return NextResponse.json({ error: "Key and value are required" }, { status: 400 });
     }
 

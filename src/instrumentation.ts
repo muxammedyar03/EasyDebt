@@ -11,6 +11,9 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { getJwtKey, getShareKey } = await import("./lib/security/secrets");
+    getJwtKey();
+    await getShareKey();
     console.log("[instrumentation] Server started");
   }
 }
