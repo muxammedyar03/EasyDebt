@@ -47,6 +47,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER:-admin}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-debt_management}?schema=public&connection_limit=30&pool_timeout=20
       JWT_SECRET: ${JWT_SECRET}
+      TENANT_BACKUP_SECRET: ${TENANT_BACKUP_SECRET:-}
       CRON_SECRET: ${CRON_SECRET}
       N8N_API_KEY: ${N8N_API_KEY}
       NODE_ENV: production

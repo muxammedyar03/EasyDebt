@@ -1,3 +1,4 @@
+import { TenantBackupPanel } from "./_components/tenant-backup-panel";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
@@ -47,6 +48,7 @@ export default async function ClientsPage() {
         </div>
         <CreateClientDialog />
       </div>
+      <TenantBackupPanel key={session.clientId} clientId={session.clientId} />
       <div className="rounded-md border">
         <ClientsList clients={rows} currentClientId={session.clientId} />
       </div>
