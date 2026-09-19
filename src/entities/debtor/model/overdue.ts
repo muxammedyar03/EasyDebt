@@ -23,6 +23,7 @@ export interface DebtWithPayments {
   payments: Array<{
     amount: number;
     createdAt: Date;
+    resetsRating?: boolean;
   }>;
 }
 
@@ -100,7 +101,7 @@ export function getDefaultOverdueSettings(): OverdueSettings {
 
 export function computeDebtorOverdueStatus(
   debts: Array<{ amount: number; createdAt: Date }> = [],
-  payments: Array<{ amount: number; createdAt: Date }> = [],
+  payments: Array<{ amount: number; createdAt: Date; resetsRating?: boolean }> = [],
   settings: OverdueSettings,
 ): OverdueStatus {
   if (debts.length === 0) {
@@ -112,10 +113,11 @@ export function computeDebtorOverdueStatus(
     };
   }
 
-  const debtsWithPayments: DebtWithPayments[] = debts.map((debt) => ({
+  const debtsWithPayments: DebtWithPayments[] = debts.map((debt, index) => ({
     amount: debt.amount,
     createdAt: debt.createdAt,
-    payments: payments.filter((p) => new Date(p.createdAt) >= new Date(debt.createdAt)),
+    // Feed each ledger payment exactly once, not once per debt.
+    payments: index === 0 ? payments : [],
   }));
 
   return calculateDebtorOverdueStatus(debtsWithPayments, settings);
@@ -145,7 +147,7 @@ export function calculateDebtorOverdueStatus(debts: DebtWithPayments[], settings
     };
   }
 
-  type TransactionItem = DebtWithPayments | { amount: number; createdAt: Date };
+  type TransactionItem = DebtWithPayments | { amount: number; createdAt: Date; resetsRating?: boolean };
   const allTransactions: Array<{ type: "debt" | "payment"; date: Date; amount: number; item: TransactionItem }> = [];
 
   debts.forEach((debt) => {
@@ -169,8 +171,8 @@ export function calculateDebtorOverdueStatus(debts: DebtWithPayments[], settings
     if (transaction.type === "debt") {
       runningDebt += transaction.amount;
     } else {
-      const is50Plus = runningDebt > 0 && transaction.amount >= runningDebt * 0.5;
-      if (is50Plus) {
+      const is50Plus = runningDebt > 0 && transaction.amount >= runningDebt * settings.minPaidPercent;
+      if (is50Plus || ("resetsRating" in transaction.item && transaction.item.resetsRating)) {
         lastResetPayment = transaction.item;
       }
       runningDebt -= transaction.amount;
@@ -183,7 +185,7 @@ export function calculateDebtorOverdueStatus(debts: DebtWithPayments[], settings
   if (lastResetPayment) {
     overdueDays = Math.floor((now.getTime() - new Date(lastResetPayment.createdAt).getTime()) / (1000 * 60 * 60 * 24));
   } else {
-    const firstDebt = debts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+    const firstDebt = [...debts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
     overdueDays = Math.floor((now.getTime() - new Date(firstDebt.createdAt).getTime()) / (1000 * 60 * 60 * 24));
   }
 

@@ -1,3 +1,5 @@
+import { refreshDebtorStatus } from "@/lib/security/refresh-debtor-status";
+import { serializableTransaction } from "@/lib/security/serializable";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
     const userId = session.userId;
 
     // Use transaction to create payment and update debtor's total_debt
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await serializableTransaction(async (tx) => {
       // Get current debtor to check debt amount
       const debtor = await tx.debtor.findFirst({
         where: { id: validatedData.debtor_id, client_id: clientId },
@@ -59,17 +61,17 @@ export async function POST(request: NextRequest) {
       });
 
       // Update debtor's total_debt (decrease) and payment date
-      const updatedDebtor = await tx.debtor.update({
+      await tx.debtor.update({
         where: { id: validatedData.debtor_id },
         data: {
           total_debt: {
             decrement: validatedData.amount,
           },
           last_payment_date: new Date(),
-          is_overdue: false,
         },
       });
 
+      const updatedDebtor = await refreshDebtorStatus(tx, clientId, debtor.id);
       return { payment, debtor, updatedDebtor };
     });
 
