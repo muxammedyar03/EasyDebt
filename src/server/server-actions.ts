@@ -28,11 +28,21 @@ export async function getPreference<T extends string>(key: string, allowed: read
 
 import { getSession } from "@/lib/auth";
 import { signShareToken } from "@/lib/share-token";
+import { prisma } from "@/lib/prisma";
+import { requireClientId } from "@/lib/tenant";
+import { z } from "zod";
 
 export async function generateShareTokenAction(externalId: string): Promise<string> {
   const session = await getSession();
   if (!session) {
     throw new Error("Unauthorized");
   }
-  return await signShareToken(externalId);
+  const id = z.string().uuid().parse(externalId);
+  const clientId = requireClientId(session);
+  const debtor = await prisma.debtor.findFirst({
+    where: { external_id: id, client_id: clientId, client: { is_active: true } },
+    select: { id: true },
+  });
+  if (!debtor) throw new Error("Debtor not found");
+  return await signShareToken(id, clientId, session.userId);
 }

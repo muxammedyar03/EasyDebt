@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { PublicDebtorClient } from "./_components/public-debtor-client";
 import { debtorService } from "@/lib/services/debtor.service";
 import { computeViewValueSync } from "@/features/view-debtor/model";
+import { prisma } from "@/lib/prisma";
 import { verifyShareToken } from "@/lib/share-token";
 import { Clock, Landmark } from "lucide-react";
 
@@ -61,12 +62,27 @@ export default async function PublicDebtorPage({ params, searchParams }: PagePro
     return <ExpiredView />;
   }
 
-  const isValid = await verifyShareToken(token, id);
-  if (!isValid) {
+  const scope = await verifyShareToken(token, id);
+  if (!scope) {
     return <ExpiredView />;
   }
 
-  const debtor = await debtorService.findByExternalId(null, id, true);
+  // Disabled/moved issuers cannot keep granting access with old links.
+  const issuer = await prisma.user.findFirst({
+    where: {
+      id: scope.issuerUserId,
+      is_active: true,
+      client: { is_active: true },
+      OR: [{ client_id: scope.clientId }, { role: "SUPER_ADMIN" }],
+    },
+    select: { id: true },
+  });
+  const client = await prisma.client.findFirst({
+    where: { id: scope.clientId, is_active: true },
+    select: { id: true },
+  });
+  if (!issuer || !client) return <ExpiredView />;
+  const debtor = await debtorService.findByExternalId(scope.clientId, id, true);
 
   if (!debtor) {
     notFound();

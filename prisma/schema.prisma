@@ -92,6 +92,7 @@ model Debtor {
   @@index([is_overdue])
   @@index([last_payment_date])
   @@index([external_id])
+  @@unique([id, client_id])
   @@index([client_id])
   @@map("debtors")
 }
@@ -108,7 +109,7 @@ model Debt {
   client_id   Int
 
   client  Client @relation(fields: [client_id], references: [id])
-  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  debtor  Debtor @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
 
   @@index([debtor_id])
@@ -131,7 +132,7 @@ model Payment {
   client_id     Int
 
   client  Client @relation(fields: [client_id], references: [id])
-  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  debtor  Debtor @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User   @relation("PaymentCreatedBy", fields: [created_by], references: [id])
 
   @@index([debtor_id])
@@ -234,7 +235,7 @@ model PaymentReminder {
   client_id   Int
 
   client  Client @relation(fields: [client_id], references: [id])
-  debtor  Debtor @relation(fields: [debtor_id], references: [id], onDelete: Cascade)
+  debtor  Debtor @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User   @relation("ReminderCreatedBy", fields: [created_by], references: [id])
 
   @@index([debtor_id])
@@ -341,6 +342,7 @@ model Company {
   @@index([last_debt_date])
   @@index([external_id])
   @@index([name])
+  @@unique([id, client_id])
   @@index([client_id])
   @@map("companies")
 }
@@ -357,7 +359,7 @@ model CompanyDebt {
   client_id   Int
 
   client  Client  @relation(fields: [client_id], references: [id])
-  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User    @relation("CompanyDebtCreatedBy", fields: [created_by], references: [id])
 
   @@index([company_id])
@@ -383,7 +385,7 @@ model CompanyPayment {
   client_id    Int
 
   client  Client  @relation(fields: [client_id], references: [id])
-  company Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User    @relation("CompanyPaymentCreatedBy", fields: [created_by], references: [id])
 
   @@index([company_id])

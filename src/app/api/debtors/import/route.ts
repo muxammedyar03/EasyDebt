@@ -7,59 +7,31 @@ import crypto from "crypto";
 import { PaymentType, Prisma } from "@prisma/client";
 import type { DebtItem } from "@/types/domain";
 
-type ImportDebt = {
-  external_id: string;
-  amount: number;
-  description: string | null;
-  items: DebtItem[] | null;
-  created_at: string;
-};
-
-type ImportPayment = {
-  external_id: string;
-  amount: number;
-  payment_type: string;
-  note: string | null;
-  created_at: string;
-};
-
-type ImportDebtor = {
-  external_id: string;
-  first_name: string;
-  last_name: string;
-  phone_number: string | null;
-  address: string | null;
-  debts: ImportDebt[];
-  payments: ImportPayment[];
-};
-
-type ImportData = {
-  meta: {
-    exportedAt: string;
-    version: number;
-    exportedBy?: string;
-    debtorsCount: number;
-    debtsCount: number;
-    paymentsCount: number;
-  };
-  debtors: ImportDebtor[];
-};
+import { z } from "zod";
+import {
+  assertImportOwnership,
+  debtorImportSchema,
+  ImportOwnershipError,
+  type DebtorImport,
+} from "@/lib/import/debtor-import";
 
 /** Brauzer gzip yuborsa (katta JSON uchun nginx limitidan yengil). */
 const MAX_IMPORT_JSON_BYTES = 60 * 1024 * 1024;
 
-async function parseImportJsonBody(request: NextRequest): Promise<ImportData> {
+async function parseImportJsonBody(request: NextRequest): Promise<DebtorImport> {
   const encoding = request.headers.get("content-encoding")?.toLowerCase();
   if (encoding === "gzip" || encoding === "x-gzip") {
     const raw = Buffer.from(await request.arrayBuffer());
     const json = gunzipSync(raw, { maxOutputLength: MAX_IMPORT_JSON_BYTES }).toString("utf8");
-    return JSON.parse(json) as ImportData;
+    return debtorImportSchema.parse(JSON.parse(json));
   }
-  return (await request.json()) as ImportData;
+  const raw = await request.text();
+  if (Buffer.byteLength(raw, "utf8") > MAX_IMPORT_JSON_BYTES) throw new Error("Import is too large");
+  return debtorImportSchema.parse(JSON.parse(raw));
 }
 
 export async function POST(request: NextRequest) {
-  let requestBody: ImportData | null = null;
+  let requestBody: DebtorImport | null = null;
   let fileHash = "";
 
   try {
@@ -72,7 +44,7 @@ export async function POST(request: NextRequest) {
     const clientId = requireClientId(session);
 
     // Faqat SUPER_ADMIN va ADMIN import qila oladi
-    if (session.role === "USER") {
+    if (!["ADMIN", "SUPER_ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Faqat admin foydalanuvchilar import qila oladi" }, { status: 403 });
     }
 
@@ -92,11 +64,12 @@ export async function POST(request: NextRequest) {
 
     // 2. File hash yaratish (duplicate import'dan himoya)
     const fileContent = JSON.stringify(importData);
-    fileHash = crypto.createHash("sha256").update(fileContent).digest("hex");
+    const legacyHash = crypto.createHash("sha256").update(fileContent).digest("hex");
+    fileHash = crypto.createHash("sha256").update(`${clientId}:${fileContent}`).digest("hex");
 
     // 3. Duplicate check
-    const existingImport = await prisma.importHistory.findUnique({
-      where: { file_hash: fileHash },
+    const existingImport = await prisma.importHistory.findFirst({
+      where: { client_id: clientId, status: "SUCCESS", file_hash: { in: [fileHash, legacyHash] } },
     });
 
     if (existingImport) {
@@ -112,6 +85,7 @@ export async function POST(request: NextRequest) {
     // 4. Transaction bilan import qilish (5 daqiqa timeout)
     const result = await prisma.$transaction(
       async (tx) => {
+        await assertImportOwnership(tx, clientId, importData);
         const debtorMap = new Map<string, number>();
         let createdDebtors = 0;
         let createdDebts = 0;
@@ -121,6 +95,7 @@ export async function POST(request: NextRequest) {
         const existingDebtorIds = await tx.debtor.findMany({
           where: {
             external_id: { in: importData.debtors.map((d) => d.external_id) },
+            client_id: clientId,
           },
           select: { id: true, external_id: true },
         });
@@ -135,7 +110,7 @@ export async function POST(request: NextRequest) {
           if (existingId) {
             // Agar mavjud bo'lsa, yangilaymiz
             await tx.debtor.update({
-              where: { id: existingId },
+              where: { id: existingId, client_id: clientId },
               data: {
                 first_name: debtorData.first_name,
                 last_name: debtorData.last_name,
@@ -168,7 +143,7 @@ export async function POST(request: NextRequest) {
         // 7. Barcha mavjud debt external_id'larni olish (batch)
         const allDebtExternalIds = importData.debtors.flatMap((d) => d.debts.map((debt) => debt.external_id));
         const existingDebtIds = await tx.debt.findMany({
-          where: { external_id: { in: allDebtExternalIds } },
+          where: { client_id: clientId, external_id: { in: allDebtExternalIds } },
           select: { external_id: true },
         });
         const existingDebtSet = new Set(existingDebtIds.map((d) => d.external_id));
@@ -185,7 +160,7 @@ export async function POST(request: NextRequest) {
                 client_id: clientId,
                 amount: new Prisma.Decimal(debtData.amount),
                 description: debtData.description,
-                items: debtData.items as DebtItem[],
+                items: debtData.items == null ? Prisma.DbNull : (debtData.items as DebtItem[]),
                 created_at: new Date(debtData.created_at),
                 created_by: session.userId,
               });
@@ -194,14 +169,14 @@ export async function POST(request: NextRequest) {
         }
 
         if (debtsToCreate.length > 0) {
-          await tx.debt.createMany({ data: debtsToCreate, skipDuplicates: true });
+          await tx.debt.createMany({ data: debtsToCreate, skipDuplicates: false });
           createdDebts = debtsToCreate.length;
         }
 
         // 9. Barcha mavjud payment external_id'larni olish (batch)
         const allPaymentExternalIds = importData.debtors.flatMap((d) => d.payments.map((p) => p.external_id));
         const existingPaymentIds = await tx.payment.findMany({
-          where: { external_id: { in: allPaymentExternalIds } },
+          where: { client_id: clientId, external_id: { in: allPaymentExternalIds } },
           select: { external_id: true },
         });
         const existingPaymentSet = new Set(existingPaymentIds.map((p) => p.external_id));
@@ -219,6 +194,7 @@ export async function POST(request: NextRequest) {
                 amount: new Prisma.Decimal(paymentData.amount),
                 payment_type: paymentData.payment_type as PaymentType,
                 note: paymentData.note,
+                resets_rating: paymentData.resets_rating,
                 created_at: new Date(paymentData.created_at),
                 created_by: session.userId,
               });
@@ -227,7 +203,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (paymentsToCreate.length > 0) {
-          await tx.payment.createMany({ data: paymentsToCreate, skipDuplicates: true });
+          await tx.payment.createMany({ data: paymentsToCreate, skipDuplicates: false });
           createdPayments = paymentsToCreate.length;
         }
 
@@ -236,13 +212,13 @@ export async function POST(request: NextRequest) {
 
         const allDebts = await tx.debt.groupBy({
           by: ["debtor_id"],
-          where: { debtor_id: { in: debtorIds } },
+          where: { client_id: clientId, debtor_id: { in: debtorIds } },
           _sum: { amount: true },
         });
 
         const allPayments = await tx.payment.groupBy({
           by: ["debtor_id"],
-          where: { debtor_id: { in: debtorIds } },
+          where: { client_id: clientId, debtor_id: { in: debtorIds } },
           _sum: { amount: true },
         });
 
@@ -257,7 +233,7 @@ export async function POST(request: NextRequest) {
             const totalDebt = totalDebts - totalPayments;
 
             return tx.debtor.update({
-              where: { id: debtorId },
+              where: { id: debtorId, client_id: clientId },
               data: {
                 total_debt: new Prisma.Decimal(totalDebt),
                 last_payment_date: totalPayments > 0 ? new Date() : null,
@@ -304,6 +280,7 @@ export async function POST(request: NextRequest) {
       {
         maxWait: 300000, // 5 daqiqa kutish
         timeout: 300000, // 5 daqiqa timeout
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       },
     );
 
@@ -313,6 +290,15 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
+    if (error instanceof ImportOwnershipError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof z.ZodError || error instanceof SyntaxError) {
+      return NextResponse.json({ error: "Invalid import data" }, { status: 400 });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2002", "P2034"].includes(error.code)) {
+      return NextResponse.json({ error: "Import conflict; refresh and retry" }, { status: 409 });
+    }
     console.error("Import error:", error);
 
     // Import history'ga xatolikni yozish (body'ni qayta o'qimaslik)
@@ -323,7 +309,7 @@ export async function POST(request: NextRequest) {
           data: {
             user_id: session.userId,
             client_id: requireClientId(session),
-            file_hash: fileHash,
+            file_hash: `${fileHash}:failed:${crypto.randomUUID()}`,
             debtors_count: 0,
             debts_count: 0,
             payments_count: 0,
@@ -339,7 +325,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Import paytida xatolik yuz berdi",
-        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
     );
