@@ -1,9 +1,9 @@
+import { serializableTransaction } from "@/lib/security/serializable";
 /**
  * SERVICE - CompanyPayment create/update with company total_debt sync
  */
 
-import { prisma } from "@/lib/prisma";
-import type { PaymentType, Prisma } from "@prisma/client";
+import { type PaymentType, Prisma } from "@prisma/client";
 import { companyPaymentRepository } from "@/entities/company-payment/api";
 import { prismaToDomainCompany, prismaToDomainCompanyPayment } from "@/lib/mappers/company.mapper";
 import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
@@ -28,7 +28,7 @@ export class CompanyPaymentService {
   }
 
   async create(clientId: number, input: CreateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await serializableTransaction(async (tx) => {
       const company = await tx.company.findFirst({ where: { id: input.companyId, client_id: clientId } });
       if (!company) {
         throw new Error("Kompaniya topilmadi");
@@ -66,14 +66,14 @@ export class CompanyPaymentService {
   }
 
   async update(clientId: number, id: number, input: UpdateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await serializableTransaction(async (tx) => {
       const existing = await tx.companyPayment.findFirst({ where: { id, client_id: clientId } });
       if (!existing) {
         throw new Error("To'lov topilmadi");
       }
 
-      const nextAmount = input.amount ?? existing.amount.toNumber();
-      const delta = nextAmount - existing.amount.toNumber();
+      const nextAmount = new Prisma.Decimal(input.amount ?? existing.amount);
+      const delta = nextAmount.minus(existing.amount);
 
       const payment = await tx.companyPayment.update({
         where: { id },
@@ -88,7 +88,7 @@ export class CompanyPaymentService {
         },
       });
 
-      if (delta !== 0) {
+      if (!delta.isZero()) {
         await tx.company.update({
           where: { id: existing.company_id },
           data: { total_debt: { decrement: delta } },
@@ -103,7 +103,7 @@ export class CompanyPaymentService {
   }
 
   async delete(clientId: number, id: number): Promise<CompanyPaymentDomain> {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await serializableTransaction(async (tx) => {
       const existing = await tx.companyPayment.findFirst({
         where: { id, client_id: clientId },
         include: { company: true },
@@ -115,7 +115,7 @@ export class CompanyPaymentService {
       await tx.companyPayment.delete({ where: { id } });
       await tx.company.update({
         where: { id: existing.company_id },
-        data: { total_debt: { increment: existing.amount.toNumber() } },
+        data: { total_debt: { increment: existing.amount } },
       });
 
       return existing;
