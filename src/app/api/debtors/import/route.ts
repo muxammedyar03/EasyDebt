@@ -8,6 +8,11 @@ import { PaymentType, Prisma } from "@prisma/client";
 import type { DebtItem } from "@/types/domain";
 
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { BackupError } from "@/lib/tenant-backup/archive";
+import { readJson } from "@/lib/tenant-backup/json-transfer";
+import { previewTenant, restoreTenant } from "@/lib/tenant-backup/service";
+import { takeSensitiveAttempt } from "@/lib/security/rate-limit";
 import {
   assertImportOwnership,
   debtorImportSchema,
@@ -16,18 +21,29 @@ import {
 } from "@/lib/import/debtor-import";
 
 /** Brauzer gzip yuborsa (katta JSON uchun nginx limitidan yengil). */
-const MAX_IMPORT_JSON_BYTES = 60 * 1024 * 1024;
+const MAX_IMPORT_JSON_BYTES = 150 * 1024 * 1024;
 
-async function parseImportJsonBody(request: NextRequest): Promise<DebtorImport> {
+async function parseImportJsonBody(request: NextRequest): Promise<unknown> {
+  if (!request.body) throw new BackupError("Empty import request");
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_IMPORT_JSON_BYTES) {
+      await reader.cancel();
+      throw new BackupError("Import is too large", 413);
+    }
+    chunks.push(value);
+  }
+  const raw = Buffer.concat(chunks);
   const encoding = request.headers.get("content-encoding")?.toLowerCase();
   if (encoding === "gzip" || encoding === "x-gzip") {
-    const raw = Buffer.from(await request.arrayBuffer());
-    const json = gunzipSync(raw, { maxOutputLength: MAX_IMPORT_JSON_BYTES }).toString("utf8");
-    return debtorImportSchema.parse(JSON.parse(json));
+    return JSON.parse(gunzipSync(raw, { maxOutputLength: MAX_IMPORT_JSON_BYTES }).toString("utf8"));
   }
-  const raw = await request.text();
-  if (Buffer.byteLength(raw, "utf8") > MAX_IMPORT_JSON_BYTES) throw new Error("Import is too large");
-  return debtorImportSchema.parse(JSON.parse(raw));
+  return JSON.parse(raw.toString("utf8"));
 }
 
 export async function POST(request: NextRequest) {
@@ -49,7 +65,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Request body'ni bir marta o'qib saqlaymiz (ixcham gzip qabul qilinadi)
-    const body = await parseImportJsonBody(request);
+    const raw = await parseImportJsonBody(request);
+    if (
+      typeof raw === "object" &&
+      raw !== null &&
+      "meta" in raw &&
+      (raw as { meta?: { version?: number } }).meta?.version === 2
+    ) {
+      const snapshot = readJson(raw, clientId);
+      const preview = await previewTenant(snapshot);
+      if (request.headers.get("x-import-action") === "preview")
+        return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
+      if (request.headers.get("x-import-confirmation") !== snapshot.id)
+        throw new BackupError("Preview and confirm this file before importing");
+      if (!(await takeSensitiveAttempt(session.userId, "backup"))) throw new BackupError("Too many attempts", 429);
+      const actor = await prisma.user.findUnique({ where: { id: session.userId } });
+      const password = request.headers.get("x-import-password") ?? "";
+      if (
+        !actor?.is_active ||
+        !["ADMIN", "SUPER_ADMIN"].includes(actor.role) ||
+        password.length > 4096 ||
+        !(await bcrypt.compare(decodeURIComponent(password), actor.password))
+      )
+        throw new BackupError("Invalid credentials", 403);
+      await restoreTenant(snapshot, session.userId, "merge");
+      return NextResponse.json(
+        {
+          success: true,
+          counts: preview.counts,
+          debtorsCount: preview.counts.debtors,
+          debtsCount: preview.counts.debts,
+          paymentsCount: preview.counts.payments,
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    const body = debtorImportSchema.parse(raw);
     requestBody = body;
     const importData = requestBody;
 
@@ -290,6 +341,7 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
+    if (error instanceof BackupError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof ImportOwnershipError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }

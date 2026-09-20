@@ -144,6 +144,30 @@ async function main() {
     ).rows[0].receipt_path;
     files.push(restoredPath);
     assert.deepEqual(await readFile(restoredPath), receipt);
+    // JSON merge retains newer rows and current edits; importing twice does not duplicate ledger entries.
+    await db.exec(
+      "UPDATE debtors SET first_name='Keep current' WHERE id=10; DELETE FROM notifications WHERE id=10; INSERT INTO debts (id,external_id,debtor_id,amount,created_by,client_id) VALUES (500,'new-after-export',10,7,10,1)",
+    );
+    for (let i = 0; i < 2; i++) {
+      await restoreTenant(structuredClone(snapshot), 99, "merge");
+      assert.equal(
+        (await db.query<{ first_name: string }>("SELECT first_name FROM debtors WHERE id=10")).rows[0].first_name,
+        "Keep current",
+      );
+      assert.equal(
+        Number(
+          (await db.query<{ total_debt: string }>("SELECT total_debt FROM debtors WHERE id=10")).rows[0].total_debt,
+        ),
+        97,
+      );
+      assert.equal((await db.query("SELECT id FROM debts WHERE client_id=1")).rows.length, 2);
+      assert.equal((await db.query("SELECT id FROM notifications WHERE id=10")).rows.length, 1);
+      for (const table of TENANT_BACKUP_TABLES)
+        assert.deepEqual(
+          (await db.query(`SELECT to_jsonb(r) AS data FROM "${table}" r WHERE id=20`)).rows,
+          untouched[table],
+        );
+    }
     const beforeFailed = (await db.query("SELECT * FROM debtors ORDER BY id")).rows;
     const broken = structuredClone(snapshot);
     broken.tables.users[0].username = "user-2"; // global unique collision
@@ -154,7 +178,7 @@ async function main() {
       "restore failure did not roll back",
     );
     console.log(
-      "PASS: encrypted full 15-table + receipt round trip, other-tenant invariance, platform account protection and failed-restore rollback",
+      "PASS: encrypted full 15-table + receipt round trip, other-tenant invariance, platform account protection merge retention/idempotency and failed-restore rollback",
     );
   } finally {
     await db.close();

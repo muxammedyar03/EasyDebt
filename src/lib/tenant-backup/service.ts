@@ -198,21 +198,13 @@ export async function previewTenant(snapshot: TenantSnapshot) {
   };
 }
 
-/** Explicit same-tenant replacement only. Audit/import history is append-only.
+/** Same-tenant replacement or additive JSON merge. Audit/import history is append-only.
  * Platform admins and their device preferences remain outside tenant ownership.
  */
-export async function restoreTenant(snapshot: TenantSnapshot, actorId: number) {
+export async function restoreTenant(snapshot: TenantSnapshot, actorId: number, mode: "replace" | "merge" = "replace") {
+  snapshot = structuredClone(snapshot);
   const createdFiles: string[] = [];
   try {
-    // New file names avoid overwriting any live receipt; rollback removes only these new files.
-    for (const file of snapshot.receipts) {
-      const relative = path.join("uploads", "company-receipts", `restore-${randomUUID()}.bin`);
-      const absolute = getCompanyReceiptAbsolutePath(relative);
-      await mkdir(path.dirname(absolute), { recursive: true });
-      await writeFile(absolute, Buffer.from(file.data, "base64"), { flag: "wx" });
-      createdFiles.push(absolute);
-      snapshot.tables.company_payments.find((row) => row.id === file.paymentId)!.receipt_path = relative;
-    }
     await prisma.$transaction(
       async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(20260919, ${snapshot.client.id})`;
@@ -221,8 +213,29 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number) {
         await tx.$executeRawUnsafe(
           `LOCK TABLE ${TENANT_BACKUP_TABLES.map((t) => `"${t}"`).join(",")} IN SHARE ROW EXCLUSIVE MODE`,
         );
+        // New file names avoid overwriting any live receipt; rollback removes only these new files.
+        const existingReceiptPayments =
+          mode === "merge"
+            ? new Set(
+                (
+                  await tx.$queryRaw<Array<{ id: number }>>(
+                    Prisma.sql`SELECT id FROM company_payments WHERE client_id=${snapshot.client.id}`,
+                  )
+                ).map((row) => row.id),
+              )
+            : new Set<number>();
+        for (const file of snapshot.receipts) {
+          if (existingReceiptPayments.has(file.paymentId)) continue;
+          const relative = path.join("uploads", "company-receipts", `restore-${randomUUID()}.bin`);
+          const absolute = getCompanyReceiptAbsolutePath(relative);
+          await mkdir(path.dirname(absolute), { recursive: true });
+          await writeFile(absolute, Buffer.from(file.data, "base64"), { flag: "wx" });
+          createdFiles.push(absolute);
+          snapshot.tables.company_payments.find((row) => row.id === file.paymentId)!.receipt_path = relative;
+        }
+
         for (const table of [...TENANT_BACKUP_TABLES].reverse()) {
-          if (APPEND_ONLY.has(table)) continue;
+          if (mode === "merge" || APPEND_ONLY.has(table)) continue;
           await tx.$executeRaw(
             Prisma.sql`DELETE FROM ${Prisma.raw(`"${table}"`)} r WHERE ${scope(table, snapshot.client.id)}`,
           );
@@ -232,21 +245,34 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number) {
           if (!rows.length) continue;
           if (table === "users") for (const row of rows) row.updated_at = new Date().toISOString(); // revoke old sessions
           await tx.$executeRaw(
-            Prisma.sql`INSERT INTO ${Prisma.raw(`"${table}"`)} SELECT * FROM jsonb_populate_recordset(NULL::${Prisma.raw(`"${table}"`)}, ${JSON.stringify(rows)}::jsonb) ${APPEND_ONLY.has(table) ? Prisma.sql`ON CONFLICT (id) DO NOTHING` : Prisma.empty}`,
+            Prisma.sql`INSERT INTO ${Prisma.raw(`"${table}"`)} SELECT * FROM jsonb_populate_recordset(NULL::${Prisma.raw(`"${table}"`)}, ${JSON.stringify(rows)}::jsonb) ${mode === "merge" || APPEND_ONLY.has(table) ? Prisma.sql`ON CONFLICT (id) DO NOTHING` : Prisma.empty}`,
           );
           // Sequences are nontransactional: only advance, never rewind across tenants.
           await tx.$executeRawUnsafe(
             `SELECT setval(pg_get_serial_sequence('"${table}"','id'), GREATEST((SELECT COALESCE(MAX(id),1) FROM "${table}"), (SELECT last_value FROM "${table}_id_seq")), true)`,
           );
         }
-        await tx.client.update({ where: { id: snapshot.client.id }, data: { name: snapshot.client.name } });
+        if (mode === "replace") {
+          await tx.client.update({ where: { id: snapshot.client.id }, data: { name: snapshot.client.name } });
+        } else {
+          // Existing rows win. Recalculate balances from the combined ledger, never stale exported totals.
+          for (const [parent, debts, payments, key] of [
+            ["debtors", "debts", "payments", "debtor_id"],
+            ["companies", "company_debts", "company_payments", "company_id"],
+          ]) {
+            await tx.$executeRaw(Prisma.sql`UPDATE ${Prisma.raw(parent)} p SET total_debt =
+              COALESCE((SELECT SUM(amount) FROM ${Prisma.raw(debts)} d WHERE ${Prisma.raw("d." + key)}=p.id AND d.client_id=p.client_id),0)
+              - COALESCE((SELECT SUM(amount) FROM ${Prisma.raw(payments)} m WHERE ${Prisma.raw("m." + key)}=p.id AND m.client_id=p.client_id),0)
+              WHERE p.client_id=${snapshot.client.id}`);
+          }
+        }
         await tx.auditLog.create({
           data: {
             client_id: snapshot.client.id,
             user_id: actorId,
             action: "RESTORE",
             entity_type: "TENANT_BACKUP",
-            description: `Restored snapshot ${snapshot.id}; previous audit/import history retained`,
+            description: `${mode === "merge" ? "Merged" : "Restored"} snapshot ${snapshot.id}; previous audit/import history retained`,
           },
         });
       },
