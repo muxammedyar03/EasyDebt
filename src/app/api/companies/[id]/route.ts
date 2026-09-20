@@ -1,3 +1,5 @@
+import { deleteEmptyRecords, RecordDeletionError } from "@/lib/security/delete-records";
+import { can } from "@/lib/security/permissions";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -99,6 +101,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!can(session, "records.delete")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const clientId = requireClientId(session);
 
     const { id } = await params;
@@ -112,24 +115,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Kompaniya topilmadi" }, { status: 404 });
     }
 
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "DELETE",
-      entityType: "COMPANY",
-      entityId: companyId,
-      oldValue: { name: company.name },
-      description: `Kompaniya ${company.name} o'chirildi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
-
-    await companyService.delete(clientId, companyId);
+    await deleteEmptyRecords("company", clientId, [companyId], session.userId);
 
     revalidatePath("/dashboard/my-debts");
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof RecordDeletionError)
+      return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("Error deleting company:", error);
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }

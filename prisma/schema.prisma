@@ -415,3 +415,10 @@ model CompanyDailySnapshot {
   @@index([client_id])
   @@map("company_daily_snapshots")
 }
+
+model SecurityRateLimit {
+  key String @id
+  window_start DateTime @db.Timestamptz
+  attempts Int
+  @@map("security_rate_limits")
+}

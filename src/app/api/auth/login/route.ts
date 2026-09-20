@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     // Find user by username
     const user = await prisma.user.findUnique({
       where: { username: validatedData.username },
+      include: { client: { select: { is_active: true } } },
     });
 
     if (!user) {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user is active
-    if (!user.is_active) {
+    if (!user.is_active || !user.client.is_active) {
       return NextResponse.json({ error: "Account is disabled" }, { status: 403 });
     }
 

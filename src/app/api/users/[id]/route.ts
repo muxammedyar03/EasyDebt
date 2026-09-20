@@ -1,7 +1,8 @@
+import { takePinAttempt } from "@/lib/security/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getSession, setAuthCookie, signToken } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { Prisma } from "@prisma/client";
 
@@ -39,22 +40,29 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { id } = await params;
     const session = await getSession();
 
-    if (!session || session.role !== "SUPER_ADMIN") {
-      // allow user-level operations below that only affect their own user (verify/set/change)
-      // but for the generic updates below we keep SUPER_ADMIN protection as originally implemented
-    }
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = parseInt(id);
     const body = await request.json();
-    const clientId = session ? requireClientId(session) : null;
+    const clientId = requireClientId(session);
+    if (!Number.isSafeInteger(userId) || userId <= 0)
+      return NextResponse.json({ error: "Invalid user" }, { status: 400 });
 
     // PIN-specific actions (verify/set/change/reset)
     if (body?.action) {
       const action = body.action as string;
+      if (session.userId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (!["verify_pin", "set_pin", "change_pin", "reset_pin"].includes(action))
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+      if (!(await takePinAttempt(session.userId)))
+        return NextResponse.json(
+          { error: "Too many PIN attempts. Try again later." },
+          { status: 429, headers: { "Retry-After": "900" } },
+        );
 
       // Load target user
       const targetUser = await prisma.user.findFirst({
-        where: { id: userId, ...(session?.clientId ? { client_id: session.clientId } : {}) },
+        where: { id: userId, client_id: clientId, is_active: true },
         select: { id: true, pin: true, role: true },
       });
       if (!targetUser) {
@@ -63,7 +71,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       // verify_pin: check provided pin
       if (action === "verify_pin") {
-        if (!body.pin) return NextResponse.json({ error: "Pin kerak" }, { status: 400 });
+        if (typeof body.pin !== "string" || !/^\d{4,6}$/.test(body.pin))
+          return NextResponse.json({ error: "Pin kerak" }, { status: 400 });
         if (!targetUser.pin) return NextResponse.json({ error: "Pin o'rnatilmagan" }, { status: 400 });
         const ok = await bcrypt.compare(body.pin, targetUser.pin);
         if (!ok) return NextResponse.json({ error: "Pin noto'g'ri" }, { status: 401 });
@@ -87,7 +96,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           return NextResponse.json({ error: "Pin 4-6 raqam bo'lishi kerak" }, { status: 400 });
         }
         const hashed = await bcrypt.hash(pin, 10);
-        await prisma.user.update({ where: { id: userId }, data: { pin: hashed } });
+        const result = await prisma.user.updateMany({
+          where: { id: userId, client_id: clientId, pin: null },
+          data: { pin: hashed },
+        });
+        if (result.count !== 1) return NextResponse.json({ error: "PIN already set; use change PIN" }, { status: 409 });
+        await setAuthCookie(await signToken(session));
         return NextResponse.json({ ok: true });
       }
 
@@ -105,7 +119,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         if (!/^\d{4,6}$/.test(nextPin))
           return NextResponse.json({ error: "Yangi pin 4-6 raqam bo'lishi kerak" }, { status: 400 });
         const hashed = await bcrypt.hash(nextPin, 10);
-        await prisma.user.update({ where: { id: userId }, data: { pin: hashed } });
+        await prisma.user.update({ where: { id: userId, client_id: clientId }, data: { pin: hashed } });
+        await setAuthCookie(await signToken(session));
         return NextResponse.json({ ok: true });
       }
 
@@ -117,20 +132,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         if (!login || !password || !nextPin)
           return NextResponse.json({ error: "Login, parol va yangi pin kerak" }, { status: 400 });
         const authUser = await prisma.user.findFirst({
-          where: { OR: [{ username: login }, { email: login }] },
+          where: {
+            id: session.userId,
+            is_active: true,
+            client: { is_active: true },
+            OR: [{ username: login }, { email: login }],
+          },
           select: { id: true, password: true, role: true },
         });
         if (!authUser) return NextResponse.json({ error: "Login yoki parol noto'g'ri" }, { status: 401 });
         const passOk = await bcrypt.compare(password, authUser.password);
         if (!passOk) return NextResponse.json({ error: "Login yoki parol noto'g'ri" }, { status: 401 });
-        // allow reset if the credential owner is the same account or a SUPER_ADMIN
-        if (authUser.id !== userId && authUser.role !== "SUPER_ADMIN") {
+        // PIN reset is self-service after re-authentication; no cross-account bypass.
+        if (authUser.id !== userId) {
           return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
         }
         if (!/^\d{4,6}$/.test(nextPin))
           return NextResponse.json({ error: "Yangi pin 4-6 raqam bo'lishi kerak" }, { status: 400 });
         const hashed = await bcrypt.hash(nextPin, 10);
-        await prisma.user.update({ where: { id: userId }, data: { pin: hashed } });
+        await prisma.user.update({ where: { id: userId, client_id: clientId }, data: { pin: hashed } });
+        await setAuthCookie(await signToken(session));
         return NextResponse.json({ ok: true });
       }
 
@@ -162,7 +183,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       const bodyKeys = Object.keys(body).filter((key) => body[key] !== undefined);
       const hasOnlyActiveToggle = bodyKeys.length === 1 && bodyKeys[0] === "is_active";
 
-      if (!hasOnlyActiveToggle) {
+      if (!hasOnlyActiveToggle || typeof body.is_active !== "boolean" || userId === session.userId) {
         return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
       }
 
@@ -172,7 +193,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       const user = await prisma.user.update({
         where: { id: userId },
-        data: { is_active: Boolean(body.is_active) },
+        data: { is_active: body.is_active },
         select: {
           id: true,
           username: true,
@@ -263,7 +284,7 @@ export async function DELETE(
     }
 
     await prisma.user.delete({
-      where: { id: userId },
+      where: { id: userId, client_id: requireClientId(session) },
     });
 
     return NextResponse.json({ message: "Foydalanuvchi muvaffaqiyatli o'chirildi" }, { status: 200 });

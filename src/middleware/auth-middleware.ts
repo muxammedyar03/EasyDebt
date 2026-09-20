@@ -1,7 +1,7 @@
 import { jwtVerify } from "jose";
 import { NextResponse, type NextRequest } from "next/server";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
+import { getJwtKey } from "@/lib/security/secrets";
 
 export async function authMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -11,7 +11,7 @@ export async function authMiddleware(req: NextRequest) {
   let isAuthenticated = false;
   if (token) {
     try {
-      await jwtVerify(token, JWT_SECRET);
+      await jwtVerify(token, getJwtKey(), { algorithms: ["HS256"], audience: "easydebt-session" });
       isAuthenticated = true;
     } catch (error) {
       // Token is invalid, clear it
@@ -27,13 +27,7 @@ export async function authMiddleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  // Redirect authenticated users away from login
-  if (
-    isAuthenticated &&
-    pathname === "/auth/login"
-  ) {
-    return NextResponse.redirect(new URL("/dashboard/default", req.url));
-  }
-
+  // Login remains reachable with a revoked cookie. Authoritative session checks
+  // run on the server; Edge cannot check user/tenant status in PostgreSQL.
   return NextResponse.next();
 }

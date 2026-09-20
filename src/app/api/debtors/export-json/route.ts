@@ -18,6 +18,7 @@ type ExportPayment = {
   external_id: string;
   amount: number;
   payment_type: string;
+  resets_rating: boolean;
   note: string | null;
   created_at: string;
 };
@@ -101,6 +102,7 @@ export async function GET() {
           external_id: string;
           amount: { toNumber: () => number };
           payment_type: string;
+          resets_rating: boolean;
           note: string | null;
           created_at: Date;
         }[];
@@ -124,6 +126,7 @@ export async function GET() {
             external_id: payment.external_id,
             amount: payment.amount.toNumber(),
             payment_type: payment.payment_type,
+            resets_rating: payment.resets_rating,
             note: payment.note,
             created_at: payment.created_at.toISOString(),
           })),

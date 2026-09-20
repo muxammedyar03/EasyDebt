@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-import { getSession } from "@/lib/auth";
+import { getSession, signToken, setAuthCookie } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { prisma } from "@/lib/prisma";
 
@@ -51,6 +51,7 @@ export async function PUT(request: NextRequest) {
       data: { password: hashedPassword },
     });
 
+    await setAuthCookie(await signToken(session));
     return NextResponse.json({
       message: "Password changed successfully",
     });

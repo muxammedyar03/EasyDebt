@@ -32,7 +32,7 @@ import type {
   PaginatedResult,
   DebtorStats,
 } from "@/types/domain/debtor.domain";
-import { buildDebtorStats, calculatePaymentRating, calculateDebtorOverdueStatus } from "@/entities/debtor/model";
+import { buildDebtorStats, calculatePaymentRating, computeDebtorOverdueStatus } from "@/entities/debtor/model";
 import type {
   CustomerRatingDomain,
   CustomerRatingFilters,
@@ -86,18 +86,19 @@ export class DebtorService {
     )) as Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>[];
 
     return debtorsRaw.map((debtor) => {
-      const debtsWithPayments = debtor.debts.map((debt) => ({
-        amount: debt.amount.toNumber(),
-        createdAt: debt.created_at,
-        payments: debtor.payments
-          .filter((p) => p.created_at >= debt.created_at)
-          .map((p) => ({ amount: p.amount.toNumber(), createdAt: p.created_at })),
-      }));
-      const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
-        goodUntilDays: overdueDays - 15,
-        mediumUntilDays: overdueDays,
-        minPaidPercent: 0.5,
-      });
+      const overdueStatus = computeDebtorOverdueStatus(
+        debtor.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+        debtor.payments.map((p) => ({
+          amount: p.amount.toNumber(),
+          createdAt: p.created_at,
+          resetsRating: p.resets_rating,
+        })),
+        {
+          goodUntilDays: overdueDays - 15,
+          mediumUntilDays: overdueDays,
+          minPaidPercent: 0.5,
+        },
+      );
       return {
         ...debtor,
         total_debt: debtor.total_debt.toNumber(),
@@ -168,7 +169,7 @@ export class DebtorService {
     // Build orderBy
     const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
 
-    const { calculateDebtorOverdueStatus } = await import("@/entities/debtor/model");
+    const { computeDebtorOverdueStatus } = await import("@/entities/debtor/model");
 
     // Search path: substring match on name/address, phone by digits only (any part)
     if (filters?.search?.trim()) {
@@ -186,18 +187,19 @@ export class DebtorService {
       debtors.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
       const domainDebtors = debtors.map((d) => {
         const domainDebtor = prismaToDomainDebtor(d, settings);
-        const debtsWithPayments = d.debts.map((debt) => ({
-          amount: debt.amount.toNumber(),
-          createdAt: debt.created_at,
-          payments: d.payments
-            .filter((p) => p.created_at >= debt.created_at)
-            .map((p) => ({ amount: p.amount.toNumber(), createdAt: p.created_at })),
-        }));
-        const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
-          goodUntilDays: settings.overdueDays - 15,
-          mediumUntilDays: settings.overdueDays,
-          minPaidPercent: 0.5,
-        });
+        const overdueStatus = computeDebtorOverdueStatus(
+          d.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+          d.payments.map((p) => ({
+            amount: p.amount.toNumber(),
+            createdAt: p.created_at,
+            resetsRating: p.resets_rating,
+          })),
+          {
+            goodUntilDays: settings.overdueDays - 15,
+            mediumUntilDays: settings.overdueDays,
+            minPaidPercent: 0.5,
+          },
+        );
         return { ...domainDebtor, isOverdue: overdueStatus.isOverdue };
       });
       return {
@@ -226,22 +228,19 @@ export class DebtorService {
           const domainDebtor = prismaToDomainDebtor(d, settings);
 
           // Calculate isOverdue using the accurate function
-          const debtsWithPayments = d.debts.map((debt) => ({
-            amount: debt.amount.toNumber(),
-            createdAt: debt.created_at,
-            payments: d.payments
-              .filter((p) => p.created_at >= debt.created_at)
-              .map((p) => ({
-                amount: p.amount.toNumber(),
-                createdAt: p.created_at,
-              })),
-          }));
-
-          const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
-            goodUntilDays: settings.overdueDays - 15,
-            mediumUntilDays: settings.overdueDays,
-            minPaidPercent: 0.5,
-          });
+          const overdueStatus = computeDebtorOverdueStatus(
+            d.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+            d.payments.map((p) => ({
+              amount: p.amount.toNumber(),
+              createdAt: p.created_at,
+              resetsRating: p.resets_rating,
+            })),
+            {
+              goodUntilDays: settings.overdueDays - 15,
+              mediumUntilDays: settings.overdueDays,
+              minPaidPercent: 0.5,
+            },
+          );
 
           return {
             ...domainDebtor,
@@ -288,22 +287,19 @@ export class DebtorService {
       const domainDebtor = prismaToDomainDebtor(d, settings);
 
       // Calculate isOverdue using the accurate function
-      const debtsWithPayments = d.debts.map((debt) => ({
-        amount: debt.amount.toNumber(),
-        createdAt: debt.created_at,
-        payments: d.payments
-          .filter((p) => p.created_at >= debt.created_at)
-          .map((p) => ({
-            amount: p.amount.toNumber(),
-            createdAt: p.created_at,
-          })),
-      }));
-
-      const overdueStatus = calculateDebtorOverdueStatus(debtsWithPayments, {
-        goodUntilDays: settings.overdueDays - 15,
-        mediumUntilDays: settings.overdueDays,
-        minPaidPercent: 0.5,
-      });
+      const overdueStatus = computeDebtorOverdueStatus(
+        d.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+        d.payments.map((p) => ({
+          amount: p.amount.toNumber(),
+          createdAt: p.created_at,
+          resetsRating: p.resets_rating,
+        })),
+        {
+          goodUntilDays: settings.overdueDays - 15,
+          mediumUntilDays: settings.overdueDays,
+          minPaidPercent: 0.5,
+        },
+      );
 
       return {
         ...domainDebtor,

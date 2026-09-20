@@ -1,3 +1,5 @@
+import { refreshDebtorStatus } from "@/lib/security/refresh-debtor-status";
+import { serializableTransaction } from "@/lib/security/serializable";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -41,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const userId = session.userId;
 
     // Use transaction to update payment and recalculate debtor's total_debt
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await serializableTransaction(async (tx) => {
       // Get old payment info
       const oldPayment = await tx.payment.findFirst({
         where: { id: paymentId, client_id: clientId },
@@ -80,6 +82,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         });
       }
 
+      await refreshDebtorStatus(tx, clientId, oldPayment.debtor_id);
       return { updatedPayment, oldPayment };
     });
 

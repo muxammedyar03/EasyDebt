@@ -1,3 +1,4 @@
+import { ensureSecurityTables } from "./security-tables";
 import { enforceTenantRelations } from "./tenant-relations";
 import { PrismaClient } from "@prisma/client";
 import { createPrismaAdapter } from "./adapter";
@@ -100,6 +101,7 @@ export async function runCustomMigrations(prisma: PrismaClient) {
   // Fail migrate container if tenant backfill is incomplete (blocks app start)
   await assertClientTenantIntegrity(prisma);
   await enforceTenantRelations(prisma);
+  await ensureSecurityTables(prisma);
 
   console.log("✅ All custom migrations completed successfully!");
 }

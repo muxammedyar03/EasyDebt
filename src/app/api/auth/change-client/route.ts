@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       select: { id: true, name: true, slug: true, is_active: true },
     });
 
-    if (!client) {
+    if (!client || !client.is_active) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
