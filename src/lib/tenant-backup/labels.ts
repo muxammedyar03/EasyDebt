@@ -1,0 +1,17 @@
+export const backupTableLabels: Record<string, [string, string]> = {
+  users: ["Xodimlar", "Сотрудники"],
+  settings: ["Sozlamalar", "Настройки"],
+  debtors: ["Qarzdorlar", "Должники"],
+  debts: ["Qarzlar", "Долги"],
+  payments: ["Tolovlar", "Платежи"],
+  payment_reminders: ["Eslatmalar", "Напоминания"],
+  companies: ["Kompaniyalar", "Компании"],
+  company_debts: ["Kompaniya qarzlari", "Долги компаниям"],
+  company_payments: ["Kompaniya tolovlari", "Платежи компаниям"],
+  company_daily_snapshots: ["Kunlik tarix", "История по дням"],
+  notifications: ["Bildirishnomalar", "Уведомления"],
+  audit_logs: ["Audit tarixi", "Журнал аудита"],
+  import_history: ["Import tarixi", "История импорта"],
+  push_subscriptions: ["Qurilma obunalari", "Подписки устройств"],
+  user_push_preferences: ["Bildirishnoma sozlamalari", "Настройки уведомлений"],
+};
