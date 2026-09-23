@@ -95,7 +95,9 @@ export function createMigrationBuilder(name: string, adapter: MigrationAdapter):
     async commit() {
       await adapter.transaction(async (tx) => {
         // One connection and lock cover callback side effects, DDL and the tracking row.
-        await tx.query("SELECT pg_advisory_xact_lock(20260922, 1)");
+        // Prisma cannot deserialize PostgreSQL's void return type (P2010).
+        // Selecting an integer still evaluates and holds the transaction lock.
+        await tx.query("SELECT 1 AS lock_acquired FROM pg_advisory_xact_lock(20260922, 1)");
         const exists = await tx.query<{ name: string }>("SELECT name FROM _custom_migrations WHERE name = $1", [name]);
         if (exists.length) return;
         for (const step of sqls) {
