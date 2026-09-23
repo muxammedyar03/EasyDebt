@@ -4,7 +4,9 @@ import { CompanyPaymentService, PaymentConflictError } from "../company-payment.
 import { companyDailySnapshotService } from "../company-daily-snapshot.service";
 import { PaymentTypeDomain } from "@/types/domain/payment.domain";
 jest.mock("@/lib/prisma", () => ({ prisma: { $transaction: jest.fn() } }));
-jest.mock("../company-daily-snapshot.service", () => ({ companyDailySnapshotService: { refreshForDate: jest.fn() } }));
+jest.mock("../company-daily-snapshot.service", () => ({
+  companyDailySnapshotService: { refreshAffectedDates: jest.fn() },
+}));
 jest.mock("@/lib/mappers/company.mapper", () => ({ prismaToDomainCompanyPayment: (row: unknown) => row }));
 const input = {
   companyId: 2,
@@ -23,7 +25,7 @@ beforeEach(() => {
   committed = [];
   audits = 0;
   balance = 100;
-  (companyDailySnapshotService.refreshForDate as jest.Mock).mockResolvedValue({});
+  (companyDailySnapshotService.refreshAffectedDates as jest.Mock).mockResolvedValue({});
   (prisma.$transaction as jest.Mock).mockImplementation(async (fn) => {
     const rows = [...committed];
     let nextBalance = balance;
@@ -60,12 +62,12 @@ beforeEach(() => {
   });
 });
 it("snapshot failure rejects inside the transaction; retry creates only one payment and audit", async () => {
-  (companyDailySnapshotService.refreshForDate as jest.Mock).mockRejectedValueOnce(new Error("snapshot failed"));
+  (companyDailySnapshotService.refreshAffectedDates as jest.Mock).mockRejectedValueOnce(new Error("snapshot failed"));
   await expect(service.create(1, input)).rejects.toThrow("snapshot failed");
   expect(committed).toHaveLength(0);
   expect(balance).toBe(100);
   expect(audits).toBe(0);
-  expect(companyDailySnapshotService.refreshForDate).toHaveBeenLastCalledWith(1, expect.any(Date), currentTx);
+  expect(companyDailySnapshotService.refreshAffectedDates).toHaveBeenLastCalledWith(1, expect.any(Date), currentTx);
   await service.create(1, input);
   await service.create(1, input);
   expect(committed).toHaveLength(1);

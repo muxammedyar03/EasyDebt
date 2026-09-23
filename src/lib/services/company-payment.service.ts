@@ -126,7 +126,7 @@ export class CompanyPaymentService {
             description: `Company payment ${payment.id}`,
           },
         });
-        await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+        await companyDailySnapshotService.refreshAffectedDates(clientId, payment.created_at, tx);
         return payment;
       });
     let result;
@@ -171,7 +171,7 @@ export class CompanyPaymentService {
         });
       }
 
-      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+      await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
       return payment;
     });
 
@@ -194,7 +194,7 @@ export class CompanyPaymentService {
         data: { total_debt: { increment: existing.amount } },
       });
 
-      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+      await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
       return existing;
     });
 

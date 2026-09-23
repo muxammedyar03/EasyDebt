@@ -46,7 +46,7 @@ export class CompanyDebtService {
         },
       });
 
-      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+      await companyDailySnapshotService.refreshAffectedDates(clientId, debt.created_at, tx);
       return debt;
     });
 
@@ -79,7 +79,7 @@ export class CompanyDebtService {
         });
       }
 
-      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+      await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
       return debt;
     });
 
@@ -98,7 +98,7 @@ export class CompanyDebtService {
         where: { id: existing.company_id },
         data: { total_debt: { decrement: existing.amount } },
       });
-      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+      await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
     });
   }
 }
