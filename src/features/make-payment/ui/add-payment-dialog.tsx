@@ -50,6 +50,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [resetRating, setResetRating] = React.useState(false);
   const refreshAfterCloseRef = React.useRef(false);
+  const pendingRequest = React.useRef<{ payload: string; key: string } | null>(null);
 
   const {
     register,
@@ -71,17 +72,23 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
   };
 
   const onSubmit = async (data: AddPaymentFormData) => {
+    if (isLoading) return;
     setIsLoading(true);
     try {
       const cleanAmount = data.amount.replace(/\s/g, "");
-      const result = await createPayment({
+      const payload = {
         debtor_id: debtorId,
         amount: parseFloat(cleanAmount),
         payment_type: data.payment_type,
         note: data.note || null,
         resets_rating: resetRating,
         created_at: DEV_MODE && selectedDate ? selectedDate.toISOString() : undefined,
-      });
+      };
+      const fingerprint = JSON.stringify(payload);
+      if (pendingRequest.current?.payload !== fingerprint)
+        pendingRequest.current = { payload: fingerprint, key: crypto.randomUUID() };
+      const result = await createPayment({ ...payload, idempotencyKey: pendingRequest.current.key });
+      pendingRequest.current = null;
 
       const response = result as Record<string, unknown> | undefined;
       const receiptInfo =
