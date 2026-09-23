@@ -29,6 +29,7 @@ export function QuickAddPayment({
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const refreshAfterCloseRef = React.useRef(false);
+  const pendingRequest = React.useRef<{ payload: string; key: string } | null>(null);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -36,15 +37,21 @@ export function QuickAddPayment({
   });
 
   const onSubmit = async (data: PaymentFormValues) => {
+    if (isLoading) return;
     setIsLoading(true);
     try {
       const cleanAmount = data.amount.replace(/\s/g, "");
-      await createPayment({
+      const payload = {
         debtor_id: debtorId,
         amount: parseFloat(cleanAmount),
         payment_type: data.payment_type,
         note: data.note || null,
-      });
+      };
+      const fingerprint = JSON.stringify(payload);
+      if (pendingRequest.current?.payload !== fingerprint)
+        pendingRequest.current = { payload: fingerprint, key: crypto.randomUUID() };
+      await createPayment({ ...payload, idempotencyKey: pendingRequest.current.key });
+      pendingRequest.current = null;
 
       toast.success("To'lov muvaffaqiyatli qo'shildi");
       form.reset();

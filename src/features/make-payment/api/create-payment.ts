@@ -5,12 +5,16 @@ export type CreatePaymentPayload = {
   note?: string | null;
   resets_rating?: boolean;
   created_at?: string;
+  idempotencyKey?: string;
 };
 
 export async function createPayment(payload: CreatePaymentPayload): Promise<unknown> {
   const response = await fetch("/api/payments", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(payload.idempotencyKey ? { "Idempotency-Key": payload.idempotencyKey } : {}),
+    },
     body: JSON.stringify(payload),
   });
 

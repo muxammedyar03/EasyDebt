@@ -7,8 +7,12 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import {
+  debtorPaymentRequestId,
+  PaymentRequestConflictError,
+  samePaymentRequest,
+} from "@/lib/security/payment-request";
 
 const createPaymentSchema = z.object({
   debtor_id: z.number(),
@@ -30,78 +34,124 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = createPaymentSchema.parse(body);
-
     const userId = session.userId;
+    const idempotencyKey = z
+      .string()
+      .uuid()
+      .optional()
+      .parse(request.headers.get("idempotency-key") ?? undefined);
+    const externalId = idempotencyKey ? debtorPaymentRequestId(clientId, userId, idempotencyKey) : undefined;
+    const note = validatedData.note || null;
+    const resetsRating = validatedData.resets_rating ?? false;
+    const createdAt =
+      validatedData.created_at && process.env.NODE_ENV === "development"
+        ? z.coerce.date().parse(validatedData.created_at)
+        : undefined;
 
-    // Use transaction to create payment and update debtor's total_debt
-    const result = await serializableTransaction(async (tx) => {
-      // Get current debtor to check debt amount
-      const debtor = await tx.debtor.findFirst({
-        where: { id: validatedData.debtor_id, client_id: clientId },
-      });
-
-      if (!debtor) {
-        throw new Error("Qarzdor topilmadi");
-      }
-
-      // Create payment record
-      const payment = await tx.payment.create({
-        data: {
-          debtor_id: validatedData.debtor_id,
-          client_id: clientId,
-          amount: validatedData.amount,
-          payment_type: validatedData.payment_type,
-          note: validatedData.note || null,
-          resets_rating: validatedData.resets_rating ?? false,
-          created_by: userId,
-          ...(validatedData.created_at && process.env.NODE_ENV === "development"
-            ? { created_at: new Date(validatedData.created_at) }
-            : {}),
-        },
-      });
-
-      // Update debtor's total_debt (decrease) and payment date
-      await tx.debtor.update({
-        where: { id: validatedData.debtor_id },
-        data: {
-          total_debt: {
-            decrement: validatedData.amount,
-          },
-          last_payment_date: new Date(),
-        },
-      });
-
-      const updatedDebtor = await refreshDebtorStatus(tx, clientId, debtor.id);
-      return { payment, debtor, updatedDebtor };
-    });
-
-    // Get user info for description
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const user = await prisma.user.findFirst({
+      where: { id: userId, client_id: clientId },
       select: { first_name: true, last_name: true, username: true },
     });
-
+    if (!user) return NextResponse.json({ error: "Foydalanuvchi topilmadi" }, { status: 401 });
     const userFullName =
-      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
+      user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username || "Foydalanuvchi";
 
-    const debtorFullName = `${result.debtor.first_name} ${result.debtor.last_name}`;
-    const formattedAmount = validatedData.amount.toLocaleString("uz-UZ");
-    const description = `${userFullName} qarzdor ${debtorFullName} dan ${formattedAmount} so'm miqdorda ${validatedData.payment_type == "CASH" ? "naqd usulda" : validatedData.payment_type == "CLICK" ? "click orqali" : "karta orqali"} to'lov qabul qildi`;
+    const execute = () =>
+      serializableTransaction(async (tx) => {
+        if (externalId) {
+          const existing = await tx.payment.findFirst({
+            where: { external_id: externalId, client_id: clientId },
+            include: { debtor: true },
+          });
+          if (existing) {
+            if (
+              !samePaymentRequest(existing, {
+                debtorId: validatedData.debtor_id,
+                amount: validatedData.amount,
+                paymentType: validatedData.payment_type,
+                note,
+                resetsRating,
+                createdAt,
+              })
+            )
+              throw new PaymentRequestConflictError("Bu request kaliti boshqa to'lov uchun ishlatilgan");
+            const audit = await tx.auditLog.findFirst({
+              where: { client_id: clientId, entity_type: "PAYMENT", entity_id: existing.id, action: "UPDATE" },
+            });
+            const receipt = audit?.new_value as { previousBalance?: number; newBalance?: number } | null;
+            if (receipt?.previousBalance === undefined || receipt.newBalance === undefined)
+              throw new Error("To'lov cheki topilmadi");
+            return { payment: existing, debtor: existing.debtor, receipt };
+          }
+        }
+        // Get current debtor to check debt amount
+        const debtor = await tx.debtor.findFirst({
+          where: { id: validatedData.debtor_id, client_id: clientId },
+        });
 
-    // Create audit log
-    await createAuditLog({
-      clientId,
-      userId,
-      action: "UPDATE",
-      entityType: "PAYMENT",
-      entityId: result.payment.id,
-      newValue: {
-        debtor_id: validatedData.debtor_id,
-        amount: validatedData.amount,
-        payment_type: validatedData.payment_type,
-      },
-      description,
-    });
+        if (!debtor) {
+          throw new Error("Qarzdor topilmadi");
+        }
+
+        // Create payment record
+        const payment = await tx.payment.create({
+          data: {
+            debtor_id: validatedData.debtor_id,
+            ...(externalId ? { external_id: externalId } : {}),
+            client_id: clientId,
+            amount: validatedData.amount,
+            payment_type: validatedData.payment_type,
+            note,
+            resets_rating: resetsRating,
+            created_by: userId,
+            ...(createdAt ? { created_at: createdAt } : {}),
+          },
+        });
+
+        // Update debtor's total_debt (decrease) and payment date
+        await tx.debtor.update({
+          where: { id: validatedData.debtor_id },
+          data: {
+            total_debt: {
+              decrement: validatedData.amount,
+            },
+            last_payment_date: new Date(),
+          },
+        });
+
+        const updatedDebtor = await refreshDebtorStatus(tx, clientId, debtor.id);
+        const receipt = {
+          previousBalance: debtor.total_debt.toNumber(),
+          newBalance: updatedDebtor.total_debt.toNumber(),
+        };
+        const debtorFullName = `${debtor.first_name} ${debtor.last_name}`;
+        const formattedAmount = validatedData.amount.toLocaleString("uz-UZ");
+        await tx.auditLog.create({
+          data: {
+            client_id: clientId,
+            user_id: userId,
+            action: "UPDATE",
+            entity_type: "PAYMENT",
+            entity_id: payment.id,
+            new_value: {
+              debtor_id: validatedData.debtor_id,
+              amount: validatedData.amount,
+              payment_type: validatedData.payment_type,
+              ...receipt,
+            },
+            description: `${userFullName} qarzdor ${debtorFullName} dan ${formattedAmount} so'm miqdorda ${validatedData.payment_type === "CASH" ? "naqd usulda" : validatedData.payment_type === "CLICK" ? "click orqali" : "karta orqali"} to'lov qabul qildi`,
+          },
+        });
+        return { payment, debtor, receipt };
+      });
+    let result;
+    try {
+      result = await execute();
+    } catch (error) {
+      if (!externalId || !(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002")
+        throw error;
+      result = await execute();
+    }
 
     // Revalidate pages that display debtor data
     revalidatePath("/dashboard/debtors");
@@ -117,8 +167,7 @@ export async function POST(request: NextRequest) {
               : value,
           ),
         ),
-        previousBalance: result.debtor.total_debt.toNumber(),
-        newBalance: result.updatedDebtor.total_debt.toNumber(),
+        ...result.receipt,
         debtorName: `${result.debtor.first_name} ${result.debtor.last_name}`,
         debtorPhone: result.debtor.phone_number,
         employeeName: userFullName,
@@ -126,23 +175,18 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof PaymentRequestConflictError)
+      return NextResponse.json({ error: error.message }, { status: 409 });
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }
 
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    if (error instanceof Error && error.message === "Qarzdor topilmadi")
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003")
+      return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
 
     console.error("Error creating payment:", error);
-
-    if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string; meta?: Prisma.PrismaClientKnownRequestError };
-
-      if (prismaError.code === "P2003") {
-        return NextResponse.json({ error: "Qarzdor topilmadi" }, { status: 404 });
-      }
-    }
 
     return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
