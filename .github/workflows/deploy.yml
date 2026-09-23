@@ -135,7 +135,7 @@ jobs:
             MIGRATE_IMAGE="ghcr.io/muxammedyar03/easydebt:migrate-$IMAGE_TAG"
 
             echo "🔐 Logging in to GHCR..."
-            docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
             echo "📥 Pulling latest compose/env..."
             git diff --quiet && git diff --cached --quiet
@@ -163,13 +163,29 @@ jobs:
             pull_with_retry "$IMAGE_FULL"
 
             pull_with_retry "$MIGRATE_IMAGE"
-            trap 'docker start feat_debt_app >/dev/null 2>&1 || true' ERR
+            on_deploy_error() {
+              echo "Deploy failed. Migration logs:" >&2
+              docker logs --tail=150 feat_debt_migrate 2>&1 || true
+              echo "App state:" >&2
+              docker inspect --format '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' feat_debt_app 2>&1 || true
+              docker start feat_debt_app >/dev/null 2>&1 || true
+            }
+            trap on_deploy_error ERR
 
             echo "Preserving existing receipt files before mounting persistent storage..."
             bash scripts/deploy/prepare-receipts.sh "$IMAGE_FULL"
 
-            echo "🚀 Migrate + app qayta yaratiladi..."
-            docker compose -f docker-compose.prod.yml up -d --force-recreate migrate app
+            echo "🚀 Running migrations before replacing the app..."
+            docker compose -f docker-compose.prod.yml up -d --force-recreate migrate
+            migrate_exit=$(docker wait feat_debt_migrate)
+            if [ "$migrate_exit" != 0 ]; then
+              echo "Migration container exited with status $migrate_exit" >&2
+              on_deploy_error
+              exit 1
+            fi
+
+            echo "Recreating the app after successful migrations..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate app
 
             echo "Waiting for application readiness..."
             ready=false
@@ -181,6 +197,7 @@ jobs:
             if [ "$ready" != true ]; then
               echo "Application did not become healthy" >&2
               docker compose -f docker-compose.prod.yml logs --tail=50 app
+              on_deploy_error
               exit 1
             fi
 
