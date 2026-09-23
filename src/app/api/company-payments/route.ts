@@ -4,16 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
-import { companyPaymentService } from "@/lib/services/company-payment.service";
+import { PaymentConflictError, companyPaymentService } from "@/lib/services/company-payment.service";
 import { companyService } from "@/lib/services/company.service";
 import { createCompanyPaymentApiSchema } from "@/lib/validation/company-payment";
-import { saveCompanyReceipt } from "@/lib/companies/receipt-storage";
-import { buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
+import { saveCompanyReceipt, deleteCompanyReceiptFile } from "@/lib/companies/receipt-storage";
 import { PaymentTypeDomain } from "@/types/domain/payment.domain";
 
 export async function POST(request: NextRequest) {
+  let uploadedPath: string | undefined;
+  let paymentCommitted = false;
   try {
     const session = await getSession();
     if (!session) {
@@ -21,6 +21,11 @@ export async function POST(request: NextRequest) {
     }
 
     const clientId = requireClientId(session);
+    const idempotencyKey = z
+      .string()
+      .uuid()
+      .optional()
+      .parse(request.headers.get("idempotency-key") ?? undefined);
 
     const contentType = request.headers.get("content-type") || "";
     let companyId: number;
@@ -50,6 +55,7 @@ export async function POST(request: NextRequest) {
       const file = form.get("receipt");
       if (file instanceof File && file.size > 0) {
         const saved = await saveCompanyReceipt(file);
+        uploadedPath = saved.receiptPath;
         receiptMeta = {
           receiptPath: saved.receiptPath,
           receiptName: saved.receiptName,
@@ -68,11 +74,13 @@ export async function POST(request: NextRequest) {
 
     const company = await companyService.findById(clientId, companyId, false);
     if (!company) {
+      await deleteCompanyReceiptFile(uploadedPath);
       return NextResponse.json({ error: "Kompaniya topilmadi" }, { status: 404 });
     }
 
     const payment = await companyPaymentService.create(clientId, {
       companyId,
+      idempotencyKey,
       amount,
       paymentType: PaymentTypeDomain[paymentType],
       note,
@@ -80,41 +88,15 @@ export async function POST(request: NextRequest) {
       ...receiptMeta,
     });
 
-    if (receiptMeta.receiptPath) {
-      const receiptName = buildCompanyReceiptFileName({
-        companyName: company.name,
-        paymentId: payment.id,
-        date: payment.createdAt,
-        mime: receiptMeta.receiptMime,
-        receiptPath: receiptMeta.receiptPath,
-      });
-      await companyPaymentService.update(clientId, payment.id, { receiptName });
-      payment.receiptName = receiptName;
-    }
-
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "CREATE",
-      entityType: "COMPANY_PAYMENT",
-      entityId: payment.id,
-      newValue: {
-        company_id: companyId,
-        amount,
-        payment_type: paymentType,
-        note,
-        has_receipt: Boolean(receiptMeta.receiptPath),
-      },
-      description: `${company.name} ga ${amount.toLocaleString("uz-UZ")} so'm to'lov qilindi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
-
+    paymentCommitted = true;
+    if (uploadedPath && payment.receiptPath !== uploadedPath) await deleteCompanyReceiptFile(uploadedPath);
     revalidatePath("/dashboard/my-debts");
     revalidatePath(`/dashboard/my-debts/${company.externalId}`);
 
     return NextResponse.json(payment, { status: 201 });
   } catch (error) {
+    if (!paymentCommitted) await deleteCompanyReceiptFile(uploadedPath);
+    if (error instanceof PaymentConflictError) return NextResponse.json({ error: error.message }, { status: 409 });
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }

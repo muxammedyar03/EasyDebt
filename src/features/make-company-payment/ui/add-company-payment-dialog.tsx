@@ -41,6 +41,8 @@ export function AddCompanyPaymentDialog({
   onSuccess,
 }: AddCompanyPaymentDialogProps) {
   const router = useRouter();
+  const pendingRequest = React.useRef<{ key: string; fingerprint: string; receipt: File | null } | null>(null);
+  const submitting = React.useRef(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
   const [receipt, setReceipt] = React.useState<File | null>(null);
@@ -61,15 +63,26 @@ export function AddCompanyPaymentDialog({
   const paymentType = watch("payment_type");
 
   const onSubmit = async (data: AddCompanyPaymentFormData) => {
+    if (submitting.current) return;
+    submitting.current = true;
     setIsLoading(true);
     try {
+      const fingerprint = JSON.stringify([companyId, data.amount, data.payment_type, data.note]);
+      if (
+        !pendingRequest.current ||
+        pendingRequest.current.fingerprint !== fingerprint ||
+        pendingRequest.current.receipt !== receipt
+      )
+        pendingRequest.current = { key: crypto.randomUUID(), fingerprint, receipt };
       await createCompanyPayment({
+        idempotencyKey: pendingRequest.current.key,
         company_id: companyId,
         amount: parseFloat(data.amount.replace(/\s/g, "")),
         payment_type: data.payment_type,
         note: data.note?.trim() || null,
         receipt,
       });
+      pendingRequest.current = null;
       toast.success("To'lov qo'shildi");
       reset({ payment_type: "CASH" });
       setAmount("");
@@ -85,6 +98,7 @@ export function AddCompanyPaymentDialog({
     } catch (error) {
       toast.error(getErrorMessage(error, "To'lov qo'shishda xatolik"));
     } finally {
+      submitting.current = false;
       setIsLoading(false);
     }
   };

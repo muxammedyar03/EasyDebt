@@ -2,10 +2,9 @@
  * SERVICE - Company daily snapshots & day activity history
  */
 
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { companyDailySnapshotRepository } from "@/entities/company-daily-snapshot/api";
-import { companyRepository } from "@/entities/company/api";
 import { companyDebtRepository } from "@/entities/company-debt/api";
 import { companyPaymentRepository } from "@/entities/company-payment/api";
 import { prismaToDomainCompanyDailySnapshot } from "@/lib/mappers/company.mapper";
@@ -91,26 +90,45 @@ export class CompanyDailySnapshotService {
   /**
    * Recompute and upsert today's (or given day's) snapshot from live aggregates.
    */
-  async refreshForDate(clientId: number, date: Date = new Date()): Promise<CompanyDailySnapshotDomain> {
+  async refreshForDate(
+    clientId: number,
+    date: Date = new Date(),
+    tx: Prisma.TransactionClient = prisma,
+  ): Promise<CompanyDailySnapshotDomain> {
     const snapshotDate = toSnapshotDate(date);
     const range = dayRange(date);
-
-    const [outstanding, debtsAgg, debtsCount, paymentsAgg, paymentsCount] = await Promise.all([
-      companyRepository.aggregate({ client_id: clientId }),
-      companyDebtRepository.aggregate({ client_id: clientId, created_at: range }),
-      companyDebtRepository.count({ client_id: clientId, created_at: range }),
-      companyPaymentRepository.aggregate({ client_id: clientId, created_at: range }),
-      companyPaymentRepository.count({ client_id: clientId, created_at: range }),
+    const [debts, payments, dailyDebts, dailyPayments] = await Promise.all([
+      tx.companyDebt.aggregate({
+        where: { client_id: clientId, created_at: { lte: range.lte } },
+        _sum: { amount: true },
+      }),
+      tx.companyPayment.aggregate({
+        where: { client_id: clientId, created_at: { lte: range.lte } },
+        _sum: { amount: true },
+      }),
+      tx.companyDebt.aggregate({
+        where: { client_id: clientId, created_at: range },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      tx.companyPayment.aggregate({
+        where: { client_id: clientId, created_at: range },
+        _sum: { amount: true },
+        _count: true,
+      }),
     ]);
-
-    const row = await companyDailySnapshotRepository.upsertByDate(clientId, snapshotDate, {
-      total_outstanding_debt: outstanding._sum.total_debt?.toNumber() ?? 0,
-      debts_sum: debtsAgg._sum.amount?.toNumber() ?? 0,
-      debts_count: debtsCount,
-      payments_sum: paymentsAgg._sum.amount?.toNumber() ?? 0,
-      payments_count: paymentsCount,
+    const data = {
+      total_outstanding_debt: new Prisma.Decimal(debts._sum.amount ?? 0).minus(payments._sum.amount ?? 0),
+      debts_sum: dailyDebts._sum.amount ?? new Prisma.Decimal(0),
+      debts_count: dailyDebts._count,
+      payments_sum: dailyPayments._sum.amount ?? new Prisma.Decimal(0),
+      payments_count: dailyPayments._count,
+    };
+    const row = await tx.companyDailySnapshot.upsert({
+      where: { client_id_date: { client_id: clientId, date: snapshotDate } },
+      create: { client_id: clientId, date: snapshotDate, ...data },
+      update: data,
     });
-
     return prismaToDomainCompanyDailySnapshot(row);
   }
 

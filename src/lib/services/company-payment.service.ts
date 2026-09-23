@@ -1,3 +1,18 @@
+import { createHash } from "crypto";
+import { readFile } from "fs/promises";
+import { getCompanyReceiptAbsolutePath } from "@/lib/companies/receipt-storage";
+import { buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
+
+export class PaymentConflictError extends Error {}
+function paymentRequestId(clientId: number, userId: number, key: string) {
+  const hex = createHash("sha256").update(`company-payment:${clientId}:${userId}:${key}`).digest("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+async function receiptDigest(receiptPath: string) {
+  return createHash("sha256")
+    .update(await readFile(getCompanyReceiptAbsolutePath(receiptPath)))
+    .digest("hex");
+}
 import { serializableTransaction } from "@/lib/security/serializable";
 /**
  * SERVICE - CompanyPayment create/update with company total_debt sync
@@ -28,40 +43,101 @@ export class CompanyPaymentService {
   }
 
   async create(clientId: number, input: CreateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
-    const result = await serializableTransaction(async (tx) => {
-      const company = await tx.company.findFirst({ where: { id: input.companyId, client_id: clientId } });
-      if (!company) {
-        throw new Error("Kompaniya topilmadi");
-      }
+    const externalId = input.idempotencyKey
+      ? paymentRequestId(clientId, input.createdBy, input.idempotencyKey)
+      : undefined;
+    const execute = () =>
+      serializableTransaction(async (tx) => {
+        if (externalId) {
+          const existing = await tx.companyPayment.findFirst({
+            where: { external_id: externalId, client_id: clientId },
+          });
+          if (existing) {
+            if (
+              existing.company_id !== input.companyId ||
+              !existing.amount.equals(input.amount) ||
+              existing.payment_type !== input.paymentType ||
+              existing.note !== (input.note?.trim() || null) ||
+              Boolean(existing.receipt_path) !== Boolean(input.receiptPath) ||
+              (existing.receipt_path &&
+                input.receiptPath &&
+                (await receiptDigest(existing.receipt_path)) !== (await receiptDigest(input.receiptPath)))
+            )
+              throw new PaymentConflictError("Bu request kaliti boshqa tolov uchun ishlatilgan");
+            return existing;
+          }
+        }
+        const company = await tx.company.findFirst({ where: { id: input.companyId, client_id: clientId } });
+        if (!company) {
+          throw new Error("Kompaniya topilmadi");
+        }
 
-      const payment = await tx.companyPayment.create({
-        data: {
-          company_id: input.companyId,
-          client_id: clientId,
-          amount: input.amount,
-          payment_type: input.paymentType as PaymentType,
-          note: input.note?.trim() || null,
-          receipt_path: input.receiptPath ?? null,
-          receipt_name: input.receiptName ?? null,
-          receipt_mime: input.receiptMime ?? null,
-          receipt_size: input.receiptSize ?? null,
-          created_by: input.createdBy,
-        },
+        let payment = await tx.companyPayment.create({
+          data: {
+            ...(externalId ? { external_id: externalId } : {}),
+            company_id: input.companyId,
+            client_id: clientId,
+            amount: input.amount,
+            payment_type: input.paymentType as PaymentType,
+            note: input.note?.trim() || null,
+            receipt_path: input.receiptPath ?? null,
+            receipt_name: input.receiptName ?? null,
+            receipt_mime: input.receiptMime ?? null,
+            receipt_size: input.receiptSize ?? null,
+            created_by: input.createdBy,
+          },
+        });
+
+        await tx.company.update({
+          where: { id: input.companyId },
+          data: {
+            total_debt: { decrement: input.amount },
+            last_payment_date: new Date(),
+            is_overdue: false,
+          },
+        });
+
+        if (payment.receipt_path) {
+          payment = await tx.companyPayment.update({
+            where: { id: payment.id },
+            data: {
+              receipt_name: buildCompanyReceiptFileName({
+                companyName: company.name,
+                paymentId: payment.id,
+                date: payment.created_at,
+                mime: payment.receipt_mime,
+                receiptPath: payment.receipt_path,
+              }),
+            },
+          });
+        }
+        await tx.auditLog.create({
+          data: {
+            client_id: clientId,
+            user_id: input.createdBy,
+            action: "CREATE",
+            entity_type: "COMPANY_PAYMENT",
+            entity_id: payment.id,
+            new_value: {
+              company_id: input.companyId,
+              amount: new Prisma.Decimal(input.amount).toString(),
+              payment_type: input.paymentType,
+            },
+            description: `Company payment ${payment.id}`,
+          },
+        });
+        await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
+        return payment;
       });
-
-      await tx.company.update({
-        where: { id: input.companyId },
-        data: {
-          total_debt: { decrement: input.amount },
-          last_payment_date: new Date(),
-          is_overdue: false,
-        },
-      });
-
-      return payment;
-    });
-
-    await companyDailySnapshotService.refreshForDate(clientId, new Date());
+    let result;
+    try {
+      result = await execute();
+    } catch (error) {
+      // Concurrent requests can race on the unique external ID; reread the winner after rollback.
+      if (!externalId || !(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002")
+        throw error;
+      result = await execute();
+    }
     return prismaToDomainCompanyPayment(result);
   }
 
@@ -95,10 +171,10 @@ export class CompanyPaymentService {
         });
       }
 
+      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
       return payment;
     });
 
-    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyPayment(result);
   }
 
@@ -118,10 +194,10 @@ export class CompanyPaymentService {
         data: { total_debt: { increment: existing.amount } },
       });
 
+      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
       return existing;
     });
 
-    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyPayment(result);
   }
 
