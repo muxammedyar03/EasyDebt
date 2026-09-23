@@ -7,7 +7,15 @@ import type { PrismaClient } from "@prisma/client";
 const database = new PGlite();
 function client(db: { query: PGlite["query"]; exec: PGlite["exec"] }) {
   return {
-    $queryRawUnsafe: async (sql: string, ...params: unknown[]) => (await db.query(sql, params)).rows,
+    $queryRawUnsafe: async (sql: string, ...params: unknown[]) => {
+      const result = await db.query(sql, params);
+      // Prisma 5 rejects PG type 2278 (void); PGlite itself accepts it.
+      assert.ok(
+        result.fields.every((field) => field.dataTypeID !== 2278),
+        "Prisma cannot deserialize void",
+      );
+      return result.rows;
+    },
     $executeRawUnsafe: async (sql: string) => {
       await db.exec(sql);
     },
