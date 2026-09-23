@@ -26,13 +26,8 @@ COPY prisma ./prisma
 COPY scripts ./scripts
 COPY src/lib/migrations ./src/lib/migrations
 COPY tsconfig.json ./
-# To'liq npm ci emas — migrate image ~400MB+ bo'lmasligi uchun minimal paketlar
-RUN npm install --prefer-offline --no-audit --no-fund \
-    prisma@5.19.1 \
-    @prisma/client@5.19.1 \
-    tsx@4.7.0 \
-    typescript@5.9.3 \
-  && npx prisma generate
+# Use the exact lockfile-resolved Prisma/toolchain already installed by deps.
+COPY --from=deps /app/node_modules ./node_modules
 
 # ---- Builder ----
 FROM base AS builder
@@ -73,6 +68,8 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/package.json ./package.json
 # Build commit (CI da yoziladi) — /api/version tekshirish uchun
 COPY --from=builder /app/.build-sha ./.build-sha
+
+RUN mkdir -p /app/uploads/company-receipts && chown -R nextjs:nextjs /app/uploads
 
 USER nextjs
 EXPOSE 3000

@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: easydebt-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   # Docker image names must be lowercase (e.g. EasyDebt -> easydebt)
@@ -92,14 +96,14 @@ jobs:
           platforms: linux/amd64
 
       - name: Build and push Docker image (migrate)
-        if: github.event_name == 'push' && steps.migrate_check.outputs.changed == 'true'
+        if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           target: migration
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate-${{ github.sha }}
           cache-from: |
             type=gha,scope=migrate-cache
           cache-to: type=gha,mode=max,scope=migrate-cache
@@ -128,13 +132,15 @@ jobs:
             export IMAGE_TAG=${{ github.sha }}
             export MIGRATE_CHANGED=${{ needs.build.outputs.migrate_changed }}
             IMAGE_FULL="ghcr.io/muxammedyar03/easydebt:$IMAGE_TAG"
-            MIGRATE_IMAGE="ghcr.io/muxammedyar03/easydebt:migrate"
+            MIGRATE_IMAGE="ghcr.io/muxammedyar03/easydebt:migrate-$IMAGE_TAG"
 
             echo "🔐 Logging in to GHCR..."
             docker login ghcr.io -u ${{ github.actor }} -p "${{ secrets.GITHUB_TOKEN }}"
 
             echo "📥 Pulling latest compose/env..."
-            git pull origin main --no-edit || true
+            git diff --quiet && git diff --cached --quiet
+            git fetch origin main
+            git checkout --detach "$IMAGE_TAG"
 
             pull_with_retry() {
               local image="$1"
@@ -156,22 +162,27 @@ jobs:
             echo "📦 Pulling app image (commit $IMAGE_TAG)..."
             pull_with_retry "$IMAGE_FULL"
 
-            if [ "$MIGRATE_CHANGED" = "true" ]; then
-              echo "📦 Migration files changed — pulling migrate image..."
-              pull_with_retry "$MIGRATE_IMAGE"
-            else
-              echo "⏭️  Migration files unchanged — skipping migrate pull (local image is used)"
-              if ! docker image inspect "$MIGRATE_IMAGE" >/dev/null 2>&1; then
-                echo "⚠️  Local migrate image missing — pulling once..."
-                pull_with_retry "$MIGRATE_IMAGE"
-              fi
-            fi
+            pull_with_retry "$MIGRATE_IMAGE"
+            trap 'docker start feat_debt_app >/dev/null 2>&1 || true' ERR
+
+            echo "Preserving existing receipt files before mounting persistent storage..."
+            bash scripts/deploy/prepare-receipts.sh "$IMAGE_FULL"
 
             echo "🚀 Migrate + app qayta yaratiladi..."
             docker compose -f docker-compose.prod.yml up -d --force-recreate migrate app
 
-            echo "⏳ Waiting for app (5s)..."
-            sleep 5
+            echo "Waiting for application readiness..."
+            ready=false
+            for attempt in $(seq 1 40); do
+              state=$(docker inspect --format '{{.State.Health.Status}}' feat_debt_app 2>/dev/null || echo missing)
+              if [ "$state" = healthy ]; then ready=true; break; fi
+              sleep 3
+            done
+            if [ "$ready" != true ]; then
+              echo "Application did not become healthy" >&2
+              docker compose -f docker-compose.prod.yml logs --tail=50 app
+              exit 1
+            fi
 
             echo "📊 Container status:"
             docker compose -f docker-compose.prod.yml ps
@@ -181,5 +192,4 @@ jobs:
 
             echo "✅ Deployment complete!"
 
-            echo "🧹 Cleanup in background (non-blocking)..."
-            (docker container prune -f && docker image prune -af --filter "until=24h" && docker builder prune -af) &
+            # Keep previous images for rollback; never prune other projects globally.
