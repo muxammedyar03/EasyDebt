@@ -93,44 +93,18 @@ export function createMigrationBuilder(name: string, adapter: MigrationAdapter):
     },
 
     async commit() {
-      // Check if migration already executed
-      const exists = await adapter.one<{ name: string }>(`SELECT name FROM _custom_migrations WHERE name = '${name}'`);
-
-      if (exists) {
-        console.log(`✓ Migration "${name}" already executed, skipping...`);
-        return;
-      }
-
-      // Execute all SQL statements
-      const queries: string[] = [];
-      for (const sql of sqls) {
-        if (typeof sql === "function") {
-          const result = await sql(adapter);
-          queries.push(...result);
-        } else {
-          queries.push(sql);
+      await adapter.transaction(async (tx) => {
+        // One connection and lock cover callback side effects, DDL and the tracking row.
+        await tx.query("SELECT pg_advisory_xact_lock(20260922, 1)");
+        const exists = await tx.query<{ name: string }>("SELECT name FROM _custom_migrations WHERE name = $1", [name]);
+        if (exists.length) return;
+        for (const step of sqls) {
+          const queries = typeof step === "function" ? await step(tx) : [step];
+          for (const query of queries) if (query.trim()) await tx.exec(query);
         }
-      }
-
-      // Run in transaction
-      await adapter.exec("BEGIN;");
-      try {
-        for (const query of queries) {
-          if (query.trim()) {
-            await adapter.exec(query);
-          }
-        }
-
-        // Record migration
-        await adapter.exec(`INSERT INTO _custom_migrations (created_at, name) VALUES (NOW(), '${name}')`);
-
-        await adapter.exec("COMMIT;");
-        console.log(`✅ Migration "${name}" completed successfully`);
-      } catch (error) {
-        await adapter.exec("ROLLBACK;");
-        console.error(`❌ Migration "${name}" failed:`, error);
-        throw error;
-      }
+        await tx.query("INSERT INTO _custom_migrations (created_at, name) VALUES (NOW(), $1) RETURNING name", [name]);
+      });
+      console.log(`Migration "${name}" completed or already applied`);
     },
   };
 
