@@ -46,10 +46,10 @@ export class CompanyDebtService {
         },
       });
 
+      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
       return debt;
     });
 
-    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyDebt(result);
   }
 
@@ -79,10 +79,10 @@ export class CompanyDebtService {
         });
       }
 
+      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
       return debt;
     });
 
-    await companyDailySnapshotService.refreshForDate(clientId, new Date());
     return prismaToDomainCompanyDebt(result);
   }
 
@@ -98,9 +98,8 @@ export class CompanyDebtService {
         where: { id: existing.company_id },
         data: { total_debt: { decrement: existing.amount } },
       });
+      await companyDailySnapshotService.refreshForDate(clientId, new Date(), tx);
     });
-
-    await companyDailySnapshotService.refreshForDate(clientId, new Date());
   }
 }
 

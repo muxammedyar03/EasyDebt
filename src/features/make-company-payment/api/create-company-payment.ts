@@ -1,6 +1,7 @@
 import { COMPANY_RECEIPT_MAX_BYTES, isAllowedCompanyReceiptMime } from "@/lib/validation/company-payment";
 
 export type CreateCompanyPaymentPayload = {
+  idempotencyKey?: string;
   company_id: number;
   amount: number;
   payment_type: "CASH" | "CLICK" | "CARD";
@@ -32,6 +33,7 @@ export async function createCompanyPayment(payload: CreateCompanyPaymentPayload)
 
   const response = await fetch("/api/company-payments", {
     method: "POST",
+    headers: payload.idempotencyKey ? { "Idempotency-Key": payload.idempotencyKey } : {},
     body: form,
   });
 

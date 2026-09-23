@@ -26,6 +26,7 @@ export type CompanyPaymentDomain = {
 };
 
 export type CreateCompanyPaymentDomainInput = {
+  idempotencyKey?: string;
   companyId: number;
   amount: number;
   paymentType: PaymentTypeDomain;
