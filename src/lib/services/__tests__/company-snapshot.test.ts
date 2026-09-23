@@ -29,5 +29,12 @@ it("derives historical balance from the ledger cutoff using exact decimals and t
   expect(data.debts_sum.toString()).toBe("20.1");
   expect(data.payments_count).toBe(1);
   expect(tx.companyDebt.aggregate.mock.calls[0][0].where.client_id).toBe(7);
-  expect(tx.companyDebt.aggregate.mock.calls[0][0].where.created_at.lte.getDate()).toBe(10);
+  expect(tx.companyDebt.aggregate.mock.calls[0][0].where.created_at.lte.toISOString()).toBe("2026-01-10T18:59:59.999Z");
+});
+
+it("clamps one-month-ago reports to the previous month's last day", async () => {
+  const service = new CompanyDailySnapshotService();
+  const spy = jest.spyOn(service, "getSnapshotOn").mockResolvedValue({} as never);
+  await service.getOutstandingOneMonthAgo(7, new Date("2026-03-31T12:00:00Z"));
+  expect(spy).toHaveBeenCalledWith(7, new Date("2026-02-28T00:00:00Z"));
 });

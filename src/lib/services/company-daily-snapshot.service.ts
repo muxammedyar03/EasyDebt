@@ -4,7 +4,6 @@
 
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { companyDailySnapshotRepository } from "@/entities/company-daily-snapshot/api";
 import { companyDebtRepository } from "@/entities/company-debt/api";
 import { companyPaymentRepository } from "@/entities/company-payment/api";
 import { prismaToDomainCompanyDailySnapshot } from "@/lib/mappers/company.mapper";
@@ -17,7 +16,10 @@ import type {
   CompanyChartMetric,
   CompanyChartPoint,
 } from "@/types/domain/company-daily-snapshot.domain";
-import { getChartPeriodBounds, toInputDate, type ChartPeriod } from "@/lib/period-date-range";
+import type { ChartPeriod } from "@/lib/period-date-range";
+import { companyDay, companyDayRange } from "@/lib/company-report-date";
+import { serializableTransaction } from "@/lib/security/serializable";
+import { companySnapshotSeriesSql, rebuildCompanySnapshotHistorySql } from "./company-snapshot-history";
 
 type CompanyDebtWithCompany = Prisma.CompanyDebtGetPayload<{ include: { company: true } }>;
 type CompanyPaymentWithCompany = Prisma.CompanyPaymentGetPayload<{ include: { company: true } }>;
@@ -73,18 +75,9 @@ function applyCompanySearch<T extends Prisma.CompanyPaymentWhereInput | Prisma.C
   };
 }
 
-/** Normalize to UTC date-only (midnight) for @db.Date uniqueness. */
-export function toSnapshotDate(input: Date = new Date()): Date {
-  return new Date(Date.UTC(input.getFullYear(), input.getMonth(), input.getDate()));
-}
-
-function dayRange(date: Date): { gte: Date; lte: Date } {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-  return { gte: start, lte: end };
-}
+/** A date-only label for the shop's business day. */
+export const toSnapshotDate = companyDay;
+const dayRange = companyDayRange;
 
 export class CompanyDailySnapshotService {
   /**
@@ -93,8 +86,9 @@ export class CompanyDailySnapshotService {
   async refreshForDate(
     clientId: number,
     date: Date = new Date(),
-    tx: Prisma.TransactionClient = prisma,
+    tx?: Prisma.TransactionClient,
   ): Promise<CompanyDailySnapshotDomain> {
+    if (!tx) return serializableTransaction((transaction) => this.refreshForDate(clientId, date, transaction));
     const snapshotDate = toSnapshotDate(date);
     const range = dayRange(date);
     const [debts, payments, dailyDebts, dailyPayments] = await Promise.all([
@@ -132,28 +126,38 @@ export class CompanyDailySnapshotService {
     return prismaToDomainCompanyDailySnapshot(row);
   }
 
-  async getSnapshotOn(clientId: number, date: Date): Promise<CompanyDailySnapshotDomain | null> {
-    const snapshotDate = toSnapshotDate(date);
-    const exact = await companyDailySnapshotRepository.findByDate(clientId, snapshotDate);
-    if (exact) return prismaToDomainCompanyDailySnapshot(exact);
-
-    const nearest = await companyDailySnapshotRepository.findFirstOnOrBefore(clientId, snapshotDate);
-    return nearest ? prismaToDomainCompanyDailySnapshot(nearest) : null;
+  async refreshAffectedDates(clientId: number, from: Date, tx: Prisma.TransactionClient): Promise<void> {
+    await tx.$executeRawUnsafe(
+      rebuildCompanySnapshotHistorySql,
+      clientId,
+      companyDay(from).toISOString().slice(0, 10),
+      companyDay().toISOString().slice(0, 10),
+    );
   }
 
-  /** Outstanding debt as of ~1 month ago (nearest snapshot on or before). */
+  async getSnapshotOn(clientId: number, date: Date): Promise<CompanyDailySnapshotDomain> {
+    // Recompute exact as-of totals, including snapshots written with an older timezone policy.
+    return this.refreshForDate(clientId, date);
+  }
+
+  /** Exact outstanding debt one calendar month ago, clamped at month end. */
   async getOutstandingOneMonthAgo(
     clientId: number,
     from: Date = new Date(),
   ): Promise<CompanyDailySnapshotDomain | null> {
-    const target = new Date(from);
-    target.setMonth(target.getMonth() - 1);
+    const target = companyDay(from);
+    const day = target.getUTCDate();
+    target.setUTCDate(1);
+    target.setUTCMonth(target.getUTCMonth() - 1);
+    const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+    target.setUTCDate(Math.min(day, lastDay));
     return this.getSnapshotOn(clientId, target);
   }
 
   /** First day of previous calendar month. */
   getFirstDayOfPreviousMonth(from: Date = new Date()): Date {
-    return new Date(from.getFullYear(), from.getMonth() - 1, 1);
+    const day = companyDay(from);
+    return new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth() - 1, 1));
   }
 
   async getDayActivity(clientId: number, date: Date): Promise<CompanyDayActivityDomain> {
@@ -204,11 +208,7 @@ export class CompanyDailySnapshotService {
   }
 
   private periodRange(dateFrom: Date, dateTo: Date): { gte: Date; lte: Date } {
-    const gte = new Date(dateFrom);
-    gte.setHours(0, 0, 0, 0);
-    const lte = new Date(dateTo);
-    lte.setHours(23, 59, 59, 999);
-    return { gte, lte };
+    return { gte: dayRange(dateFrom).gte, lte: dayRange(dateTo).lte };
   }
 
   /**
@@ -216,8 +216,7 @@ export class CompanyDailySnapshotService {
    */
   async getPeriodReport(clientId: number, dateFrom: Date, dateTo: Date): Promise<CompanyPeriodReportDomain> {
     const range = this.periodRange(dateFrom, dateTo);
-    const dayBeforeStart = new Date(range.gte);
-    dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
+    const dayBeforeStart = new Date(range.gte.getTime() - 1);
 
     const [startSnapshot, endSnapshot, debtsAgg, debtsCount, paymentsAgg, paymentsCount, debts, payments] =
       await Promise.all([
@@ -285,8 +284,7 @@ export class CompanyDailySnapshotService {
     const paymentWhere = applyCompanySearch({ client_id: clientId, created_at: range }, options?.search);
     const debtWhere = applyCompanySearch({ client_id: clientId, created_at: range }, options?.search);
 
-    const dayBeforeStart = new Date(range.gte);
-    dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
+    const dayBeforeStart = new Date(range.gte.getTime() - 1);
 
     const [
       startSnapshot,
@@ -385,47 +383,51 @@ export class CompanyDailySnapshotService {
     period: ChartPeriod,
     metric: CompanyChartMetric,
   ): Promise<CompanyChartPoint[]> {
-    const { dateFrom, dateTo } = getChartPeriodBounds(period);
+    const dateTo = companyDay();
+    const dateFrom = new Date(dateTo);
+    if (period === "week") dateFrom.setUTCDate(dateFrom.getUTCDate() - 6);
+    else if (period === "3months") dateFrom.setUTCMonth(dateFrom.getUTCMonth() - 3);
+    else dateFrom.setUTCMonth(0, 1);
     const rangeStart = toSnapshotDate(dateFrom);
     const rangeEnd = toSnapshotDate(dateTo);
-
-    const [snapshots, beforeStart] = await Promise.all([
-      companyDailySnapshotRepository.findMany(
-        { client_id: clientId, date: { gte: rangeStart, lte: rangeEnd } },
-        { orderBy: { date: "asc" } },
-      ),
-      companyDailySnapshotRepository.findFirstOnOrBefore(clientId, rangeStart),
-    ]);
+    // Read the authoritative ledger in one statement; legacy cached amounts cannot leak into the chart.
+    const snapshots = await prisma.$queryRawUnsafe<
+      {
+        date: string;
+        total_outstanding_debt: Prisma.Decimal;
+        payments_sum: Prisma.Decimal;
+      }[]
+    >(companySnapshotSeriesSql, clientId, rangeStart.toISOString().slice(0, 10), rangeEnd.toISOString().slice(0, 10));
 
     const snapshotByDay = new Map<string, (typeof snapshots)[number]>();
     for (const row of snapshots) {
-      snapshotByDay.set(toInputDate(new Date(row.date)), row);
+      snapshotByDay.set(new Date(row.date).toISOString().slice(0, 10), row);
     }
 
     const points: CompanyChartPoint[] = [];
-    let lastDebt = beforeStart?.total_outstanding_debt?.toNumber() ?? 0;
+    let lastDebt = 0; // The query always includes the period-start balance.
     const cursor = new Date(dateFrom);
 
     while (cursor <= dateTo) {
-      const key = toInputDate(cursor);
+      const key = cursor.toISOString().slice(0, 10);
       const snap = snapshotByDay.get(key);
 
       if (metric === "debt") {
         if (snap) lastDebt = snap.total_outstanding_debt.toNumber();
         points.push({
           date: key,
-          label: cursor.toLocaleDateString("uz-UZ", { month: "short", day: "numeric" }),
+          label: cursor.toLocaleDateString("uz-UZ", { month: "short", day: "numeric", timeZone: "UTC" }),
           value: lastDebt,
         });
       } else {
         points.push({
           date: key,
-          label: cursor.toLocaleDateString("uz-UZ", { month: "short", day: "numeric" }),
+          label: cursor.toLocaleDateString("uz-UZ", { month: "short", day: "numeric", timeZone: "UTC" }),
           value: snap?.payments_sum?.toNumber() ?? 0,
         });
       }
 
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     return points;

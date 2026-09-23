@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
-import { parseInputDate, todayInputDate } from "@/lib/period-date-range";
+import { companyDay, parseCompanyDay } from "@/lib/company-report-date";
 import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
 
 const SORT_KEYS = new Set(["date", "amount", "name"]);
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
     const sort = SORT_KEYS.has(sortRaw) ? (sortRaw as "date" | "amount" | "name") : "date";
     const sortAsc = sp.get("sortAsc") === "true";
 
-    const dateFromStr = sp.get("dateFrom") || todayInputDate();
+    const dateFromStr = sp.get("dateFrom") || companyDay().toISOString().slice(0, 10);
     const dateToStr = sp.get("dateTo") || dateFromStr;
-    const dateFrom = parseInputDate(dateFromStr);
-    const dateTo = parseInputDate(dateToStr, true);
+    const dateFrom = parseCompanyDay(dateFromStr);
+    const dateTo = parseCompanyDay(dateToStr);
 
     if (!dateFrom || !dateTo) {
       return NextResponse.json({ error: "Noto'g'ri sana formati" }, { status: 400 });
