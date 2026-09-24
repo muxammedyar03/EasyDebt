@@ -1,7 +1,11 @@
 export function updateContentLayout(value: "centered" | "full-width") {
-  const target = document.querySelector('[data-slot="sidebar-inset"]');
-  if (target) {
-    target.setAttribute("data-content-layout", value);
+  const inset = document.querySelector('[data-slot="sidebar-inset"]');
+  if (inset) {
+    inset.setAttribute("data-content-layout", value);
+  }
+  const content = document.querySelector('[data-slot="dashboard-content"]');
+  if (content) {
+    content.setAttribute("data-content-layout", value);
   }
 }
 
