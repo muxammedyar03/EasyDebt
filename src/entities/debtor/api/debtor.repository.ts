@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
-/** Escape LIKE wildcards % and _ for safe use in ILIKE. */
-function escapeLike(term: string): string {
-  return term.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
+import { listPredicate, listOrder, countQuery, idsQuery, type ListFilters } from "./debtor-list-query";
+
+type ListRow = Prisma.DebtorGetPayload<{ include: { debts: true; payments: true; creator: true } }>;
+export type ListReader = { count(): Promise<number>; read(skip: number, take: number): Promise<ListRow[]> };
 
 /**
  * Debtor entity – API (repository).
@@ -79,45 +79,36 @@ export class DebtorRepository {
     });
   }
 
-  /**
-   * Search debtors by terms: substring match on first_name, last_name, address;
-   * phone matches by digits only (any format: +1 114, 4123, 1445).
-   * Returns IDs in creation order (newest first), limited.
-   */
-  async searchIds(clientId: number, searchTerms: string[], limit: number): Promise<number[]> {
-    if (searchTerms.length === 0) return [];
-    const conditions = searchTerms.map((term) => {
-      const namePattern = `%${escapeLike(term)}%`;
-      const digitPart = term.replace(/\D/g, "");
-      const digitPattern = digitPart ? `%${digitPart}%` : null;
-      return {
-        namePattern,
-        digitPattern,
-      };
-    });
-    const params: (string | number)[] = [clientId];
-    const parts: string[] = [];
-    let idx = 1;
-    for (const c of conditions) {
-      const orClauses: string[] = [
-        `first_name ILIKE $${++idx}`,
-        `last_name ILIKE $${++idx}`,
-        `address ILIKE $${++idx}`,
-      ];
-      params.push(c.namePattern, c.namePattern, c.namePattern);
-      if (c.digitPattern) {
-        orClauses.push(`(phone_number IS NOT NULL AND regexp_replace(phone_number, '[^0-9]', '', 'g') LIKE $${++idx})`);
-        params.push(c.digitPattern);
-      }
-      parts.push(`(${orClauses.join(" OR ")})`);
-    }
-    params.push(limit);
-    const whereClause = parts.join(" AND ");
-    const result = await prisma.$queryRawUnsafe<{ id: number }[]>(
-      `SELECT id FROM debtors WHERE client_id = $1 AND ${whereClause} ORDER BY created_at DESC LIMIT $${idx + 1}`,
-      ...params,
+  /** Snapshot-backed candidate reader: list, relations, count share a single predicate. */
+  async withListReader<T>(
+    clientId: number,
+    filters: ListFilters,
+    sort: { sortBy?: string; sortOrder?: string },
+    consume: (reader: ListReader) => Promise<T>,
+  ): Promise<T> {
+    const where = listPredicate(clientId, filters);
+    const order = listOrder(sort.sortBy, sort.sortOrder);
+    return prisma.$transaction(
+      async (tx) =>
+        consume({
+          count: async () => (await tx.$queryRaw<{ total: number }[]>(countQuery(where)))[0].total,
+          read: async (skip, take) => {
+            const ids = await tx.$queryRaw<{ id: number }[]>(idsQuery(where, order, skip, take));
+            if (!ids.length) return [];
+            const rows = await tx.debtor.findMany({
+              where: { client_id: clientId, id: { in: ids.map((row) => row.id) } },
+              include: {
+                debts: { where: { client_id: clientId } },
+                payments: { where: { client_id: clientId } },
+                creator: true,
+              },
+            });
+            const byId = new Map(rows.map((row) => [row.id, row]));
+            return ids.map(({ id }) => byId.get(id)!);
+          },
+        }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000 },
     );
-    return result.map((r) => r.id);
   }
 }
 

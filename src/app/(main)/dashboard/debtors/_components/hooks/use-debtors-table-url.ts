@@ -83,6 +83,7 @@ export function useDebtorsTableUrl() {
         params.set("sortOrder", "asc");
       }
 
+      params.set("page", "1");
       pushQueryString(params);
     },
     [searchParams, pushQueryString],

@@ -158,162 +158,54 @@ export class DebtorService {
     pagination?: PaginationOptions,
   ): Promise<PaginatedResult<DebtorDomain>> {
     const settings = await this.getSettings(clientId);
-
-    // Special handling for isOverdue filter - need to compute it runtime
-    const isOverdueFilter = filters?.isOverdue;
-    const filtersWithoutOverdue = { ...filters, isOverdue: undefined };
-
-    // Build Prisma where clause from domain filters (without isOverdue)
-    const where = this.buildWhereClause(clientId, filtersWithoutOverdue);
-
-    // Build orderBy
-    const orderBy = this.buildOrderBy(pagination?.sortBy, pagination?.sortOrder);
-
-    const { computeDebtorOverdueStatus } = await import("@/entities/debtor/model");
-
-    // Search path: substring match on name/address, phone by digits only (any part)
-    if (filters?.search?.trim()) {
-      const searchTerms = filters.search.trim().split(/\s+/).filter(Boolean);
-      const searchLimit = Math.min(pagination?.limit ?? 250, 250);
-      const ids = await debtorRepository.searchIds(clientId, searchTerms, searchLimit);
-      if (ids.length === 0) {
-        return { data: [], total: 0, page: 1, limit: searchLimit, totalPages: 0 };
-      }
-      const debtors = (await debtorRepository.findMany(
-        { id: { in: ids }, client_id: clientId },
-        { include: { debts: true, payments: true, creator: true }, take: ids.length },
-      )) as DebtorWithRelations[];
-      const orderMap = new Map(ids.map((id, i) => [id, i]));
-      debtors.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
-      const domainDebtors = debtors.map((d) => {
-        const domainDebtor = prismaToDomainDebtor(d, settings);
-        const overdueStatus = computeDebtorOverdueStatus(
-          d.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
-          d.payments.map((p) => ({
-            amount: p.amount.toNumber(),
-            createdAt: p.created_at,
-            resetsRating: p.resets_rating,
-          })),
-          {
-            goodUntilDays: settings.overdueDays - 15,
-            mediumUntilDays: settings.overdueDays,
-            minPaidPercent: 0.5,
-          },
-        );
-        return { ...domainDebtor, isOverdue: overdueStatus.isOverdue };
-      });
-      return {
-        data: domainDebtors,
-        total: domainDebtors.length,
-        page: 1,
-        limit: domainDebtors.length,
-        totalPages: 1,
-      };
-    }
-
-    // If isOverdue filter is set, we need to fetch ALL matching debtors and filter in memory
-    if (isOverdueFilter !== undefined) {
-      const allDebtors = (await debtorRepository.findMany(where, {
-        orderBy,
-        include: {
-          debts: true,
-          payments: true,
-          creator: true,
-        },
-      })) as DebtorWithRelations[];
-
-      // Convert to domain types and calculate overdue status for all debtors
-      const domainDebtors = allDebtors
-        .map((d) => {
-          const domainDebtor = prismaToDomainDebtor(d, settings);
-
-          // Calculate isOverdue using the accurate function
-          const overdueStatus = computeDebtorOverdueStatus(
-            d.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
-            d.payments.map((p) => ({
-              amount: p.amount.toNumber(),
-              createdAt: p.created_at,
-              resetsRating: p.resets_rating,
-            })),
-            {
-              goodUntilDays: settings.overdueDays - 15,
-              mediumUntilDays: settings.overdueDays,
-              minPaidPercent: 0.5,
-            },
-          );
-
-          return {
-            ...domainDebtor,
-            isOverdue: overdueStatus.isOverdue,
-          };
-        })
-        .filter((d) => d.isOverdue === isOverdueFilter);
-
-      // Apply pagination manually
-      const page = pagination?.page ?? 1;
-      const limit = pagination?.limit ?? 10;
-      const skip = (page - 1) * limit;
-      const paginatedData = domainDebtors.slice(skip, skip + limit);
-
-      return {
-        data: paginatedData,
-        total: domainDebtors.length,
-        page,
-        limit,
-        totalPages: Math.ceil(domainDebtors.length / limit),
-      };
-    }
-
-    // Normal flow without isOverdue filter - but still calculate overdue status correctly
-    const total = await debtorRepository.count(where);
-
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 10;
+    const page =
+      pagination && Number.isSafeInteger(pagination.page) && pagination.page > 0
+        ? Math.min(pagination.page, 10_000_000)
+        : 1;
+    const limit =
+      pagination && Number.isSafeInteger(pagination.limit) && pagination.limit > 0
+        ? Math.min(pagination.limit, 250)
+        : 10;
     const skip = (page - 1) * limit;
-
-    const debtors = (await debtorRepository.findMany(where, {
-      orderBy,
-      skip,
-      take: limit,
-      include: {
-        debts: true,
-        payments: true,
-        creator: true,
-      },
-    })) as DebtorWithRelations[];
-
-    // Convert to domain types and calculate overdue status for all debtors
-    const domainDebtors = debtors.map((d) => {
-      const domainDebtor = prismaToDomainDebtor(d, settings);
-
-      // Calculate isOverdue using the accurate function
-      const overdueStatus = computeDebtorOverdueStatus(
-        d.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
-        d.payments.map((p) => ({
-          amount: p.amount.toNumber(),
-          createdAt: p.created_at,
-          resetsRating: p.resets_rating,
+    const statusOverdue = filters?.status === "overdue" ? true : filters?.status === "active" ? false : undefined;
+    const overdueFilter = filters?.isOverdue ?? statusOverdue;
+    if (statusOverdue !== undefined && filters?.isOverdue !== undefined && statusOverdue !== filters.isOverdue) {
+      return { data: [], total: 0, page, limit, totalPages: 0 };
+    }
+    const toDomain = (row: DebtorWithRelations): DebtorDomain => {
+      const overdue = computeDebtorOverdueStatus(
+        row.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+        row.payments.map((payment) => ({
+          amount: payment.amount.toNumber(),
+          createdAt: payment.created_at,
+          resetsRating: payment.resets_rating,
         })),
-        {
-          goodUntilDays: settings.overdueDays - 15,
-          mediumUntilDays: settings.overdueDays,
-          minPaidPercent: 0.5,
-        },
+        { goodUntilDays: settings.overdueDays - 15, mediumUntilDays: settings.overdueDays, minPaidPercent: 0.5 },
       );
-
-      return {
-        ...domainDebtor,
-        isOverdue: overdueStatus.isOverdue,
-      };
-    });
-
-    return {
-      data: domainDebtors,
-      total: total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      return prismaToDomainDebtor({ ...row, is_overdue: overdue.isOverdue }, settings);
     };
+    return debtorRepository.withListReader(clientId, filters ?? {}, pagination ?? {}, async (reader) => {
+      if (overdueFilter === undefined) {
+        const total = await reader.count();
+        const rows = await reader.read(skip, limit);
+        return { data: rows.map(toDomain), total, page, limit, totalPages: Math.ceil(total / limit) };
+      }
+      // Overdue is ledger-derived; filter before paging. Only keep one result page in memory.
+      const data: DebtorDomain[] = [];
+      let total = 0;
+      const batch = 100;
+      for (let offset = 0; ; offset += batch) {
+        const rows = await reader.read(offset, batch);
+        for (const row of rows) {
+          const debtor = toDomain(row);
+          if (debtor.isOverdue !== overdueFilter) continue;
+          if (total >= skip && data.length < limit) data.push(debtor);
+          total++;
+        }
+        if (rows.length < batch) break;
+      }
+      return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    });
   }
 
   async debtorsCount(clientId: number): Promise<number> {
@@ -651,105 +543,6 @@ export class DebtorService {
       counts,
     };
   }
-
-  /**
-   * Build Prisma where clause from domain filters
-   */
-  private buildWhereClause(clientId: number, filters?: DebtorDomainFilters): Prisma.DebtorWhereInput {
-    const where: Prisma.DebtorWhereInput = { client_id: clientId };
-
-    if (filters?.search) {
-      // Split search by spaces and filter empty strings
-      const searchTerms = filters.search.trim().split(/\s+/).filter(Boolean);
-
-      if (searchTerms.length === 1) {
-        // Single word search - search across all fields
-        const term = searchTerms[0];
-        where.OR = [
-          { first_name: { contains: term, mode: "insensitive" } },
-          { last_name: { contains: term, mode: "insensitive" } },
-          { phone_number: { contains: term, mode: "insensitive" } },
-          { address: { contains: term, mode: "insensitive" } },
-        ];
-      } else {
-        // Multiple words - ALL terms must match somewhere (AND logic)
-        // Each term can match in any field (OR logic within each term)
-        where.AND = searchTerms.map((term) => ({
-          OR: [
-            { first_name: { contains: term, mode: "insensitive" } },
-            { last_name: { contains: term, mode: "insensitive" } },
-            { phone_number: { contains: term, mode: "insensitive" } },
-            { address: { contains: term, mode: "insensitive" } },
-          ],
-        }));
-      }
-    }
-
-    if (filters?.isOverdue !== undefined) {
-      where.is_overdue = filters.isOverdue;
-    }
-
-    if (filters?.createdBy) {
-      where.created_by = filters.createdBy;
-    }
-
-    // Status filter (business logic)
-    if (filters?.status) {
-      switch (filters.status) {
-        case "paid_off":
-          where.total_debt = { lte: 0 };
-          break;
-        case "overdue":
-          where.is_overdue = true;
-          where.total_debt = { gt: 0 };
-          break;
-        case "active":
-          where.total_debt = { gt: 0 };
-          where.is_overdue = false;
-          break;
-      }
-    }
-
-    // Apply minDebt/maxDebt filters (merge with existing total_debt conditions)
-    if (filters?.minDebt !== undefined || filters?.maxDebt !== undefined) {
-      if (!where.total_debt) {
-        where.total_debt = {};
-      }
-      if (typeof where.total_debt === "object" && !Array.isArray(where.total_debt)) {
-        const debtFilter = where.total_debt as Prisma.DecimalFilter<"Debtor">;
-        if (filters.minDebt !== undefined) {
-          debtFilter.gte = filters.minDebt;
-        }
-        if (filters.maxDebt !== undefined) {
-          debtFilter.lte = filters.maxDebt;
-        }
-      }
-    }
-
-    return where;
-  }
-
-  /**
-   * Build Prisma orderBy from pagination options
-   */
-  private buildOrderBy(sortBy?: string, sortOrder?: "asc" | "desc"): Prisma.DebtorOrderByWithRelationInput {
-    const order = sortOrder ?? "desc";
-
-    if (!sortBy) {
-      return { created_at: order };
-    }
-
-    const fieldMap: Record<string, keyof Prisma.DebtorOrderByWithRelationInput> = {
-      name: "first_name",
-      debt: "total_debt",
-      date: "created_at",
-      updated: "updated_at",
-    };
-
-    const field = fieldMap[sortBy] ?? sortBy;
-    return { [field]: order } as Prisma.DebtorOrderByWithRelationInput;
-  }
 }
 
-// Export singleton instance
 export const debtorService = new DebtorService();

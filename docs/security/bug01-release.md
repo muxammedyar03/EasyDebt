@@ -1,0 +1,7 @@
+# BUG-01: consistent debtor search, filters and pagination
+
+Search, status, debt bounds, creator, tenant, count, and sorting now share one parameterized SQL predicate. Name/address matching is case insensitive and escaped; phone matching strips formatting and searches digit substrings. Counts are exact, including more than the previous 250 search cap. All sorting paths break ties with the debtor ID; only allowlisted columns can appear in SQL.
+
+List reads run in a RepeatableRead transaction, so count, IDs and loaded relations come from the same snapshot. Ledger-derived overdue and active filters are applied before pagination by scanning candidate rows in batches of 100 and retaining only the requested page, with the same rating-reset rule used by the displayed rows. The transaction has a 30-second bound. Huge tenant histories still need PERF-01 load measurement and, if needed, a precomputed overdue index. No schema migration or mass data rewrite is needed.
+
+Validation: PGlite executes the exact SQL with 270 matching debtors, page 2 and last page, case-insensitive and phone searches, tenant isolation, creator/status/debt filters, literal SQL metacharacters and deterministic equal-timestamp sorting. Jest covers combined filters and page metadata, 301 candidates with the reset checkbox, and scoped relations in one snapshot. TypeScript, ESLint and production build are release gates.
