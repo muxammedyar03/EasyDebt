@@ -320,6 +320,7 @@
     "selectRating": "Reytingni tanlang"
   },
   "reports": {
+    "exportCsv": "CSV eksport",
     "debtsAndPayments": "Qarz va to'lovlar",
     "reportsTab": "Hisobotlar",
     "debtsPaymentsList": "Vaqt boyicha qarz va to'lovlar ro'yxati",
