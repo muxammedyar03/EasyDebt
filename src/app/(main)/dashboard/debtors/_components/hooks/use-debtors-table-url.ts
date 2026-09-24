@@ -19,13 +19,14 @@ export function useDebtorsTableUrl() {
 
   const [searchValue, setSearchValue] = React.useState(() => searchParams?.get("search") || "");
   const [isSearching, setIsSearching] = React.useState(false);
+  const [isNavigating, startNavigation] = React.useTransition();
   const isFirstRender = React.useRef(true);
 
   const pushQueryString = React.useCallback(
     (params: URLSearchParams) => {
-      router.push(`?${params.toString()}`);
+      startNavigation(() => router.push(`?${params.toString()}`));
     },
-    [router],
+    [router, startNavigation],
   );
 
   const applySearchToUrl = React.useCallback(
@@ -118,7 +119,7 @@ export function useDebtorsTableUrl() {
     searchParams,
     searchValue,
     setSearchValue,
-    isSearching,
+    isSearching: isSearching || isNavigating,
     handleSort,
     handleStatusFilter,
     handlePageChange,
