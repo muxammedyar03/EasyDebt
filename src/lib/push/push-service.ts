@@ -38,49 +38,61 @@ export interface PushNotificationPayload {
   requireInteraction?: boolean;
 }
 
+export type PushDeliveryResult = "sent" | "expired" | "retryable";
+
+const retryDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Send push notification to a single subscription
  */
 export async function sendPushNotification(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: PushNotificationPayload,
-): Promise<boolean> {
+): Promise<PushDeliveryResult> {
   try {
     ensureVapidInitialized();
-
-    const pushSubscription = {
-      endpoint: subscription.endpoint,
-      keys: {
-        p256dh: subscription.p256dh,
-        auth: subscription.auth,
-      },
-    };
-
-    await webPush.sendNotification(pushSubscription, JSON.stringify(payload));
-    return true;
   } catch (error) {
-    // Handle invalid/expired subscriptions
-    if (
-      (error as { statusCode?: number }).statusCode === 410 ||
-      (error as { statusCode?: number }).statusCode === 404
-    ) {
-      console.log("[Push] Subscription expired or invalid, should be removed");
-      return false;
-    }
-    console.error("[Push] Failed to send notification:", error);
-    return false;
+    console.error("[Push] Configuration error:", error);
+    return "retryable";
   }
+
+  const pushSubscription = {
+    endpoint: subscription.endpoint,
+    keys: {
+      p256dh: subscription.p256dh,
+      auth: subscription.auth,
+    },
+  };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await webPush.sendNotification(pushSubscription, JSON.stringify(payload));
+      return "sent";
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (status === 410 || status === 404) return "expired";
+      console.error("[Push] Delivery failed; subscription retained:", error);
+      // Retry only transient transport errors, throttling, and provider failures.
+      if (status && status !== 429 && status < 500) return "retryable";
+      if (attempt < 2) await retryDelay(250 * 2 ** attempt);
+    }
+  }
+  return "retryable";
 }
 
 /**
  * Send push notification to a user
  * Checks user preferences before sending
  */
-export async function sendPushToUser(userId: number, payload: PushNotificationPayload): Promise<number> {
+export async function sendPushToUser(
+  clientId: number,
+  userId: number,
+  payload: PushNotificationPayload,
+): Promise<number> {
   try {
     // Check if user has push notifications enabled
     const preferences = await prisma.userPushPreferences.findUnique({
-      where: { user_id: userId },
+      where: { user_id: userId, user: { client_id: clientId } },
     });
 
     if (!preferences || !preferences.enabled) {
@@ -97,7 +109,7 @@ export async function sendPushToUser(userId: number, payload: PushNotificationPa
 
     // Get user's push subscriptions
     const subscriptions = await prisma.pushSubscription.findMany({
-      where: { user_id: userId },
+      where: { user_id: userId, user: { client_id: clientId } },
     });
 
     if (subscriptions.length === 0) {
@@ -110,7 +122,7 @@ export async function sendPushToUser(userId: number, payload: PushNotificationPa
 
     // Send to all subscriptions
     for (const subscription of subscriptions) {
-      const success = await sendPushNotification(
+      const result = await sendPushNotification(
         {
           endpoint: subscription.endpoint,
           p256dh: subscription.p256dh,
@@ -119,9 +131,9 @@ export async function sendPushToUser(userId: number, payload: PushNotificationPa
         payload,
       );
 
-      if (success) {
+      if (result === "sent") {
         sentCount++;
-      } else {
+      } else if (result === "expired") {
         invalidSubscriptions.push(subscription.id);
       }
     }
@@ -129,7 +141,7 @@ export async function sendPushToUser(userId: number, payload: PushNotificationPa
     // Remove invalid subscriptions
     if (invalidSubscriptions.length > 0) {
       await prisma.pushSubscription.deleteMany({
-        where: { id: { in: invalidSubscriptions } },
+        where: { id: { in: invalidSubscriptions }, user_id: userId, user: { client_id: clientId } },
       });
       console.log(`[Push] Removed ${invalidSubscriptions.length} invalid subscriptions`);
     }
@@ -145,6 +157,7 @@ export async function sendPushToUser(userId: number, payload: PushNotificationPa
  * Send push notification when in-app notification is created
  */
 export async function sendPushForNotification(
+  clientId: number,
   userId: number | undefined,
   notificationType: NotificationType,
   title: string,
@@ -157,7 +170,7 @@ export async function sendPushForNotification(
   }
 
   try {
-    await sendPushToUser(userId, {
+    await sendPushToUser(clientId, userId, {
       title,
       message,
       url: url || "/dashboard/notifications",
@@ -176,9 +189,10 @@ export async function sendPushForNotification(
 /**
  * Send push notification to all subscribed users (broadcast)
  */
-export async function sendPushToAllSubscribers(payload: PushNotificationPayload): Promise<number> {
+export async function sendPushToAllSubscribers(clientId: number, payload: PushNotificationPayload): Promise<number> {
   try {
     const subscriptions = await prisma.pushSubscription.findMany({
+      where: { user: { client_id: clientId } },
       include: {
         user: {
           include: {
@@ -202,7 +216,7 @@ export async function sendPushToAllSubscribers(payload: PushNotificationPayload)
         continue;
       }
 
-      const success = await sendPushNotification(
+      const result = await sendPushNotification(
         {
           endpoint: subscription.endpoint,
           p256dh: subscription.p256dh,
@@ -211,16 +225,16 @@ export async function sendPushToAllSubscribers(payload: PushNotificationPayload)
         payload,
       );
 
-      if (success) {
+      if (result === "sent") {
         sentCount++;
-      } else {
+      } else if (result === "expired") {
         invalidSubscriptions.push(subscription.id);
       }
     }
 
     if (invalidSubscriptions.length > 0) {
       await prisma.pushSubscription.deleteMany({
-        where: { id: { in: invalidSubscriptions } },
+        where: { id: { in: invalidSubscriptions }, user: { client_id: clientId } },
       });
     }
 
