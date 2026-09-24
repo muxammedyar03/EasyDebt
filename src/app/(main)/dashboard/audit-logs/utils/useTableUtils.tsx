@@ -177,6 +177,8 @@ export function useTableUtils() {
         return t("entityCompanyPayment");
       case "COMPANY_PAYMENT_RECEIPT":
         return t("entityCompanyPaymentReceipt");
+      case "TENANT_BACKUP":
+        return t("entityTenantBackup");
       default:
         return type;
     }

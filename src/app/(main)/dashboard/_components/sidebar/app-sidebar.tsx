@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { memo } from "react";
 
 import { Command } from "lucide-react";
@@ -13,12 +12,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
+import { cn } from "@/lib/utils";
 
 // const data = {
 //   navSecondary: [
@@ -58,16 +59,25 @@ import { NavUser } from "./nav-user";
 // };
 
 function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { toggleSidebar } = useSidebar();
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <Link href="/dashboard/default">
-                <Command className="md:!h-5 md:!w-5" />
-                <span className="text-base font-semibold">{APP_CONFIG.name}</span>
-              </Link>
+              <div
+                data-sidebar="trigger"
+                data-slot="sidebar-trigger"
+                variant="outline"
+                className={cn("size-12")}
+                onClick={() => toggleSidebar()}
+                {...props}
+              >
+                <Command className="md:!h-6 md:!w-6" />
+                <span className="cursor-pointer text-base font-semibold">{APP_CONFIG.name}</span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

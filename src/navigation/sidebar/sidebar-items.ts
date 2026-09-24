@@ -27,7 +27,7 @@ export interface NavMainItem {
   comingSoon?: boolean;
   newTab?: boolean;
   isNew?: boolean;
-  roles?: string[]; // optional role restriction, e.g., ["SUPER_ADMIN"]
+  roles?: string[];
 }
 
 export interface NavGroup {
@@ -39,28 +39,51 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "nav.dashboards",
     items: [
       {
         title: "nav.home",
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
+    ],
+  },
+  {
+    id: 2,
+    label: "nav.groupDebtors",
+    items: [
       {
         title: "nav.debtors",
         url: "/dashboard/debtors",
         icon: UserCog,
       },
       {
+        title: "nav.customerRatings",
+        url: "/dashboard/customers",
+        icon: Users,
+      },
+    ],
+  },
+  {
+    id: 3,
+    label: "nav.groupCompanies",
+    items: [
+      {
         title: "nav.myDebts",
         url: "/dashboard/my-debts",
         icon: Building2,
       },
       {
-        title: "nav.customerRatings",
-        url: "/dashboard/customers",
-        icon: Users,
+        title: "nav.companyReceipts",
+        url: "/dashboard/company-receipts",
+        icon: ImageIcon,
+        roles: ["SUPER_ADMIN"],
       },
+    ],
+  },
+  {
+    id: 4,
+    label: "nav.groupReports",
+    items: [
       {
         title: "nav.reports",
         url: "/dashboard/reports",
@@ -71,6 +94,12 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/audit-logs",
         icon: FileText,
       },
+    ],
+  },
+  {
+    id: 5,
+    label: "nav.groupAdmin",
+    items: [
       {
         title: "nav.users",
         url: "/dashboard/users",
@@ -83,130 +112,6 @@ export const sidebarItems: NavGroup[] = [
         icon: Store,
         roles: ["SUPER_ADMIN"],
       },
-      {
-        title: "nav.companyReceipts",
-        url: "/dashboard/company-receipts",
-        icon: ImageIcon,
-        roles: ["SUPER_ADMIN"],
-      },
-
-      // {
-      //   title: "Sozlamalar",
-      //   url: "/dashboard/settings",
-      //   icon: Settings,
-      //   isNew: true,
-      // },
-      // {
-      //   title: "Analytics",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Gauge,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "E-commerce",
-      //   url: "/dashboard/coming-soon",
-      //   icon: ShoppingBag,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Academy",
-      //   url: "/dashboard/coming-soon",
-      //   icon: GraduationCap,
-      //   comingSoon: true,
-      // },
-      // {
-      //   title: "Logistics",
-      //   url: "/dashboard/coming-soon",
-      //   icon: Forklift,
-      //   comingSoon: true,
-      // },
     ],
   },
-  // {
-  //   id: 2,
-  //   label: "Boshqaruv",
-  //   items: [
-  //     {
-  //       title: "Qarzdorlar",
-  //       url: "/dashboard/debtors",
-  //       icon: UserCog,
-  //       isNew: true,
-  //     },
-  //     {
-  //       title: "Sozlamalar",
-  //       url: "/dashboard/settings",
-  //       icon: Settings,
-  //       isNew: true,
-  //     },
-  //   ],
-  // },
-  // {
-  //   id: 3,
-  //   label: "Pages",
-  //   items: [
-  //     {
-  //       title: "Email",
-  //       url: "/dashboard/coming-soon",
-  //       icon: Mail,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Chat",
-  //       url: "/dashboard/coming-soon",
-  //       icon: MessageSquare,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Calendar",
-  //       url: "/dashboard/coming-soon",
-  //       icon: Calendar,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Kanban",
-  //       url: "/dashboard/coming-soon",
-  //       icon: Kanban,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Invoice",
-  //       url: "/dashboard/coming-soon",
-  //       icon: ReceiptText,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Users",
-  //       url: "/dashboard/coming-soon",
-  //       icon: Users,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Roles",
-  //       url: "/dashboard/coming-soon",
-  //       icon: Lock,
-  //       comingSoon: true,
-  //     },
-  //     {
-  //       title: "Authentication",
-  //       url: "/auth",
-  //       icon: Fingerprint,
-  //       subItems: [
-  //         // { title: "Login v1", url: "/auth/v1/login", newTab: true },
-  //         { title: "Login v2", url: "/auth/login", newTab: true },
-  //       ],
-  //     },
-  //   ],
-  // },
-  // {
-  //   id: 4,
-  //   label: "Misc",
-  //   items: [
-  //     {
-  //       title: "Others",
-  //       url: "/dashboard/coming-soon",
-  //       icon: SquareArrowUpRight,
-  //       comingSoon: true,
-  //     },
-  //   ],
-  // },
 ];

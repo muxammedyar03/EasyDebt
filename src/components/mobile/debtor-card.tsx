@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DebtorView } from "@/types/view";
+import { formatCurrencyUzs } from "@/lib/format";
 
 interface DebtorCardProps {
   debtor: DebtorView;
@@ -58,10 +59,6 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("uz-UZ").format(amount) + " so'm";
-  };
-
   const status = getDebtorStatus(debtor.totalDebt, debtor.isOverdue);
 
   return (
@@ -98,7 +95,7 @@ export function DebtorCard({ debtor, debtLimit, onAddDebt, onAddPayment, onDelet
               )}
             </div> */}
 
-            <div className={`mt-3 text-xl font-bold ${status.color}`}>{formatCurrency(debtor.totalDebt)}</div>
+            <div className={`mt-3 text-xl font-bold ${status.color}`}>{formatCurrencyUzs(debtor.totalDebt)}</div>
           </div>
 
           <DropdownMenu>

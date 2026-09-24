@@ -69,18 +69,16 @@ const NavItemExpanded = ({
   item,
   isActive,
   isSubmenuOpen,
-  roleDisabled,
   label,
 }: {
   item: NavMainItem;
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
   isSubmenuOpen: (subItems?: NavMainItem["subItems"]) => boolean;
-  roleDisabled?: boolean;
   label: string;
 }) => {
   const { isMobile, setOpenMobile } = useSidebar();
   const t = useTranslations();
-  const disabled = item.comingSoon || roleDisabled;
+  const disabled = item.comingSoon;
   return (
     <Collapsible key={item.title} asChild defaultOpen={isSubmenuOpen(item.subItems)} className="group/collapsible">
       <SidebarMenuItem>
@@ -91,12 +89,6 @@ const NavItemExpanded = ({
               <span>{label}</span>
               {item.comingSoon && <IsComingSoon />}
               <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-            </SidebarMenuButton>
-          ) : roleDisabled ? (
-            <SidebarMenuButton disabled tooltip={label} isActive={false}>
-              {item.icon && <item.icon />}
-              <span>{label}</span>
-              {item.comingSoon && <IsComingSoon />}
             </SidebarMenuButton>
           ) : (
             <SidebarMenuButton asChild aria-disabled={item.comingSoon} isActive={isActive(item.url)} tooltip={label}>
@@ -145,16 +137,14 @@ const NavItemExpanded = ({
 const NavItemCollapsed = ({
   item,
   isActive,
-  roleDisabled,
   label,
 }: {
   item: NavMainItem;
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
-  roleDisabled?: boolean;
   label: string;
 }) => {
   const t = useTranslations();
-  const disabled = item.comingSoon || roleDisabled;
+  const disabled = item.comingSoon;
   return (
     <SidebarMenuItem key={item.title}>
       <DropdownMenu>
@@ -210,11 +200,13 @@ export function NavMain({ items }: NavMainProps) {
   };
 
   const filteredItems: NavGroup[] = React.useMemo(() => {
-    return items.map((group: NavGroup) => ({
-      ...group,
-      items: group.items,
-    }));
-  }, [items]);
+    return items
+      .map((group: NavGroup) => ({
+        ...group,
+        items: group.items.filter((item) => !item.roles?.length || (user != null && item.roles.includes(user.role))),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [items, user]);
 
   return (
     <>
@@ -286,52 +278,40 @@ export function NavMain({ items }: NavMainProps) {
       </SidebarGroup>
       {filteredItems.map((group) => (
         <SidebarGroup key={group.id}>
-          {group.label && <SidebarGroupLabel>{t(group.label)}</SidebarGroupLabel>}
+          {group.label ? (
+            <SidebarGroupLabel className="text-primary mb-0.5 px-2 text-[11px] font-semibold tracking-wide uppercase">
+              {t(group.label)}
+            </SidebarGroupLabel>
+          ) : null}
           <SidebarGroupContent className="flex flex-col gap-2">
             <SidebarMenu>
               {group.items.map((item) => {
-                const roleDisabled = Boolean(item.roles?.length && (!user || !item.roles.includes(user.role)));
                 const label = t(item.title);
                 if (state === "collapsed" && !isMobile) {
                   if (!item.subItems) {
                     return (
                       <SidebarMenuItem key={item.title}>
-                        {roleDisabled ? (
-                          <SidebarMenuButton disabled tooltip={label} isActive={false}>
+                        <SidebarMenuButton
+                          asChild
+                          aria-disabled={item.comingSoon}
+                          tooltip={label}
+                          isActive={isItemActive(item.url)}
+                        >
+                          <PendingLink
+                            href={item.url}
+                            target={item.newTab ? "_blank" : undefined}
+                            onClick={() => {
+                              if (isMobile) setOpenMobile(false);
+                            }}
+                          >
                             {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
                             <span>{label}</span>
-                          </SidebarMenuButton>
-                        ) : (
-                          <SidebarMenuButton
-                            asChild
-                            aria-disabled={item.comingSoon}
-                            tooltip={label}
-                            isActive={isItemActive(item.url)}
-                          >
-                            <PendingLink
-                              href={item.url}
-                              target={item.newTab ? "_blank" : undefined}
-                              onClick={() => {
-                                if (isMobile) setOpenMobile(false);
-                              }}
-                            >
-                              {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
-                              <span>{label}</span>
-                            </PendingLink>
-                          </SidebarMenuButton>
-                        )}
+                          </PendingLink>
+                        </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
                   }
-                  return (
-                    <NavItemCollapsed
-                      key={item.title}
-                      item={item}
-                      isActive={isItemActive}
-                      roleDisabled={roleDisabled}
-                      label={label}
-                    />
-                  );
+                  return <NavItemCollapsed key={item.title} item={item} isActive={isItemActive} label={label} />;
                 }
                 return (
                   <NavItemExpanded
@@ -339,7 +319,6 @@ export function NavMain({ items }: NavMainProps) {
                     item={item}
                     isActive={isItemActive}
                     isSubmenuOpen={isSubmenuOpen}
-                    roleDisabled={roleDisabled}
                     label={label}
                   />
                 );

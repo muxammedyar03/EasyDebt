@@ -117,9 +117,9 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
   return (
     <div className="grid gap-6 2xl:grid-cols-[1fr_400px]">
       {/* Main Content */}
-      <div className="space-y-6">
-        <Card className="py-0 pt-6">
-          <CardHeader className="px-2 md:px-4">
+      <div className="space-y-3 md:space-y-6">
+        <Card className="gap-y-2 py-0 pt-4 md:gap-y-4 md:pt-6">
+          <CardHeader className="px-2 !py-0 md:px-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-lg md:text-xl">{t("recordsCount", { count: totalCount })}</CardTitle>
             </div>
@@ -127,7 +127,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
           <CardContent className="px-2 md:px-4">
             {/* Search and Actions */}
             <div className="mb-6 flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
+              <div className="relative flex flex-1 gap-2">
                 <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
                 <Input
                   placeholder={t("searchPlaceholder")}
@@ -136,13 +136,12 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="h-12 pl-8"
                 />
-              </div>
-              <div className="flex gap-2">
-                {/* Filter button for mobile/tablet */}
-                <Button onClick={handleSearch} variant="outline" size="sm" className="h-12">
-                  <Search className="mr-2 h-4 w-4" />
-                  {tCommon("search")}
+                <Button onClick={handleSearch} variant="outline" size="sm" className="h-12 w-12 sm:w-auto">
+                  <Search className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{tCommon("search")}</span>
                 </Button>
+              </div>
+              <div className="flex justify-end gap-2">
                 <div className="2xl:hidden">
                   <AuditLogFilters isMobile />
                 </div>
@@ -153,17 +152,17 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                   disabled={isExporting}
                   className="h-12 bg-blue-500 text-white hover:bg-blue-600"
                 >
-                  <FileDown className="mr-2 h-4 w-4" />
+                  <FileDown className="h-4 w-4 md:mr-2" />
                   <span className="hidden sm:inline">{t("export")}</span>
                 </Button>
               </div>
             </div>
 
             {/* Mobile View */}
-            <div className="space-y-4 md:hidden">
+            <div className="space-y-4 pb-4 md:hidden">
               {logs.map((log) => (
                 <Card key={log.id}>
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 py-0">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         {getActionBadge(log.action, log.entity_type)}
@@ -235,9 +234,9 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount }: Au
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground w-1/2 min-w-0 text-xs">
-                          <p className="truncate whitespace-break-spaces">
-                            {log.description && <p className="text-muted-foreground text-xs">{log.description}</p>}
-                          </p>
+                          {log.description ? (
+                            <p className="truncate whitespace-break-spaces">{log.description}</p>
+                          ) : null}
                         </TableCell>
                       </TableRow>
                     ))

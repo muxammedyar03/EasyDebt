@@ -83,7 +83,7 @@ export default function CashClient({ report, debtLimit }: Props) {
         >
           {common("previous")}
         </Button>
-        <span>{common("pageOf", { current: page, total })}</span>
+        <span className="text-xs sm:text-sm">{common("pageOf", { current: page, total })}</span>
         <Button
           variant="outline"
           disabled={pending || page >= total}
@@ -123,8 +123,11 @@ export default function CashClient({ report, debtLimit }: Props) {
   return (
     <div className="w-full space-y-6" aria-busy={pending}>
       {pending && (
-        <div role="status" className="flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" />
+        <div
+          role="status"
+          className="fixed top-0 right-0 bottom-0 left-0 z-10 flex flex-col items-center justify-center gap-2 bg-white/50 dark:bg-black/50"
+        >
+          <Loader2 className="size-10 animate-spin" />
           {common("loading")}
         </div>
       )}
@@ -185,7 +188,7 @@ export default function CashClient({ report, debtLimit }: Props) {
               </Button>
 
               <div className="flex-1 text-center font-medium">{getDateRangeText()}</div>
-              <input
+              {/* <input
                 type="date"
                 aria-label={common("date")}
                 value={selectedDate}
@@ -194,7 +197,7 @@ export default function CashClient({ report, debtLimit }: Props) {
                   if (event.target.value) setDate(event.target.value);
                 }}
                 className="bg-background rounded border p-2"
-              />
+              /> */}
 
               <Button
                 variant="outline"
@@ -206,15 +209,16 @@ export default function CashClient({ report, debtLimit }: Props) {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
+            <div className="flex flex-1 md:justify-end">
+              <Button asChild variant="outline">
+                <a href={`/api/reports/export?${params}`}>
+                  <Download className="mr-2 size-4" />
+                  {t("exportCsv")}
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
-
-        <Button asChild variant="outline">
-          <a href={`/api/reports/export?${params}`}>
-            <Download className="mr-2 size-4" />
-            {t("exportCsv")}
-          </a>
-        </Button>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="bg-card rounded-lg border p-4">

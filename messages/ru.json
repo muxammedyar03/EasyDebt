@@ -53,6 +53,10 @@
   },
   "nav": {
     "dashboards": "Панель",
+    "groupDebtors": "Должники",
+    "groupCompanies": "Компании",
+    "groupReports": "Отчёты",
+    "groupAdmin": "Управление",
     "home": "Главная",
     "debtors": "Должники",
     "myDebts": "Мои долги",
@@ -424,6 +428,7 @@
     "entityCompanyDebt": "Долг компании",
     "entityCompanyPayment": "Платёж компании",
     "entityCompanyPaymentReceipt": "Чек платежа",
+    "entityTenantBackup": "Резервная копия",
     "badgeDebtAdded": "Долг добавлен",
     "badgePaymentAdded": "Платёж добавлен",
     "badgeDebtUpdated": "Долг обновлён",

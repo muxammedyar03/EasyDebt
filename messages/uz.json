@@ -53,6 +53,10 @@
   },
   "nav": {
     "dashboards": "Boshqaruv",
+    "groupDebtors": "Qarzdorlar",
+    "groupCompanies": "Kompaniyalar",
+    "groupReports": "Hisobotlar",
+    "groupAdmin": "Boshqaruv",
     "home": "Bosh sahifa",
     "debtors": "Qarzdorlar",
     "myDebts": "Mening qarzlarim",
@@ -424,6 +428,7 @@
     "entityCompanyDebt": "Kompaniya qarzi",
     "entityCompanyPayment": "Kompaniya to'lovi",
     "entityCompanyPaymentReceipt": "To'lov cheki",
+    "entityTenantBackup": "Tenant backup",
     "badgeDebtAdded": "Qarz qo'shildi",
     "badgePaymentAdded": "To'lov qo'shildi",
     "badgeDebtUpdated": "Qarz yangilandi",

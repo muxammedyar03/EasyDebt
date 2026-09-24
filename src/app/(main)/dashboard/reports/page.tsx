@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { redirect, notFound } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTranslations } from "next-intl/server";
 import { reportsService } from "@/lib/services/reports.service";
 import { parseReportQuery } from "@/lib/report-query";
@@ -29,9 +28,12 @@ export default async function ReportsPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="payments">
-        <TabsList className="h-12">
+    <div>
+      <h1 className="text-xl font-bold tracking-tight">{t("debtsAndPayments")}</h1>
+      <p className="text-muted-foreground pb-4">{t("debtsPaymentsList")}</p>
+      <CashClient report={report} debtLimit={debtLimit} />
+      {/* <Tabs defaultValue="payments"> */}
+      {/* <TabsList className="h-12">
           <TabsTrigger value="payments">
             <div className="w-full md:w-44">
               <h1 className="text-xl font-bold tracking-tight">{t("debtsAndPayments")}</h1>
@@ -43,12 +45,10 @@ export default async function ReportsPage({
               <h1 className="text-xl font-bold tracking-tight">{t("reportsTab")}</h1>
             </div>
           </TabsTrigger>
-        </TabsList>
-        <TabsContent value="payments">
-          <p className="text-muted-foreground pb-4 pl-2">{t("debtsPaymentsList")}</p>
-          <CashClient report={report} debtLimit={debtLimit} />
+        </TabsList> */}
+      {/* <TabsContent value="payments">
         </TabsContent>
-      </Tabs>
+      </Tabs> */}
     </div>
   );
 }

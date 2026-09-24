@@ -90,14 +90,10 @@ export function formatDateUz(dateInput: Date | string, withTime: boolean = false
 }
 
 export function formatCurrencyUzs(amount: number) {
-  // Use a consistent number format that works on both server and client
-  return (
-    new Intl.NumberFormat("uz-UZ", {
-      useGrouping: true,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + " so'm"
-  );
+  // Locale-agnostic grouping so SSR (Node ICU) and client (browser) match.
+  const rounded = Math.round(Number(amount) || 0);
+  const grouped = String(Math.abs(rounded)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${rounded < 0 ? "-" : ""}${grouped} so'm`;
 }
 
 export function formatDate(dateStr: string) {
