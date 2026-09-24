@@ -5,16 +5,14 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import { PlusCircleIcon, MailIcon, ChevronRight, UserPlus, Banknote, CreditCard, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   SidebarGroup,
@@ -182,10 +180,8 @@ const NavItemCollapsed = ({
 export function NavMain({ items }: NavMainProps) {
   const pathname = usePathname();
   const { state, isMobile, setOpenMobile } = useSidebar();
-  const [quickCreateOpen, setQuickCreateOpen] = React.useState(false);
   const { user } = useCurrentUser();
   const t = useTranslations();
-  const tNav = useTranslations("nav");
 
   const path = pathname ?? "";
   const isItemActive = (url: string, subItems?: NavMainItem["subItems"]) => {
@@ -210,72 +206,6 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-      <SidebarGroup>
-        <SidebarGroupContent className="flex flex-col gap-2">
-          <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
-              <DropdownMenu open={quickCreateOpen} onOpenChange={setQuickCreateOpen}>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    tooltip={tNav("quickCreate")}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-                  >
-                    <PlusCircleIcon />
-                    <span>{tNav("quickCreate")}</span>
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <PendingLink
-                      href="/dashboard/default"
-                      className="flex cursor-pointer items-center gap-2"
-                      onClick={() => {
-                        if (isMobile) setOpenMobile(false);
-                      }}
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span>{tNav("addDebtor")}</span>
-                    </PendingLink>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <PendingLink
-                      href="/dashboard/debtors"
-                      className="flex cursor-pointer items-center gap-2"
-                      onClick={() => {
-                        if (isMobile) setOpenMobile(false);
-                      }}
-                    >
-                      <Banknote className="h-4 w-4" />
-                      <span>{tNav("addDebt")}</span>
-                    </PendingLink>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <PendingLink
-                      href="/dashboard/debtors"
-                      className="flex cursor-pointer items-center gap-2"
-                      onClick={() => {
-                        if (isMobile) setOpenMobile(false);
-                      }}
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      <span>{tNav("addPayment")}</span>
-                    </PendingLink>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                size="icon"
-                className="h-9 w-9 shrink-0 group-data-[collapsible=icon]:opacity-0"
-                variant="outline"
-              >
-                <MailIcon />
-                <span className="sr-only">Inbox</span>
-              </Button>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
       {filteredItems.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label ? (
