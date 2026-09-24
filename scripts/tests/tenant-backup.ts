@@ -95,6 +95,7 @@ async function main() {
         INSERT INTO audit_logs (id,user_id,action,entity_type,client_id) VALUES (${n},${n},'CREATE','PAYMENT',${id});
         INSERT INTO import_history (id,user_id,file_hash,debtors_count,debts_count,payments_count,client_id) VALUES (${n},${n},'hash-${id}',1,1,1,${id});
         INSERT INTO push_subscriptions (id,user_id,endpoint,p256dh,auth,updated_at) VALUES (${n},${n},'https://push.invalid/${id}','key','auth',now());
+        INSERT INTO push_deliveries (id,client_id,notification_id,subscription_id) VALUES (${n},${id},${n},${n});
         INSERT INTO user_push_preferences (id,user_id,enabled,updated_at) VALUES (${n},${n},true,now());`);
     }
     await db.exec(
@@ -111,6 +112,9 @@ async function main() {
     assert.equal(snapshot.tables.users.length, 1, "platform accounts must not be exported as tenant credentials");
     for (const table of TENANT_BACKUP_TABLES) assert.equal(snapshot.tables[table].length, 1, `coverage ${table}`);
     const decoded = validateSnapshot(openBackup(sealBackup(snapshot)), 1);
+    const legacy = structuredClone(snapshot);
+    delete legacy.tables.push_deliveries;
+    assert.deepEqual(validateSnapshot(legacy, 1).tables.push_deliveries, [], "older backups remain restorable");
     await previewTenant(decoded);
     assert.throws(() => validateSnapshot(decoded, 2), /another shop/);
     await db.exec("UPDATE debtors SET first_name='changed' WHERE id=10; UPDATE settings SET value='99' WHERE id=10;");
@@ -133,6 +137,11 @@ async function main() {
       for (const key of Object.keys(expected)) {
         if (table === "users" && key === "updated_at") continue;
         if (table === "company_payments" && key === "receipt_path") continue;
+        if (table === "push_deliveries" && key === "status") {
+          assert.equal(row.status, "CANCELLED", "restored pushes must not replay");
+          continue;
+        }
+        if (table === "push_deliveries" && key === "last_error") continue;
         // PostgreSQL numeric JSON values are deliberately serialized as strings by export.
         if (typeof expected[key] === "string" && typeof row[key] === "number")
           assert.equal(new Prisma.Decimal(String(row[key])).equals(String(expected[key])), true);
@@ -178,7 +187,7 @@ async function main() {
       "restore failure did not roll back",
     );
     console.log(
-      "PASS: encrypted full 15-table + receipt round trip, other-tenant invariance, platform account protection merge retention/idempotency and failed-restore rollback",
+      "PASS: encrypted full tenant backup including push deliveries, cross-tenant isolation, legacy import, receipt round trip and rollback",
     );
   } finally {
     await db.close();

@@ -15,6 +15,7 @@ export const TENANT_BACKUP_TABLES = [
   "import_history",
   "push_subscriptions",
   "user_push_preferences",
+  "push_deliveries",
 ] as const;
 export type BackupTable = (typeof TENANT_BACKUP_TABLES)[number];
 export const USER_SCOPED = new Set<BackupTable>(["push_subscriptions", "user_push_preferences"]);

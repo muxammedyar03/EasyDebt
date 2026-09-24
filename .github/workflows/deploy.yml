@@ -201,6 +201,9 @@ jobs:
               exit 1
             fi
 
+            echo "Starting the durable push worker..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate push-worker
+
             echo "📊 Container status:"
             docker compose -f docker-compose.prod.yml ps
 

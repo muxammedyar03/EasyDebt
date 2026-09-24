@@ -84,6 +84,21 @@ services:
       timeout: 10s
       retries: 3
 
+  push-worker:
+    image: ghcr.io/muxammedyar03/easydebt:${IMAGE_TAG:-latest}
+    command: ["node", "scripts/push-worker.mjs"]
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    mem_limit: 128m
+    healthcheck:
+      disable: true
+
 networks:
   app-network:
     driver: bridge
