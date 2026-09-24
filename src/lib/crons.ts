@@ -19,7 +19,8 @@
  */
 
 import { paymentReminderRepository } from "@/entities/payment-reminder/api";
-import { createNotification } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
+import { sendPushForNotification } from "@/lib/push/push-service";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { uz } from "date-fns/locale";
 import { format } from "date-fns";
@@ -71,20 +72,47 @@ export async function checkPaymentReminders(): Promise<number> {
         const localReminderTime = toLocalTime(reminder.reminderAt);
         const reminderTimeISO = format(localReminderTime, "d-MMMM yyyy, HH:mm", { locale: uz });
 
-        // Create notification
-        await createNotification({
-          clientId: reminder.clientId,
-          userId: reminder.createdBy,
-          debtorId: reminder.debtorId,
-          type: "PAYMENT_REMINDER",
-          title: "To'lov eslatmasi",
-          message: reminder.note
-            ? `${debtorFullName} - ${reminder.note} (${reminderTimeISO})`
-            : `${debtorFullName} uchun to'lov eslatmasi (${reminderTimeISO})`,
+        const title = "To'lov eslatmasi";
+        const message = reminder.note
+          ? `${debtorFullName} - ${reminder.note} (${reminderTimeISO})`
+          : `${debtorFullName} uchun to'lov eslatmasi (${reminderTimeISO})`;
+
+        // The conditional update locks the reminder row. Concurrent workers wait;
+        // only the first creates a notification. A failed insert rolls back PENDING.
+        const notification = await prisma.$transaction(async (tx) => {
+          const claimed = await tx.paymentReminder.updateMany({
+            where: {
+              id: reminder.id,
+              client_id: reminder.clientId,
+              status: "PENDING",
+              reminder_at: { lte: new Date() },
+            },
+            data: { status: "NOTIFIED", notified_at: new Date() },
+          });
+          if (claimed.count === 0) return null;
+          return tx.notification.create({
+            data: {
+              client_id: reminder.clientId,
+              user_id: reminder.createdBy,
+              debtor_id: reminder.debtorId,
+              type: "PAYMENT_REMINDER",
+              title,
+              message,
+            },
+          });
         });
 
-        // Mark reminder as notified
-        await paymentReminderService.markAsNotified(reminder.id);
+        if (!notification) continue;
+
+        await sendPushForNotification(
+          reminder.clientId,
+          reminder.createdBy,
+          "PAYMENT_REMINDER",
+          title,
+          message,
+          notification.id,
+          `/dashboard/default/debitor/${debtor.externalId}`,
+        );
 
         processedCount++;
       } catch (error) {
