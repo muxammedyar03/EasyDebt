@@ -320,6 +320,7 @@
     "selectRating": "Выберите рейтинг"
   },
   "reports": {
+    "exportCsv": "Экспорт CSV",
     "debtsAndPayments": "Долги и платежи",
     "reportsTab": "Отчёты",
     "debtsPaymentsList": "Список долгов и платежей по времени",

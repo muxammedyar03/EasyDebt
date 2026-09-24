@@ -1,19 +1,30 @@
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTranslations } from "next-intl/server";
 import { reportsService } from "@/lib/services/reports.service";
+import { parseReportQuery } from "@/lib/report-query";
 import CashClient from "./_components/cash-client";
 import { debtService } from "@/lib/services/debt.service";
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
   const clientId = requireClientId(session);
+  let query;
+  try {
+    query = parseReportQuery(await searchParams);
+  } catch {
+    notFound();
+  }
   const t = await getTranslations("reports");
   const [report, debtLimit] = await Promise.all([
-    reportsService.getDashboardReport(clientId),
+    reportsService.getDashboardReport(clientId, query),
     debtService.debtLimit(clientId),
   ]);
 
@@ -35,23 +46,8 @@ export default async function ReportsPage() {
         </TabsList>
         <TabsContent value="payments">
           <p className="text-muted-foreground pb-4 pl-2">{t("debtsPaymentsList")}</p>
-          <CashClient payments={report.paymentsData} debts={report.debtsData} debtLimit={debtLimit} />
+          <CashClient report={report} debtLimit={debtLimit} />
         </TabsContent>
-        {/* <TabsContent value="summary">
-          <ReportsSummarySection
-            totalDebtsAmount={report.totalDebtsAmount}
-            totalDebtsCount={report.totalDebtsCount}
-            totalPaymentsAmount={report.totalPaymentsAmount}
-            totalPaymentsCount={report.totalPaymentsCount}
-            totalDebtors={report.totalDebtors}
-            highRiskCount={report.highRiskCount}
-            mediumRiskCount={report.mediumRiskCount}
-            lowRiskCount={report.lowRiskCount}
-            overdueCount={report.overdueCount}
-            debtLimit={report.debtLimit}
-            trends={report.trends}
-          />
-        </TabsContent> */}
       </Tabs>
     </div>
   );
