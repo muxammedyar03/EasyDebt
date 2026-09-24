@@ -12,31 +12,34 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useTranslations } from "next-intl";
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
 }
 
 export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
+  const t = useTranslations("dashboard");
+
   const columnLabels: Record<string, string> = {
-    phone_number: "Telefon",
-    address: "Manzil",
-    index: "№",
-    first_name: "Qarzdor",
-    total_debt: "Qarz miqdori",
-    status: "Status",
+    index: t("index"),
+    firstName: t("debtor"),
+    phoneNumber: t("phone"),
+    address: t("address"),
+    totalDebt: t("debtAmount"),
+    status: t("status"),
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-auto hidden h-14 lg:flex">
+        <Button variant="outline" size="sm" className="ml-auto hidden h-12 md:flex lg:h-14">
           <Settings2 />
-          Ustunlar
+          {t("columns")}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[180px]">
-        <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("toggleColumns")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
           .getAllColumns()

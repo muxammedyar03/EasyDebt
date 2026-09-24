@@ -105,27 +105,29 @@ function CompanyAccordionItem({
 }) {
   return (
     <div
-      className={`grid gap-3 p-4 sm:grid-cols-2 sm:items-center md:grid-cols-12 ${isOpen ? "bg-gray-700 text-white" : "bg-white dark:bg-zinc-800"}`}
+      className={`grid grid-cols-12 gap-3 p-4 sm:items-center ${isOpen ? "bg-gray-700 text-white" : "bg-white dark:bg-zinc-800"}`}
     >
-      <div className="col-span-4 min-w-0">
+      <div className="col-span-6 min-w-0 xl:col-span-4">
         <p className={`truncate font-semibold ${isOpen ? "text-white" : ""}`}>{company.name}</p>
         <p className={`text-muted-foreground truncate text-sm ${isOpen ? "text-white" : ""}`}>
           {company.phoneDisplay || company.phoneNumber || "Telefon yo'q"}
         </p>
       </div>
       <Badge
-        className={`col-span-2 ${company.statusBadge.label === "Qarzdor" ? "border-red-500/50 bg-red-600/10 py-1 text-red-700" : "border-green-500/50 bg-green-600/10 py-1 text-green-700"}`}
+        className={`col-span-6 justify-self-end xl:col-span-1 xl:justify-self-start ${company.statusBadge.label === "Qarzdor" ? "border-red-500/50 bg-red-600/10 py-1 text-red-700" : "border-green-500/50 bg-green-600/10 py-1 text-green-700"}`}
         variant={"default"}
       >
         {company.statusBadge.label}
       </Badge>
-      <p className="col-span-2 text-center text-base font-bold tabular-nums">{company.totalDebtFormatted}</p>
+      <p className="col-span-12 text-base font-bold tabular-nums sm:col-span-6 xl:col-span-3 xl:text-center">
+        {company.totalDebtFormatted}
+      </p>
 
-      <div className="col-span-4 flex flex-wrap items-center gap-2 sm:justify-end">
+      <div className="col-span-12 flex items-center gap-2 sm:col-span-6 sm:justify-end xl:col-span-4">
         <Button
           size="sm"
           variant="outline"
-          className={`${isOpen ? "text-black" : ""} h-10 border-red-600 bg-red-600/10 text-red-600 hover:bg-red-600/10 hover:text-red-600`}
+          className={`${isOpen ? "text-black" : ""} h-10 flex-1 border-red-600 bg-red-600/10 text-red-600 hover:bg-red-600/10 hover:text-red-600 sm:flex-none`}
           onClick={(e) => {
             e.stopPropagation();
             setDebtCompany(company);
@@ -137,7 +139,7 @@ function CompanyAccordionItem({
         <Button
           size="sm"
           variant="outline"
-          className={`${isOpen ? "text-black" : ""} h-10 border-green-600 bg-green-600/10 text-green-600 hover:bg-green-600/10 hover:text-green-600`}
+          className={`${isOpen ? "text-black" : ""} h-10 flex-1 border-green-600 bg-green-600/10 text-green-600 hover:bg-green-600/10 hover:text-green-600 sm:flex-none`}
           onClick={(e) => {
             e.stopPropagation();
             setPayCompany(company);
@@ -150,7 +152,7 @@ function CompanyAccordionItem({
           asChild
           size="icon"
           variant="outline"
-          className={`${isOpen ? "hidden" : ""} h-10 w-10 border-blue-600 text-blue-600 hover:bg-blue-600/10 hover:text-blue-600`}
+          className={`${isOpen ? "hidden" : ""} h-10 w-10 flex-1 border-blue-600 text-blue-600 hover:bg-blue-600/10 hover:text-blue-600 sm:flex-none`}
           onClick={(e) => e.stopPropagation()}
         >
           <Link href={`/dashboard/my-debts/${company.externalId}`} aria-label="Batafsil">

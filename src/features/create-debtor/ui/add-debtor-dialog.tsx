@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addDebtorSchema, type AddDebtorFormData } from "@/lib/validation";
 import { createDebtor } from "../api";
+import { useTranslations } from "next-intl";
 
 export interface AddDebtorDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
   const [debtAmount, setDebtAmount] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const refreshAfterCloseRef = React.useRef(false);
+  const translate = useTranslations();
 
   const {
     register,
@@ -42,10 +44,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
     reset,
     setValue,
     control,
-  } = useForm<AddDebtorFormData>({
-    resolver: zodResolver(addDebtorSchema),
-    defaultValues: { phone_number: "" },
-  });
+  } = useForm<AddDebtorFormData>({ resolver: zodResolver(addDebtorSchema), defaultValues: { phone_number: "" } });
 
   const handleDebtAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatNumber(e.target.value);
@@ -66,7 +65,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
         debt_description: data.debt_description || null,
       });
 
-      toast.success("Qarzdor muvaffaqiyatli qo'shildi");
+      toast.success(translate("debtor.createSuccess"));
       reset();
       setDebtAmount("");
       setPhone("");
@@ -82,7 +81,7 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
       });
     } catch (error) {
       console.error("Error adding debtor:", error);
-      toast.error(getErrorMessage(error, "Qarzdor qo'shishda xatolik yuz berdi"));
+      toast.error(getErrorMessage(error, translate("debtor.createError")));
     } finally {
       setIsLoading(false);
     }
@@ -92,29 +91,39 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Yangi qarzdor qo&apos;shish</DialogTitle>
-          <DialogDescription>Yangi qarzdor ma&apos;lumotlarini kiriting</DialogDescription>
+          <DialogTitle>{translate("debtor.addTitle")}</DialogTitle>
+          <DialogDescription>{translate("debtor.addDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="first_name">
-                Ism <span className="text-destructive">*</span>
+                {translate("debtor.firstName")} <span className="text-destructive">*</span>
               </Label>
-              <Input id="first_name" placeholder="Ism" {...register("first_name")} disabled={isLoading} />
+              <Input
+                id="first_name"
+                placeholder={translate("debtor.firstName")}
+                {...register("first_name")}
+                disabled={isLoading}
+              />
               {errors.first_name && <p className="text-destructive text-sm">{errors.first_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="last_name">
-                Familiya <span className="text-destructive">*</span>
+                {translate("debtor.lastName")} <span className="text-destructive">*</span>
               </Label>
-              <Input id="last_name" placeholder="Familiya" {...register("last_name")} disabled={isLoading} />
+              <Input
+                id="last_name"
+                placeholder={translate("debtor.lastName")}
+                {...register("last_name")}
+                disabled={isLoading}
+              />
               {errors.last_name && <p className="text-destructive text-sm">{errors.last_name.message}</p>}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phone_number">Telefon raqami</Label>
+              <Label htmlFor="phone_number">{translate("debtor.phone")}</Label>
               <Controller
                 name="phone_number"
                 control={control}
@@ -137,12 +146,17 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="address">Manzil</Label>
-              <Input id="address" placeholder="Manzil" {...register("address")} disabled={isLoading} />
+              <Label htmlFor="address">{translate("debtor.address")}</Label>
+              <Input
+                id="address"
+                placeholder={translate("debtor.address")}
+                {...register("address")}
+                disabled={isLoading}
+              />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="debt_amount">Qarz miqdori</Label>
+              <Label htmlFor="debt_amount">{translate("debt.amount")}</Label>
               <Input
                 id="debt_amount"
                 type="text"
@@ -155,10 +169,10 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="debt_description">Qarz tavsifi</Label>
+              <Label htmlFor="debt_description">{translate("debt.descriptionPlaceholder")}</Label>
               <Input
                 id="debt_description"
-                placeholder="Qarz haqida ma'lumot"
+                placeholder={translate("debt.descriptionPlaceholder")}
                 {...register("debt_description")}
                 disabled={isLoading}
               />
@@ -167,11 +181,11 @@ export function AddDebtorDialog({ open, onOpenChange, onSuccess }: AddDebtorDial
 
           <DialogFooter className="grid gap-2 md:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {translate("common.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Qo&apos;shish
+              {translate("common.add")}
             </Button>
           </DialogFooter>
         </form>

@@ -16,10 +16,10 @@ import { QuickAddPayment } from "@/features/make-payment/ui";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDashboardDebtorsTable } from "./use-dashboard-debtors-table";
 import { DebtorView } from "@/types/view";
+import { useTranslations } from "next-intl";
 
 const SEARCH_DEBOUNCE_MS = 120;
 
-/** Input darhol yangilanadi; parentga faqat debounce (120ms) dan keyin yuboriladi. */
 function SearchInput({
   value,
   onChange,
@@ -30,19 +30,22 @@ function SearchInput({
   loading?: boolean;
 }) {
   const [local, setLocal] = React.useState(value);
+  const translate = useTranslations("home");
   React.useEffect(() => {
     setLocal(value);
   }, [value]);
+
   React.useEffect(() => {
     const t = setTimeout(() => onChange(local), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [local, onChange]);
+
   return (
     <div className="relative w-full xl:w-1/2">
       <Input
         type="text"
         className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
-        placeholder="Ism, telefon va manzil bo'yicha qidirish..."
+        placeholder={translate("searchPlaceholder")}
         value={local}
         onChange={(e) => setLocal(e.target.value)}
       />

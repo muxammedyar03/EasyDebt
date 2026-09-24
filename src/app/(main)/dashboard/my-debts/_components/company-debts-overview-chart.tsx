@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrencyUzs } from "@/lib/format";
 import type { ChartPeriod } from "@/lib/period-date-range";
 import type { CompanyChartMetric, CompanyChartPoint } from "@/types/domain/company-daily-snapshot.domain";
@@ -19,52 +21,56 @@ type ChartResponse = {
   points: CompanyChartPoint[];
 };
 
-async function fetchChart(period: ChartPeriod, type: CompanyChartMetric): Promise<ChartResponse> {
-  const qs = new URLSearchParams({ period, type });
-  const res = await fetch(`/api/company-reports/chart?${qs}`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Grafik yuklashda xatolik");
-  }
-  return res.json();
-}
-
-const debtChartConfig = {
-  value: {
-    label: "Umumiy qarz",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
-
-const paymentsChartConfig = {
-  value: {
-    label: "To'lovlar",
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig;
-
-const PERIOD_LABELS: Record<ChartPeriod, string> = {
-  week: "Oxirgi hafta",
-  "3months": "3 oy",
-  year: "Ushbu yil",
-};
-
-const TYPE_LABELS: Record<CompanyChartMetric, string> = {
-  debt: "Umumiy qarz",
-  payments: "To'lovlar",
-};
+const PERIODS: ChartPeriod[] = ["week", "3months", "year"];
+const METRICS: CompanyChartMetric[] = ["debt", "payments"];
 
 export function CompanyDebtsOverviewChart() {
+  const t = useTranslations("myDebts");
   const [period, setPeriod] = React.useState<ChartPeriod>("week");
   const [metric, setMetric] = React.useState<CompanyChartMetric>("debt");
 
+  const periodLabels = React.useMemo(
+    (): Record<ChartPeriod, string> => ({
+      week: t("chartPeriodWeek"),
+      "3months": t("chartPeriod3Months"),
+      year: t("chartPeriodYear"),
+    }),
+    [t],
+  );
+
+  const metricLabels = React.useMemo(
+    (): Record<CompanyChartMetric, string> => ({
+      debt: t("chartMetricDebt"),
+      payments: t("chartMetricPayments"),
+    }),
+    [t],
+  );
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["company-debts-chart", period, metric],
-    queryFn: () => fetchChart(period, metric),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ period, type: metric });
+      const res = await fetch(`/api/company-reports/chart?${qs}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || t("chartLoadError"));
+      }
+      return res.json() as Promise<ChartResponse>;
+    },
     placeholderData: keepPreviousData,
   });
 
-  const chartConfig = metric === "debt" ? debtChartConfig : paymentsChartConfig;
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        value: {
+          label: metricLabels[metric],
+          color: metric === "debt" ? "var(--chart-1)" : "var(--chart-2)",
+        },
+      }) satisfies ChartConfig,
+    [metric, metricLabels],
+  );
+
   const points = data?.points ?? [];
 
   return (
@@ -72,22 +78,53 @@ export function CompanyDebtsOverviewChart() {
       <CardHeader className="gap-4 space-y-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle className="text-lg">Qarz va to&apos;lovlar dinamikasi</CardTitle>
+            <CardTitle className="text-lg">{t("chartHeader")}</CardTitle>
             <CardDescription>
-              {TYPE_LABELS[metric]} · {PERIOD_LABELS[period]}
+              {t("chartDescription", {
+                metric: metricLabels[metric],
+                period: periodLabels[period],
+              })}
             </CardDescription>
           </div>
-          <Button asChild variant="outline" className="h-11 shrink-0">
+          <Button asChild variant="outline" className="h-8 shrink-0 text-xs sm:h-11 sm:text-sm">
             <Link href="/dashboard/my-debts/report">
-              Batafsil
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {t("chartDetails")}
+              <ArrowRight className="ml-2 h-3 w-3 sm:h-4 sm:w-4" />
             </Link>
           </Button>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="bg-muted/40 flex flex-wrap gap-2 rounded-xl border p-1.5">
-            {(Object.keys(PERIOD_LABELS) as ChartPeriod[]).map((key) => (
+          <div className="grid grid-cols-2 gap-2 sm:hidden">
+            <Select value={period} onValueChange={(v) => setPeriod(v as ChartPeriod)}>
+              <SelectTrigger className="!h-10 w-full" aria-label={t("chartPeriod")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIODS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {periodLabels[key]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={metric} onValueChange={(v) => setMetric(v as CompanyChartMetric)}>
+              <SelectTrigger className="!h-10 w-full" aria-label={t("chartMetric")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {METRICS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {metricLabels[key]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="bg-muted/40 hidden flex-wrap gap-2 rounded-xl border p-1.5 sm:flex">
+            {PERIODS.map((key) => (
               <Button
                 key={key}
                 type="button"
@@ -96,13 +133,13 @@ export function CompanyDebtsOverviewChart() {
                 className="h-9 px-4 text-sm"
                 onClick={() => setPeriod(key)}
               >
-                {PERIOD_LABELS[key]}
+                {periodLabels[key]}
               </Button>
             ))}
           </div>
 
-          <div className="bg-muted/40 flex flex-wrap gap-2 rounded-xl border p-1.5">
-            {(Object.keys(TYPE_LABELS) as CompanyChartMetric[]).map((key) => (
+          <div className="bg-muted/40 hidden flex-wrap gap-2 rounded-xl border p-1.5 sm:flex">
+            {METRICS.map((key) => (
               <Button
                 key={key}
                 type="button"
@@ -111,7 +148,7 @@ export function CompanyDebtsOverviewChart() {
                 className="h-9 px-4 text-sm"
                 onClick={() => setMetric(key)}
               >
-                {TYPE_LABELS[key]}
+                {metricLabels[key]}
               </Button>
             ))}
           </div>
@@ -122,14 +159,12 @@ export function CompanyDebtsOverviewChart() {
         {isLoading && !data ? (
           <div className="text-muted-foreground flex h-[260px] items-center justify-center gap-2 text-sm">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Yuklanmoqda...
+            {t("chartLoading")}
           </div>
         ) : error ? (
           <div className="text-destructive flex h-[260px] items-center justify-center text-sm">{error.message}</div>
         ) : points.length === 0 ? (
-          <div className="text-muted-foreground flex h-[260px] items-center justify-center text-sm">
-            Ma&apos;lumot topilmadi
-          </div>
+          <div className="text-muted-foreground flex h-[260px] items-center justify-center text-sm">{t("noData")}</div>
         ) : (
           <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
             <AreaChart data={points}>

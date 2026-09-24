@@ -69,7 +69,7 @@ export function NotificationsFilters(props: NotificationsFiltersProps) {
             className="h-10 border border-blue-600/20 bg-blue-600/10 text-xs text-blue-600 hover:bg-blue-600/15 md:text-sm dark:border-blue-500/20 dark:bg-blue-500/15 dark:text-blue-500 dark:hover:bg-blue-500/20"
           >
             <Search />
-            {tCommon("search")}
+            <span className="hidden lg:block">{tCommon("search")}</span>
           </Button>
           <Button
             variant="outline"

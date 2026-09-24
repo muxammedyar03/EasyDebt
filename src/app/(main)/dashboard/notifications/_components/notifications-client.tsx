@@ -55,7 +55,7 @@ export default function NotificationsClient({ items, total, page, pageSize, quer
   );
 
   return (
-    <Card className="space-y-4 p-6">
+    <Card className="space-y-4 p-2 lg:p-4 2xl:p-6">
       <NotificationsHeader updateParams={updateParams} />
       <NotificationsFilters
         search={search}

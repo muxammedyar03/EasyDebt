@@ -48,6 +48,8 @@ type UseDataTableInstanceProps<TData extends { id: number | string }, TValue> = 
   enableRowSelection?: boolean;
   defaultPageIndex?: number;
   defaultPageSize?: number;
+  /** When true, show all rows (server/page-level pagination). */
+  manualPagination?: boolean;
   getRowId?: (row: TData, index: number) => string;
   initialColumnVisibility?: VisibilityState;
 };
@@ -58,6 +60,7 @@ export function useDataTableInstance<TData extends { id: number | string }, TVal
   enableRowSelection = true,
   defaultPageIndex,
   defaultPageSize,
+  manualPagination = false,
   getRowId,
   initialColumnVisibility = {},
 }: UseDataTableInstanceProps<TData, TValue>) {
@@ -80,9 +83,10 @@ export function useDataTableInstance<TData extends { id: number | string }, TVal
       rowSelection,
       columnFilters,
       globalFilter,
-      pagination,
+      ...(manualPagination ? {} : { pagination }),
     },
     enableRowSelection,
+    manualPagination,
     globalFilterFn: multiTermFilter as FilterFn<TData>,
     getRowId: getRowId ?? ((row: TData) => row.id.toString()),
     onRowSelectionChange: setRowSelection,
@@ -90,10 +94,10 @@ export function useDataTableInstance<TData extends { id: number | string }, TVal
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
-    onPaginationChange: setPagination,
+    onPaginationChange: manualPagination ? undefined : setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
