@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import { PlusCircleIcon, MailIcon, ChevronRight, UserPlus, Banknote, CreditCard } from "lucide-react";
+import { PlusCircleIcon, MailIcon, ChevronRight, UserPlus, Banknote, CreditCard, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -30,6 +30,31 @@ import {
 } from "@/components/ui/sidebar";
 import { type NavGroup, type NavMainItem } from "@/navigation/sidebar/sidebar-items";
 import { useCurrentUser } from "@/hooks/use-current-user";
+
+/** Link status follows the actual App Router transition and clears on completion/error. */
+function PendingIndicator() {
+  const { pending } = useLinkStatus();
+  const t = useTranslations("common");
+  if (!pending) return null;
+  return (
+    <span role="status" aria-live="polite" className="ml-auto inline-flex items-center">
+      <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+      <span className="sr-only">{t("loading")}</span>
+    </span>
+  );
+}
+
+const PendingLink = React.forwardRef<HTMLAnchorElement, React.ComponentProps<typeof Link>>(function PendingLink(
+  { children, ...props },
+  ref,
+) {
+  return (
+    <Link {...props} ref={ref}>
+      {children}
+      <PendingIndicator />
+    </Link>
+  );
+});
 
 interface NavMainProps {
   readonly items: readonly NavGroup[];
@@ -75,7 +100,7 @@ const NavItemExpanded = ({
             </SidebarMenuButton>
           ) : (
             <SidebarMenuButton asChild aria-disabled={item.comingSoon} isActive={isActive(item.url)} tooltip={label}>
-              <Link
+              <PendingLink
                 href={item.url}
                 target={item.newTab ? "_blank" : undefined}
                 onClick={() => {
@@ -85,7 +110,7 @@ const NavItemExpanded = ({
                 {item.icon && <item.icon />}
                 <span>{label}</span>
                 {item.comingSoon && <IsComingSoon />}
-              </Link>
+              </PendingLink>
             </SidebarMenuButton>
           )}
         </CollapsibleTrigger>
@@ -95,7 +120,7 @@ const NavItemExpanded = ({
               {item.subItems.map((subItem) => (
                 <SidebarMenuSubItem key={subItem.title}>
                   <SidebarMenuSubButton aria-disabled={subItem.comingSoon} isActive={isActive(subItem.url)} asChild>
-                    <Link
+                    <PendingLink
                       href={subItem.url}
                       target={subItem.newTab ? "_blank" : undefined}
                       onClick={() => {
@@ -105,7 +130,7 @@ const NavItemExpanded = ({
                       {subItem.icon && <subItem.icon />}
                       <span>{t(subItem.title)}</span>
                       {subItem.comingSoon && <IsComingSoon />}
-                    </Link>
+                    </PendingLink>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               ))}
@@ -150,11 +175,11 @@ const NavItemCollapsed = ({
                 aria-disabled={subItem.comingSoon}
                 isActive={isActive(subItem.url)}
               >
-                <Link href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                <PendingLink href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
                   {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
                   <span>{t(subItem.title)}</span>
                   {subItem.comingSoon && <IsComingSoon />}
-                </Link>
+                </PendingLink>
               </SidebarMenuSubButton>
             </DropdownMenuItem>
           ))}
@@ -209,7 +234,7 @@ export function NavMain({ items }: NavMainProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem asChild>
-                    <Link
+                    <PendingLink
                       href="/dashboard/default"
                       className="flex cursor-pointer items-center gap-2"
                       onClick={() => {
@@ -218,11 +243,11 @@ export function NavMain({ items }: NavMainProps) {
                     >
                       <UserPlus className="h-4 w-4" />
                       <span>{tNav("addDebtor")}</span>
-                    </Link>
+                    </PendingLink>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link
+                    <PendingLink
                       href="/dashboard/debtors"
                       className="flex cursor-pointer items-center gap-2"
                       onClick={() => {
@@ -231,10 +256,10 @@ export function NavMain({ items }: NavMainProps) {
                     >
                       <Banknote className="h-4 w-4" />
                       <span>{tNav("addDebt")}</span>
-                    </Link>
+                    </PendingLink>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link
+                    <PendingLink
                       href="/dashboard/debtors"
                       className="flex cursor-pointer items-center gap-2"
                       onClick={() => {
@@ -243,7 +268,7 @@ export function NavMain({ items }: NavMainProps) {
                     >
                       <CreditCard className="h-4 w-4" />
                       <span>{tNav("addPayment")}</span>
-                    </Link>
+                    </PendingLink>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -283,7 +308,7 @@ export function NavMain({ items }: NavMainProps) {
                             tooltip={label}
                             isActive={isItemActive(item.url)}
                           >
-                            <Link
+                            <PendingLink
                               href={item.url}
                               target={item.newTab ? "_blank" : undefined}
                               onClick={() => {
@@ -292,7 +317,7 @@ export function NavMain({ items }: NavMainProps) {
                             >
                               {item.icon && <item.icon className="md:!h-5 md:!w-5" />}
                               <span>{label}</span>
-                            </Link>
+                            </PendingLink>
                           </SidebarMenuButton>
                         )}
                       </SidebarMenuItem>
