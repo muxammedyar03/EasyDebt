@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 
@@ -11,6 +12,7 @@ import { buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "companies.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -52,3 +54,4 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
+

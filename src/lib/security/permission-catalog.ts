@@ -9,7 +9,11 @@ export const PERMISSION_GROUPS = [
   {
     label: "Asosiy",
     pages: [
-      { key: "dashboard.view", label: "Bosh sahifa", route: "/dashboard/default", actions: [] },
+      { key: "dashboard.view", label: "Bosh sahifa", route: "/dashboard/default",
+        actions: [
+          { key: "settings.view", label: "Magazin sozlamalarini ko‘rish" },
+          { key: "settings.manage", label: "Magazin sozlamalarini o‘zgartirish" },
+        ] },
       {
         key: "debtors.view", label: "Qarzdorlar", route: "/dashboard/debtors",
         actions: [
@@ -25,6 +29,8 @@ export const PERMISSION_GROUPS = [
           { key: "debtors.export", label: "Eksport" },
           { key: "debtors.import", label: "Import" },
           { key: "debtors.share", label: "Qarzdor havolasini ulashish" },
+          { key: "reminders.view", label: "To‘lov eslatmalarini ko‘rish" },
+          { key: "reminders.manage", label: "To‘lov eslatmalarini boshqarish" },
         ],
       },
       { key: "customers.view", label: "Mijozlar reytingi", route: "/dashboard/customers", actions: [] },
@@ -45,9 +51,11 @@ export const PERMISSION_GROUPS = [
           { key: "company-debts.edit", label: "Qarzni o‘zgartirish" },
           { key: "company-payments.create", label: "To‘lov qo‘shish" },
           { key: "company-payments.edit", label: "To‘lovni o‘zgartirish" },
+          { key: "companies.export", label: "Kompaniyalarni eksport qilish" },
         ],
       },
-      { key: "company-receipts.view", label: "To‘lov cheklari", route: "/dashboard/company-receipts", actions: [] },
+      { key: "company-receipts.view", label: "To‘lov cheklari", route: "/dashboard/company-receipts",
+        actions: [{ key: "company-receipts.delete", label: "Chekni o‘chirish" }] },
       { key: "company-reports.view", label: "Kompaniya hisobotlari", route: "/dashboard/my-debts/report",
         actions: [{ key: "company-reports.export", label: "Eksport" }] },
     ],
@@ -110,11 +118,11 @@ export function permissionParentKey(key: PermissionKey): PermissionKey | undefin
 // Role defaults preserve access for existing shops until an override is saved.
 export function roleDefault(role: string, key: PermissionKey): boolean {
   if (role === "SUPER_ADMIN") return true;
-  if (key === "clients.view" || key === "clients.manage" || key === "tenant.backup" || key === "company-receipts.view")
+  if (key === "clients.view" || key === "clients.manage" || key === "tenant.backup" || key.startsWith("company-receipts."))
     return false;
   if (role === "ADMIN") return true;
   if (role !== "USER") return false;
-  if (key.startsWith("users.") || key.startsWith("permissions.")) return false;
+  if (key.startsWith("users.") || key.startsWith("permissions.") || key === "settings.manage") return false;
   if (key.endsWith(".delete")) return false;
   return true;
 }
