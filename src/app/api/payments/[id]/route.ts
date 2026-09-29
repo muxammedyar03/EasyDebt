@@ -6,8 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
-import { prisma } from "@/lib/prisma";
+import { createRequiredAuditLog } from "@/lib/audit";
 
 const updatePaymentSchema = z.object({
   amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak").optional(),
@@ -83,41 +82,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       await refreshDebtorStatus(tx, clientId, oldPayment.debtor_id);
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId,
+        action: "PAYMENT_UPDATED",
+        entityType: "PAYMENT",
+        entityId: paymentId,
+        oldValue: {
+          amount: oldPayment.amount.toString(),
+          payment_type: oldPayment.payment_type,
+          note: oldPayment.note,
+          created_at: oldPayment.created_at,
+        },
+        newValue: {
+          amount: updatedPayment.amount.toString(),
+          payment_type: updatedPayment.payment_type,
+          note: updatedPayment.note,
+          created_at: updatedPayment.created_at,
+        },
+        description: `To'lov #${paymentId} tahrirlandi (Dev Mode)`,
+      });
       return { updatedPayment, oldPayment };
-    });
-
-    // Get user info for description
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { first_name: true, last_name: true, username: true },
-    });
-
-    const userFullName =
-      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
-
-    const debtorFullName = `${result.oldPayment.debtor.first_name} ${result.oldPayment.debtor.last_name}`;
-    const description = `${userFullName} qarzdor ${debtorFullName} ning to'lovini tahrirladi (Dev Mode)`;
-
-    // Create audit log
-    await createAuditLog({
-      clientId,
-      userId,
-      action: "PAYMENT_UPDATED",
-      entityType: "PAYMENT",
-      entityId: paymentId,
-      oldValue: {
-        amount: result.oldPayment.amount.toNumber(),
-        payment_type: result.oldPayment.payment_type,
-        note: result.oldPayment.note,
-        created_at: result.oldPayment.created_at,
-      },
-      newValue: {
-        amount: result.updatedPayment.amount.toNumber(),
-        payment_type: result.updatedPayment.payment_type,
-        note: result.updatedPayment.note,
-        created_at: result.updatedPayment.created_at,
-      },
-      description,
     });
 
     // Revalidate pages that display debtor data

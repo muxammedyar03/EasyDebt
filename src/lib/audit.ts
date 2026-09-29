@@ -40,22 +40,27 @@ interface AuditLogData {
   userAgent?: string;
 }
 
+/** Use inside the same transaction as the financial mutation. Failure aborts both writes. */
+export async function createRequiredAuditLog(tx: Prisma.TransactionClient, data: AuditLogData) {
+  return tx.auditLog.create({
+    data: {
+      user_id: data.userId,
+      client_id: data.clientId,
+      action: data.action,
+      entity_type: data.entityType,
+      entity_id: data.entityId,
+      old_value: data.oldValue ? (data.oldValue as Prisma.InputJsonValue) : Prisma.JsonNull,
+      new_value: data.newValue ? (data.newValue as Prisma.InputJsonValue) : Prisma.JsonNull,
+      description: data.description,
+      ip_address: data.ipAddress,
+      user_agent: data.userAgent,
+    },
+  });
+}
+
 export async function createAuditLog(data: AuditLogData) {
   try {
-    await prisma.auditLog.create({
-      data: {
-        user_id: data.userId,
-        client_id: data.clientId,
-        action: data.action,
-        entity_type: data.entityType,
-        entity_id: data.entityId,
-        old_value: data.oldValue ? (data.oldValue as Prisma.InputJsonValue) : Prisma.JsonNull,
-        new_value: data.newValue ? (data.newValue as Prisma.InputJsonValue) : Prisma.JsonNull,
-        description: data.description,
-        ip_address: data.ipAddress,
-        user_agent: data.userAgent,
-      },
-    });
+    await createRequiredAuditLog(prisma, data);
   } catch (error) {
     console.error("Failed to create audit log:", error);
   }

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
+import { createRequiredAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 
 const updateDebtSchema = z.object({
@@ -77,39 +77,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         });
       }
 
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId,
+        action: "DEBT_UPDATED",
+        entityType: "DEBT",
+        entityId: debtId,
+        oldValue: {
+          amount: oldDebt.amount.toString(),
+          description: oldDebt.description,
+          created_at: oldDebt.created_at,
+        },
+        newValue: {
+          amount: updatedDebt.amount.toString(),
+          description: updatedDebt.description,
+          created_at: updatedDebt.created_at,
+        },
+        description: `Qarz #${debtId} tahrirlandi (Dev Mode)`,
+      });
+
       return { updatedDebt, oldDebt };
-    });
-
-    // Get user info for description
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { first_name: true, last_name: true, username: true },
-    });
-
-    const userFullName =
-      user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
-
-    const debtorFullName = `${result.oldDebt.debtor.first_name} ${result.oldDebt.debtor.last_name}`;
-    const description = `${userFullName} qarzdor ${debtorFullName} ning qarzini tahrirladi (Dev Mode)`;
-
-    // Create audit log
-    await createAuditLog({
-      clientId,
-      userId,
-      action: "DEBT_UPDATED",
-      entityType: "DEBT",
-      entityId: debtId,
-      oldValue: {
-        amount: result.oldDebt.amount.toNumber(),
-        description: result.oldDebt.description,
-        created_at: result.oldDebt.created_at,
-      },
-      newValue: {
-        amount: result.updatedDebt.amount.toNumber(),
-        description: result.updatedDebt.description,
-        created_at: result.updatedDebt.created_at,
-      },
-      description,
     });
 
     // Revalidate pages that display debtor data

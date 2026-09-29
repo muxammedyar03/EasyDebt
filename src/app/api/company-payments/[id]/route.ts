@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
 import { companyService } from "@/lib/services/company.service";
@@ -34,25 +33,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validated = updateSchema.parse(body);
 
-    const updated = await companyPaymentService.update(clientId, paymentId, {
-      amount: validated.amount,
-      paymentType: validated.payment_type ? PaymentTypeDomain[validated.payment_type] : undefined,
-      note: validated.note,
-    });
+    const updated = await companyPaymentService.update(
+      clientId,
+      paymentId,
+      {
+        amount: validated.amount,
+        paymentType: validated.payment_type ? PaymentTypeDomain[validated.payment_type] : undefined,
+        note: validated.note,
+      },
+      session.userId,
+    );
 
     const company = await companyService.findById(clientId, updated.companyId, false);
-
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "UPDATE",
-      entityType: "COMPANY_PAYMENT",
-      entityId: paymentId,
-      newValue: validated,
-      description: `Kompaniya to'lovi #${paymentId} yangilandi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
 
     revalidatePath("/dashboard/my-debts");
     if (company) revalidatePath(`/dashboard/my-debts/${company.externalId}`);

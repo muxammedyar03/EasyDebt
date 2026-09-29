@@ -14,6 +14,31 @@ it("counts each payment once across multiple debts", () => {
     computeDebtorOverdueStatus(debts, [{ amount: 100, createdAt: new Date("2026-01-03") }], settings).paidPercent,
   ).toBe(0.5);
 });
+it("does not reset an old debt from two small payments or a newer unpaid debt", () => {
+  const debts = [
+    { amount: 100, createdAt: new Date("2026-01-01") },
+    { amount: 100, createdAt: new Date("2026-09-19") },
+  ];
+  const result = computeDebtorOverdueStatus(
+    debts,
+    [
+      { amount: 25, createdAt: new Date("2026-09-19") },
+      { amount: 25, createdAt: new Date("2026-09-20") },
+    ],
+    settings,
+  );
+  expect(result.paidPercent).toBe(0.25);
+  expect(result.isOverdue).toBe(true);
+});
+it("caps paid percentage at 100% while preserving an advance in the ledger", () => {
+  expect(
+    computeDebtorOverdueStatus(
+      [{ amount: 100, createdAt: new Date("2026-01-01") }],
+      [{ amount: 120, createdAt: new Date("2026-02-01") }],
+      settings,
+    ).paidPercent,
+  ).toBe(1);
+});
 it("respects a tiny checked payment and leaves unchecked payments overdue", () => {
   const debt = [{ amount: 10000, createdAt: new Date("2026-01-01") }];
   const payment = { amount: 1, createdAt: new Date(), resetsRating: true };

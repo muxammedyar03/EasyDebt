@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyDebtService } from "@/lib/services/company-debt.service";
 import { companyService } from "@/lib/services/company.service";
@@ -42,25 +41,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validated = updateSchema.parse(body);
 
-    const updated = await companyDebtService.update(clientId, debtId, {
-      amount: validated.amount,
-      note: validated.note,
-      items: validated.items,
-    });
+    const updated = await companyDebtService.update(
+      clientId,
+      debtId,
+      {
+        amount: validated.amount,
+        note: validated.note,
+        items: validated.items,
+      },
+      session.userId,
+    );
 
     const company = await companyService.findById(clientId, updated.companyId, false);
-
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "UPDATE",
-      entityType: "COMPANY_DEBT",
-      entityId: debtId,
-      newValue: validated,
-      description: `Kompaniya qarzi #${debtId} yangilandi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
 
     revalidatePath("/dashboard/my-debts");
     if (company) revalidatePath(`/dashboard/my-debts/${company.externalId}`);

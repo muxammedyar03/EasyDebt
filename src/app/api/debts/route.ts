@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
+import { createRequiredAuditLog } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { getApiErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
@@ -69,6 +69,16 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId,
+        action: "DEBT_ADDED",
+        entityType: "DEBT",
+        entityId: debt.id,
+        newValue: { debtor_id: debtor.id, amount: debt.amount.toString(), description: debt.description },
+        description: `Qarzdor #${debtor.id} ga qarz #${debt.id} qo'shildi`,
+      });
+
       return { debt, debtor, updatedDebtor, debtLimit };
     });
 
@@ -80,25 +90,6 @@ export async function POST(request: NextRequest) {
 
     const userFullName =
       user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.username || "Foydalanuvchi";
-
-    const debtorFullName = `${result.debtor.first_name} ${result.debtor.last_name}`;
-    const formattedAmount = validatedData.amount.toLocaleString("uz-UZ");
-    const description = `${userFullName} qarzdor ${debtorFullName} ga ${formattedAmount} so'm miqdorda qarz qo'shdi`;
-
-    // Create audit log
-    await createAuditLog({
-      clientId,
-      userId,
-      action: "DEBT_ADDED",
-      entityType: "DEBT",
-      entityId: result.debt.id,
-      newValue: {
-        debtor_id: validatedData.debtor_id,
-        amount: validatedData.amount,
-        description: validatedData.description,
-      },
-      description,
-    });
 
     // Check if debt limit exceeded
     const newTotalDebt = result.updatedDebtor.total_debt.toNumber();
