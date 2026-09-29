@@ -29,6 +29,7 @@ beforeEach(() => {
     backupId: "snapshot-id",
   });
   (takeSensitiveAttempt as jest.Mock).mockResolvedValue(true);
+  (restoreTenant as jest.Mock).mockResolvedValue({ counts: { debtors: 0, debts: 1, payments: 0 } });
   (bcrypt.compare as jest.Mock).mockResolvedValue(true);
   const { prisma } = jest.requireMock("@/lib/prisma");
   prisma.user.findUnique.mockResolvedValue({ is_active: true, role: "ADMIN", password: "hash" });
@@ -44,9 +45,15 @@ it("requires exact confirmation and password", async () => {
   expect(restoreTenant).not.toHaveBeenCalled();
 });
 it("merges rather than replacing on confirmed JSON import", async () => {
-  expect((await POST(req({ "x-import-confirmation": "snapshot-id", "x-import-password": "correct" }))).status).toBe(
-    200,
-  );
+  const response = await POST(req({ "x-import-confirmation": "snapshot-id", "x-import-password": "correct" }));
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    success: true,
+    counts: { debtors: 0, debts: 1, payments: 0 },
+    debtorsCount: 0,
+    debtsCount: 1,
+    paymentsCount: 0,
+  });
   expect(restoreTenant).toHaveBeenCalledWith({ id: "snapshot-id" }, 1, "merge");
 });
 it("rejects another shop before import", async () => {

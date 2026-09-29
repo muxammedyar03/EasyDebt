@@ -67,12 +67,24 @@ it("preserves the latest historical payment date and exact balance on import", a
       update: jest.fn().mockResolvedValue({}),
     },
     debt: {
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany: jest
+        .fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { debtor_id: 7, amount: new Prisma.Decimal("0.3"), created_at: new Date("2024-01-01") },
+        ]),
       createMany: jest.fn().mockResolvedValue({ count: 1 }),
       groupBy: jest.fn().mockResolvedValue([{ debtor_id: 7, _sum: { amount: new Prisma.Decimal("0.3") } }]),
     },
     payment: {
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany: jest
+        .fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { debtor_id: 7, amount: new Prisma.Decimal("0.1"), created_at: paidAt, resets_rating: false },
+        ]),
       createMany: jest.fn().mockResolvedValue({ count: 1 }),
       groupBy: jest
         .fn()
@@ -81,6 +93,7 @@ it("preserves the latest historical payment date and exact balance on import", a
     },
     importHistory: { create: jest.fn().mockResolvedValue({}) },
     auditLog: { create: jest.fn().mockResolvedValue({}) },
+    settings: { findUnique: jest.fn().mockResolvedValue({ value: "45" }) },
   };
   (prisma.$transaction as jest.Mock).mockImplementation((fn) => fn(tx));
   const response = await POST(
@@ -119,6 +132,7 @@ it("preserves the latest historical payment date and exact balance on import", a
   );
   const balance = tx.debtor.update.mock.calls.at(-1)?.[0].data.total_debt;
   expect(balance.toString()).toBe("0.2");
+  expect(tx.debtor.update.mock.calls.at(-1)?.[0].data.is_overdue).toBe(true);
   expect(tx.importHistory.create).toHaveBeenCalledWith(
     expect.objectContaining({
       data: expect.objectContaining({ debtors_count: 1, debts_count: 1, payments_count: 1 }),

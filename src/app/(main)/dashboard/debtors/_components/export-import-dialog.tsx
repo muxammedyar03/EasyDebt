@@ -243,15 +243,11 @@ export function ExportImportDialog({ open, onOpenChange, mode }: ExportImportDia
 
       setProgress(100);
       toast.success(t("importSuccess"), {
-        description: fullPreview
-          ? locale === "ru"
-            ? "Полный JSON обработан. Существующие записи сохранены."
-            : "Toliq JSON import qilindi. Mavjud yozuvlar saqlandi."
-          : t("importSuccessDesc", {
-              debtors: result.debtorsCount ?? 0,
-              debts: result.debtsCount ?? 0,
-              payments: result.paymentsCount ?? 0,
-            }),
+        description: `${t("importSuccessDesc", {
+          debtors: result.debtorsCount ?? 0,
+          debts: result.debtsCount ?? 0,
+          payments: result.paymentsCount ?? 0,
+        })}${fullPreview ? (locale === "ru" ? " Существующие записи сохранены." : " Mavjud yozuvlar saqlandi.") : ""}`,
       });
 
       onOpenChange(false);
