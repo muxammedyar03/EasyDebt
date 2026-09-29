@@ -216,8 +216,12 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number, m
   snapshot = structuredClone(snapshot);
   const createdFiles: string[] = [];
   try {
-    await prisma.$transaction(
+    return await prisma.$transaction(
       async (tx) => {
+        const insertedCounts = Object.fromEntries(TENANT_BACKUP_TABLES.map((table) => [table, 0])) as Record<
+          BackupTable,
+          number
+        >;
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(20260919, ${snapshot.client.id})`;
         await preflight(tx, snapshot);
         // Lock all affected tables so writes cannot slip between inventory and restore.
@@ -264,7 +268,7 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number, m
               }
             }
           if (table === "users") for (const row of rows) row.updated_at = new Date().toISOString(); // revoke old sessions
-          await tx.$executeRaw(
+          insertedCounts[table] = await tx.$executeRaw(
             Prisma.sql`INSERT INTO ${Prisma.raw(`"${table}"`)} SELECT * FROM jsonb_populate_recordset(NULL::${Prisma.raw(`"${table}"`)}, ${JSON.stringify(rows)}::jsonb) ${mode === "merge" || APPEND_ONLY.has(table) ? Prisma.sql`ON CONFLICT (id) DO NOTHING` : Prisma.empty}`,
           );
           // Sequences are nontransactional: only advance, never rewind across tenants.
@@ -293,8 +297,10 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number, m
             action: "RESTORE",
             entity_type: "TENANT_BACKUP",
             description: `${mode === "merge" ? "Merged" : "Restored"} snapshot ${snapshot.id}; previous audit/import history retained`,
+            new_value: { snapshot_id: snapshot.id, inserted_counts: insertedCounts },
           },
         });
+        return { counts: insertedCounts };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 120000, maxWait: 10000 },
     );

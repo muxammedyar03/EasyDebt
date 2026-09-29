@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
     if (body.action === "preview")
       return NextResponse.json(await previewTenant(snapshot), { headers: { "Cache-Control": "no-store" } });
     if (body.confirmation !== snapshot.id) throw new BackupError("Preview confirmation does not match this backup");
-    await restoreTenant(snapshot, session.userId);
-    return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    const result = await restoreTenant(snapshot, session.userId);
+    return NextResponse.json({ success: true, ...result }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof BackupError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof z.ZodError || error instanceof SyntaxError)

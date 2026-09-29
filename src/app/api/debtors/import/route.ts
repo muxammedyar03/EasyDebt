@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { PaymentType, Prisma } from "@prisma/client";
 import type { DebtItem } from "@/types/domain";
+import { computeDebtorOverdueStatus } from "@/entities/debtor/model/overdue";
 
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -88,14 +89,14 @@ export async function POST(request: NextRequest) {
         !(await bcrypt.compare(decodeURIComponent(password), actor.password))
       )
         throw new BackupError("Invalid credentials", 403);
-      await restoreTenant(snapshot, session.userId, "merge");
+      const imported = await restoreTenant(snapshot, session.userId, "merge");
       return NextResponse.json(
         {
           success: true,
-          counts: preview.counts,
-          debtorsCount: preview.counts.debtors,
-          debtsCount: preview.counts.debts,
-          paymentsCount: preview.counts.payments,
+          counts: imported.counts,
+          debtorsCount: imported.counts.debtors,
+          debtsCount: imported.counts.debts,
+          paymentsCount: imported.counts.payments,
         },
         { headers: { "Cache-Control": "no-store" } },
       );
@@ -281,6 +282,39 @@ export async function POST(request: NextRequest) {
         const debtSumMap = new Map(allDebts.map((d) => [d.debtor_id, d._sum.amount ?? new Prisma.Decimal(0)]));
         const paymentSumMap = new Map(allPayments.map((p) => [p.debtor_id, p._sum.amount ?? new Prisma.Decimal(0)]));
         const latestPaymentMap = new Map(latestPayments.map((p) => [p.debtor_id, p._max.created_at]));
+        const [ledgerDebts, ledgerPayments, overdueSetting] = await Promise.all([
+          tx.debt.findMany({
+            where: { client_id: clientId, debtor_id: { in: debtorIds } },
+            select: { debtor_id: true, amount: true, created_at: true },
+          }),
+          tx.payment.findMany({
+            where: { client_id: clientId, debtor_id: { in: debtorIds } },
+            select: { debtor_id: true, amount: true, created_at: true, resets_rating: true },
+          }),
+          tx.settings.findUnique({ where: { client_id_key: { client_id: clientId, key: "overdue_days" } } }),
+        ]);
+        const debtLedger = new Map<number, Array<{ amount: number; createdAt: Date }>>();
+        const paymentLedger = new Map<number, Array<{ amount: number; createdAt: Date; resetsRating: boolean }>>();
+        for (const debt of ledgerDebts) {
+          const entries = debtLedger.get(debt.debtor_id) ?? [];
+          entries.push({ amount: debt.amount.toNumber(), createdAt: debt.created_at });
+          debtLedger.set(debt.debtor_id, entries);
+        }
+        for (const payment of ledgerPayments) {
+          const entries = paymentLedger.get(payment.debtor_id) ?? [];
+          entries.push({
+            amount: payment.amount.toNumber(),
+            createdAt: payment.created_at,
+            resetsRating: payment.resets_rating,
+          });
+          paymentLedger.set(payment.debtor_id, entries);
+        }
+        const overdueLimit = Number(overdueSetting?.value || 45);
+        const overdueSettings = {
+          goodUntilDays: overdueLimit - 15,
+          mediumUntilDays: overdueLimit,
+          minPaidPercent: 0.5,
+        };
 
         // Batch update uchun Promise.all ishlatamiz
         await Promise.all(
@@ -294,6 +328,11 @@ export async function POST(request: NextRequest) {
               data: {
                 total_debt: totalDebt,
                 last_payment_date: latestPaymentMap.get(debtorId) ?? null,
+                is_overdue: computeDebtorOverdueStatus(
+                  debtLedger.get(debtorId) ?? [],
+                  paymentLedger.get(debtorId) ?? [],
+                  overdueSettings,
+                ).isOverdue,
               },
             });
           }),
