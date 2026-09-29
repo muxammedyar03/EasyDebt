@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       message:
         count > 0
           ? "Hosting to'lovi haqida eslatma yaratildi"
-          : "Eslatma yaratilmadi (2-sana emas yoki allaqachon mavjud)",
+          : "Eslatma yaratilmadi (6-sana emas yoki allaqachon mavjud)",
       count,
       timestamp: new Date().toISOString(),
     });

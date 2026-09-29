@@ -20,7 +20,7 @@
 
 import { paymentReminderRepository } from "@/entities/payment-reminder/api";
 import { prisma } from "@/lib/prisma";
-import { sendPushForNotification } from "@/lib/push/push-service";
+import { createNotificationInTransaction } from "@/lib/notifications";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { uz } from "date-fns/locale";
 import { format } from "date-fns";
@@ -90,29 +90,17 @@ export async function checkPaymentReminders(): Promise<number> {
             data: { status: "NOTIFIED", notified_at: new Date() },
           });
           if (claimed.count === 0) return null;
-          return tx.notification.create({
-            data: {
-              client_id: reminder.clientId,
-              user_id: reminder.createdBy,
-              debtor_id: reminder.debtorId,
-              type: "PAYMENT_REMINDER",
-              title,
-              message,
-            },
+          return createNotificationInTransaction(tx, {
+            clientId: reminder.clientId,
+            userId: reminder.createdBy,
+            debtorId: reminder.debtorId,
+            type: "PAYMENT_REMINDER",
+            title,
+            message,
           });
         });
 
         if (!notification) continue;
-
-        await sendPushForNotification(
-          reminder.clientId,
-          reminder.createdBy,
-          "PAYMENT_REMINDER",
-          title,
-          message,
-          notification.id,
-          `/dashboard/default/debitor/${debtor.externalId}`,
-        );
 
         processedCount++;
       } catch (error) {

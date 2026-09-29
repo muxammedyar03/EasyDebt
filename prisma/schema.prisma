@@ -50,16 +50,16 @@ model User {
   pin        String?
   client_id  Int
 
-  client                       Client               @relation(fields: [client_id], references: [id])
-  created_debtors              Debtor[]             @relation("CreatedBy")
-  created_debts                Debt[]               @relation("DebtCreatedBy")
-  created_payments             Payment[]            @relation("PaymentCreatedBy")
-  created_reminders            PaymentReminder[]    @relation("ReminderCreatedBy")
-  created_companies            Company[]            @relation("CompanyCreatedBy")
-  created_company_debts        CompanyDebt[]        @relation("CompanyDebtCreatedBy")
-  created_company_payments     CompanyPayment[]     @relation("CompanyPaymentCreatedBy")
-  push_subscriptions           PushSubscription[]
-  user_push_preferences        UserPushPreferences?
+  client                   Client               @relation(fields: [client_id], references: [id])
+  created_debtors          Debtor[]             @relation("CreatedBy")
+  created_debts            Debt[]               @relation("DebtCreatedBy")
+  created_payments         Payment[]            @relation("PaymentCreatedBy")
+  created_reminders        PaymentReminder[]    @relation("ReminderCreatedBy")
+  created_companies        Company[]            @relation("CompanyCreatedBy")
+  created_company_debts    CompanyDebt[]        @relation("CompanyDebtCreatedBy")
+  created_company_payments CompanyPayment[]     @relation("CompanyPaymentCreatedBy")
+  push_subscriptions       PushSubscription[]
+  user_push_preferences    UserPushPreferences?
 
   @@index([client_id])
   @@map("users")
@@ -86,13 +86,13 @@ model Debtor {
   payments  Payment[]
   reminders PaymentReminder[]
 
+  @@unique([id, client_id])
   @@index([total_debt])
   @@index([created_by])
   @@index([created_at])
   @@index([is_overdue])
   @@index([last_payment_date])
   @@index([external_id])
-  @@unique([id, client_id])
   @@index([client_id])
   @@map("debtors")
 }
@@ -205,6 +205,9 @@ model Notification {
 
   client Client @relation(fields: [client_id], references: [id])
 
+  push_deliveries PushDelivery[]
+
+  @@unique([id, client_id])
   @@index([user_id])
   @@index([debtor_id])
   @@index([is_read])
@@ -288,7 +291,8 @@ model PushSubscription {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  deliveries PushDelivery[]
 
   @@unique([user_id, endpoint])
   @@index([user_id])
@@ -334,6 +338,7 @@ model Company {
   debts    CompanyDebt[]
   payments CompanyPayment[]
 
+  @@unique([id, client_id])
   @@index([total_debt])
   @@index([created_by])
   @@index([created_at])
@@ -342,7 +347,6 @@ model Company {
   @@index([last_debt_date])
   @@index([external_id])
   @@index([name])
-  @@unique([id, client_id])
   @@index([client_id])
   @@map("companies")
 }
@@ -417,8 +421,32 @@ model CompanyDailySnapshot {
 }
 
 model SecurityRateLimit {
-  key String @id
+  key          String   @id
   window_start DateTime @db.Timestamptz
-  attempts Int
+  attempts     Int
+
   @@map("security_rate_limits")
+}
+
+model PushDelivery {
+  id              Int       @id @default(autoincrement())
+  client_id       Int
+  notification_id Int
+  subscription_id Int
+  status          String    @default("PENDING")
+  attempts        Int       @default(0)
+  available_at    DateTime  @default(now())
+  lease_token     String?   @db.Uuid
+  locked_until    DateTime?
+  last_error      String?
+  created_at      DateTime  @default(now())
+  sent_at         DateTime?
+
+  notification Notification     @relation(fields: [notification_id, client_id], references: [id, client_id], onDelete: Cascade)
+  subscription PushSubscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  @@unique([notification_id, subscription_id])
+  @@index([status, available_at, locked_until])
+  @@index([client_id])
+  @@map("push_deliveries")
 }

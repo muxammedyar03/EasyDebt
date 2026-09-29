@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { sendPushForNotification } from "@/lib/push/push-service";
+import type { Prisma } from "@prisma/client";
+import { enqueueNotificationPush } from "@/lib/push/outbox";
 
 export type NotificationType =
   | "OVERDUE_PAYMENT"
@@ -19,23 +20,26 @@ interface CreateNotificationData {
 }
 
 export async function createNotification(data: CreateNotificationData) {
-  let debtorExternalId: string | undefined;
+  return prisma.$transaction((tx) => createNotificationInTransaction(tx, data));
+}
+
+/** Store the in-app notification and its device deliveries in the same commit. */
+export async function createNotificationInTransaction(tx: Prisma.TransactionClient, data: CreateNotificationData) {
   if (data.userId) {
-    const user = await prisma.user.findFirst({
+    const user = await tx.user.findFirst({
       where: { id: data.userId, client_id: data.clientId },
       select: { id: true },
     });
     if (!user) throw new Error("Notification user does not belong to client");
   }
   if (data.debtorId) {
-    const debtor = await prisma.debtor.findFirst({
+    const debtor = await tx.debtor.findFirst({
       where: { id: data.debtorId, client_id: data.clientId },
-      select: { external_id: true },
+      select: { id: true },
     });
     if (!debtor) throw new Error("Notification debtor does not belong to client");
-    debtorExternalId = debtor.external_id;
   }
-  const notification = await prisma.notification.create({
+  const notification = await tx.notification.create({
     data: {
       user_id: data.userId,
       client_id: data.clientId,
@@ -45,21 +49,7 @@ export async function createNotification(data: CreateNotificationData) {
       message: data.message,
     },
   });
-
-  // Push: yaratilgan foydalanuvchi (userId) ning barcha push yoqilgan qurilmalariga yuboriladi
-  if (data.userId) {
-    let url = "/dashboard/notifications";
-    if (debtorExternalId) url = `/dashboard/default/debitor/${debtorExternalId}`;
-    sendPushForNotification(
-      data.clientId,
-      data.userId,
-      data.type,
-      data.title,
-      data.message,
-      notification.id,
-      url,
-    ).catch((err) => console.error("[notifications] Push send failed:", err));
-  }
+  await enqueueNotificationPush(tx, notification);
   return notification;
 }
 

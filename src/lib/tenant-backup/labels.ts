@@ -9,6 +9,7 @@ export const backupTableLabels: Record<string, [string, string]> = {
   company_debts: ["Kompaniya qarzlari", "Долги компаниям"],
   company_payments: ["Kompaniya tolovlari", "Платежи компаниям"],
   company_daily_snapshots: ["Kunlik tarix", "История по дням"],
+  push_deliveries: ["Push yuborish tarixi", "История отправки push"],
   notifications: ["Bildirishnomalar", "Уведомления"],
   audit_logs: ["Audit tarixi", "Журнал аудита"],
   import_history: ["Import tarixi", "История импорта"],

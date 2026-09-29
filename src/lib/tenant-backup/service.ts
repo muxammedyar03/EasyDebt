@@ -39,6 +39,8 @@ const snapshotSchema = z
 export type TenantSnapshot = z.infer<typeof snapshotSchema>;
 
 function scope(table: BackupTable, clientId: number) {
+  if (table === "push_deliveries")
+    return Prisma.sql`r.client_id=${clientId} AND r.subscription_id IN (SELECT s.id FROM push_subscriptions s JOIN users u ON u.id=s.user_id WHERE u.client_id=${clientId} AND u.role <> 'SUPER_ADMIN')`;
   return USER_SCOPED.has(table)
     ? Prisma.sql`r.user_id IN (SELECT id FROM users WHERE client_id=${clientId} AND role <> 'SUPER_ADMIN')`
     : table === "users"
@@ -115,6 +117,8 @@ export async function exportTenant(clientId: number, actorId: number): Promise<T
 
 export function validateSnapshot(input: unknown, clientId: number): TenantSnapshot {
   const snapshot = snapshotSchema.parse(input);
+  // Version 1 snapshots predating the outbox have no queued deliveries.
+  if (!("push_deliveries" in snapshot.tables)) snapshot.tables.push_deliveries = [];
   if (snapshot.client.id !== clientId) throw new BackupError("Backup belongs to another shop", 403);
   if (Object.keys(snapshot.tables).sort().join() !== [...TENANT_BACKUP_TABLES].sort().join())
     throw new BackupError("Incomplete or unsupported table inventory");
@@ -137,10 +141,17 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
     ["payment_reminders", "debtor_id", "debtors"],
     ["company_debts", "company_id", "companies"],
     ["company_payments", "company_id", "companies"],
+    ["push_deliveries", "notification_id", "notifications"],
+    ["push_deliveries", "subscription_id", "push_subscriptions"],
   ]) {
     const ids = new Set(snapshot.tables[parents].map((row) => row.id));
     if (snapshot.tables[children].some((row) => !ids.has(row[parentKey])))
       throw new BackupError("Missing parent record in backup");
+  }
+  for (const delivery of snapshot.tables.push_deliveries) {
+    const notification = snapshot.tables.notifications.find((row) => row.id === delivery.notification_id);
+    const subscription = snapshot.tables.push_subscriptions.find((row) => row.id === delivery.subscription_id);
+    if (notification?.user_id !== subscription?.user_id) throw new BackupError("Push delivery recipient mismatch", 403);
   }
   const payments = new Map(
     snapshot.tables.company_payments.filter((row) => row.receipt_path).map((row) => [row.id, row]),
@@ -243,6 +254,15 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number, m
         for (const table of TENANT_BACKUP_TABLES) {
           const rows = snapshot.tables[table];
           if (!rows.length) continue;
+          if (table === "push_deliveries")
+            for (const row of rows) {
+              row.lease_token = null;
+              row.locked_until = null;
+              if (row.status === "PENDING") {
+                row.status = "CANCELLED";
+                row.last_error = "Restored backup: historical pushes are not replayed";
+              }
+            }
           if (table === "users") for (const row of rows) row.updated_at = new Date().toISOString(); // revoke old sessions
           await tx.$executeRaw(
             Prisma.sql`INSERT INTO ${Prisma.raw(`"${table}"`)} SELECT * FROM jsonb_populate_recordset(NULL::${Prisma.raw(`"${table}"`)}, ${JSON.stringify(rows)}::jsonb) ${mode === "merge" || APPEND_ONLY.has(table) ? Prisma.sql`ON CONFLICT (id) DO NOTHING` : Prisma.empty}`,

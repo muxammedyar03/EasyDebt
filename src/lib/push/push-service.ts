@@ -48,6 +48,7 @@ const retryDelay = (ms: number) => new Promise((resolve) => setTimeout(resolve, 
 export async function sendPushNotification(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: PushNotificationPayload,
+  maxAttempts = 3,
 ): Promise<PushDeliveryResult> {
   try {
     ensureVapidInitialized();
@@ -64,9 +65,9 @@ export async function sendPushNotification(
     },
   };
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      await webPush.sendNotification(pushSubscription, JSON.stringify(payload));
+      await webPush.sendNotification(pushSubscription, JSON.stringify(payload), { timeout: 10000 });
       return "sent";
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode;
@@ -74,7 +75,7 @@ export async function sendPushNotification(
       console.error("[Push] Delivery failed; subscription retained:", error);
       // Retry only transient transport errors, throttling, and provider failures.
       if (status && status !== 429 && status < 500) return "retryable";
-      if (attempt < 2) await retryDelay(250 * 2 ** attempt);
+      if (attempt + 1 < maxAttempts) await retryDelay(250 * 2 ** attempt);
     }
   }
   return "retryable";

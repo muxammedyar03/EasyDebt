@@ -71,6 +71,8 @@ COPY --from=builder /app/.build-sha ./.build-sha
 
 RUN mkdir -p /app/uploads/company-receipts && chown -R nextjs:nextjs /app/uploads
 
+COPY --from=builder /app/scripts/push-worker.mjs ./scripts/push-worker.mjs
+
 USER nextjs
 EXPOSE 3000
 

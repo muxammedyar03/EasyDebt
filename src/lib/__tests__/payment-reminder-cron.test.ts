@@ -1,13 +1,13 @@
 import { checkPaymentReminders } from "../crons";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
 import { prisma } from "@/lib/prisma";
-import { sendPushForNotification } from "@/lib/push/push-service";
+import { createNotificationInTransaction } from "@/lib/notifications";
 
 jest.mock("@/lib/services/payment-reminder.service", () => ({
   paymentReminderService: { findDueReminders: jest.fn() },
 }));
 jest.mock("@/lib/prisma", () => ({ prisma: { $transaction: jest.fn() } }));
-jest.mock("@/lib/push/push-service", () => ({ sendPushForNotification: jest.fn() }));
+jest.mock("@/lib/notifications", () => ({ createNotificationInTransaction: jest.fn() }));
 
 const due = {
   id: 8,
@@ -31,10 +31,8 @@ it("creates one reminder notification for two concurrent workers", async () => {
     pending = false;
     return { count: 1 };
   });
-  const create = jest.fn(async () => ({ id: 19 }));
-  (prisma.$transaction as jest.Mock).mockImplementation((fn) =>
-    fn({ paymentReminder: { updateMany }, notification: { create } }),
-  );
+  (createNotificationInTransaction as jest.Mock).mockResolvedValue({ id: 19 });
+  (prisma.$transaction as jest.Mock).mockImplementation((fn) => fn({ paymentReminder: { updateMany } }));
 
   expect(await Promise.all([checkPaymentReminders(), checkPaymentReminders()])).toEqual([1, 0]);
   expect(updateMany).toHaveBeenCalledWith(
@@ -42,17 +40,15 @@ it("creates one reminder notification for two concurrent workers", async () => {
       where: expect.objectContaining({ id: 8, client_id: 2, status: "PENDING" }),
     }),
   );
-  expect(create).toHaveBeenCalledTimes(1);
-  expect(create).toHaveBeenCalledWith(
-    expect.objectContaining({
-      data: expect.objectContaining({ client_id: 2, user_id: 3, debtor_id: 4 }),
-    }),
+  expect(createNotificationInTransaction).toHaveBeenCalledTimes(1);
+  expect(createNotificationInTransaction).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ clientId: 2, userId: 3, debtorId: 4 }),
   );
-  expect(sendPushForNotification).toHaveBeenCalledTimes(1);
 });
 
 it("does not claim success when the notification insert fails", async () => {
   (prisma.$transaction as jest.Mock).mockRejectedValue(new Error("database write failed"));
   expect(await checkPaymentReminders()).toBe(0);
-  expect(sendPushForNotification).not.toHaveBeenCalled();
+  expect(createNotificationInTransaction).not.toHaveBeenCalled();
 });
