@@ -78,6 +78,12 @@ async function main() {
     db.transaction((tx) => fn(adapter(tx)))) as typeof prisma.$transaction;
   try {
     await db.exec(schema);
+    await db.exec("DROP TABLE import_history");
+    const repairImportHistory = await readFile(
+      "prisma/migrations/20260929135500_repair_import_history/migration.sql",
+      "utf8",
+    );
+    await db.exec(repairImportHistory);
     for (const id of [1, 2]) {
       const n = id * 10;
       await db.exec(`INSERT INTO clients (id,name,slug,updated_at) VALUES (${id},'Shop ${id}','shop-${id}',now());
@@ -98,6 +104,8 @@ async function main() {
         INSERT INTO push_deliveries (id,client_id,notification_id,subscription_id) VALUES (${n},${id},${n},${n});
         INSERT INTO user_push_preferences (id,user_id,enabled,updated_at) VALUES (${n},${n},true,now());`);
     }
+    await db.exec(repairImportHistory);
+    assert.equal((await db.query("SELECT id FROM import_history")).rows.length, 2, "repair preserves existing history");
     await db.exec(
       "INSERT INTO users (id,username,password,role,client_id,updated_at) VALUES (99,'platform','platform-hash','SUPER_ADMIN',1,now()); SELECT setval('audit_logs_id_seq',100,true)",
     );
