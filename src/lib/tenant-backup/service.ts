@@ -49,6 +49,8 @@ export class ExportDiagnosticError extends Error {
 }
 
 function scope(table: BackupTable, clientId: number) {
+  if (table === "user_permissions")
+    return Prisma.sql`r.client_id=${clientId} AND r.user_id IN (SELECT id FROM users WHERE client_id=${clientId} AND role <> 'SUPER_ADMIN')`;
   if (table === "push_deliveries")
     return Prisma.sql`r.client_id=${clientId} AND r.subscription_id IN (SELECT s.id FROM push_subscriptions s JOIN users u ON u.id=s.user_id WHERE u.client_id=${clientId} AND u.role <> 'SUPER_ADMIN')`;
   return USER_SCOPED.has(table)
@@ -139,6 +141,9 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
   const snapshot = snapshotSchema.parse(input);
   // Version 1 snapshots predating the outbox have no queued deliveries.
   if (!("push_deliveries" in snapshot.tables)) snapshot.tables.push_deliveries = [];
+  // Never silently reset a shop's current grants to role defaults with an older archive.
+  if (!("client_permissions" in snapshot.tables) || !("user_permissions" in snapshot.tables))
+    throw new BackupError("Backup predates permissions; migrate the archive before restoring", 409);
   if (snapshot.client.id !== clientId) throw new BackupError("Backup belongs to another shop", 403);
   if (Object.keys(snapshot.tables).sort().join() !== [...TENANT_BACKUP_TABLES].sort().join())
     throw new BackupError("Incomplete or unsupported table inventory");
@@ -153,6 +158,8 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
         throw new BackupError("Foreign tenant row in backup", 403);
       if (table === "users" && !["ADMIN", "USER"].includes(String(row.role)))
         throw new BackupError("Platform accounts cannot be restored from tenant backups", 403);
+      if (table === "user_permissions" && !userIds.has(row.user_id))
+        throw new BackupError("Permission belongs to a user outside this shop", 403);
     }
   }
   for (const [children, parentKey, parents] of [
@@ -163,6 +170,7 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
     ["company_payments", "company_id", "companies"],
     ["push_deliveries", "notification_id", "notifications"],
     ["push_deliveries", "subscription_id", "push_subscriptions"],
+    ["user_permissions", "user_id", "users"],
   ]) {
     const ids = new Set(snapshot.tables[parents].map((row) => row.id));
     if (snapshot.tables[children].some((row) => !ids.has(row[parentKey])))

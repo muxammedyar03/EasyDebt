@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { prisma } from "@/lib/prisma";
 import { getTranslations } from "next-intl/server";
 import { AuditLogsTable } from "./_components/audit-logs-table";
@@ -18,6 +19,7 @@ export default async function AuditLogsPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+  if (!(await hasPermission(session, "audit.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
 
   const t = await getTranslations("audit");
@@ -187,3 +189,4 @@ export default async function AuditLogsPage({
     </div>
   );
 }
+

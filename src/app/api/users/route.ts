@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,7 @@ import { requireClientId } from "@/lib/tenant";
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "users.create"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
@@ -92,6 +94,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "users.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
@@ -129,3 +132,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Foydalanuvchilarni yuklashda xatolik" }, { status: 500 });
   }
 }
+

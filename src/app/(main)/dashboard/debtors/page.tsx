@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { DebtorsTable } from "./_components/debtors-table";
 import { SectionCard } from "../_components/section-card";
 import { BadgeDollarSign, HandCoinsIcon, Users } from "lucide-react";
@@ -23,6 +24,7 @@ export default async function DebtorsPage({
   const t = await getTranslations("debtorsPage");
   const session = await getSession();
   if (!session) redirect("/auth/login");
+  if (!(await hasPermission(session, "debtors.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
   const params = await searchParams;
   const page = Number(params.page) || 1;
@@ -97,3 +99,4 @@ export default async function DebtorsPage({
     </div>
   );
 }
+

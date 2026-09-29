@@ -26,6 +26,7 @@ export async function getPreference<T extends string>(key: string, allowed: read
 }
 
 import { getSession } from "@/lib/auth";
+import { requirePermission } from "@/lib/security/permission-access";
 import { signShareToken } from "@/lib/share-token";
 import { prisma } from "@/lib/prisma";
 import { requireClientId } from "@/lib/tenant";
@@ -36,6 +37,7 @@ export async function generateShareTokenAction(externalId: string): Promise<stri
   if (!session) {
     throw new Error("Unauthorized");
   }
+  await requirePermission(session, "debtors.share");
   const id = z.string().uuid().parse(externalId);
   const clientId = requireClientId(session);
   const debtor = await prisma.debtor.findFirst({

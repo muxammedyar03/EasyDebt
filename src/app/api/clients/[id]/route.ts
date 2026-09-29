@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -13,6 +14,7 @@ const updateClientSchema = z.object({
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "clients.manage"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -60,3 +62,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { redirect, notFound } from "next/navigation";
@@ -14,6 +15,7 @@ export default async function ReportsPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+  if (!(await hasPermission(session, "reports.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
   let query;
   try {
@@ -52,3 +54,4 @@ export default async function ReportsPage({
     </div>
   );
 }
+

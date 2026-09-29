@@ -65,6 +65,7 @@
     "auditLog": "Журнал аудита",
     "users": "Пользователи",
     "clients": "Магазины",
+    "permissions": "Права доступа",
     "companyReceipts": "Чеки платежей",
     "quickCreate": "Быстрое создание",
     "addDebtor": "Добавить должника",

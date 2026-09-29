@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
@@ -19,6 +20,7 @@ const subscribeSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "push-settings.manage"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "push-settings.manage"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -118,6 +121,7 @@ export async function DELETE(request: NextRequest) {
 export async function GET() {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "push-settings.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -169,3 +173,4 @@ export async function GET() {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+

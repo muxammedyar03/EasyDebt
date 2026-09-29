@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -12,6 +13,7 @@ import { createCompanyDebtApiSchema } from "@/lib/validation/company-debt";
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "company-debts.create"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
@@ -46,3 +48,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
+

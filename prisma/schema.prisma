@@ -32,6 +32,8 @@ model Client {
   company_debts           CompanyDebt[]
   company_payments        CompanyPayment[]
   company_daily_snapshots CompanyDailySnapshot[]
+  permission_overrides     ClientPermission[]
+  user_permission_overrides UserPermission[]
 
   @@map("clients")
 }
@@ -60,9 +62,50 @@ model User {
   created_company_payments CompanyPayment[]     @relation("CompanyPaymentCreatedBy")
   push_subscriptions       PushSubscription[]
   user_push_preferences    UserPushPreferences?
+  permission_overrides     UserPermission[]
 
+  @@unique([id, client_id])
   @@index([client_id])
   @@map("users")
+}
+
+model PlatformPermission {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  enabled    Boolean
+  updated_at DateTime @updatedAt
+
+  @@map("platform_permissions")
+}
+
+model ClientPermission {
+  id         Int      @id @default(autoincrement())
+  client_id  Int
+  key        String
+  enabled    Boolean
+  updated_at DateTime @updatedAt
+
+  client Client @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  @@unique([client_id, key])
+  @@index([client_id])
+  @@map("client_permissions")
+}
+
+model UserPermission {
+  id         Int      @id @default(autoincrement())
+  client_id  Int
+  user_id    Int
+  key        String
+  enabled    Boolean
+  updated_at DateTime @updatedAt
+
+  client Client @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id, client_id], references: [id, client_id], onDelete: Cascade)
+
+  @@unique([user_id, key])
+  @@index([client_id])
+  @@map("user_permissions")
 }
 
 model Debtor {

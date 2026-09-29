@@ -88,6 +88,8 @@ async function main() {
       const n = id * 10;
       await db.exec(`INSERT INTO clients (id,name,slug,updated_at) VALUES (${id},'Shop ${id}','shop-${id}',now());
         INSERT INTO users (id,username,password,role,client_id,updated_at) VALUES (${n},'user-${id}','hash-${id}','ADMIN',${id},now());
+        INSERT INTO client_permissions (id,client_id,key,enabled) VALUES (${n},${id},'payments.create',true);
+        INSERT INTO user_permissions (id,client_id,user_id,key,enabled) VALUES (${n},${id},${n},'payments.create',true);
         INSERT INTO settings (id,key,value,client_id,updated_at) VALUES (${n},'overdue_days','45',${id},now());
         INSERT INTO debtors (id,external_id,first_name,last_name,total_debt,created_by,client_id,updated_at) VALUES (${n},'debtor-${id}','First','Last',90,${n},${id},now());
         INSERT INTO companies (id,external_id,name,total_debt,created_by,client_id,updated_at) VALUES (${n},'company-${id}','Supplier',90,${n},${id},now());
@@ -123,6 +125,14 @@ async function main() {
     const legacy = structuredClone(snapshot);
     delete legacy.tables.push_deliveries;
     assert.deepEqual(validateSnapshot(legacy, 1).tables.push_deliveries, [], "older backups remain restorable");
+    const olderPermissions = structuredClone(snapshot);
+    delete olderPermissions.tables.client_permissions;
+    delete olderPermissions.tables.user_permissions;
+    assert.throws(
+      () => validateSnapshot(olderPermissions, 1),
+      /predates permissions/,
+      "older archives must not silently reset access controls",
+    );
     await previewTenant(decoded);
     assert.throws(() => validateSnapshot(decoded, 2), /another shop/);
     await db.exec("UPDATE debtors SET first_name='changed' WHERE id=10; UPDATE settings SET value='99' WHERE id=10;");

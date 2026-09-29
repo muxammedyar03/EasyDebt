@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { deleteEmptyRecords, RecordDeletionError } from "@/lib/security/delete-records";
 import { can } from "@/lib/security/permissions";
 import { NextRequest, NextResponse } from "next/server";
@@ -19,6 +20,7 @@ const updateCompanySchema = z.object({
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "companies.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -46,6 +48,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "companies.edit"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -89,6 +92,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "companies.delete"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -119,3 +123,4 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
+

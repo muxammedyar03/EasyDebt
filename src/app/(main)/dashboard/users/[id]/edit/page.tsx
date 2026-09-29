@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/security/permission-access";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { EditUserForm } from "../../_components/edit-user-form";
@@ -13,7 +14,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   const t = await getTranslations("users");
   const session = await getSession();
 
-  if (!session || session.role !== "SUPER_ADMIN") {
+  if (!session || !(await hasPermission(session, "users.edit")) || session.role !== "SUPER_ADMIN") {
     redirect("/unauthorized");
   }
 

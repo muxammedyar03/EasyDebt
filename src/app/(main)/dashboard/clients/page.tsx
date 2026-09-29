@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { TenantBackupPanel } from "./_components/tenant-backup-panel";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -13,7 +14,7 @@ export default async function ClientsPage() {
   const t = await getTranslations("clients");
   const session = await getSession();
 
-  if (!session || session.role !== "SUPER_ADMIN") {
+  if (!session || !(await hasPermission(session, "clients.view"))) {
     redirect("/unauthorized");
   }
 
@@ -55,3 +56,4 @@ export default async function ClientsPage() {
     </div>
   );
 }
+

@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
@@ -7,6 +8,7 @@ import { Prisma } from "@prisma/client";
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "audit.export"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -109,3 +111,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

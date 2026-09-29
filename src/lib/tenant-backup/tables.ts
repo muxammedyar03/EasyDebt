@@ -1,6 +1,8 @@
 /** Explicit inventory: adding a tenant model requires updating backup coverage. */
 export const TENANT_BACKUP_TABLES = [
   "users",
+  "client_permissions",
+  "user_permissions",
   "settings",
   "debtors",
   "companies",

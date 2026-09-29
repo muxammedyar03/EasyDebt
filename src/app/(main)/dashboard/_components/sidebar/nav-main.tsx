@@ -56,6 +56,7 @@ const PendingLink = React.forwardRef<HTMLAnchorElement, React.ComponentProps<typ
 
 interface NavMainProps {
   readonly items: readonly NavGroup[];
+  readonly allowedPermissions: readonly string[];
 }
 
 const IsComingSoon = () => {
@@ -177,7 +178,7 @@ const NavItemCollapsed = ({
   );
 };
 
-export function NavMain({ items }: NavMainProps) {
+export function NavMain({ items, allowedPermissions }: NavMainProps) {
   const pathname = usePathname();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const { user } = useCurrentUser();
@@ -199,10 +200,12 @@ export function NavMain({ items }: NavMainProps) {
     return items
       .map((group: NavGroup) => ({
         ...group,
-        items: group.items.filter((item) => !item.roles?.length || (user != null && item.roles.includes(user.role))),
+        items: group.items.filter((item) =>
+          (item.permission != null || !item.roles?.length || (user != null && item.roles.includes(user.role))) &&
+          (!item.permission || allowedPermissions.includes(item.permission))),
       }))
       .filter((group) => group.items.length > 0);
-  }, [items, user]);
+  }, [items, user, allowedPermissions]);
 
   return (
     <>

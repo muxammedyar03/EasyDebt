@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { BadgeDollarSign, Building2, HandCoinsIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
@@ -20,6 +21,7 @@ export default async function MyDebtsPage({
 }) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+  if (!(await hasPermission(session, "companies.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
   const t = await getTranslations("myDebts");
   const params = await searchParams;
@@ -95,3 +97,4 @@ export default async function MyDebtsPage({
     </div>
   );
 }
+

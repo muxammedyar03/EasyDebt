@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
@@ -20,6 +21,7 @@ const DASHBOARD_DEFAULT_DEBTOR_LIMIT = 100;
 export default async function Page() {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+  if (!(await hasPermission(session, "dashboard.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
 
   const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
@@ -57,3 +59,4 @@ export default async function Page() {
     </div>
   );
 }
+

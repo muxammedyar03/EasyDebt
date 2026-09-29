@@ -7,6 +7,7 @@ import {
   Building2,
   ImageIcon,
   Store,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -17,6 +18,7 @@ export interface NavSubItem {
   comingSoon?: boolean;
   newTab?: boolean;
   isNew?: boolean;
+  permission?: string;
 }
 
 export interface NavMainItem {
@@ -28,6 +30,7 @@ export interface NavMainItem {
   newTab?: boolean;
   isNew?: boolean;
   roles?: string[];
+  permission?: string;
 }
 
 export interface NavGroup {
@@ -44,6 +47,7 @@ export const sidebarItems: NavGroup[] = [
         title: "nav.home",
         url: "/dashboard/default",
         icon: LayoutDashboard,
+        permission: "dashboard.view",
       },
     ],
   },
@@ -55,11 +59,13 @@ export const sidebarItems: NavGroup[] = [
         title: "nav.debtors",
         url: "/dashboard/debtors",
         icon: UserCog,
+        permission: "debtors.view",
       },
       {
         title: "nav.customerRatings",
         url: "/dashboard/customers",
         icon: Users,
+        permission: "customers.view",
       },
     ],
   },
@@ -71,12 +77,14 @@ export const sidebarItems: NavGroup[] = [
         title: "nav.myDebts",
         url: "/dashboard/my-debts",
         icon: Building2,
+        permission: "companies.view",
       },
       {
         title: "nav.companyReceipts",
         url: "/dashboard/company-receipts",
         icon: ImageIcon,
         roles: ["SUPER_ADMIN"],
+        permission: "company-receipts.view",
       },
     ],
   },
@@ -88,11 +96,13 @@ export const sidebarItems: NavGroup[] = [
         title: "nav.reports",
         url: "/dashboard/reports",
         icon: BarChart3,
+        permission: "reports.view",
       },
       {
         title: "nav.auditLog",
         url: "/dashboard/audit-logs",
         icon: FileText,
+        permission: "audit.view",
       },
     ],
   },
@@ -105,12 +115,20 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/users",
         icon: Users,
         roles: ["SUPER_ADMIN", "ADMIN"],
+        permission: "users.view",
       },
       {
         title: "nav.clients",
         url: "/dashboard/clients",
         icon: Store,
         roles: ["SUPER_ADMIN"],
+        permission: "clients.view",
+      },
+      {
+        title: "nav.permissions",
+        url: "/dashboard/permissions",
+        icon: ShieldCheck,
+        permission: "permissions.view",
       },
     ],
   },

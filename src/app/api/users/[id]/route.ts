@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { takePinAttempt } from "@/lib/security/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
@@ -10,6 +11,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     const { id } = await params;
     const session = await getSession();
+    if (session && session.userId !== Number(id) && !(await hasPermission(session, "users.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -158,6 +161,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Noma'lum action" }, { status: 400 });
     }
 
+    if (!(await hasPermission(session, "users.edit")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+
     if (!session) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -271,6 +277,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     const session = await getSession();
+    if (session && !(await hasPermission(session, "users.delete"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });

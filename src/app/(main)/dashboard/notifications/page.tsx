@@ -1,4 +1,7 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/security/permission-access";
 import { headers as getHeaders, cookies as getCookies } from "next/headers";
 import { format } from "date-fns";
 import { ru, uz } from "date-fns/locale";
@@ -8,6 +11,7 @@ import NotificationsClient from "./_components/notifications-client";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
+  if (!(await hasPermission(await getSession(), "notifications.view"))) redirect("/unauthorized");
   const params = (await searchParams) ?? {};
   const page = Math.max(parseInt(params.page ?? "1", 10) || 1, 1);
   const pageSize = Math.min(Math.max(parseInt(params.pageSize ?? "10", 10) || 10, 1), 50);
