@@ -13,7 +13,8 @@ type Data = {
   canManage: boolean; canManageClient: boolean;
 };
 type Scope = "platform" | "client" | "user";
-const allPages = PERMISSION_GROUPS.flatMap((group) => group.pages);
+type CatalogPage = (typeof PERMISSION_GROUPS)[number]["pages"][number];
+const allPages = PERMISSION_GROUPS.flatMap<CatalogPage>((group) => group.pages);
 
 export function PermissionsManager({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [data, setData] = useState<Data | null>(null);
