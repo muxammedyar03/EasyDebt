@@ -8,6 +8,8 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { createRequiredAuditLog } from "@/lib/audit";
+import { serializableTransaction } from "@/lib/security/serializable";
 import { paymentReminderRepository } from "@/entities/payment-reminder/api";
 import type {
   PaymentReminderDomain,
@@ -188,13 +190,28 @@ export class PaymentReminderService {
    * Create a new payment reminder
    */
   async create(clientId: number, input: CreatePaymentReminderInput): Promise<PaymentReminderDomain> {
-    const reminder = await paymentReminderRepository.create({
-      client: { connect: { id: clientId } },
-      debtor: { connect: { id: input.debtorId } },
-      creator: { connect: { id: input.createdBy } },
-      reminder_at: input.reminderAt,
-      note: input.note,
-      status: "PENDING",
+    const reminder = await serializableTransaction(async (tx) => {
+      const row = await tx.paymentReminder.create({
+        data: {
+          client_id: clientId,
+          debtor_id: input.debtorId,
+          created_by: input.createdBy,
+          reminder_at: input.reminderAt,
+          note: input.note,
+          status: "PENDING",
+        },
+        include: { debtor: true, creator: true },
+      });
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: input.createdBy,
+        action: "CREATE",
+        entityType: "PAYMENT_REMINDER",
+        entityId: row.id,
+        newValue: { debtor_id: row.debtor_id, reminder_at: row.reminder_at, note: row.note },
+        description: `To'lov eslatmasi #${row.id} yaratildi`,
+      });
+      return row;
     });
     return prismaToDomainReminder(reminder);
   }
@@ -202,15 +219,38 @@ export class PaymentReminderService {
   /**
    * Update a payment reminder
    */
-  async update(clientId: number, id: number, input: UpdatePaymentReminderInput): Promise<PaymentReminderDomain> {
+  async update(
+    clientId: number,
+    id: number,
+    input: UpdatePaymentReminderInput,
+    actorId?: number,
+  ): Promise<PaymentReminderDomain> {
     const data: Prisma.PaymentReminderUpdateInput = {};
     if (input.reminderAt !== undefined) data.reminder_at = input.reminderAt;
     if (input.note !== undefined) data.note = input.note;
     if (input.status !== undefined) data.status = input.status;
 
-    const existing = await paymentReminderRepository.findFirst({ id, client_id: clientId });
-    if (!existing) throw new Error("Reminder not found");
-    const reminder = await paymentReminderRepository.update(id, data);
+    const reminder = await serializableTransaction(async (tx) => {
+      const existing = await tx.paymentReminder.findFirst({ where: { id, client_id: clientId } });
+      if (!existing) throw new Error("Reminder not found");
+      const row = await tx.paymentReminder.update({
+        where: { id, client_id: clientId },
+        data,
+        include: { debtor: true, creator: true },
+      });
+      if (actorId)
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: actorId,
+          action: "UPDATE",
+          entityType: "PAYMENT_REMINDER",
+          entityId: id,
+          oldValue: { reminder_at: existing.reminder_at, note: existing.note, status: existing.status },
+          newValue: { reminder_at: row.reminder_at, note: row.note, status: row.status },
+          description: `To'lov eslatmasi #${id} yangilandi`,
+        });
+      return row;
+    });
     return prismaToDomainReminder(reminder);
   }
 
@@ -244,10 +284,27 @@ export class PaymentReminderService {
   /**
    * Delete a reminder
    */
-  async delete(clientId: number, id: number): Promise<void> {
-    const existing = await paymentReminderRepository.findFirst({ id, client_id: clientId });
-    if (!existing) throw new Error("Reminder not found");
-    await paymentReminderRepository.delete(id);
+  async delete(clientId: number, id: number, actorId?: number): Promise<void> {
+    await serializableTransaction(async (tx) => {
+      const existing = await tx.paymentReminder.findFirst({ where: { id, client_id: clientId } });
+      if (!existing) throw new Error("Reminder not found");
+      await tx.paymentReminder.delete({ where: { id, client_id: clientId } });
+      if (actorId)
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: actorId,
+          action: "DELETE",
+          entityType: "PAYMENT_REMINDER",
+          entityId: id,
+          oldValue: {
+            debtor_id: existing.debtor_id,
+            reminder_at: existing.reminder_at,
+            note: existing.note,
+            status: existing.status,
+          },
+          description: `To'lov eslatmasi #${id} o'chirildi`,
+        });
+    });
   }
 
   /**

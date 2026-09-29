@@ -3,7 +3,6 @@ import { readFile } from "fs/promises";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
 import { deleteCompanyReceiptFile, getCompanyReceiptAbsolutePath } from "@/lib/companies/receipt-storage";
@@ -55,7 +54,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (!session) {
@@ -78,25 +77,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "To'lov topilmadi" }, { status: 404 });
     }
 
-    await deleteCompanyReceiptFile(payment.receiptPath);
-    await companyPaymentService.update(clientId, paymentId, {
-      receiptPath: null,
-      receiptName: null,
-      receiptMime: null,
-      receiptSize: null,
-    });
-
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "DELETE",
-      entityType: "COMPANY_PAYMENT_RECEIPT",
-      entityId: paymentId,
-      oldValue: { receipt_path: payment.receiptPath },
-      description: `Kompaniya to'lov cheki #${paymentId} o'chirildi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
+    const deletedPath = await companyPaymentService.removeReceipt(clientId, paymentId, session.userId);
+    await deleteCompanyReceiptFile(deletedPath);
 
     return NextResponse.json({ success: true });
   } catch (error) {

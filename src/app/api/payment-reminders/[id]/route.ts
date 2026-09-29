@@ -3,7 +3,6 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
-import { createAuditLog } from "@/lib/audit";
 
 const updateReminderSchema = z.object({
   reminder_at: z
@@ -77,31 +76,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const validatedData = updateReminderSchema.parse(body);
 
-    const reminder = await paymentReminderService.update(clientId, reminderId, {
-      reminderAt: validatedData.reminder_at,
-      note: validatedData.note ?? undefined,
-      status: validatedData.status,
-    });
-
-    // Create audit log
-    await createAuditLog({
+    const reminder = await paymentReminderService.update(
       clientId,
-      userId: session.userId,
-      action: "UPDATE",
-      entityType: "PAYMENT_REMINDER",
-      entityId: reminder.id,
-      oldValue: {
-        reminder_at: existingReminder.reminderAt,
-        note: existingReminder.note,
-        status: existingReminder.status,
-      },
-      newValue: {
-        reminder_at: validatedData.reminder_at,
-        note: validatedData.note,
+      reminderId,
+      {
+        reminderAt: validatedData.reminder_at,
+        note: validatedData.note ?? undefined,
         status: validatedData.status,
       },
-      description: `To'lov eslatmasi yangilandi`,
-    });
+      session.userId,
+    );
 
     return NextResponse.json(reminder);
   } catch (error) {
@@ -139,22 +123,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Eslatma topilmadi" }, { status: 404 });
     }
 
-    await paymentReminderService.delete(clientId, reminderId);
-
-    // Create audit log
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "DELETE",
-      entityType: "PAYMENT_REMINDER",
-      entityId: reminderId,
-      oldValue: {
-        debtor_id: existingReminder.debtorId,
-        reminder_at: existingReminder.reminderAt,
-        note: existingReminder.note,
-      },
-      description: `To'lov eslatmasi o'chirildi`,
-    });
+    await paymentReminderService.delete(clientId, reminderId, session.userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

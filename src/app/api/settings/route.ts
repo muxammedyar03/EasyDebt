@@ -1,6 +1,7 @@
 import { can } from "@/lib/security/permissions";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createRequiredAuditLog } from "@/lib/audit";
+import { serializableTransaction } from "@/lib/security/serializable";
 import { settingsRepository } from "@/entities/settings/api";
 import { getApiErrorMessage } from "@/lib/errors";
 import { reEvaluateOverdueDebtors } from "@/lib/overdue-checker";
@@ -30,25 +31,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Key and value are required" }, { status: 400 });
     }
 
-    const oldSettings = await settingsRepository.findByKey(clientId, key);
-    const setting = await settingsRepository.upsert(clientId, key, value);
-
-    const oldValue = oldSettings?.value || "mavjud emas";
-    const keyName = key === "debt_limit" ? "Qarz limiti" : key === "overdue_days" ? "Muddati o'tish kuni" : key;
-    const description = `${keyName} - "${oldValue}" dan "${value}" ga o'zgartirildi`;
-
-    await prisma.auditLog.create({
-      data: {
-        user_id: session.userId,
-        client_id: clientId,
+    const setting = await serializableTransaction(async (tx) => {
+      const oldSettings = await settingsRepository.findByKey(clientId, key, tx);
+      const updated = await settingsRepository.upsert(clientId, key, value, tx);
+      const keyName = key === "debt_limit" ? "Qarz limiti" : "Muddati o'tish kuni";
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: session.userId,
         action: "UPDATE",
-        entity_type: "SETTINGS",
-        old_value: JSON.stringify({ key, value: oldValue }),
-        new_value: JSON.stringify({ key, value }),
-        description,
-        ip_address: request.headers.get("cf-connecting-ip") || "",
-        user_agent: request.headers.get("user-agent") || "",
-      },
+        entityType: "SETTINGS",
+        entityId: updated.id,
+        oldValue: { key, value: oldSettings?.value ?? null },
+        newValue: { key, value },
+        description: `${keyName} - "${oldSettings?.value ?? "mavjud emas"}" dan "${value}" ga o'zgartirildi`,
+        ipAddress: request.headers.get("cf-connecting-ip") || "",
+        userAgent: request.headers.get("user-agent") || "",
+      });
+      return updated;
     });
 
     if (key === "overdue_days") {

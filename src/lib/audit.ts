@@ -58,14 +58,6 @@ export async function createRequiredAuditLog(tx: Prisma.TransactionClient, data:
   });
 }
 
-export async function createAuditLog(data: AuditLogData) {
-  try {
-    await createRequiredAuditLog(prisma, data);
-  } catch (error) {
-    console.error("Failed to create audit log:", error);
-  }
-}
-
 export async function getAuditLogs(filters?: {
   clientId: number;
   userId?: number;

@@ -218,6 +218,30 @@ export class CompanyPaymentService {
     return prismaToDomainCompanyPayment(result);
   }
 
+  /** Clear the DB reference and record the actor together. Delete the file only after commit. */
+  async removeReceipt(clientId: number, id: number, actorId: number): Promise<string | null> {
+    return serializableTransaction(async (tx) => {
+      const payment = await tx.companyPayment.findFirst({ where: { id, client_id: clientId } });
+      if (!payment) throw new Error("To'lov topilmadi");
+      if (!payment.receipt_path) return null;
+
+      await tx.companyPayment.update({
+        where: { id, client_id: clientId },
+        data: { receipt_path: null, receipt_name: null, receipt_mime: null, receipt_size: null },
+      });
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: actorId,
+        action: "DELETE",
+        entityType: "COMPANY_PAYMENT_RECEIPT",
+        entityId: id,
+        oldValue: { receipt_path: payment.receipt_path },
+        description: `Kompaniya to'lov cheki #${id} o'chirildi`,
+      });
+      return payment.receipt_path;
+    });
+  }
+
   async listWithReceipts(clientId: number, options?: { page?: number; limit?: number }) {
     const page = options?.page ?? 1;
     const limit = options?.limit ?? 20;

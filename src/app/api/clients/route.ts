@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getSession } from "@/lib/auth";
-import { createAuditLog } from "@/lib/audit";
+import { createRequiredAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { seedClientSettings, slugifyClientName } from "@/lib/clients/seed-client-settings";
 
@@ -57,26 +57,21 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${suffix++}`;
     }
 
-    const client = await prisma.client.create({
-      data: {
-        name: parsed.name.trim(),
-        slug,
-        is_active: true,
-      },
-    });
-
-    await seedClientSettings(client.id);
-
-    await createAuditLog({
-      userId: session.userId,
-      clientId: client.id,
-      action: "CREATE",
-      entityType: "CLIENT",
-      entityId: client.id,
-      newValue: { id: client.id, name: client.name, slug: client.slug },
-      description: `Client yaratildi: ${client.name}`,
-      ipAddress: req.headers.get("cf-connecting-ip") || "",
-      userAgent: req.headers.get("user-agent") || "",
+    const client = await prisma.$transaction(async (tx) => {
+      const created = await tx.client.create({ data: { name: parsed.name.trim(), slug, is_active: true } });
+      await seedClientSettings(created.id, tx);
+      await createRequiredAuditLog(tx, {
+        userId: session.userId,
+        clientId: created.id,
+        action: "CREATE",
+        entityType: "CLIENT",
+        entityId: created.id,
+        newValue: { id: created.id, name: created.name, slug: created.slug },
+        description: `Client yaratildi: ${created.name}`,
+        ipAddress: req.headers.get("cf-connecting-ip") || "",
+        userAgent: req.headers.get("user-agent") || "",
+      });
+      return created;
     });
 
     return NextResponse.json({ client }, { status: 201 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAuditLog } from "@/lib/audit";
+import { createRequiredAuditLog } from "@/lib/audit";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -23,34 +23,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    const existing = await prisma.client.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json({ error: "Topilmadi" }, { status: 404 });
-    }
-
     const body = await req.json();
     const parsed = updateClientSchema.parse(body);
-
-    const client = await prisma.client.update({
-      where: { id },
-      data: {
-        ...(parsed.name !== undefined ? { name: parsed.name.trim() } : {}),
-        ...(parsed.is_active !== undefined ? { is_active: parsed.is_active } : {}),
-      },
+    const client = await prisma.$transaction(async (tx) => {
+      const existing = await tx.client.findUnique({ where: { id } });
+      if (!existing) return null;
+      const updated = await tx.client.update({
+        where: { id },
+        data: {
+          ...(parsed.name !== undefined ? { name: parsed.name.trim() } : {}),
+          ...(parsed.is_active !== undefined ? { is_active: parsed.is_active } : {}),
+        },
+      });
+      await createRequiredAuditLog(tx, {
+        userId: session.userId,
+        clientId: updated.id,
+        action: "UPDATE",
+        entityType: "CLIENT",
+        entityId: updated.id,
+        oldValue: { name: existing.name, is_active: existing.is_active },
+        newValue: { name: updated.name, is_active: updated.is_active },
+        description: `Magazin yangilandi: ${updated.name}`,
+        ipAddress: req.headers.get("cf-connecting-ip") || "",
+        userAgent: req.headers.get("user-agent") || "",
+      });
+      return updated;
     });
-
-    await createAuditLog({
-      userId: session.userId,
-      clientId: client.id,
-      action: "UPDATE",
-      entityType: "CLIENT",
-      entityId: client.id,
-      oldValue: { name: existing.name, is_active: existing.is_active },
-      newValue: { name: client.name, is_active: client.is_active },
-      description: `Magazin yangilandi: ${client.name}`,
-      ipAddress: req.headers.get("cf-connecting-ip") || "",
-      userAgent: req.headers.get("user-agent") || "",
-    });
+    if (!client) return NextResponse.json({ error: "Topilmadi" }, { status: 404 });
 
     return NextResponse.json({ client });
   } catch (error) {

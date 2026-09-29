@@ -86,3 +86,32 @@ it("keys are scoped to shop and actor", async () => {
   await service.create(1, { ...input, createdBy: 4 });
   expect(new Set(committed.map((r) => r.external_id)).size).toBe(3);
 });
+it("keeps the receipt reference when its audit cannot be saved", async () => {
+  let receiptPath: string | null = "uploads/company-receipts/old.pdf";
+  const update = jest.fn(async () => {
+    receiptPath = null;
+  });
+  (prisma.$transaction as jest.Mock).mockImplementation(async (fn) => {
+    const previous = receiptPath;
+    try {
+      return await fn({
+        companyPayment: {
+          findFirst: jest.fn().mockResolvedValue({ id: 7, client_id: 1, receipt_path: previous }),
+          update,
+        },
+        auditLog: { create: jest.fn().mockRejectedValue(new Error("audit unavailable")) },
+      });
+    } catch (error) {
+      receiptPath = previous; // Simulate DB transaction rollback.
+      throw error;
+    }
+  });
+  await expect(service.removeReceipt(1, 7, 3)).rejects.toThrow("audit unavailable");
+  expect(update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: { id: 7, client_id: 1 },
+      data: expect.objectContaining({ receipt_path: null }),
+    }),
+  );
+  expect(receiptPath).toBe("uploads/company-receipts/old.pdf");
+});
