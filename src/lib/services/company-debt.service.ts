@@ -1,4 +1,5 @@
 import { serializableTransaction } from "@/lib/security/serializable";
+import { createRequiredAuditLog } from "@/lib/audit";
 /**
  * SERVICE - CompanyDebt create/update with company total_debt sync
  */
@@ -47,13 +48,27 @@ export class CompanyDebtService {
       });
 
       await companyDailySnapshotService.refreshAffectedDates(clientId, debt.created_at, tx);
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: input.createdBy,
+        action: "CREATE",
+        entityType: "COMPANY_DEBT",
+        entityId: debt.id,
+        newValue: { company_id: input.companyId, amount: debt.amount.toString(), note: debt.note },
+        description: `Kompaniya qarzi #${debt.id} qo'shildi`,
+      });
       return debt;
     });
 
     return prismaToDomainCompanyDebt(result);
   }
 
-  async update(clientId: number, id: number, input: UpdateCompanyDebtDomainInput): Promise<CompanyDebtDomain> {
+  async update(
+    clientId: number,
+    id: number,
+    input: UpdateCompanyDebtDomainInput,
+    actorId?: number,
+  ): Promise<CompanyDebtDomain> {
     const result = await serializableTransaction(async (tx) => {
       const existing = await tx.companyDebt.findFirst({ where: { id, client_id: clientId } });
       if (!existing) {
@@ -80,6 +95,17 @@ export class CompanyDebtService {
       }
 
       await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
+      if (actorId)
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: actorId,
+          action: "UPDATE",
+          entityType: "COMPANY_DEBT",
+          entityId: id,
+          oldValue: { amount: existing.amount.toString(), note: existing.note },
+          newValue: { amount: debt.amount.toString(), note: debt.note },
+          description: `Kompaniya qarzi #${id} yangilandi`,
+        });
       return debt;
     });
 

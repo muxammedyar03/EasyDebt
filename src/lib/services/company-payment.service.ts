@@ -14,6 +14,7 @@ async function receiptDigest(receiptPath: string) {
     .digest("hex");
 }
 import { serializableTransaction } from "@/lib/security/serializable";
+import { createRequiredAuditLog } from "@/lib/audit";
 /**
  * SERVICE - CompanyPayment create/update with company total_debt sync
  */
@@ -141,7 +142,12 @@ export class CompanyPaymentService {
     return prismaToDomainCompanyPayment(result);
   }
 
-  async update(clientId: number, id: number, input: UpdateCompanyPaymentDomainInput): Promise<CompanyPaymentDomain> {
+  async update(
+    clientId: number,
+    id: number,
+    input: UpdateCompanyPaymentDomainInput,
+    actorId?: number,
+  ): Promise<CompanyPaymentDomain> {
     const result = await serializableTransaction(async (tx) => {
       const existing = await tx.companyPayment.findFirst({ where: { id, client_id: clientId } });
       if (!existing) {
@@ -172,6 +178,17 @@ export class CompanyPaymentService {
       }
 
       await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
+      if (actorId)
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: actorId,
+          action: "UPDATE",
+          entityType: "COMPANY_PAYMENT",
+          entityId: id,
+          oldValue: { amount: existing.amount.toString(), payment_type: existing.payment_type, note: existing.note },
+          newValue: { amount: payment.amount.toString(), payment_type: payment.payment_type, note: payment.note },
+          description: `Kompaniya to'lovi #${id} yangilandi`,
+        });
       return payment;
     });
 

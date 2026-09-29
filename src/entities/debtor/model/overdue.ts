@@ -2,6 +2,7 @@
  * Debtor entity – model: overdue calculation.
  * Single source of truth for overdue-related calculations.
  */
+import { Prisma } from "@prisma/client";
 
 export interface OverdueSettings {
   goodUntilDays: number;
@@ -116,7 +117,7 @@ export function computeDebtorOverdueStatus(
   const debtsWithPayments: DebtWithPayments[] = debts.map((debt, index) => ({
     amount: debt.amount,
     createdAt: debt.createdAt,
-    // Feed each ledger payment exactly once, not once per debt.
+    // Ledger payments are debtor-wide. Keep each event once when adapting the old API.
     payments: index === 0 ? payments : [],
   }));
 
@@ -133,12 +134,15 @@ export function calculateDebtorOverdueStatus(debts: DebtWithPayments[], settings
     };
   }
 
-  const totalDebt = debts.reduce((sum, d) => sum + d.amount, 0);
-  const totalPaid = debts.reduce((sum, d) => sum + d.payments.reduce((pSum, p) => pSum + p.amount, 0), 0);
-  const remainingDebt = totalDebt - totalPaid;
-  const aggregatePaidPercent = totalDebt > 0 ? totalPaid / totalDebt : 0;
+  const totalDebt = debts.reduce((sum, d) => sum.plus(d.amount), new Prisma.Decimal(0));
+  const totalPaid = debts.reduce(
+    (sum, d) => d.payments.reduce((paid, p) => paid.plus(p.amount), sum),
+    new Prisma.Decimal(0),
+  );
+  const remainingDebt = totalDebt.minus(totalPaid);
+  const aggregatePaidPercent = totalDebt.gt(0) ? Math.min(1, totalPaid.div(totalDebt).toNumber()) : 0;
 
-  if (remainingDebt <= 0) {
+  if (remainingDebt.lte(0)) {
     return {
       status: "good",
       isOverdue: false,
@@ -162,20 +166,22 @@ export function calculateDebtorOverdueStatus(debts: DebtWithPayments[], settings
     });
   });
 
-  allTransactions.sort((a, b) => a.date.getTime() - b.date.getTime());
+  // A same-day debt precedes a same-day payment; preserve order among equal events.
+  allTransactions.sort((a, b) => a.date.getTime() - b.date.getTime() || (a.type === "debt" ? -1 : 1));
 
   let lastResetPayment: TransactionItem | null = null;
-  let runningDebt = 0;
+  let runningDebt = new Prisma.Decimal(0);
 
   for (const transaction of allTransactions) {
     if (transaction.type === "debt") {
-      runningDebt += transaction.amount;
+      runningDebt = runningDebt.plus(transaction.amount);
     } else {
-      const is50Plus = runningDebt > 0 && transaction.amount >= runningDebt * settings.minPaidPercent;
+      const is50Plus =
+        runningDebt.gt(0) && new Prisma.Decimal(transaction.amount).gte(runningDebt.mul(settings.minPaidPercent));
       if (is50Plus || ("resetsRating" in transaction.item && transaction.item.resetsRating)) {
         lastResetPayment = transaction.item;
       }
-      runningDebt -= transaction.amount;
+      runningDebt = runningDebt.minus(transaction.amount);
     }
   }
 

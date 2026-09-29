@@ -273,21 +273,27 @@ export async function POST(request: NextRequest) {
           _sum: { amount: true },
         });
 
-        const debtSumMap = new Map(allDebts.map((d) => [d.debtor_id, d._sum.amount?.toNumber() || 0]));
-        const paymentSumMap = new Map(allPayments.map((p) => [p.debtor_id, p._sum.amount?.toNumber() || 0]));
+        const latestPayments = await tx.payment.groupBy({
+          by: ["debtor_id"],
+          where: { client_id: clientId, debtor_id: { in: debtorIds } },
+          _max: { created_at: true },
+        });
+        const debtSumMap = new Map(allDebts.map((d) => [d.debtor_id, d._sum.amount ?? new Prisma.Decimal(0)]));
+        const paymentSumMap = new Map(allPayments.map((p) => [p.debtor_id, p._sum.amount ?? new Prisma.Decimal(0)]));
+        const latestPaymentMap = new Map(latestPayments.map((p) => [p.debtor_id, p._max.created_at]));
 
         // Batch update uchun Promise.all ishlatamiz
         await Promise.all(
           debtorIds.map((debtorId) => {
-            const totalDebts = debtSumMap.get(debtorId) || 0;
-            const totalPayments = paymentSumMap.get(debtorId) || 0;
-            const totalDebt = totalDebts - totalPayments;
+            const totalDebts = debtSumMap.get(debtorId) ?? new Prisma.Decimal(0);
+            const totalPayments = paymentSumMap.get(debtorId) ?? new Prisma.Decimal(0);
+            const totalDebt = totalDebts.minus(totalPayments);
 
             return tx.debtor.update({
               where: { id: debtorId, client_id: clientId },
               data: {
-                total_debt: new Prisma.Decimal(totalDebt),
-                last_payment_date: totalPayments > 0 ? new Date() : null,
+                total_debt: totalDebt,
+                last_payment_date: latestPaymentMap.get(debtorId) ?? null,
               },
             });
           }),

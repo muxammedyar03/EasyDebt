@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyDebtService } from "@/lib/services/company-debt.service";
 import { companyService } from "@/lib/services/company.service";
@@ -33,22 +32,6 @@ export async function POST(request: NextRequest) {
       note: validated.note,
       items: validated.items ?? null,
       createdBy: session.userId,
-    });
-
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "CREATE",
-      entityType: "COMPANY_DEBT",
-      entityId: debt.id,
-      newValue: {
-        company_id: validated.company_id,
-        amount: validated.amount,
-        note: validated.note,
-      },
-      description: `${company.name} dan ${validated.amount.toLocaleString("uz-UZ")} so'm qarz olindi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
     });
 
     revalidatePath("/dashboard/my-debts");
