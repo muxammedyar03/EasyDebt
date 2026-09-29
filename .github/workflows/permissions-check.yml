@@ -22,3 +22,5 @@ jobs:
       - run: npm run test:permissions-db
       - run: npm run test:tenant-backup
       - run: npx tsc --noEmit --incremental false
+      - run: npx eslint src/lib/security/permission-catalog.ts src/lib/security/permission-access.ts src/lib/security/__tests__/permission-catalog.test.ts src/lib/security/__tests__/permission-access.test.ts src/app/api/permissions 'src/app/(main)/dashboard/permissions'
+      - run: npm run build
