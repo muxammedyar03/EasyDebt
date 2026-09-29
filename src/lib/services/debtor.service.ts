@@ -10,6 +10,8 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { createRequiredAuditLog } from "@/lib/audit";
+import { serializableTransaction } from "@/lib/security/serializable";
 import { debtorRepository } from "@/entities/debtor/api";
 import { debtRepository } from "@/entities/debt/api";
 import { paymentRepository } from "@/entities/payment/api";
@@ -312,21 +314,44 @@ export class DebtorService {
   /**
    * Update a debtor (returns Domain type)
    */
-  async update(clientId: number, id: number, input: UpdateDebtorDomainInput): Promise<DebtorDomain> {
+  async update(clientId: number, id: number, input: UpdateDebtorDomainInput, actorId?: number): Promise<DebtorDomain> {
     const settings = await this.getSettings(clientId);
-    const existing = await debtorRepository.findFirst({ id, client_id: clientId });
-    if (!existing) throw new Error("Debtor not found");
-
-    const debtor = await debtorRepository.update(
-      id,
-      {
-        first_name: input.firstName,
-        last_name: input.lastName,
-        phone_number: input.phoneNumber,
-        address: input.address,
-      },
-      { creator: true },
-    );
+    const debtor = await serializableTransaction(async (tx) => {
+      const existing = await tx.debtor.findFirst({ where: { id, client_id: clientId } });
+      if (!existing) throw new Error("Debtor not found");
+      const updated = await tx.debtor.update({
+        where: { id, client_id: clientId },
+        data: {
+          first_name: input.firstName,
+          last_name: input.lastName,
+          phone_number: input.phoneNumber,
+          address: input.address,
+        },
+        include: { creator: true },
+      });
+      if (actorId)
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: actorId,
+          action: "UPDATE",
+          entityType: "DEBTOR",
+          entityId: id,
+          oldValue: {
+            first_name: existing.first_name,
+            last_name: existing.last_name,
+            phone_number: existing.phone_number,
+            address: existing.address,
+          },
+          newValue: {
+            first_name: updated.first_name,
+            last_name: updated.last_name,
+            phone_number: updated.phone_number,
+            address: updated.address,
+          },
+          description: `Qarzdor ${updated.first_name} ${updated.last_name} ma'lumotlari yangilandi`,
+        });
+      return updated;
+    });
 
     return prismaToDomainDebtor(debtor, settings);
   }

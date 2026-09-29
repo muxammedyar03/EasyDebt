@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createAuditLog } from "@/lib/audit";
+import { createRequiredAuditLog } from "@/lib/audit";
 import { getSession, setAuthCookie, signToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -41,9 +41,7 @@ export async function POST(req: NextRequest) {
       role: session.role,
       clientId: client.id,
     });
-    await setAuthCookie(token);
-
-    await createAuditLog({
+    await createRequiredAuditLog(prisma, {
       userId: session.userId,
       clientId: client.id,
       action: "UPDATE",
@@ -55,6 +53,7 @@ export async function POST(req: NextRequest) {
       ipAddress: req.headers.get("cf-connecting-ip") || "",
       userAgent: req.headers.get("user-agent") || "",
     });
+    await setAuthCookie(token);
 
     return NextResponse.json({
       client: {

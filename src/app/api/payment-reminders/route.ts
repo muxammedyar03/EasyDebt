@@ -3,7 +3,6 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { paymentReminderService } from "@/lib/services/payment-reminder.service";
-import { createAuditLog } from "@/lib/audit";
 
 const createReminderSchema = z.object({
   debtor_id: z.number().int().positive("Qarzdor ID noto'g'ri"),
@@ -79,21 +78,6 @@ export async function POST(request: NextRequest) {
       createdBy: session.userId,
       reminderAt: validatedData.reminder_at,
       note: validatedData.note ?? null,
-    });
-
-    // Create audit log
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "CREATE",
-      entityType: "PAYMENT_REMINDER",
-      entityId: reminder.id,
-      newValue: {
-        debtor_id: validatedData.debtor_id,
-        reminder_at: validatedData.reminder_at,
-        note: validatedData.note,
-      },
-      description: `To'lov eslatmasi yaratildi: ${reminder.debtor?.firstName} ${reminder.debtor?.lastName} uchun`,
     });
 
     return NextResponse.json(reminder, { status: 201 });

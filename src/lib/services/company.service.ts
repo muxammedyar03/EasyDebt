@@ -4,6 +4,8 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { createRequiredAuditLog } from "@/lib/audit";
+import { serializableTransaction } from "@/lib/security/serializable";
 import { companyRepository } from "@/entities/company/api";
 import { companyDebtRepository } from "@/entities/company-debt/api";
 import { companyPaymentRepository } from "@/entities/company-payment/api";
@@ -302,34 +304,75 @@ export class CompanyService {
 
   async create(clientId: number, input: CreateCompanyDomainInput): Promise<CompanyDomain> {
     const settings = await this.getSettings(clientId);
-    const row = await companyRepository.create(
-      {
-        name: input.name,
-        contact_person: input.contactPerson,
-        phone_number: input.phoneNumber,
-        address: input.address,
-        client: { connect: { id: clientId } },
-        creator: { connect: { id: input.createdBy } },
-      },
-      { creator: true },
-    );
+    const row = await serializableTransaction(async (tx) => {
+      const company = await tx.company.create({
+        data: {
+          name: input.name,
+          contact_person: input.contactPerson,
+          phone_number: input.phoneNumber,
+          address: input.address,
+          client: { connect: { id: clientId } },
+          creator: { connect: { id: input.createdBy } },
+        },
+        include: { creator: true },
+      });
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: input.createdBy,
+        action: "CREATE",
+        entityType: "COMPANY",
+        entityId: company.id,
+        newValue: { name: company.name },
+        description: `Yangi kompaniya ${company.name} yaratildi`,
+      });
+      return company;
+    });
     return prismaToDomainCompany(row, settings);
   }
 
-  async update(clientId: number, id: number, input: UpdateCompanyDomainInput): Promise<CompanyDomain> {
+  async update(
+    clientId: number,
+    id: number,
+    input: UpdateCompanyDomainInput,
+    actorId?: number,
+  ): Promise<CompanyDomain> {
     const settings = await this.getSettings(clientId);
-    const existing = await companyRepository.findFirst({ id, client_id: clientId });
-    if (!existing) throw new Error("Company not found");
-    const row = await companyRepository.update(
-      id,
-      {
-        ...(input.name !== undefined ? { name: input.name } : {}),
-        ...(input.contactPerson !== undefined ? { contact_person: input.contactPerson } : {}),
-        ...(input.phoneNumber !== undefined ? { phone_number: input.phoneNumber } : {}),
-        ...(input.address !== undefined ? { address: input.address } : {}),
-      },
-      { creator: true },
-    );
+    const row = await serializableTransaction(async (tx) => {
+      const existing = await tx.company.findFirst({ where: { id, client_id: clientId } });
+      if (!existing) throw new Error("Company not found");
+      const company = await tx.company.update({
+        where: { id, client_id: clientId },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.contactPerson !== undefined ? { contact_person: input.contactPerson } : {}),
+          ...(input.phoneNumber !== undefined ? { phone_number: input.phoneNumber } : {}),
+          ...(input.address !== undefined ? { address: input.address } : {}),
+        },
+        include: { creator: true },
+      });
+      if (actorId)
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: actorId,
+          action: "UPDATE",
+          entityType: "COMPANY",
+          entityId: id,
+          oldValue: {
+            name: existing.name,
+            contact_person: existing.contact_person,
+            phone_number: existing.phone_number,
+            address: existing.address,
+          },
+          newValue: {
+            name: company.name,
+            contact_person: company.contact_person,
+            phone_number: company.phone_number,
+            address: company.address,
+          },
+          description: `Kompaniya ${company.name} ma'lumotlari yangilandi`,
+        });
+      return company;
+    });
     return prismaToDomainCompany(row, settings);
   }
 

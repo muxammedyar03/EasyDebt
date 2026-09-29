@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
-import { createAuditLog } from "@/lib/audit";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyService } from "@/lib/services/company.service";
 import type { CompanyFilterStatus, CompanySortBy } from "@/types/domain/company.domain";
@@ -75,21 +74,6 @@ export async function POST(request: NextRequest) {
       phoneNumber: validated.phone_number,
       address: validated.address,
       createdBy: session.userId,
-    });
-
-    await createAuditLog({
-      clientId,
-      userId: session.userId,
-      action: "CREATE",
-      entityType: "COMPANY",
-      entityId: company.id,
-      newValue: {
-        company_id: company.id,
-        name: company.name,
-      },
-      description: `Yangi kompaniya ${company.name} yaratildi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
     });
 
     revalidatePath("/dashboard/my-debts");

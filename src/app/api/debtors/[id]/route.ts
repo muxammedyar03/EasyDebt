@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
-import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { debtorService } from "@/lib/services/debtor.service";
@@ -63,30 +62,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json();
     const validatedData = updateDebtorSchema.parse(body);
 
-    const updated = await debtorService.update(clientId, debtorId, {
-      firstName: validatedData.first_name,
-      lastName: validatedData.last_name,
-      phoneNumber: validatedData.phone_number,
-      address: validatedData.address,
-    });
-
-    await createAuditLog({
+    const updated = await debtorService.update(
       clientId,
-      userId: session.userId,
-      action: "UPDATE",
-      entityType: "DEBTOR",
-      entityId: debtorId,
-      newValue: {
-        debtor_id: debtorId,
-        first_name: validatedData.first_name,
-        last_name: validatedData.last_name,
-        phone_number: validatedData.phone_number,
+      debtorId,
+      {
+        firstName: validatedData.first_name,
+        lastName: validatedData.last_name,
+        phoneNumber: validatedData.phone_number,
         address: validatedData.address,
       },
-      description: `Qarzdor ${updated.firstName} ${updated.lastName} ma'lumotlari yangilandi`,
-      ipAddress: request.headers.get("cf-connecting-ip") || "",
-      userAgent: request.headers.get("user-agent") || "",
-    });
+      session.userId,
+    );
 
     revalidatePath("/dashboard/debtors");
     revalidatePath("/dashboard/default");
