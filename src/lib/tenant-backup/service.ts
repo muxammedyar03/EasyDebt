@@ -38,6 +38,16 @@ const snapshotSchema = z
   .strict();
 export type TenantSnapshot = z.infer<typeof snapshotSchema>;
 
+export class ExportDiagnosticError extends Error {
+  constructor(
+    public readonly stage: string,
+    cause: unknown,
+  ) {
+    super(`Tenant export failed at ${stage}`, { cause });
+    this.name = "ExportDiagnosticError";
+  }
+}
+
 function scope(table: BackupTable, clientId: number) {
   if (table === "push_deliveries")
     return Prisma.sql`r.client_id=${clientId} AND r.subscription_id IN (SELECT s.id FROM push_subscriptions s JOIN users u ON u.id=s.user_id WHERE u.client_id=${clientId} AND u.role <> 'SUPER_ADMIN')`;
@@ -49,70 +59,80 @@ function scope(table: BackupTable, clientId: number) {
 }
 
 export async function exportTenant(clientId: number, actorId: number): Promise<TenantSnapshot> {
-  return prisma.$transaction(
-    async (tx) => {
-      const client = await tx.client.findUniqueOrThrow({ where: { id: clientId } });
-      const tables: Record<string, Record<string, unknown>[]> = {};
-      let size = 0;
-      for (const table of TENANT_BACKUP_TABLES) {
-        const money = MONEY_COLUMNS[table] ?? [];
-        const json = money.length
-          ? Prisma.sql`to_jsonb(r) || jsonb_build_object(${Prisma.join(money.flatMap((column) => [Prisma.sql`${column}::text`, Prisma.sql`${Prisma.raw(`r."${column}"`)}::text`]))})`
-          : Prisma.sql`to_jsonb(r)`;
-        tables[table] = [];
-        let lastId = 0;
-        for (;;) {
-          const rows = await tx.$queryRaw<Array<{ data: Record<string, unknown> }>>(
-            Prisma.sql`SELECT ${json} AS data FROM ${Prisma.raw(`"${table}"`)} r WHERE ${scope(table, clientId)} AND r.id > ${lastId} ORDER BY r.id LIMIT 1000`,
-          );
-          if (!rows.length) break;
-          size += Buffer.byteLength(JSON.stringify(rows));
-          if (size > MAX_BACKUP_BYTES) throw new BackupError("Backup exceeds 100 MiB; nothing was exported", 413);
-          tables[table].push(...rows.map((r) => r.data));
-          lastId = Number(rows[rows.length - 1].data.id);
+  let stage = "client";
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const client = await tx.client.findUniqueOrThrow({ where: { id: clientId } });
+        const tables: Record<string, Record<string, unknown>[]> = {};
+        let size = 0;
+        for (const table of TENANT_BACKUP_TABLES) {
+          stage = `table:${table}`;
+          const money = MONEY_COLUMNS[table] ?? [];
+          const json = money.length
+            ? Prisma.sql`to_jsonb(r) || jsonb_build_object(${Prisma.join(money.flatMap((column) => [Prisma.sql`${column}::text`, Prisma.sql`${Prisma.raw(`r."${column}"`)}::text`]))})`
+            : Prisma.sql`to_jsonb(r)`;
+          tables[table] = [];
+          let lastId = 0;
+          for (;;) {
+            const rows = await tx.$queryRaw<Array<{ data: Record<string, unknown> }>>(
+              Prisma.sql`SELECT ${json} AS data FROM ${Prisma.raw(`"${table}"`)} r WHERE ${scope(table, clientId)} AND r.id > ${lastId} ORDER BY r.id LIMIT 1000`,
+            );
+            if (!rows.length) break;
+            size += Buffer.byteLength(JSON.stringify(rows));
+            if (size > MAX_BACKUP_BYTES) throw new BackupError("Backup exceeds 100 MiB; nothing was exported", 413);
+            tables[table].push(...rows.map((r) => r.data));
+            lastId = Number(rows[rows.length - 1].data.id);
+          }
         }
-      }
-      const receipts: TenantSnapshot["receipts"] = [];
-      for (const payment of tables.company_payments) {
-        if (!payment.receipt_path) continue;
-        let bytes: Buffer;
-        try {
-          const absolute = getCompanyReceiptAbsolutePath(String(payment.receipt_path));
-          const info = await stat(absolute);
-          if (!info.isFile() || info.size > 2 * 1024 * 1024) throw new Error("Invalid receipt file");
-          bytes = await readFile(absolute);
-        } catch {
-          throw new BackupError(`Receipt file missing for payment ${payment.id}; refusing incomplete backup`, 409);
+        const receipts: TenantSnapshot["receipts"] = [];
+        stage = "receipts";
+        for (const payment of tables.company_payments) {
+          if (!payment.receipt_path) continue;
+          let bytes: Buffer;
+          try {
+            const absolute = getCompanyReceiptAbsolutePath(String(payment.receipt_path));
+            const info = await stat(absolute);
+            if (!info.isFile() || info.size > 2 * 1024 * 1024) throw new Error("Invalid receipt file");
+            bytes = await readFile(absolute);
+          } catch {
+            throw new BackupError(`Receipt file missing for payment ${payment.id}; refusing incomplete backup`, 409);
+          }
+          size += Math.ceil((bytes.length * 4) / 3);
+          if (size > MAX_BACKUP_BYTES) throw new BackupError("Backup with receipts exceeds 100 MiB", 413);
+          receipts.push({
+            paymentId: Number(payment.id),
+            sha256: createHash("sha256").update(bytes).digest("hex"),
+            data: bytes.toString("base64"),
+          });
         }
-        size += Math.ceil((bytes.length * 4) / 3);
-        if (size > MAX_BACKUP_BYTES) throw new BackupError("Backup with receipts exceeds 100 MiB", 413);
-        receipts.push({
-          paymentId: Number(payment.id),
-          sha256: createHash("sha256").update(bytes).digest("hex"),
-          data: bytes.toString("base64"),
+        stage = "snapshot";
+        const snapshot = snapshotSchema.parse({
+          version: 1,
+          id: randomUUID(),
+          exportedAt: new Date().toISOString(),
+          client: JSON.parse(JSON.stringify(client)),
+          tables,
+          receipts,
         });
-      }
-      const snapshot = snapshotSchema.parse({
-        version: 1,
-        id: randomUUID(),
-        exportedAt: new Date().toISOString(),
-        client: JSON.parse(JSON.stringify(client)),
-        tables,
-        receipts,
-      });
-      await tx.auditLog.create({
-        data: {
-          client_id: clientId,
-          user_id: actorId,
-          action: "EXPORT",
-          entity_type: "TENANT_BACKUP",
-          description: `Encrypted full tenant backup ${snapshot.id}`,
-        },
-      });
-      return snapshot;
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 120000 },
-  );
+        stage = "audit";
+        await tx.auditLog.create({
+          data: {
+            client_id: clientId,
+            user_id: actorId,
+            action: "EXPORT",
+            entity_type: "TENANT_BACKUP",
+            description: `Encrypted full tenant backup ${snapshot.id}`,
+          },
+        });
+        return snapshot;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 120000 },
+    );
+  } catch (error) {
+    if (error instanceof BackupError) throw error;
+    throw new ExportDiagnosticError(stage, error);
+  }
 }
 
 export function validateSnapshot(input: unknown, clientId: number): TenantSnapshot {
