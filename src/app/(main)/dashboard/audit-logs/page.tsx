@@ -1,4 +1,5 @@
 import { hasPermission } from "@/lib/security/permission-access";
+import { undoableAuditIds } from "@/lib/audit-undo";
 import { prisma } from "@/lib/prisma";
 import { getTranslations } from "next-intl/server";
 import { AuditLogsTable } from "./_components/audit-logs-table";
@@ -87,6 +88,7 @@ export default async function AuditLogsPage({
     skip: (page - 1) * limit,
     take: limit,
   });
+  const undoableIds = await undoableAuditIds(clientId, auditLogs, await hasPermission(session, "audit.undo"));
 
   // Get user names
   const userIds = [...new Set(auditLogs.map((log: AuditLog) => log.user_id).filter((id): id is number => id !== null))];
@@ -185,8 +187,8 @@ export default async function AuditLogsPage({
         totalPages={totalPages}
         currentPage={page}
         totalCount={totalCount}
+        undoableIds={undoableIds}
       />
     </div>
   );
 }
-

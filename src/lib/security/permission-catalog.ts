@@ -64,7 +64,10 @@ export const PERMISSION_GROUPS = [
     label: "Hisobotlar",
     pages: [
       { key: "reports.view", label: "Hisobotlar", route: "/dashboard/reports", actions: [{ key: "reports.export", label: "Eksport" }] },
-      { key: "audit.view", label: "Audit log", route: "/dashboard/audit-logs", actions: [{ key: "audit.export", label: "Eksport" }] },
+      { key: "audit.view", label: "Audit log", route: "/dashboard/audit-logs", actions: [
+        { key: "audit.export", label: "Eksport" },
+        { key: "audit.undo", label: "Amalni ortga qaytarish" },
+      ] },
     ],
   },
   {
@@ -122,7 +125,7 @@ export function roleDefault(role: string, key: PermissionKey): boolean {
     return false;
   if (role === "ADMIN") return true;
   if (role !== "USER") return false;
-  if (key.startsWith("users.") || key.startsWith("permissions.") || key === "settings.manage") return false;
+  if (key.startsWith("users.") || key.startsWith("permissions.") || key === "settings.manage" || key === "audit.undo") return false;
   if (key.endsWith(".delete")) return false;
   return true;
 }

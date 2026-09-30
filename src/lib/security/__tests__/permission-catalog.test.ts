@@ -16,6 +16,8 @@ describe("permission catalog", () => {
     expect(effectivePermission("USER", "users.view", undefined, undefined, true)).toBe(false);
     expect(effectivePermission("USER", "reports.view", undefined, undefined, true)).toBe(true);
     expect(effectivePermission("ADMIN", "users.view", undefined, undefined, undefined)).toBe(true);
+    expect(roleDefault("USER", "audit.undo")).toBe(false);
+    expect(effectivePermission("ADMIN", "audit.undo", true, false, true)).toBe(false);
   });
 
   it("never lets a user grant bypass shop or platform denial", () => {

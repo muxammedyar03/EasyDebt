@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
           client_id: clientId,
           action: "CREATE",
           entity_type: "DEBTOR",
+          entity_id: debtor.id,
           new_value: {
             debtor_id: debtor.id,
             first_name: validatedData.first_name,
@@ -162,4 +163,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
-

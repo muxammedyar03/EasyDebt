@@ -10,6 +10,7 @@ import { domainToViewDebtor } from "@/lib/mappers";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { redirect } from "next/navigation";
+import { RecentActions } from "./_components/recent-actions";
 
 // Ensure this page is always rendered dynamically so changes to is_overdue are reflected immediately
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ export default async function Page() {
   if (!session) redirect("/auth/login");
   if (!(await hasPermission(session, "dashboard.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
+  const canViewAudit = await hasPermission(session, "audit.view");
+  const canUndoAudit = canViewAudit && await hasPermission(session, "audit.undo");
 
   const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
     debtorService.findMany(clientId, undefined, { page: 1, limit: DASHBOARD_DEFAULT_DEBTOR_LIMIT }),
@@ -48,7 +51,8 @@ export default async function Page() {
   });
 
   return (
-    <div className="@container/main flex flex-col gap-4 md:gap-6">
+    <div className={canViewAudit ? "grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]" : ""}>
+    <div className="@container/main flex min-w-0 flex-col gap-4 md:gap-6">
       <DataTable data={debtorViews} debtLimit={debtLimit} />
 
       {/* Statistics Cards */}
@@ -57,6 +61,7 @@ export default async function Page() {
       {/* Chart */}
       <ChartAreaInteractive chartData={chartData} />
     </div>
+    {canViewAudit && <aside className="hidden 2xl:block"><RecentActions clientId={clientId} canUndo={canUndoAudit} /></aside>}
+    </div>
   );
 }
-

@@ -9,6 +9,7 @@ export function useTableUtils() {
   const dateLocale = locale === "ru" ? "ru-RU" : "uz-UZ";
 
   const getActionBadge = (action: string, entity_type: string) => {
+    if (action === "UNDO") return <Badge variant="outline">{t("actionUndo")}</Badge>;
     if (action === "DEBT_ADDED") {
       return <Badge className="bg-blue-500">{t("badgeDebtAdded")}</Badge>;
     }
