@@ -204,8 +204,22 @@ async function main() {
       beforeFailed,
       "restore failure did not roll back",
     );
+    await db.exec(`INSERT INTO debts (id,external_id,debtor_id,amount,created_by,client_id,reverses_debt_id)
+      VALUES (501,'reversal-debt',10,-100,10,1,10);
+      INSERT INTO payments (id,external_id,debtor_id,amount,created_by,client_id,reverses_payment_id)
+      VALUES (502,'reversal-payment',10,-10,10,1,10);
+      UPDATE debtors SET total_debt=7 WHERE id=10;`);
+    const cancelled = await exportTenant(1, 99);
+    const forged = structuredClone(cancelled);
+    forged.tables.debts.find((row) => row.id === 501)!.reverses_debt_id = 20;
+    assert.throws(() => validateSnapshot(forged, 1), /Invalid financial reversal/);
+    const restoredCancelled = validateSnapshot(openBackup(sealBackup(cancelled)), 1);
+    await restoreTenant(restoredCancelled, 99);
+    assert.equal((await db.query("SELECT id FROM debts WHERE reverses_debt_id=10")).rows.length, 1);
+    assert.equal((await db.query("SELECT id FROM payments WHERE reverses_payment_id=10")).rows.length, 1);
+    assert.equal(Number((await db.query<{ total_debt: string }>("SELECT total_debt FROM debtors WHERE id=10")).rows[0].total_debt), 7);
     console.log(
-      "PASS: encrypted full tenant backup including push deliveries, cross-tenant isolation, legacy import, receipt round trip and rollback",
+      "PASS: encrypted full tenant backup including reversals, cross-tenant isolation, receipt round trip and rollback",
     );
   } finally {
     await db.close();

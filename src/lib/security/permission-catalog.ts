@@ -67,6 +67,7 @@ export const PERMISSION_GROUPS = [
       { key: "audit.view", label: "Audit log", route: "/dashboard/audit-logs", actions: [
         { key: "audit.export", label: "Eksport" },
         { key: "audit.undo", label: "Amalni ortga qaytarish" },
+        { key: "audit.cancel", label: "Qarz va to‘lovni bekor qilish" },
       ] },
     ],
   },
@@ -125,7 +126,7 @@ export function roleDefault(role: string, key: PermissionKey): boolean {
     return false;
   if (role === "ADMIN") return true;
   if (role !== "USER") return false;
-  if (key.startsWith("users.") || key.startsWith("permissions.") || key === "settings.manage" || key === "audit.undo") return false;
+  if (key.startsWith("users.") || key.startsWith("permissions.") || key === "settings.manage" || key === "audit.undo" || key === "audit.cancel") return false;
   if (key.endsWith(".delete")) return false;
   return true;
 }

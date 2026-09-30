@@ -176,6 +176,21 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
     if (snapshot.tables[children].some((row) => !ids.has(row[parentKey])))
       throw new BackupError("Missing parent record in backup");
   }
+  for (const [table, reference] of [
+    ["debts", "reverses_debt_id"],
+    ["payments", "reverses_payment_id"],
+  ] as const) {
+    const rows = new Map(snapshot.tables[table].map((row) => [row.id, row]));
+    for (const row of snapshot.tables[table]) {
+      if (row[reference] == null) continue;
+      const original = rows.get(row[reference]);
+      if (
+        !original || original[reference] != null || original.client_id !== clientId ||
+        original.debtor_id !== row.debtor_id ||
+        !new Prisma.Decimal(String(row.amount)).plus(String(original.amount)).isZero()
+      ) throw new BackupError("Invalid financial reversal in backup", 403);
+    }
+  }
   for (const delivery of snapshot.tables.push_deliveries) {
     const notification = snapshot.tables.notifications.find((row) => row.id === delivery.notification_id);
     const subscription = snapshot.tables.push_subscriptions.find((row) => row.id === delivery.subscription_id);

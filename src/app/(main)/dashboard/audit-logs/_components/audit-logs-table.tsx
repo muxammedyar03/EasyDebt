@@ -32,9 +32,10 @@ export interface AuditLogsTableProps {
   currentPage: number;
   totalCount: number;
   undoableIds: number[];
+  cancellableIds: number[];
 }
 
-export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undoableIds }: AuditLogsTableProps) {
+export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undoableIds, cancellableIds }: AuditLogsTableProps) {
   const t = useTranslations("audit");
   const tCommon = useTranslations("common");
   const router = useRouter();
@@ -44,6 +45,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undo
   const [searchValue, setSearchValue] = React.useState(searchParams?.get("search") || "");
   const [isExporting, setIsExporting] = React.useState(false);
   const undoable = new Set(undoableIds);
+  const cancellable = new Set(cancellableIds);
 
   // Search handler
   const handleSearch = React.useCallback(() => {
@@ -182,6 +184,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undo
                       </div>
                       {log.description && <p className="text-muted-foreground text-xs">{log.description}</p>}
                       {undoable.has(log.id) && <UndoAuditButton id={log.id} />}
+                      {cancellable.has(log.id) && <UndoAuditButton id={log.id} kind="cancel" />}
                       {log.ip_address && (
                         <p className="text-muted-foreground text-xs">
                           <span className="font-medium">IP:</span> {log.ip_address}
@@ -242,6 +245,7 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undo
                             <p className="truncate whitespace-break-spaces">{log.description}</p>
                           ) : null}
                           {undoable.has(log.id) && <div className="mt-2"><UndoAuditButton id={log.id} /></div>}
+                          {cancellable.has(log.id) && <div className="mt-2"><UndoAuditButton id={log.id} kind="cancel" /></div>}
                         </TableCell>
                       </TableRow>
                     ))

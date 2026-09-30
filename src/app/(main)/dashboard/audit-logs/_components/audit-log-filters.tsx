@@ -28,6 +28,7 @@ const ACTION_VALUES = [
   "DEBT_UPDATED",
   "PAYMENT_UPDATED",
   "UNDO",
+  "CANCEL",
 ] as const;
 
 const ENTITY_TYPE_VALUES = [
@@ -90,6 +91,7 @@ function AuditLogFilterContent({
               DEBT_UPDATED: "actionDebtUpdated",
               PAYMENT_UPDATED: "actionPaymentUpdated",
               UNDO: "actionUndo",
+              CANCEL: "actionCancel",
             } as const
           )[value],
         ),

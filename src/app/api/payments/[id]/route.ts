@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { createRequiredAuditLog } from "@/lib/audit";
+import { AuditUndoError } from "@/lib/audit-undo";
 
 const updatePaymentSchema = z.object({
   amount: z.number().positive("To'lov miqdori musbat bo'lishi kerak").optional(),
@@ -48,12 +49,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       // Get old payment info
       const oldPayment = await tx.payment.findFirst({
         where: { id: paymentId, client_id: clientId },
-        include: { debtor: true },
+        include: { debtor: true, reversals: { select: { id: true }, take: 1 } },
       });
 
       if (!oldPayment) {
         throw new Error("To'lov topilmadi");
       }
+      if (oldPayment.reverses_payment_id || oldPayment.reversals.length)
+        throw new AuditUndoError("Bekor qilingan to‘lov yozuvini o‘zgartirib bo‘lmaydi", 409);
 
       const oldAmount = oldPayment.amount.toNumber();
       const newAmount = validatedData.amount ?? oldAmount;
@@ -114,6 +117,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json(result.updatedPayment);
   } catch (error) {
+    if (error instanceof AuditUndoError)
+      return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }
@@ -125,4 +130,3 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     );
   }
 }
-

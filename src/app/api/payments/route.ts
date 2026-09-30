@@ -66,6 +66,10 @@ export async function POST(request: NextRequest) {
             include: { debtor: true },
           });
           if (existing) {
+            const cancelled = await tx.payment.findFirst({
+              where: { client_id: clientId, reverses_payment_id: existing.id }, select: { id: true },
+            });
+            if (cancelled) throw new PaymentRequestConflictError("Bu to‘lov bekor qilingan; request kalitini qayta ishlatib bo‘lmaydi");
             if (
               !samePaymentRequest(existing, {
                 debtorId: validatedData.debtor_id,
@@ -193,4 +197,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }
-

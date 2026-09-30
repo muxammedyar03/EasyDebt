@@ -8,6 +8,7 @@ describe("permission catalog", () => {
     expect(isPermissionKey("payments.create")).toBe(true);
     expect(isPermissionKey("not.a.permission")).toBe(false);
     expect(permissionParentKey("payments.create")).toBe("debtors.view");
+    expect(permissionParentKey("audit.cancel")).toBe("audit.view");
   });
 
   it("preserves old role defaults, while allowing grants within role boundaries", () => {
@@ -17,6 +18,7 @@ describe("permission catalog", () => {
     expect(effectivePermission("USER", "reports.view", undefined, undefined, true)).toBe(true);
     expect(effectivePermission("ADMIN", "users.view", undefined, undefined, undefined)).toBe(true);
     expect(roleDefault("USER", "audit.undo")).toBe(false);
+    expect(roleDefault("USER", "audit.cancel")).toBe(false);
     expect(effectivePermission("ADMIN", "audit.undo", true, false, true)).toBe(false);
   });
 
