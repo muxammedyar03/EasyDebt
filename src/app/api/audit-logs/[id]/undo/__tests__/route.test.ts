@@ -29,6 +29,6 @@ describe("audit undo endpoint", () => {
   it("uses the session tenant and actor instead of caller supplied values", async () => {
     jest.mocked(undoAuditAction).mockResolvedValue({ id: 52 } as never);
     expect((await POST(request, context)).status).toBe(200);
-    expect(undoAuditAction).toHaveBeenCalledWith(4, 11, 51);
+    expect(undoAuditAction).toHaveBeenCalledWith(4, 11, 51, "ADMIN");
   });
 });

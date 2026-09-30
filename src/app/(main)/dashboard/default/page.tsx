@@ -61,7 +61,7 @@ export default async function Page() {
       {/* Chart */}
       <ChartAreaInteractive chartData={chartData} />
     </div>
-    {canViewAudit && <aside className="hidden 2xl:block"><RecentActions clientId={clientId} canUndo={canUndoAudit} /></aside>}
+    {canViewAudit && <aside className="hidden 2xl:block"><RecentActions clientId={clientId} canUndo={canUndoAudit} actorRole={session.role} /></aside>}
     </div>
   );
 }

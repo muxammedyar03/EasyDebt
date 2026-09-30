@@ -15,10 +15,11 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   if (!Number.isSafeInteger(auditId) || auditId <= 0)
     return NextResponse.json({ error: "Noto‘g‘ri ID" }, { status: 400 });
   try {
-    const result = await undoAuditAction(requireClientId(session), session.userId, auditId);
+    const result = await undoAuditAction(requireClientId(session), session.userId, auditId, session.role);
     revalidatePath("/dashboard/audit-logs");
     revalidatePath("/dashboard/default");
     revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/users");
     return NextResponse.json({ id: result.id, ok: true });
   } catch (error) {
     if (error instanceof AuditUndoError)

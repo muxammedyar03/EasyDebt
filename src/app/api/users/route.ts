@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
+import { createRequiredAuditLog } from "@/lib/audit";
+import { userAuditFields } from "@/lib/user-audit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +62,8 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
       data: {
         username,
         email: email || null,
@@ -82,6 +85,13 @@ export async function POST(request: NextRequest) {
         created_at: true,
         client_id: true,
       },
+      });
+      await createRequiredAuditLog(tx, {
+        clientId: targetClientId, userId: session.userId, action: "CREATE", entityType: "USER",
+        entityId: created.id, newValue: userAuditFields(created),
+        description: `Xodim ${created.username} yaratildi`,
+      });
+      return created;
     });
 
     return NextResponse.json(user, { status: 201 });
@@ -132,4 +142,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Foydalanuvchilarni yuklashda xatolik" }, { status: 500 });
   }
 }
-

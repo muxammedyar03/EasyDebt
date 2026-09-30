@@ -5,7 +5,7 @@ import { undoableAuditIds } from "@/lib/audit-undo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UndoAuditButton } from "../../audit-logs/_components/undo-audit-button";
 
-export async function RecentActions({ clientId, canUndo }: { clientId: number; canUndo: boolean }) {
+export async function RecentActions({ clientId, canUndo, actorRole }: { clientId: number; canUndo: boolean; actorRole: string }) {
   const [t, logs] = await Promise.all([
     getTranslations("audit"),
     prisma.auditLog.findMany({
@@ -14,7 +14,7 @@ export async function RecentActions({ clientId, canUndo }: { clientId: number; c
         description: true, created_at: true, old_value: true, new_value: true },
     }),
   ]);
-  const ids = await undoableAuditIds(clientId, logs, canUndo);
+  const ids = await undoableAuditIds(clientId, logs, canUndo, actorRole);
   const actors = await prisma.user.findMany({
     where: { client_id: clientId, id: { in: logs.map((log) => log.user_id).filter((id): id is number => id !== null) } },
     select: { id: true, username: true, first_name: true, last_name: true },
