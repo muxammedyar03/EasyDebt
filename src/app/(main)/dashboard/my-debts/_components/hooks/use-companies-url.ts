@@ -3,65 +3,68 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const SEARCH_DEBOUNCE_MS = 300;
-
 function paramsFrom(searchParams: ReturnType<typeof useSearchParams>) {
   return new URLSearchParams(searchParams?.toString() ?? "");
+}
+
+function withPendingSearch(params: URLSearchParams, search: string) {
+  if (search) params.set("search", search);
+  else params.delete("search");
+  return params;
 }
 
 export function useCompaniesUrl() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isNavigating, startNavigation] = React.useTransition();
 
-  const [searchValue, setSearchValue] = React.useState(() => searchParams?.get("search") || "");
-  const [isSearching, setIsSearching] = React.useState(false);
-  const isFirstRender = React.useRef(true);
+  const [searchValue, setSearchValueState] = React.useState(() => searchParams?.get("search") || "");
+  const searchValueRef = React.useRef(searchValue);
+  searchValueRef.current = searchValue;
+  const searchParamsRef = React.useRef(searchParams);
+  searchParamsRef.current = searchParams;
+  const awaitingUrl = React.useRef(false);
+  const isFirstSearchPush = React.useRef(true);
 
   const pushQueryString = React.useCallback(
     (params: URLSearchParams) => {
-      router.push(`?${params.toString()}`);
+      startNavigation(() => {
+        router.push(`?${params.toString()}`);
+      });
     },
     [router],
   );
 
-  const applySearchToUrl = React.useCallback(
-    (value: string) => {
-      const params = paramsFrom(searchParams);
-      const currentSearch = params.get("search") || "";
-      if (value) params.set("search", value);
-      else params.delete("search");
-      if (value !== currentSearch) params.set("page", "1");
-      pushQueryString(params);
-    },
-    [searchParams, pushQueryString],
-  );
+  const setSearchValue = React.useCallback((value: string) => {
+    const urlSearch = searchParamsRef.current?.get("search") || "";
+    awaitingUrl.current = value !== urlSearch;
+    setSearchValueState(value);
+  }, []);
 
   React.useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (isFirstSearchPush.current) {
+      isFirstSearchPush.current = false;
       return;
     }
-    const urlSearch = searchParams?.get("search") || "";
-    if (urlSearch === searchValue) {
-      setIsSearching(false);
-      return;
-    }
-    setIsSearching(true);
-    const timer = setTimeout(() => {
-      applySearchToUrl(searchValue);
-      setIsSearching(false);
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [searchValue, applySearchToUrl, searchParams]);
+    const params = withPendingSearch(paramsFrom(searchParamsRef.current), searchValue);
+    const currentSearch = searchParamsRef.current?.get("search") || "";
+    if (searchValue === currentSearch) return;
+    params.set("page", "1");
+    pushQueryString(params);
+  }, [searchValue, pushQueryString]);
 
+  const urlSearch = searchParams?.get("search") || "";
   React.useEffect(() => {
-    const urlSearch = searchParams?.get("search") || "";
-    setSearchValue((prev) => (prev === urlSearch ? prev : urlSearch));
-  }, [searchParams]);
+    if (awaitingUrl.current) {
+      if (urlSearch === searchValueRef.current) awaitingUrl.current = false;
+      return;
+    }
+    setSearchValueState((prev) => (prev === urlSearch ? prev : urlSearch));
+  }, [urlSearch]);
 
   const setParam = React.useCallback(
     (key: string, value: string | null, resetPage = true) => {
-      const params = paramsFrom(searchParams);
+      const params = withPendingSearch(paramsFrom(searchParams), searchValueRef.current);
       if (!value || value === "all") params.delete(key);
       else params.set(key, value);
       if (resetPage) params.set("page", "1");
@@ -72,7 +75,7 @@ export function useCompaniesUrl() {
 
   const handleSort = React.useCallback(
     (sortBy: string) => {
-      const params = paramsFrom(searchParams);
+      const params = withPendingSearch(paramsFrom(searchParams), searchValueRef.current);
       const currentSortBy = params.get("sortBy");
       const currentSortOrder = params.get("sortOrder") || "desc";
       if (currentSortBy === sortBy) {
@@ -88,7 +91,7 @@ export function useCompaniesUrl() {
 
   const handlePageChange = React.useCallback(
     (page: number) => {
-      const params = paramsFrom(searchParams);
+      const params = withPendingSearch(paramsFrom(searchParams), searchValueRef.current);
       params.set("page", page.toString());
       pushQueryString(params);
     },
@@ -99,7 +102,7 @@ export function useCompaniesUrl() {
     searchParams,
     searchValue,
     setSearchValue,
-    isSearching,
+    isSearching: isNavigating || (searchParams?.get("search") || "") !== searchValue,
     setParam,
     handleSort,
     handlePageChange,

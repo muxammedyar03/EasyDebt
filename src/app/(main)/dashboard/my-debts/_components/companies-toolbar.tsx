@@ -10,7 +10,59 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportCompaniesListToExcel } from "@/lib/companies/export-companies-excel-client";
 import { getErrorMessage } from "@/lib/errors";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const SEARCH_DEBOUNCE_MS = 120;
+
+function CompanySearchInput({
+  value,
+  onChange,
+  loading,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  loading: boolean;
+  placeholder: string;
+}) {
+  const [local, setLocal] = useState(value);
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (focusedRef.current) return;
+    setLocal(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (local === value) return;
+    const timer = window.setTimeout(() => onChange(local), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [local, value, onChange]);
+
+  return (
+    <div className="relative flex-1 lg:max-w-xl">
+      <Search className="text-muted-foreground absolute top-3.5 left-2.5 h-4 w-4" />
+      <Input
+        placeholder={placeholder}
+        value={local}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          if (local !== value) onChange(local);
+        }}
+        onChange={(e) => setLocal(e.target.value)}
+        className="border-border h-11 border bg-white pr-10 pl-8 dark:bg-zinc-800"
+      />
+      {(loading || local !== value) && (
+        <div className="absolute top-1/2 right-3 -translate-y-1/2">
+          <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+        </div>
+      )}
+    </div>
+  );
+}
 
 type CompaniesToolbarProps = {
   searchValue: string;
@@ -83,20 +135,12 @@ export function CompaniesToolbar({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 lg:max-w-xl">
-          <Search className="text-muted-foreground absolute top-3.5 left-2.5 h-4 w-4" />
-          <Input
-            placeholder={t("searchPlaceholder")}
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="border-border h-11 border bg-white pr-10 pl-8 dark:bg-zinc-800"
-          />
-          {isSearching && (
-            <div className="absolute top-1/2 right-3 -translate-y-1/2">
-              <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-            </div>
-          )}
-        </div>
+        <CompanySearchInput
+          value={searchValue}
+          onChange={onSearchChange}
+          loading={isSearching}
+          placeholder={t("searchPlaceholder")}
+        />
         <div className="flex items-center gap-2">
           <Button variant="outline" className="h-11" onClick={handleExcel}>
             <FileDown className="mr-2 h-4 w-4" />
