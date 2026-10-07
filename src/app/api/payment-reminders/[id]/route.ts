@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
@@ -22,6 +23,8 @@ type RouteParams = { params: Promise<{ id: string }> };
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "reminders.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
@@ -55,6 +58,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "reminders.manage")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }
@@ -105,6 +110,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "reminders.manage")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Avtorizatsiya talab qilinadi" }, { status: 401 });
     }

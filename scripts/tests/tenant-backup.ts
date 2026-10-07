@@ -88,6 +88,8 @@ async function main() {
       const n = id * 10;
       await db.exec(`INSERT INTO clients (id,name,slug,updated_at) VALUES (${id},'Shop ${id}','shop-${id}',now());
         INSERT INTO users (id,username,password,role,client_id,updated_at) VALUES (${n},'user-${id}','hash-${id}','ADMIN',${id},now());
+        INSERT INTO client_permissions (id,client_id,key,enabled,updated_at) VALUES (${n},${id},'payments.create',true,now());
+        INSERT INTO user_permissions (id,client_id,user_id,key,enabled,updated_at) VALUES (${n},${id},${n},'payments.create',true,now());
         INSERT INTO settings (id,key,value,client_id,updated_at) VALUES (${n},'overdue_days','45',${id},now());
         INSERT INTO debtors (id,external_id,first_name,last_name,total_debt,created_by,client_id,updated_at) VALUES (${n},'debtor-${id}','First','Last',90,${n},${id},now());
         INSERT INTO companies (id,external_id,name,total_debt,created_by,client_id,updated_at) VALUES (${n},'company-${id}','Supplier',90,${n},${id},now());
@@ -123,6 +125,14 @@ async function main() {
     const legacy = structuredClone(snapshot);
     delete legacy.tables.push_deliveries;
     assert.deepEqual(validateSnapshot(legacy, 1).tables.push_deliveries, [], "older backups remain restorable");
+    const olderPermissions = structuredClone(snapshot);
+    delete olderPermissions.tables.client_permissions;
+    delete olderPermissions.tables.user_permissions;
+    assert.throws(
+      () => validateSnapshot(olderPermissions, 1),
+      /predates permissions/,
+      "older archives must not silently reset access controls",
+    );
     await previewTenant(decoded);
     assert.throws(() => validateSnapshot(decoded, 2), /another shop/);
     await db.exec("UPDATE debtors SET first_name='changed' WHERE id=10; UPDATE settings SET value='99' WHERE id=10;");
@@ -194,8 +204,25 @@ async function main() {
       beforeFailed,
       "restore failure did not roll back",
     );
+    await db.exec(`INSERT INTO debts (id,external_id,debtor_id,amount,created_by,client_id,reverses_debt_id)
+      VALUES (501,'reversal-debt',10,-100,10,1,10);
+      INSERT INTO payments (id,external_id,debtor_id,amount,created_by,client_id,reverses_payment_id)
+      VALUES (502,'reversal-payment',10,-10,10,1,10);
+      UPDATE debtors SET total_debt=7 WHERE id=10;`);
+    const cancelled = await exportTenant(1, 99);
+    const forged = structuredClone(cancelled);
+    forged.tables.debts.find((row) => row.id === 501)!.reverses_debt_id = 20;
+    assert.throws(() => validateSnapshot(forged, 1), /Invalid financial reversal/);
+    const restoredCancelled = validateSnapshot(openBackup(sealBackup(cancelled)), 1);
+    await restoreTenant(restoredCancelled, 99);
+    assert.equal((await db.query("SELECT id FROM debts WHERE reverses_debt_id=10")).rows.length, 1);
+    assert.equal((await db.query("SELECT id FROM payments WHERE reverses_payment_id=10")).rows.length, 1);
+    assert.equal(
+      Number((await db.query<{ total_debt: string }>("SELECT total_debt FROM debtors WHERE id=10")).rows[0].total_debt),
+      7,
+    );
     console.log(
-      "PASS: encrypted full tenant backup including push deliveries, cross-tenant isolation, legacy import, receipt round trip and rollback",
+      "PASS: encrypted full tenant backup including reversals, cross-tenant isolation, receipt round trip and rollback",
     );
   } finally {
     await db.close();

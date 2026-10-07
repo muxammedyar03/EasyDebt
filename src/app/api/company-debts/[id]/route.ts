@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -26,6 +27,8 @@ const updateSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "company-debts.edit")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

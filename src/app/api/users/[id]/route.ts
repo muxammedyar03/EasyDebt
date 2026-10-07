@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { takePinAttempt } from "@/lib/security/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
@@ -5,11 +6,16 @@ import { prisma } from "@/lib/prisma";
 import { getSession, setAuthCookie, signToken } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { Prisma } from "@prisma/client";
+import { createRequiredAuditLog } from "@/lib/audit";
+import { userAuditFields } from "@/lib/user-audit";
+import { serializableTransaction } from "@/lib/security/serializable";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getSession();
+    if (session && session.userId !== Number(id) && !(await hasPermission(session, "users.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -158,6 +164,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Noma'lum action" }, { status: 400 });
     }
 
+    if (!(await hasPermission(session, "users.edit")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+
     if (!session) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -191,19 +200,34 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
       }
 
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: { is_active: body.is_active },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          first_name: true,
-          last_name: true,
-          is_active: true,
-          updated_at: true,
-        },
+      const user = await serializableTransaction(async (tx) => {
+        const before = await tx.user.findFirstOrThrow({ where: { id: userId, client_id: clientId } });
+        if (before.role === "SUPER_ADMIN") throw new Error("Forbidden user role");
+        const updated = await tx.user.update({
+          where: { id: userId },
+          data: { is_active: body.is_active },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            first_name: true,
+            last_name: true,
+            is_active: true,
+            updated_at: true,
+          },
+        });
+        await createRequiredAuditLog(tx, {
+          clientId,
+          userId: session.userId,
+          action: "UPDATE",
+          entityType: "USER",
+          entityId: userId,
+          oldValue: userAuditFields(before),
+          newValue: userAuditFields(updated),
+          description: `Xodim ${updated.username} faolligi o‘zgartirildi`,
+        });
+        return updated;
       });
 
       return NextResponse.json(user);
@@ -232,19 +256,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     // Update user
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        first_name: true,
-        last_name: true,
-        is_active: true,
-        updated_at: true,
-      },
+    const user = await serializableTransaction(async (tx) => {
+      const before = await tx.user.findFirstOrThrow({ where: { id: userId, client_id: clientId } });
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          first_name: true,
+          last_name: true,
+          is_active: true,
+          updated_at: true,
+        },
+      });
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: session.userId,
+        action: "UPDATE",
+        entityType: "USER",
+        entityId: userId,
+        oldValue: userAuditFields(before),
+        newValue: { ...userAuditFields(updated), ...(body.password ? { security_changed: true } : {}) },
+        description: `Xodim ${updated.username} ma’lumotlari o‘zgartirildi`,
+      });
+      return updated;
     });
 
     return NextResponse.json(user);
@@ -271,6 +309,8 @@ export async function DELETE(
   try {
     const { id } = await params;
     const session = await getSession();
+    if (session && !(await hasPermission(session, "users.delete")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
@@ -283,8 +323,19 @@ export async function DELETE(
       return NextResponse.json({ error: "O'zingizni o'chira olmaysiz" }, { status: 400 });
     }
 
-    await prisma.user.delete({
-      where: { id: userId, client_id: requireClientId(session) },
+    const clientId = requireClientId(session);
+    await prisma.$transaction(async (tx) => {
+      const before = await tx.user.findFirstOrThrow({ where: { id: userId, client_id: clientId } });
+      await tx.user.delete({ where: { id: userId, client_id: clientId } });
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: session.userId,
+        action: "DELETE",
+        entityType: "USER",
+        entityId: userId,
+        oldValue: userAuditFields(before),
+        description: `Xodim ${before.username} o‘chirildi`,
+      });
     });
 
     return NextResponse.json({ message: "Foydalanuvchi muvaffaqiyatli o'chirildi" }, { status: 200 });

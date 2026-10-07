@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { debtorService } from "@/lib/services/debtor.service";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
@@ -10,6 +11,7 @@ export default async function CustomersPage(props: {
 }) {
   const session = await getSession();
   if (!session) redirect("/auth/login");
+  if (!(await hasPermission(session, "customers.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
 
   const t = await getTranslations("customers");

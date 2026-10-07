@@ -1,4 +1,7 @@
 import { getPreference } from "@/server/server-actions";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/security/permission-access";
 import {
   CONTENT_LAYOUT_VALUES,
   NAVBAR_STYLE_VALUES,
@@ -13,6 +16,7 @@ import {
 import { LayoutSettingsClient } from "./_components/layout-settings-client";
 
 export default async function LayoutSettingsPage() {
+  if (!(await hasPermission(await getSession(), "layout-settings.view"))) redirect("/unauthorized");
   const [variant, collapsible, contentLayout, navbarStyle] = await Promise.all([
     getPreference<SidebarVariant>("sidebar_variant", SIDEBAR_VARIANT_VALUES, "sidebar"),
     getPreference<SidebarCollapsible>("sidebar_collapsible", SIDEBAR_COLLAPSIBLE_VALUES, "icon"),

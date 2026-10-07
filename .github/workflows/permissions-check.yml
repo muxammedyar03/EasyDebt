@@ -1,0 +1,32 @@
+name: Permission checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/permissions-management]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test -- --runInBand src/lib/security/__tests__/permission-catalog.test.ts src/lib/security/__tests__/permission-access.test.ts src/app/api/permissions/__tests__/route.test.ts
+      - run: npm test -- --runInBand --runTestsByPath src/lib/__tests__/audit-undo.test.ts src/lib/__tests__/user-audit.test.ts 'src/app/api/audit-logs/[id]/undo/__tests__/route.test.ts'
+      - run: npm test -- --runInBand --runTestsByPath src/lib/__tests__/audit-cancel.test.ts src/lib/security/__tests__/active-ledger.test.ts 'src/app/api/audit-logs/[id]/cancel/__tests__/route.test.ts'
+      - run: npm run test:permissions-db
+      - run: npm run test:audit-cancel-db
+      - run: npm run test:tenant-backup
+      - run: npx tsc --noEmit --incremental false
+      - run: npx eslint src/lib/security/permission-catalog.ts src/lib/security/permission-access.ts src/lib/security/__tests__/permission-catalog.test.ts src/lib/security/__tests__/permission-access.test.ts src/app/api/permissions 'src/app/(main)/dashboard/permissions'
+      - run: npx eslint src/lib/audit-undo.ts src/lib/__tests__/audit-undo.test.ts 'src/app/api/audit-logs/[id]/undo' 'src/app/(main)/dashboard/default/_components/recent-actions.tsx'
+      - run: npx eslint src/lib/audit-cancel.ts src/lib/__tests__/audit-cancel.test.ts src/lib/security/active-ledger.ts src/lib/security/__tests__/active-ledger.test.ts 'src/app/api/audit-logs/[id]/cancel' 'src/app/(main)/dashboard/audit-logs/_components/undo-audit-button.tsx'
+      - run: npx eslint src/lib/user-audit.ts src/lib/__tests__/user-audit.test.ts src/app/api/users/route.ts 'src/app/api/users/[id]/route.ts'
+      - run: npm run build

@@ -18,6 +18,7 @@ import {
   type NavbarStyle,
 } from "@/types/preferences/layout";
 import { getDashboardLayoutData } from "@/lib/dashboard-layout";
+import { getEffectivePermissionKeys } from "@/lib/security/permission-access";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
@@ -50,10 +51,11 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     currentClient,
     clients,
   } = layoutData;
+  const allowedPermissions = await getEffectivePermissionKeys(session);
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} allowedPermissions={allowedPermissions} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
@@ -81,7 +83,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <div className="hidden sm:block">
                 {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
               </div>
-              <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
+              {allowedPermissions.includes("notifications.view") && (
+                <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
+              )}
               <div className="hidden sm:block">
                 <LanguageSwitcher />
               </div>

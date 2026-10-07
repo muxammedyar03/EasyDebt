@@ -57,7 +57,10 @@ import { NavUser } from "./nav-user";
 //   ],
 // };
 
-function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
+function AppSidebarInner({
+  allowedPermissions,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { allowedPermissions: string[] }) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -73,7 +76,7 @@ function AppSidebarInner({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={sidebarItems} allowedPermissions={allowedPermissions} />
         {/* <NavDocuments items={data.documents} />
         <NavSecondar items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

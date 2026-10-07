@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -5,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { createRequiredAuditLog } from "@/lib/audit";
+import { AuditUndoError } from "@/lib/audit-undo";
 import { prisma } from "@/lib/prisma";
 
 const updateDebtSchema = z.object({
@@ -16,6 +18,8 @@ const updateDebtSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "debts.edit")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
@@ -44,12 +48,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       // Get old debt info
       const oldDebt = await tx.debt.findFirst({
         where: { id: debtId, client_id: clientId },
-        include: { debtor: true },
+        include: { debtor: true, reversals: { select: { id: true }, take: 1 } },
       });
 
       if (!oldDebt) {
         throw new Error("Qarz topilmadi");
       }
+      if (oldDebt.reverses_debt_id || oldDebt.reversals.length)
+        throw new AuditUndoError("Bekor qilingan qarz yozuvini o‘zgartirib bo‘lmaydi", 409);
 
       const oldAmount = oldDebt.amount.toNumber();
       const newAmount = validatedData.amount ?? oldAmount;
@@ -106,6 +112,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json(result.updatedDebt);
   } catch (error) {
+    if (error instanceof AuditUndoError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Ma'lumotlar noto'g'ri kiritilgan", details: error.errors }, { status: 400 });
     }

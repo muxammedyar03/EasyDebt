@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { refreshDebtorStatus } from "@/lib/security/refresh-debtor-status";
 import { serializableTransaction } from "@/lib/security/serializable";
 import { NextRequest, NextResponse } from "next/server";
@@ -26,6 +27,8 @@ const createPaymentSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "payments.create")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
@@ -64,6 +67,14 @@ export async function POST(request: NextRequest) {
             include: { debtor: true },
           });
           if (existing) {
+            const cancelled = await tx.payment.findFirst({
+              where: { client_id: clientId, reverses_payment_id: existing.id },
+              select: { id: true },
+            });
+            if (cancelled)
+              throw new PaymentRequestConflictError(
+                "Bu to‘lov bekor qilingan; request kalitini qayta ishlatib bo‘lmaydi",
+              );
             if (
               !samePaymentRequest(existing, {
                 debtorId: validatedData.debtor_id,

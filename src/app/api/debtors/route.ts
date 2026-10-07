@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
@@ -48,6 +49,8 @@ function domainToApiRow(domain: {
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "debtors.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -73,6 +76,8 @@ export async function POST(request: NextRequest) {
   try {
     // Get user session
     const session = await getSession();
+    if (session && !(await hasPermission(session, "debtors.create")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
@@ -121,6 +126,7 @@ export async function POST(request: NextRequest) {
           client_id: clientId,
           action: "CREATE",
           entity_type: "DEBTOR",
+          entity_id: debtor.id,
           new_value: {
             debtor_id: debtor.id,
             first_name: validatedData.first_name,

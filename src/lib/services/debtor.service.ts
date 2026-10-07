@@ -11,6 +11,7 @@
 
 import type { Prisma } from "@prisma/client";
 import { createRequiredAuditLog } from "@/lib/audit";
+import { activeLedgerEntries } from "@/lib/security/active-ledger";
 import { serializableTransaction } from "@/lib/security/serializable";
 import { debtorRepository } from "@/entities/debtor/api";
 import { debtRepository } from "@/entities/debt/api";
@@ -88,9 +89,11 @@ export class DebtorService {
     )) as Prisma.DebtorGetPayload<{ include: { debts: true; payments: true } }>[];
 
     return debtorsRaw.map((debtor) => {
+      const activeDebts = activeLedgerEntries(debtor.debts, (entry) => entry.reverses_debt_id);
+      const activePayments = activeLedgerEntries(debtor.payments, (entry) => entry.reverses_payment_id);
       const overdueStatus = computeDebtorOverdueStatus(
-        debtor.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
-        debtor.payments.map((p) => ({
+        activeDebts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+        activePayments.map((p) => ({
           amount: p.amount.toNumber(),
           createdAt: p.created_at,
           resetsRating: p.resets_rating,
@@ -175,9 +178,11 @@ export class DebtorService {
       return { data: [], total: 0, page, limit, totalPages: 0 };
     }
     const toDomain = (row: DebtorWithRelations): DebtorDomain => {
+      const activeDebts = activeLedgerEntries(row.debts, (entry) => entry.reverses_debt_id);
+      const activePayments = activeLedgerEntries(row.payments, (entry) => entry.reverses_payment_id);
       const overdue = computeDebtorOverdueStatus(
-        row.debts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
-        row.payments.map((payment) => ({
+        activeDebts.map((debt) => ({ amount: debt.amount.toNumber(), createdAt: debt.created_at })),
+        activePayments.map((payment) => ({
           amount: payment.amount.toNumber(),
           createdAt: payment.created_at,
           resetsRating: payment.resets_rating,
@@ -240,6 +245,8 @@ export class DebtorService {
     return debtRepository.count({
       client_id: clientId,
       created_at: this.getTodayDateRange(),
+      reverses_debt_id: null,
+      reversals: { none: {} },
     });
   }
 
@@ -255,6 +262,8 @@ export class DebtorService {
     return paymentRepository.count({
       client_id: clientId,
       created_at: this.getTodayDateRange(),
+      reverses_payment_id: null,
+      reversals: { none: {} },
     });
   }
 
@@ -403,13 +412,15 @@ export class DebtorService {
     const overdueDays = settings.overdueDays;
 
     // Get all debts and payments in 2 queries (include debtor to avoid N+1); then group in memory
-    const [debtsRaw, paymentsRaw] = (await Promise.all([
+    const [allDebts, allPayments] = (await Promise.all([
       debtRepository.findMany({ client_id: clientId }, { include: { debtor: true }, orderBy: { created_at: "asc" } }),
       paymentRepository.findMany(
         { client_id: clientId },
         { include: { debtor: true }, orderBy: { created_at: "asc" } },
       ),
     ])) as [DebtWithDebtor[], PaymentWithDebtor[]];
+    const debtsRaw = activeLedgerEntries(allDebts, (entry) => entry.reverses_debt_id);
+    const paymentsRaw = activeLedgerEntries(allPayments, (entry) => entry.reverses_payment_id);
 
     // Group debts and payments by debtor
     const debtsByDebtor = new Map<number, DebtWithDebtor[]>();

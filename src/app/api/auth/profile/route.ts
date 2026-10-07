@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
@@ -7,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 export async function PUT(request: NextRequest) {
   try {
     const session = await getSession();
+    if (session && !(await hasPermission(session, "profile.edit")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

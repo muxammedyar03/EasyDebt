@@ -24,6 +24,8 @@
     "docker:logs": "docker compose -f docker-compose.prod.yml logs -f",
     "docker:clean": "docker system prune -af --volumes",
     "test:tenant-db": "node --import tsx scripts/tests/tenant-relations.ts",
+    "test:permissions-db": "node --import tsx scripts/tests/permissions-tenant.ts",
+    "test:audit-cancel-db": "node --import tsx scripts/tests/audit-cancellation-migration.ts",
     "test:tenant-backup": "node --import tsx scripts/tests/tenant-backup.ts"
   },
   "lint-staged": {

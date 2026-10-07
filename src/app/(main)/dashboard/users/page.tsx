@@ -1,3 +1,4 @@
+import { hasPermission } from "@/lib/security/permission-access";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
@@ -11,7 +12,7 @@ export default async function UsersPage() {
   const t = await getTranslations("users");
   const session = await getSession();
 
-  if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
+  if (!session || !(await hasPermission(session, "users.view"))) {
     redirect("/unauthorized");
   }
 
