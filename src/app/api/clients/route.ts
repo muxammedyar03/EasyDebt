@@ -15,7 +15,8 @@ const createClientSchema = z.object({
 export async function GET() {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "clients.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "clients.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -42,7 +43,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "clients.manage"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "clients.manage")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
@@ -86,4 +88,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

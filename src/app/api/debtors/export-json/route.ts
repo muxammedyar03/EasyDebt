@@ -10,7 +10,8 @@ export async function GET() {
   let stage = "authorization";
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "debtors.export"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "debtors.export")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (!["ADMIN", "SUPER_ADMIN"].includes(session.role))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -35,4 +36,3 @@ export async function GET() {
     );
   }
 }
-

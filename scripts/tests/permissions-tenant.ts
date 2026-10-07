@@ -17,10 +17,7 @@ async function main() {
       db.exec("INSERT INTO user_permissions (client_id,user_id,key,enabled) VALUES (1,22,'debtors.view',true)"),
       { code: "23503" },
     );
-    await assert.rejects(
-      db.exec("UPDATE user_permissions SET client_id=2 WHERE user_id=11"),
-      { code: "23503" },
-    );
+    await assert.rejects(db.exec("UPDATE user_permissions SET client_id=2 WHERE user_id=11"), { code: "23503" });
     await assert.rejects(
       db.exec("INSERT INTO user_permissions (client_id,user_id,key,enabled) VALUES (1,11,'payments.create',false)"),
       { code: "23505" },
@@ -34,4 +31,7 @@ async function main() {
     await db.close();
   }
 }
-main().catch((error) => { console.error(error); process.exitCode = 1; });
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

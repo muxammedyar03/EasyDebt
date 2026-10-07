@@ -27,7 +27,8 @@ const createPaymentSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "payments.create"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "payments.create")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Tizimga kirishda xatolik. Iltimos, qaytadan kiring." }, { status: 401 });
     }
@@ -67,9 +68,13 @@ export async function POST(request: NextRequest) {
           });
           if (existing) {
             const cancelled = await tx.payment.findFirst({
-              where: { client_id: clientId, reverses_payment_id: existing.id }, select: { id: true },
+              where: { client_id: clientId, reverses_payment_id: existing.id },
+              select: { id: true },
             });
-            if (cancelled) throw new PaymentRequestConflictError("Bu to‘lov bekor qilingan; request kalitini qayta ishlatib bo‘lmaydi");
+            if (cancelled)
+              throw new PaymentRequestConflictError(
+                "Bu to‘lov bekor qilingan; request kalitini qayta ishlatib bo‘lmaydi",
+              );
             if (
               !samePaymentRequest(existing, {
                 debtorId: validatedData.debtor_id,

@@ -9,13 +9,19 @@ export const PERMISSION_GROUPS = [
   {
     label: "Asosiy",
     pages: [
-      { key: "dashboard.view", label: "Bosh sahifa", route: "/dashboard/default",
+      {
+        key: "dashboard.view",
+        label: "Bosh sahifa",
+        route: "/dashboard/default",
         actions: [
           { key: "settings.view", label: "Magazin sozlamalarini ko‘rish" },
           { key: "settings.manage", label: "Magazin sozlamalarini o‘zgartirish" },
-        ] },
+        ],
+      },
       {
-        key: "debtors.view", label: "Qarzdorlar", route: "/dashboard/debtors",
+        key: "debtors.view",
+        label: "Qarzdorlar",
+        route: "/dashboard/debtors",
         actions: [
           { key: "debtors.create", label: "Qarzdor qo‘shish" },
           { key: "debtors.edit", label: "Qarzdorni o‘zgartirish" },
@@ -34,15 +40,21 @@ export const PERMISSION_GROUPS = [
         ],
       },
       { key: "customers.view", label: "Mijozlar reytingi", route: "/dashboard/customers", actions: [] },
-      { key: "notifications.view", label: "Bildirishnomalar", route: "/dashboard/notifications",
-        actions: [{ key: "notifications.manage", label: "Bildirishnomani boshqarish" }] },
+      {
+        key: "notifications.view",
+        label: "Bildirishnomalar",
+        route: "/dashboard/notifications",
+        actions: [{ key: "notifications.manage", label: "Bildirishnomani boshqarish" }],
+      },
     ],
   },
   {
     label: "Kompaniyalar",
     pages: [
       {
-        key: "companies.view", label: "Mening qarzlarim", route: "/dashboard/my-debts",
+        key: "companies.view",
+        label: "Mening qarzlarim",
+        route: "/dashboard/my-debts",
         actions: [
           { key: "companies.create", label: "Kompaniya qo‘shish" },
           { key: "companies.edit", label: "Kompaniyani o‘zgartirish" },
@@ -54,28 +66,48 @@ export const PERMISSION_GROUPS = [
           { key: "companies.export", label: "Kompaniyalarni eksport qilish" },
         ],
       },
-      { key: "company-receipts.view", label: "To‘lov cheklari", route: "/dashboard/company-receipts",
-        actions: [{ key: "company-receipts.delete", label: "Chekni o‘chirish" }] },
-      { key: "company-reports.view", label: "Kompaniya hisobotlari", route: "/dashboard/my-debts/report",
-        actions: [{ key: "company-reports.export", label: "Eksport" }] },
+      {
+        key: "company-receipts.view",
+        label: "To‘lov cheklari",
+        route: "/dashboard/company-receipts",
+        actions: [{ key: "company-receipts.delete", label: "Chekni o‘chirish" }],
+      },
+      {
+        key: "company-reports.view",
+        label: "Kompaniya hisobotlari",
+        route: "/dashboard/my-debts/report",
+        actions: [{ key: "company-reports.export", label: "Eksport" }],
+      },
     ],
   },
   {
     label: "Hisobotlar",
     pages: [
-      { key: "reports.view", label: "Hisobotlar", route: "/dashboard/reports", actions: [{ key: "reports.export", label: "Eksport" }] },
-      { key: "audit.view", label: "Audit log", route: "/dashboard/audit-logs", actions: [
-        { key: "audit.export", label: "Eksport" },
-        { key: "audit.undo", label: "Amalni ortga qaytarish" },
-        { key: "audit.cancel", label: "Qarz va to‘lovni bekor qilish" },
-      ] },
+      {
+        key: "reports.view",
+        label: "Hisobotlar",
+        route: "/dashboard/reports",
+        actions: [{ key: "reports.export", label: "Eksport" }],
+      },
+      {
+        key: "audit.view",
+        label: "Audit log",
+        route: "/dashboard/audit-logs",
+        actions: [
+          { key: "audit.export", label: "Eksport" },
+          { key: "audit.undo", label: "Amalni ortga qaytarish" },
+          { key: "audit.cancel", label: "Qarz va to‘lovni bekor qilish" },
+        ],
+      },
     ],
   },
   {
     label: "Boshqaruv",
     pages: [
       {
-        key: "users.view", label: "Xodimlar", route: "/dashboard/users",
+        key: "users.view",
+        label: "Xodimlar",
+        route: "/dashboard/users",
         actions: [
           { key: "users.create", label: "Xodim qo‘shish" },
           { key: "users.edit", label: "Xodimni o‘zgartirish" },
@@ -83,22 +115,38 @@ export const PERMISSION_GROUPS = [
         ],
       },
       {
-        key: "clients.view", label: "Magazinlar", route: "/dashboard/clients",
+        key: "clients.view",
+        label: "Magazinlar",
+        route: "/dashboard/clients",
         actions: [
           { key: "clients.manage", label: "Magazinni boshqarish" },
           { key: "tenant.backup", label: "Backup va restore" },
         ],
       },
       {
-        key: "permissions.view", label: "Ruxsatlar", route: "/dashboard/permissions",
+        key: "permissions.view",
+        label: "Ruxsatlar",
+        route: "/dashboard/permissions",
         actions: [{ key: "permissions.manage", label: "Magazin va xodim ruxsatlarini boshqarish" }],
       },
-      { key: "profile.view", label: "Profil", route: "/dashboard/profile/me",
-        actions: [{ key: "profile.edit", label: "Profilni o‘zgartirish" }] },
-      { key: "push-settings.view", label: "Push xabarnomalar", route: "/dashboard/push-notifications",
-        actions: [{ key: "push-settings.manage", label: "Push sozlamalarini o‘zgartirish" }] },
-      { key: "layout-settings.view", label: "Interfeys sozlamalari", route: "/dashboard/layout-settings",
-        actions: [{ key: "layout-settings.manage", label: "Interfeysni o‘zgartirish" }] },
+      {
+        key: "profile.view",
+        label: "Profil",
+        route: "/dashboard/profile/me",
+        actions: [{ key: "profile.edit", label: "Profilni o‘zgartirish" }],
+      },
+      {
+        key: "push-settings.view",
+        label: "Push xabarnomalar",
+        route: "/dashboard/push-notifications",
+        actions: [{ key: "push-settings.manage", label: "Push sozlamalarini o‘zgartirish" }],
+      },
+      {
+        key: "layout-settings.view",
+        label: "Interfeys sozlamalari",
+        route: "/dashboard/layout-settings",
+        actions: [{ key: "layout-settings.manage", label: "Interfeysni o‘zgartirish" }],
+      },
     ],
   },
 ] as const satisfies readonly { label: string; pages: readonly PermissionPage[] }[];
@@ -109,8 +157,9 @@ export const PERMISSION_KEYS = PERMISSION_GROUPS.flatMap((group) =>
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 const known = new Set<string>(PERMISSION_KEYS);
 const parents = new Map<string, PermissionKey>(
-  PERMISSION_GROUPS.flatMap((group) => group.pages.flatMap((page) =>
-    page.actions.map((action) => [action.key, page.key] as [string, PermissionKey]))),
+  PERMISSION_GROUPS.flatMap((group) =>
+    group.pages.flatMap((page) => page.actions.map((action) => [action.key, page.key] as [string, PermissionKey])),
+  ),
 );
 export function isPermissionKey(key: string): key is PermissionKey {
   return known.has(key);
@@ -122,11 +171,23 @@ export function permissionParentKey(key: PermissionKey): PermissionKey | undefin
 // Role defaults preserve access for existing shops until an override is saved.
 export function roleDefault(role: string, key: PermissionKey): boolean {
   if (role === "SUPER_ADMIN") return true;
-  if (key === "clients.view" || key === "clients.manage" || key === "tenant.backup" || key.startsWith("company-receipts."))
+  if (
+    key === "clients.view" ||
+    key === "clients.manage" ||
+    key === "tenant.backup" ||
+    key.startsWith("company-receipts.")
+  )
     return false;
   if (role === "ADMIN") return true;
   if (role !== "USER") return false;
-  if (key.startsWith("users.") || key.startsWith("permissions.") || key === "settings.manage" || key === "audit.undo" || key === "audit.cancel") return false;
+  if (
+    key.startsWith("users.") ||
+    key.startsWith("permissions.") ||
+    key === "settings.manage" ||
+    key === "audit.undo" ||
+    key === "audit.cancel"
+  )
+    return false;
   if (key.endsWith(".delete")) return false;
   return true;
 }
@@ -143,7 +204,6 @@ export function effectivePermission(
     return role === "SUPER_ADMIN" && platform !== false;
   if ((key.startsWith("users.") || key.startsWith("permissions.")) && role !== "ADMIN" && role !== "SUPER_ADMIN")
     return false;
-  if (role === "SUPER_ADMIN" && (key === "permissions.view" || key === "permissions.manage"))
-    return platform !== false;
+  if (role === "SUPER_ADMIN" && (key === "permissions.view" || key === "permissions.manage")) return platform !== false;
   return platform !== false && client !== false && (user ?? roleDefault(role, key));
 }

@@ -25,8 +25,8 @@ export default async function Page() {
   if (!(await hasPermission(session, "dashboard.view"))) redirect("/unauthorized");
   const clientId = requireClientId(session);
   const canViewAudit = await hasPermission(session, "audit.view");
-  const canUndoAudit = canViewAudit && await hasPermission(session, "audit.undo");
-  const canCancelAudit = canViewAudit && await hasPermission(session, "audit.cancel");
+  const canUndoAudit = canViewAudit && (await hasPermission(session, "audit.undo"));
+  const canCancelAudit = canViewAudit && (await hasPermission(session, "audit.cancel"));
 
   const [debtorsRaw, stats, debtLimit, chartData, remindersMap] = await Promise.all([
     debtorService.findMany(clientId, undefined, { page: 1, limit: DASHBOARD_DEFAULT_DEBTOR_LIMIT }),
@@ -53,16 +53,25 @@ export default async function Page() {
 
   return (
     <div className={canViewAudit ? "grid gap-6 2xl:grid-cols-[minmax(0,1fr)_440px]" : ""}>
-    <div className="@container/main flex min-w-0 flex-col gap-4 md:gap-6">
-      <DataTable data={debtorViews} debtLimit={debtLimit} />
+      <div className="@container/main flex min-w-0 flex-col gap-4 md:gap-6">
+        <DataTable data={debtorViews} debtLimit={debtLimit} />
 
-      {/* Statistics Cards */}
-      <SectionCards stats={stats} />
+        {/* Statistics Cards */}
+        <SectionCards stats={stats} />
 
-      {/* Chart */}
-      <ChartAreaInteractive chartData={chartData} />
-    </div>
-    {canViewAudit && <aside className="hidden 2xl:block"><RecentActions clientId={clientId} canUndo={canUndoAudit} canCancel={canCancelAudit} actorRole={session.role} /></aside>}
+        {/* Chart */}
+        <ChartAreaInteractive chartData={chartData} />
+      </div>
+      {canViewAudit && (
+        <aside className="hidden 2xl:block">
+          <RecentActions
+            clientId={clientId}
+            canUndo={canUndoAudit}
+            canCancel={canCancelAudit}
+            actorRole={session.role}
+          />
+        </aside>
+      )}
     </div>
   );
 }

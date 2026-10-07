@@ -48,7 +48,8 @@ async function limitedJson(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "tenant.backup"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "tenant.backup")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (!can(session, "tenant.backup")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     assertBackupConfigured();
@@ -84,4 +85,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Backup operation failed; database changes were not applied" }, { status: 409 });
   }
 }
-

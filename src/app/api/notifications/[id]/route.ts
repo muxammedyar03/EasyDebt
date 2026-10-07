@@ -8,7 +8,8 @@ import { markNotificationAsRead } from "@/lib/notifications";
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "notifications.manage"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "notifications.manage")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -26,4 +27,3 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }
 }
-

@@ -10,7 +10,8 @@ import { userAuditFields } from "@/lib/user-audit";
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "users.create"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "users.create")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
@@ -64,31 +65,35 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
-      data: {
-        username,
-        email: email || null,
-        password: hashedPassword,
-        role,
-        first_name: first_name || null,
-        last_name: last_name || null,
-        is_active: is_active ?? true,
-        client_id: targetClientId,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        first_name: true,
-        last_name: true,
-        is_active: true,
-        created_at: true,
-        client_id: true,
-      },
+        data: {
+          username,
+          email: email || null,
+          password: hashedPassword,
+          role,
+          first_name: first_name || null,
+          last_name: last_name || null,
+          is_active: is_active ?? true,
+          client_id: targetClientId,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          first_name: true,
+          last_name: true,
+          is_active: true,
+          created_at: true,
+          client_id: true,
+        },
       });
       await createRequiredAuditLog(tx, {
-        clientId: targetClientId, userId: session.userId, action: "CREATE", entityType: "USER",
-        entityId: created.id, newValue: userAuditFields(created),
+        clientId: targetClientId,
+        userId: session.userId,
+        action: "CREATE",
+        entityType: "USER",
+        entityId: created.id,
+        newValue: userAuditFields(created),
         description: `Xodim ${created.username} yaratildi`,
       });
       return created;
@@ -104,7 +109,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "users.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "users.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || !["SUPER_ADMIN", "ADMIN"].includes(session.role)) {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });

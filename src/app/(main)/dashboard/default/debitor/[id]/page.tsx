@@ -35,4 +35,3 @@ export default async function DebtorDetailPage({ params }: PageProps) {
   const initialViewValue = computeViewValueSync(debtor, overdueDays);
   return <DebtorDetailClient debtor={debtor} overdueDays={overdueDays} initialViewValue={initialViewValue} />;
 }
-

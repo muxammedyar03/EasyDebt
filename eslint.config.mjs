@@ -27,6 +27,7 @@ const globalIgnores = [
   "jest.config.js",
   "jest.setup.js",
   "public/sw.js",
+  "scripts/**/*.mjs",
 ];
 
 /** @type {import('eslint').Linter.Config[]} */

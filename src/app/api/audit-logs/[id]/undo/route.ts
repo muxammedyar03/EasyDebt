@@ -22,8 +22,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     revalidatePath("/dashboard/users");
     return NextResponse.json({ id: result.id, ok: true });
   } catch (error) {
-    if (error instanceof AuditUndoError)
-      return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof AuditUndoError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("Audit undo failed:", error);
     return NextResponse.json({ error: "Serverda xatolik yuz berdi" }, { status: 500 });
   }

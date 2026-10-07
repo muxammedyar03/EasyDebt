@@ -185,10 +185,13 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
       if (row[reference] == null) continue;
       const original = rows.get(row[reference]);
       if (
-        !original || original[reference] != null || original.client_id !== clientId ||
+        !original ||
+        original[reference] != null ||
+        original.client_id !== clientId ||
         original.debtor_id !== row.debtor_id ||
         !new Prisma.Decimal(String(row.amount)).plus(String(original.amount)).isZero()
-      ) throw new BackupError("Invalid financial reversal in backup", 403);
+      )
+        throw new BackupError("Invalid financial reversal in backup", 403);
     }
   }
   for (const delivery of snapshot.tables.push_deliveries) {

@@ -22,10 +22,7 @@ export async function refreshDebtorStatus(tx: Prisma.TransactionClient, clientId
     })),
     { goodUntilDays: limit - 15, mediumUntilDays: limit, minPaidPercent: 0.5 },
   );
-  const latest = payments.reduce<Date | null>(
-    (date, p) => (!date || p.created_at > date ? p.created_at : date),
-    null,
-  );
+  const latest = payments.reduce<Date | null>((date, p) => (!date || p.created_at > date ? p.created_at : date), null);
   return tx.debtor.update({
     where: { id: debtorId, client_id: clientId },
     data: { is_overdue: status.isOverdue, last_payment_date: latest },

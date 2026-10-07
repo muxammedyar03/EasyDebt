@@ -8,7 +8,8 @@ import { prisma } from "@/lib/prisma";
 export async function PUT(request: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "profile.edit"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "profile.edit")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -69,4 +70,3 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

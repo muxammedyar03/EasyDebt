@@ -14,9 +14,19 @@ const oldUser = { username: "old", email: null, role: "USER", first_name: null, 
 const newUser = { ...oldUser, username: "new" };
 function log(overrides: Partial<AuditLog> = {}): AuditLog {
   return {
-    id: 51, client_id: 4, user_id: 9, action: "UPDATE", entity_type: "DEBTOR", entity_id: 31,
-    old_value: oldFields, new_value: newFields, created_at: new Date(now.getTime() - 1000),
-    description: null, ip_address: null, user_agent: null, ...overrides,
+    id: 51,
+    client_id: 4,
+    user_id: 9,
+    action: "UPDATE",
+    entity_type: "DEBTOR",
+    entity_id: 31,
+    old_value: oldFields,
+    new_value: newFields,
+    created_at: new Date(now.getTime() - 1000),
+    description: null,
+    ip_address: null,
+    user_agent: null,
+    ...overrides,
   };
 }
 
@@ -29,8 +39,12 @@ describe("audit undo policy", () => {
     expect(canUndoAuditLog(log({ created_at: new Date(now.getTime() - UNDO_WINDOW_MS - 1) }), now)).toBe(false);
     expect(canUndoAuditLog(log({ created_at: new Date(now.getTime() + 1000) }), now)).toBe(false);
     expect(canUndoAuditLog(log({ entity_type: "USER", old_value: oldUser, new_value: newUser }), now)).toBe(true);
-    expect(canUndoAuditLog(log({ entity_type: "USER", old_value: oldUser,
-      new_value: { ...newUser, security_changed: true } }), now)).toBe(false);
+    expect(
+      canUndoAuditLog(
+        log({ entity_type: "USER", old_value: oldUser, new_value: { ...newUser, security_changed: true } }),
+        now,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -63,10 +77,15 @@ describe("undo transaction", () => {
     findUser.mockResolvedValue({ id: 31, client_id: 4, ...newUser });
     overridesCount.mockResolvedValue(0);
     mockTx = {
-      auditLog: { findFirst: jest.fn((query) => query.where.id ? findLog(query) : findUndo(query)), create: createAudit },
+      auditLog: {
+        findFirst: jest.fn((query) => (query.where.id ? findLog(query) : findUndo(query))),
+        create: createAudit,
+      },
       debtor: { findFirst: findDebtor, update, delete: remove },
-      debt: { count: debtCount }, payment: { count: paymentCount },
-      paymentReminder: { count: reminderCount }, $queryRaw: locked,
+      debt: { count: debtCount },
+      payment: { count: paymentCount },
+      paymentReminder: { count: reminderCount },
+      $queryRaw: locked,
       user: { findFirst: findUser, update: updateUser, delete: removeUser },
       userPermission: { count: overridesCount },
     };
@@ -76,9 +95,15 @@ describe("undo transaction", () => {
     await expect(undoAuditAction(4, 11, 51, "ADMIN", now)).resolves.toEqual({ id: 52 });
     expect(findLog).toHaveBeenCalledWith({ where: { id: 51, client_id: 4 } });
     expect(update).toHaveBeenCalledWith({ where: { id: 31, client_id: 4 }, data: oldFields });
-    expect(createAudit).toHaveBeenCalledWith({ data: expect.objectContaining({
-      client_id: 4, user_id: 11, action: "UNDO", entity_type: "AUDIT_LOG", entity_id: 51,
-    }) });
+    expect(createAudit).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        client_id: 4,
+        user_id: 11,
+        action: "UNDO",
+        entity_type: "AUDIT_LOG",
+        entity_id: 51,
+      }),
+    });
   });
 
   it("refuses a second undo or a changed record", async () => {

@@ -35,7 +35,14 @@ export interface AuditLogsTableProps {
   cancellableIds: number[];
 }
 
-export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undoableIds, cancellableIds }: AuditLogsTableProps) {
+export function AuditLogsTable({
+  logs,
+  totalPages,
+  currentPage,
+  totalCount,
+  undoableIds,
+  cancellableIds,
+}: AuditLogsTableProps) {
   const t = useTranslations("audit");
   const tCommon = useTranslations("common");
   const router = useRouter();
@@ -244,8 +251,16 @@ export function AuditLogsTable({ logs, totalPages, currentPage, totalCount, undo
                           {log.description ? (
                             <p className="truncate whitespace-break-spaces">{log.description}</p>
                           ) : null}
-                          {undoable.has(log.id) && <div className="mt-2"><UndoAuditButton id={log.id} /></div>}
-                          {cancellable.has(log.id) && <div className="mt-2"><UndoAuditButton id={log.id} kind="cancel" /></div>}
+                          {undoable.has(log.id) && (
+                            <div className="mt-2">
+                              <UndoAuditButton id={log.id} />
+                            </div>
+                          )}
+                          {cancellable.has(log.id) && (
+                            <div className="mt-2">
+                              <UndoAuditButton id={log.id} kind="cancel" />
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

@@ -89,7 +89,12 @@ export default async function AuditLogsPage({
     skip: (page - 1) * limit,
     take: limit,
   });
-  const undoableIds = await undoableAuditIds(clientId, auditLogs, await hasPermission(session, "audit.undo"), session.role);
+  const undoableIds = await undoableAuditIds(
+    clientId,
+    auditLogs,
+    await hasPermission(session, "audit.undo"),
+    session.role,
+  );
   const cancellableIds = await cancellableAuditIds(clientId, auditLogs, await hasPermission(session, "audit.cancel"));
 
   // Get user names

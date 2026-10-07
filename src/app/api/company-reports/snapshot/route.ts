@@ -9,7 +9,8 @@ import { companyDailySnapshotService } from "@/lib/services/company-daily-snapsh
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (session && !(await hasPermission(session, "company-reports.view"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "company-reports.view")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -34,4 +35,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: getApiErrorMessage(error) }, { status: 500 });
   }
 }
-

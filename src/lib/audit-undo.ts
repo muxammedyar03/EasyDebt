@@ -4,36 +4,65 @@ import { prisma } from "@/lib/prisma";
 
 export const UNDO_WINDOW_MS = 15 * 60 * 1000;
 
-type SourceLog = Pick<AuditLog, "id" | "action" | "entity_type" | "entity_id" | "old_value" | "new_value" | "created_at">;
+type SourceLog = Pick<
+  AuditLog,
+  "id" | "action" | "entity_type" | "entity_id" | "old_value" | "new_value" | "created_at"
+>;
 type DebtorFields = { first_name: string; last_name: string; phone_number: string | null; address: string | null };
-type UserFields = { username: string; email: string | null; role: "USER" | "ADMIN" | "SUPER_ADMIN";
-  first_name: string | null; last_name: string | null; is_active: boolean };
+type UserFields = {
+  username: string;
+  email: string | null;
+  role: "USER" | "ADMIN" | "SUPER_ADMIN";
+  first_name: string | null;
+  last_name: string | null;
+  is_active: boolean;
+};
 
 function record(value: Prisma.JsonValue | null): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown> : null;
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function fields(value: Prisma.JsonValue | null): DebtorFields | null {
   const row = record(value);
-  if (!row || typeof row.first_name !== "string" || typeof row.last_name !== "string" ||
-      (row.phone_number != null && typeof row.phone_number !== "string") ||
-      (row.address != null && typeof row.address !== "string")) return null;
-  return { first_name: row.first_name, last_name: row.last_name,
-    phone_number: row.phone_number ?? null, address: row.address ?? null } as DebtorFields;
+  if (
+    !row ||
+    typeof row.first_name !== "string" ||
+    typeof row.last_name !== "string" ||
+    (row.phone_number != null && typeof row.phone_number !== "string") ||
+    (row.address != null && typeof row.address !== "string")
+  )
+    return null;
+  return {
+    first_name: row.first_name,
+    last_name: row.last_name,
+    phone_number: row.phone_number ?? null,
+    address: row.address ?? null,
+  } as DebtorFields;
 }
 
 function userFields(value: Prisma.JsonValue | null): UserFields | null {
   const row = record(value);
-  if (!row || row.security_changed || typeof row.username !== "string" ||
-      !["USER", "ADMIN", "SUPER_ADMIN"].includes(String(row.role)) ||
-      typeof row.is_active !== "boolean" ||
-      (row.email != null && typeof row.email !== "string") ||
-      (row.first_name != null && typeof row.first_name !== "string") ||
-      (row.last_name != null && typeof row.last_name !== "string")) return null;
-  return { username: row.username, email: row.email ?? null,
-    role: row.role, first_name: row.first_name ?? null,
-    last_name: row.last_name ?? null, is_active: row.is_active } as UserFields;
+  if (
+    !row ||
+    row.security_changed ||
+    typeof row.username !== "string" ||
+    !["USER", "ADMIN", "SUPER_ADMIN"].includes(String(row.role)) ||
+    typeof row.is_active !== "boolean" ||
+    (row.email != null && typeof row.email !== "string") ||
+    (row.first_name != null && typeof row.first_name !== "string") ||
+    (row.last_name != null && typeof row.last_name !== "string")
+  )
+    return null;
+  return {
+    username: row.username,
+    email: row.email ?? null,
+    role: row.role,
+    first_name: row.first_name ?? null,
+    last_name: row.last_name ?? null,
+    is_active: row.is_active,
+  } as UserFields;
 }
 
 function debtorId(log: SourceLog): number | null {
@@ -47,8 +76,9 @@ export function canUndoAuditLog(log: SourceLog, now = new Date()): boolean {
   if (age < 0 || age > UNDO_WINDOW_MS) return false;
   if (log.entity_type === "USER") {
     if (!log.entity_id) return false;
-    return log.action === "CREATE" ? userFields(log.new_value) !== null :
-      log.action === "UPDATE" && userFields(log.old_value) !== null && userFields(log.new_value) !== null;
+    return log.action === "CREATE"
+      ? userFields(log.new_value) !== null
+      : log.action === "UPDATE" && userFields(log.old_value) !== null && userFields(log.new_value) !== null;
   }
   if (log.entity_type !== "DEBTOR" || debtorId(log) === null) return false;
   if (log.action === "UPDATE") return fields(log.old_value) !== null && fields(log.new_value) !== null;
@@ -56,9 +86,16 @@ export function canUndoAuditLog(log: SourceLog, now = new Date()): boolean {
   return false;
 }
 
-export async function undoableAuditIds(clientId: number, logs: SourceLog[], permitted: boolean, actorRole: string): Promise<number[]> {
+export async function undoableAuditIds(
+  clientId: number,
+  logs: SourceLog[],
+  permitted: boolean,
+  actorRole: string,
+): Promise<number[]> {
   if (!permitted) return [];
-  const candidates = logs.filter((log) => (log.entity_type !== "USER" || actorRole === "SUPER_ADMIN") && canUndoAuditLog(log)).map((log) => log.id);
+  const candidates = logs
+    .filter((log) => (log.entity_type !== "USER" || actorRole === "SUPER_ADMIN") && canUndoAuditLog(log))
+    .map((log) => log.id);
   if (!candidates.length) return [];
   const undone = await prisma.auditLog.findMany({
     where: { client_id: clientId, action: "UNDO", entity_type: "AUDIT_LOG", entity_id: { in: candidates } },
@@ -69,7 +106,12 @@ export async function undoableAuditIds(clientId: number, logs: SourceLog[], perm
 }
 
 export class AuditUndoError extends Error {
-  constructor(message: string, readonly status = 409) { super(message); }
+  constructor(
+    message: string,
+    readonly status = 409,
+  ) {
+    super(message);
+  }
 }
 
 function sameFields(current: object, expected: object): boolean {
@@ -77,7 +119,13 @@ function sameFields(current: object, expected: object): boolean {
 }
 
 /** Serializable transaction protects against two admins undoing the same action concurrently. */
-export async function undoAuditAction(clientId: number, userId: number, id: number, actorRole: string, now = new Date()) {
+export async function undoAuditAction(
+  clientId: number,
+  userId: number,
+  id: number,
+  actorRole: string,
+  now = new Date(),
+) {
   return serializableTransaction(async (tx) => {
     const log = await tx.auditLog.findFirst({ where: { id, client_id: clientId } });
     if (!log) throw new AuditUndoError("Audit yozuvi topilmadi", 404);
@@ -113,12 +161,18 @@ export async function undoAuditAction(clientId: number, userId: number, id: numb
           throw error;
         }
       }
-      return tx.auditLog.create({ data: {
-        client_id: clientId, user_id: userId, action: "UNDO", entity_type: "AUDIT_LOG", entity_id: id,
-        old_value: { source_action: log.action, source_entity_type: "USER", source_entity_id: targetId },
-        new_value: log.action === "UPDATE" ? userFields(log.old_value)! : Prisma.JsonNull,
-        description: `Audit #${id} ortga qaytarildi (${log.action} USER #${targetId})`,
-      } });
+      return tx.auditLog.create({
+        data: {
+          client_id: clientId,
+          user_id: userId,
+          action: "UNDO",
+          entity_type: "AUDIT_LOG",
+          entity_id: id,
+          old_value: { source_action: log.action, source_entity_type: "USER", source_entity_id: targetId },
+          new_value: log.action === "UPDATE" ? userFields(log.old_value)! : Prisma.JsonNull,
+          description: `Audit #${id} ortga qaytarildi (${log.action} USER #${targetId})`,
+        },
+      });
     }
     const locked = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
       SELECT id FROM debtors WHERE id=${targetId} AND client_id=${clientId} FOR UPDATE`);
@@ -130,7 +184,8 @@ export async function undoAuditAction(clientId: number, userId: number, id: numb
 
     if (log.action === "UPDATE") {
       await tx.debtor.update({
-        where: { id: targetId, client_id: clientId }, data: fields(log.old_value)!,
+        where: { id: targetId, client_id: clientId },
+        data: fields(log.old_value)!,
       });
     } else {
       const [debts, payments, reminders] = await Promise.all([
@@ -143,11 +198,17 @@ export async function undoAuditAction(clientId: number, userId: number, id: numb
       await tx.debtor.delete({ where: { id: targetId, client_id: clientId } });
     }
 
-    return tx.auditLog.create({ data: {
-      client_id: clientId, user_id: userId, action: "UNDO", entity_type: "AUDIT_LOG", entity_id: id,
-      old_value: { source_action: log.action, source_entity_type: log.entity_type, source_entity_id: targetId },
-      new_value: log.action === "UPDATE" ? fields(log.old_value)! : Prisma.JsonNull,
-      description: `Audit #${id} ortga qaytarildi (${log.action} DEBTOR #${targetId})`,
-    } });
+    return tx.auditLog.create({
+      data: {
+        client_id: clientId,
+        user_id: userId,
+        action: "UNDO",
+        entity_type: "AUDIT_LOG",
+        entity_id: id,
+        old_value: { source_action: log.action, source_entity_type: log.entity_type, source_entity_id: targetId },
+        new_value: log.action === "UPDATE" ? fields(log.old_value)! : Prisma.JsonNull,
+        description: `Audit #${id} ortga qaytarildi (${log.action} DEBTOR #${targetId})`,
+      },
+    });
   });
 }

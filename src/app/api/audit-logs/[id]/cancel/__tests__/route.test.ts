@@ -11,7 +11,9 @@ jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 const context = { params: Promise.resolve({ id: "41" }) };
 function request(reason = "Xato kiritilgan") {
   return new Request("http://localhost/api/audit-logs/41/cancel", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }),
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
   });
 }
 describe("financial cancel endpoint", () => {

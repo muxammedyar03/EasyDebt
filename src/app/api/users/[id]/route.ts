@@ -204,22 +204,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         const before = await tx.user.findFirstOrThrow({ where: { id: userId, client_id: clientId } });
         if (before.role === "SUPER_ADMIN") throw new Error("Forbidden user role");
         const updated = await tx.user.update({
-        where: { id: userId },
-        data: { is_active: body.is_active },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          role: true,
-          first_name: true,
-          last_name: true,
-          is_active: true,
-          updated_at: true,
-        },
+          where: { id: userId },
+          data: { is_active: body.is_active },
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            role: true,
+            first_name: true,
+            last_name: true,
+            is_active: true,
+            updated_at: true,
+          },
         });
         await createRequiredAuditLog(tx, {
-          clientId, userId: session.userId, action: "UPDATE", entityType: "USER", entityId: userId,
-          oldValue: userAuditFields(before), newValue: userAuditFields(updated),
+          clientId,
+          userId: session.userId,
+          action: "UPDATE",
+          entityType: "USER",
+          entityId: userId,
+          oldValue: userAuditFields(before),
+          newValue: userAuditFields(updated),
           description: `Xodim ${updated.username} faolligi o‘zgartirildi`,
         });
         return updated;
@@ -254,21 +259,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await serializableTransaction(async (tx) => {
       const before = await tx.user.findFirstOrThrow({ where: { id: userId, client_id: clientId } });
       const updated = await tx.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        first_name: true,
-        last_name: true,
-        is_active: true,
-        updated_at: true,
-      },
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          first_name: true,
+          last_name: true,
+          is_active: true,
+          updated_at: true,
+        },
       });
       await createRequiredAuditLog(tx, {
-        clientId, userId: session.userId, action: "UPDATE", entityType: "USER", entityId: userId,
+        clientId,
+        userId: session.userId,
+        action: "UPDATE",
+        entityType: "USER",
+        entityId: userId,
         oldValue: userAuditFields(before),
         newValue: { ...userAuditFields(updated), ...(body.password ? { security_changed: true } : {}) },
         description: `Xodim ${updated.username} ma’lumotlari o‘zgartirildi`,
@@ -300,7 +309,8 @@ export async function DELETE(
   try {
     const { id } = await params;
     const session = await getSession();
-    if (session && !(await hasPermission(session, "users.delete"))) return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
+    if (session && !(await hasPermission(session, "users.delete")))
+      return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
 
     if (!session || session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
@@ -318,8 +328,13 @@ export async function DELETE(
       const before = await tx.user.findFirstOrThrow({ where: { id: userId, client_id: clientId } });
       await tx.user.delete({ where: { id: userId, client_id: clientId } });
       await createRequiredAuditLog(tx, {
-        clientId, userId: session.userId, action: "DELETE", entityType: "USER", entityId: userId,
-        oldValue: userAuditFields(before), description: `Xodim ${before.username} o‘chirildi`,
+        clientId,
+        userId: session.userId,
+        action: "DELETE",
+        entityType: "USER",
+        entityId: userId,
+        oldValue: userAuditFields(before),
+        description: `Xodim ${before.username} o‘chirildi`,
       });
     });
 

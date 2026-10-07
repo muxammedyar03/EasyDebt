@@ -4,8 +4,12 @@ import { computeDebtorOverdueStatus } from "@/entities/debtor/model/overdue";
 const settings = { goodUntilDays: 30, mediumUntilDays: 45, minPaidPercent: 0.5 };
 
 describe("cancelled ledger pairs", () => {
-  beforeEach(() => { jest.useFakeTimers().setSystemTime(new Date("2026-09-30T12:00:00Z")); });
-  afterEach(() => { jest.useRealTimers(); });
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-09-30T12:00:00Z"));
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
   it("keeps a cancelled old debt out of overdue aging", () => {
     const entries = [
@@ -15,7 +19,13 @@ describe("cancelled ledger pairs", () => {
     ];
     const active = activeLedgerEntries(entries, (entry) => entry.reverses_debt_id);
     expect(active.map((entry) => entry.id)).toEqual([3]);
-    expect(computeDebtorOverdueStatus(active.map((entry) => ({ amount: entry.amount, createdAt: entry.createdAt })), [], settings).isOverdue).toBe(false);
+    expect(
+      computeDebtorOverdueStatus(
+        active.map((entry) => ({ amount: entry.amount, createdAt: entry.createdAt })),
+        [],
+        settings,
+      ).isOverdue,
+    ).toBe(false);
     expect(entries.reduce((sum, entry) => sum + entry.amount, 0)).toBe(50);
   });
 
@@ -26,7 +36,9 @@ describe("cancelled ledger pairs", () => {
     ];
     const active = activeLedgerEntries(entries, (entry) => entry.reverses_payment_id);
     expect(active).toEqual([]);
-    expect(computeDebtorOverdueStatus([{ amount: 100, createdAt: new Date("2026-01-01") }], active, settings).isOverdue).toBe(true);
+    expect(
+      computeDebtorOverdueStatus([{ amount: 100, createdAt: new Date("2026-01-01") }], active, settings).isOverdue,
+    ).toBe(true);
     expect(entries.reduce((sum, entry) => sum + entry.amount, 0)).toBe(0);
   });
 });

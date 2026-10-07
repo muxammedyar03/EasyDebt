@@ -31,8 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   } catch (error) {
     if (error instanceof z.ZodError || error instanceof SyntaxError)
       return NextResponse.json({ error: "Bekor qilish sababi noto‘g‘ri" }, { status: 400 });
-    if (error instanceof AuditUndoError)
-      return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof AuditUndoError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")
       return NextResponse.json({ error: "Bu amal allaqachon bekor qilingan" }, { status: 409 });
     console.error("Audit cancellation failed:", error);

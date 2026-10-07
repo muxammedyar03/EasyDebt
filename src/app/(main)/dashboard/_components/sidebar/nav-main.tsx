@@ -200,9 +200,11 @@ export function NavMain({ items, allowedPermissions }: NavMainProps) {
     return items
       .map((group: NavGroup) => ({
         ...group,
-        items: group.items.filter((item) =>
-          (item.permission != null || !item.roles?.length || (user != null && item.roles.includes(user.role))) &&
-          (!item.permission || allowedPermissions.includes(item.permission))),
+        items: group.items.filter(
+          (item) =>
+            (item.permission != null || !item.roles?.length || (user != null && item.roles.includes(user.role))) &&
+            (!item.permission || allowedPermissions.includes(item.permission)),
+        ),
       }))
       .filter((group) => group.items.length > 0);
   }, [items, user, allowedPermissions]);

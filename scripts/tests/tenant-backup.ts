@@ -217,7 +217,10 @@ async function main() {
     await restoreTenant(restoredCancelled, 99);
     assert.equal((await db.query("SELECT id FROM debts WHERE reverses_debt_id=10")).rows.length, 1);
     assert.equal((await db.query("SELECT id FROM payments WHERE reverses_payment_id=10")).rows.length, 1);
-    assert.equal(Number((await db.query<{ total_debt: string }>("SELECT total_debt FROM debtors WHERE id=10")).rows[0].total_debt), 7);
+    assert.equal(
+      Number((await db.query<{ total_debt: string }>("SELECT total_debt FROM debtors WHERE id=10")).rows[0].total_debt),
+      7,
+    );
     console.log(
       "PASS: encrypted full tenant backup including reversals, cross-tenant isolation, receipt round trip and rollback",
     );

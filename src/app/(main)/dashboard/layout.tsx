@@ -55,7 +55,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
-        <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} allowedPermissions={allowedPermissions} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} allowedPermissions={allowedPermissions} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(

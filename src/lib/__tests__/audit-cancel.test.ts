@@ -10,12 +10,28 @@ jest.mock("@/lib/security/serializable", () => ({
 jest.mock("@/lib/security/refresh-debtor-status", () => ({ refreshDebtorStatus: jest.fn().mockResolvedValue({}) }));
 
 const now = new Date("2026-09-30T10:00:00Z");
-const debtLog = { id: 41, client_id: 4, user_id: 11, action: "DEBT_ADDED", entity_type: "DEBT",
-  entity_id: 7, old_value: null, new_value: { debtor_id: 3, amount: "100.00" },
-  description: "Qarz qo‘shildi", ip_address: null, user_agent: null,
-  created_at: new Date(now.getTime() - 1000) } as AuditLog;
-const paymentLog = { ...debtLog, id: 42, action: "UPDATE", entity_type: "PAYMENT",
-  entity_id: 8, new_value: { debtor_id: 3, amount: 100, payment_type: "CASH", previousBalance: 100, newBalance: 0 } } as AuditLog;
+const debtLog = {
+  id: 41,
+  client_id: 4,
+  user_id: 11,
+  action: "DEBT_ADDED",
+  entity_type: "DEBT",
+  entity_id: 7,
+  old_value: null,
+  new_value: { debtor_id: 3, amount: "100.00" },
+  description: "Qarz qo‘shildi",
+  ip_address: null,
+  user_agent: null,
+  created_at: new Date(now.getTime() - 1000),
+} as AuditLog;
+const paymentLog = {
+  ...debtLog,
+  id: 42,
+  action: "UPDATE",
+  entity_type: "PAYMENT",
+  entity_id: 8,
+  new_value: { debtor_id: 3, amount: 100, payment_type: "CASH", previousBalance: 100, newBalance: 0 },
+} as AuditLog;
 
 describe("financial cancellation", () => {
   it("offers only recent, fully recognizable creation audit entries", () => {
@@ -23,7 +39,9 @@ describe("financial cancellation", () => {
     expect(canCancelAuditLog(paymentLog, now)).toBe(true);
     expect(canCancelAuditLog({ ...debtLog, action: "DEBT_UPDATED" }, now)).toBe(false);
     expect(canCancelAuditLog({ ...paymentLog, old_value: { amount: 10 } }, now)).toBe(false);
-    expect(canCancelAuditLog({ ...debtLog, created_at: new Date(now.getTime() - UNDO_WINDOW_MS - 1) }, now)).toBe(false);
+    expect(canCancelAuditLog({ ...debtLog, created_at: new Date(now.getTime() - UNDO_WINDOW_MS - 1) }, now)).toBe(
+      false,
+    );
   });
 
   const findAudit = jest.fn();
@@ -45,14 +63,31 @@ describe("financial cancellation", () => {
     findLater.mockResolvedValue(null);
     locked.mockResolvedValue([{ id: 3 }]);
     findDebtor.mockResolvedValue({ id: 3, external_id: "debtor-id" });
-    findDebt.mockResolvedValue({ id: 7, debtor_id: 3, created_by: 11, amount: new Prisma.Decimal(100), reverses_debt_id: null });
-    findPayment.mockResolvedValue({ id: 8, debtor_id: 3, created_by: 11, amount: new Prisma.Decimal(100), payment_type: "CASH", reverses_payment_id: null });
+    findDebt.mockResolvedValue({
+      id: 7,
+      debtor_id: 3,
+      created_by: 11,
+      amount: new Prisma.Decimal(100),
+      reverses_debt_id: null,
+    });
+    findPayment.mockResolvedValue({
+      id: 8,
+      debtor_id: 3,
+      created_by: 11,
+      amount: new Prisma.Decimal(100),
+      payment_type: "CASH",
+      reverses_payment_id: null,
+    });
     createDebt.mockResolvedValue({ id: 101 });
     createPayment.mockResolvedValue({ id: 102 });
     createAudit.mockResolvedValue({ id: 55 });
     mockTx = {
-      auditLog: { findFirst: jest.fn((query) => query.where.id ? findAudit(query) :
-        query.where.action === "CANCEL" ? findPrior(query) : findLater(query)), create: createAudit },
+      auditLog: {
+        findFirst: jest.fn((query) =>
+          query.where.id ? findAudit(query) : query.where.action === "CANCEL" ? findPrior(query) : findLater(query),
+        ),
+        create: createAudit,
+      },
       debtor: { findFirstOrThrow: findDebtor, update: updateDebtor },
       debt: { findFirst: findDebt, create: createDebt },
       payment: { findFirst: findPayment, create: createPayment },
@@ -64,27 +99,45 @@ describe("financial cancellation", () => {
     const result = await cancelAuditAction(4, 99, 41, "Xato kiritilgan", now);
     expect(result).toEqual({ audit: { id: 55 }, debtorExternalId: "debtor-id" });
     expect(findAudit).toHaveBeenCalledWith({ where: { id: 41, client_id: 4 } });
-    expect(createDebt).toHaveBeenCalledWith({ data: expect.objectContaining({
-      client_id: 4, debtor_id: 3, reverses_debt_id: 7, created_by: 99,
-      amount: new Prisma.Decimal(-100),
-    }) });
-    expect(updateDebtor).toHaveBeenCalledWith({ where: { id: 3, client_id: 4 },
-      data: { total_debt: { decrement: new Prisma.Decimal(100) } } });
-    expect(createAudit).toHaveBeenCalledWith({ data: expect.objectContaining({
-      action: "CANCEL", entity_type: "AUDIT_LOG", entity_id: 41,
-      new_value: { reversal_id: 101, debtor_id: 3, reason: "Xato kiritilgan" },
-    }) });
+    expect(createDebt).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        client_id: 4,
+        debtor_id: 3,
+        reverses_debt_id: 7,
+        created_by: 99,
+        amount: new Prisma.Decimal(-100),
+      }),
+    });
+    expect(updateDebtor).toHaveBeenCalledWith({
+      where: { id: 3, client_id: 4 },
+      data: { total_debt: { decrement: new Prisma.Decimal(100) } },
+    });
+    expect(createAudit).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "CANCEL",
+        entity_type: "AUDIT_LOG",
+        entity_id: 41,
+        new_value: { reversal_id: 101, debtor_id: 3, reason: "Xato kiritilgan" },
+      }),
+    });
   });
 
   it("posts a negative payment without resetting rating", async () => {
     findAudit.mockResolvedValue(paymentLog);
     await cancelAuditAction(4, 99, 42, "Noto‘g‘ri to‘lov", now);
-    expect(createPayment).toHaveBeenCalledWith({ data: expect.objectContaining({
-      client_id: 4, debtor_id: 3, reverses_payment_id: 8, amount: new Prisma.Decimal(-100),
-      resets_rating: false,
-    }) });
-    expect(updateDebtor).toHaveBeenCalledWith({ where: { id: 3, client_id: 4 },
-      data: { total_debt: { increment: new Prisma.Decimal(100) } } });
+    expect(createPayment).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        client_id: 4,
+        debtor_id: 3,
+        reverses_payment_id: 8,
+        amount: new Prisma.Decimal(-100),
+        resets_rating: false,
+      }),
+    });
+    expect(updateDebtor).toHaveBeenCalledWith({
+      where: { id: 3, client_id: 4 },
+      data: { total_debt: { increment: new Prisma.Decimal(100) } },
+    });
   });
 
   it("rejects duplicate, edited and cross-tenant actions without financial mutation", async () => {

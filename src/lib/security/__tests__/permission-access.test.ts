@@ -20,7 +20,8 @@ beforeEach(() => {
 
 it("requires a page grant for its action", async () => {
   (prisma.clientPermission.findUnique as jest.Mock).mockImplementation(({ where }) =>
-    Promise.resolve(where.client_id_key.key === "debtors.view" ? { enabled: false } : null));
+    Promise.resolve(where.client_id_key.key === "debtors.view" ? { enabled: false } : null),
+  );
   expect(await hasPermission(session, "payments.create")).toBe(false);
 });
 
@@ -32,6 +33,7 @@ it("ignores a grant attached to another tenant", async () => {
 it("reads revocations on every request, without relying on JWT content", async () => {
   expect(await hasPermission(session, "payments.create")).toBe(true);
   (prisma.userPermission.findUnique as jest.Mock).mockImplementation(({ where }) =>
-    Promise.resolve(where.user_id_key.key === "payments.create" ? { enabled: false, client_id: 1 } : null));
+    Promise.resolve(where.user_id_key.key === "payments.create" ? { enabled: false, client_id: 1 } : null),
+  );
   expect(await hasPermission(session, "payments.create")).toBe(false);
 });

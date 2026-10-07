@@ -1,4 +1,11 @@
-import { effectivePermission, isPermissionKey, permissionParentKey, PERMISSION_GROUPS, PERMISSION_KEYS, roleDefault } from "../permission-catalog";
+import {
+  effectivePermission,
+  isPermissionKey,
+  permissionParentKey,
+  PERMISSION_GROUPS,
+  PERMISSION_KEYS,
+  roleDefault,
+} from "../permission-catalog";
 
 describe("permission catalog", () => {
   it("has unique page/action keys and routes", () => {
