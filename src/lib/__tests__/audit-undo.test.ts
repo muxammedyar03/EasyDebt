@@ -1,4 +1,4 @@
-import type { AuditLog } from "@prisma/client";
+import { Prisma, type AuditLog } from "@prisma/client";
 import { canUndoAuditLog, undoAuditAction, AuditUndoError, UNDO_WINDOW_MS } from "../audit-undo";
 
 jest.mock("@/lib/prisma", () => ({ prisma: {} }));
@@ -6,12 +6,21 @@ let mockTx: Record<string, unknown>;
 jest.mock("@/lib/security/serializable", () => ({
   serializableTransaction: (work: (tx: unknown) => Promise<unknown>) => work(mockTx),
 }));
+jest.mock("@/lib/services/company-daily-snapshot.service", () => ({
+  companyDailySnapshotService: { refreshAffectedDates: jest.fn().mockResolvedValue(undefined) },
+}));
 
 const now = new Date("2026-09-30T10:00:00.000Z");
 const oldFields = { first_name: "Old", last_name: "Name", phone_number: null, address: null };
 const newFields = { ...oldFields, first_name: "New" };
 const oldUser = { username: "old", email: null, role: "USER", first_name: null, last_name: null, is_active: true };
 const newUser = { ...oldUser, username: "new" };
+const oldCompany = { name: "Old company", contact_person: null, phone_number: null, address: null };
+const newCompany = { ...oldCompany, name: "New company" };
+const oldCompanyDebt = { company_id: 8, amount: "100", note: null, items: null };
+const newCompanyDebt = { ...oldCompanyDebt, amount: "150" };
+const oldCompanyPayment = { company_id: 8, amount: "80", payment_type: "CASH", note: null };
+const newCompanyPayment = { ...oldCompanyPayment, amount: "120", payment_type: "CARD" };
 function log(overrides: Partial<AuditLog> = {}): AuditLog {
   return {
     id: 51,
@@ -45,6 +54,24 @@ describe("audit undo policy", () => {
         now,
       ),
     ).toBe(false);
+    expect(
+      canUndoAuditLog(log({ entity_type: "COMPANY", action: "CREATE", old_value: null, new_value: newCompany }), now),
+    ).toBe(true);
+    expect(
+      canUndoAuditLog(log({ entity_type: "COMPANY_DEBT", old_value: oldCompanyDebt, new_value: newCompanyDebt }), now),
+    ).toBe(true);
+    expect(
+      canUndoAuditLog(
+        log({ entity_type: "COMPANY_DEBT", old_value: { amount: "100" }, new_value: { amount: "150" } }),
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      canUndoAuditLog(
+        log({ entity_type: "COMPANY_PAYMENT", old_value: oldCompanyPayment, new_value: newCompanyPayment }),
+        now,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -63,6 +90,15 @@ describe("undo transaction", () => {
   const updateUser = jest.fn();
   const removeUser = jest.fn();
   const overridesCount = jest.fn();
+  const findCompany = jest.fn();
+  const updateCompany = jest.fn();
+  const removeCompany = jest.fn();
+  const companyDebtCount = jest.fn();
+  const companyPaymentCount = jest.fn();
+  const findCompanyDebt = jest.fn();
+  const updateCompanyDebt = jest.fn();
+  const findCompanyPayment = jest.fn();
+  const updateCompanyPayment = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -75,6 +111,27 @@ describe("undo transaction", () => {
     reminderCount.mockResolvedValue(0);
     createAudit.mockResolvedValue({ id: 52 });
     findUser.mockResolvedValue({ id: 31, client_id: 4, ...newUser });
+    findCompany.mockResolvedValue({ id: 31, client_id: 4, ...newCompany, total_debt: new Prisma.Decimal(0) });
+    companyDebtCount.mockResolvedValue(0);
+    companyPaymentCount.mockResolvedValue(0);
+    findCompanyDebt.mockResolvedValue({
+      id: 31,
+      client_id: 4,
+      company_id: 8,
+      amount: new Prisma.Decimal(150),
+      note: null,
+      items: null,
+      created_at: now,
+    });
+    findCompanyPayment.mockResolvedValue({
+      id: 32,
+      client_id: 4,
+      company_id: 8,
+      amount: new Prisma.Decimal(120),
+      payment_type: "CARD",
+      note: null,
+      created_at: now,
+    });
     overridesCount.mockResolvedValue(0);
     mockTx = {
       auditLog: {
@@ -88,6 +145,13 @@ describe("undo transaction", () => {
       $queryRaw: locked,
       user: { findFirst: findUser, update: updateUser, delete: removeUser },
       userPermission: { count: overridesCount },
+      company: { findFirst: findCompany, update: updateCompany, delete: removeCompany },
+      companyDebt: { count: companyDebtCount, findFirst: findCompanyDebt, update: updateCompanyDebt },
+      companyPayment: {
+        count: companyPaymentCount,
+        findFirst: findCompanyPayment,
+        update: updateCompanyPayment,
+      },
     };
   });
 
@@ -140,5 +204,46 @@ describe("undo transaction", () => {
     overridesCount.mockResolvedValue(1);
     await expect(undoAuditAction(4, 11, 51, "SUPER_ADMIN", now)).rejects.toThrow(/ruxsatlar/);
     expect(removeUser).not.toHaveBeenCalled();
+  });
+
+  it("restores company fields and a company debt balance", async () => {
+    findLog.mockResolvedValueOnce(
+      log({ entity_type: "COMPANY", old_value: oldCompany, new_value: newCompany, entity_id: 31 }),
+    );
+    await undoAuditAction(4, 11, 51, "ADMIN", now);
+    expect(updateCompany).toHaveBeenCalledWith({ where: { id: 31, client_id: 4 }, data: oldCompany });
+
+    findLog.mockResolvedValueOnce(
+      log({ entity_type: "COMPANY_DEBT", old_value: oldCompanyDebt, new_value: newCompanyDebt, entity_id: 31 }),
+    );
+    await undoAuditAction(4, 11, 51, "ADMIN", now);
+    expect(updateCompanyDebt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 31, client_id: 4 },
+        data: expect.objectContaining({ amount: "100" }),
+      }),
+    );
+    expect(updateCompany).toHaveBeenLastCalledWith({
+      where: { id: 8, client_id: 4 },
+      data: { total_debt: { increment: new Prisma.Decimal(-50) } },
+    });
+
+    findLog.mockResolvedValueOnce(
+      log({
+        entity_type: "COMPANY_PAYMENT",
+        old_value: oldCompanyPayment,
+        new_value: newCompanyPayment,
+        entity_id: 32,
+      }),
+    );
+    await undoAuditAction(4, 11, 51, "ADMIN", now);
+    expect(updateCompanyPayment).toHaveBeenCalledWith({
+      where: { id: 32, client_id: 4 },
+      data: { amount: "80", payment_type: "CASH", note: null },
+    });
+    expect(updateCompany).toHaveBeenLastCalledWith({
+      where: { id: 8, client_id: 4 },
+      data: { total_debt: { increment: new Prisma.Decimal(40) } },
+    });
   });
 });

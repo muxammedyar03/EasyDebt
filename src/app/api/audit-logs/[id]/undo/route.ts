@@ -19,6 +19,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     revalidatePath("/dashboard/audit-logs");
     revalidatePath("/dashboard/default");
     revalidatePath("/dashboard/debtors");
+    revalidatePath("/dashboard/my-debts");
     revalidatePath("/dashboard/users");
     return NextResponse.json({ id: result.id, ok: true });
   } catch (error) {

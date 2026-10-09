@@ -1,14 +1,33 @@
 import { Prisma, type AuditLog } from "@prisma/client";
 import { serializableTransaction } from "@/lib/security/serializable";
 import { prisma } from "@/lib/prisma";
+import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
 
-export const UNDO_WINDOW_MS = 15 * 60 * 1000;
+export const UNDO_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 type SourceLog = Pick<
   AuditLog,
   "id" | "action" | "entity_type" | "entity_id" | "old_value" | "new_value" | "created_at"
 >;
 type DebtorFields = { first_name: string; last_name: string; phone_number: string | null; address: string | null };
+type CompanyFields = {
+  name: string;
+  contact_person: string | null;
+  phone_number: string | null;
+  address: string | null;
+};
+type CompanyDebtFields = {
+  company_id: number;
+  amount: string;
+  note: string | null;
+  items: Prisma.JsonValue;
+};
+type CompanyPaymentFields = {
+  company_id: number;
+  amount: string;
+  payment_type: "CASH" | "CLICK" | "CARD";
+  note: string | null;
+};
 type UserFields = {
   username: string;
   email: string | null;
@@ -65,6 +84,75 @@ function userFields(value: Prisma.JsonValue | null): UserFields | null {
   } as UserFields;
 }
 
+function companyFields(value: Prisma.JsonValue | null): CompanyFields | null {
+  const row = record(value);
+  if (
+    !row ||
+    typeof row.name !== "string" ||
+    (row.contact_person != null && typeof row.contact_person !== "string") ||
+    (row.phone_number != null && typeof row.phone_number !== "string") ||
+    (row.address != null && typeof row.address !== "string")
+  )
+    return null;
+  return {
+    name: row.name,
+    contact_person: row.contact_person ?? null,
+    phone_number: row.phone_number ?? null,
+    address: row.address ?? null,
+  } as CompanyFields;
+}
+
+function positiveDecimalString(value: unknown): string | null {
+  try {
+    if (typeof value !== "string" && typeof value !== "number") return null;
+    const decimal = new Prisma.Decimal(value);
+    return decimal.isFinite() && decimal.gt(0) ? decimal.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function companyId(value: unknown): number | null {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+function companyDebtFields(value: Prisma.JsonValue | null): CompanyDebtFields | null {
+  const row = record(value);
+  const ownerId = companyId(row?.company_id);
+  const debtAmount = positiveDecimalString(row?.amount);
+  if (
+    !row ||
+    !ownerId ||
+    !debtAmount ||
+    !("items" in row) ||
+    (row.items !== null && !Array.isArray(row.items)) ||
+    (row.note != null && typeof row.note !== "string")
+  )
+    return null;
+  return { company_id: ownerId, amount: debtAmount, note: row.note ?? null, items: row.items } as CompanyDebtFields;
+}
+
+function companyPaymentFields(value: Prisma.JsonValue | null): CompanyPaymentFields | null {
+  const row = record(value);
+  const ownerId = companyId(row?.company_id);
+  const paymentAmount = positiveDecimalString(row?.amount);
+  if (
+    !row ||
+    !ownerId ||
+    !paymentAmount ||
+    !["CASH", "CLICK", "CARD"].includes(String(row.payment_type)) ||
+    (row.note != null && typeof row.note !== "string")
+  )
+    return null;
+  return {
+    company_id: ownerId,
+    amount: paymentAmount,
+    payment_type: row.payment_type,
+    note: row.note ?? null,
+  } as CompanyPaymentFields;
+}
+
 function debtorId(log: SourceLog): number | null {
   const value = log.entity_id ?? record(log.new_value)?.debtor_id;
   return Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : null;
@@ -79,6 +167,28 @@ export function canUndoAuditLog(log: SourceLog, now = new Date()): boolean {
     return log.action === "CREATE"
       ? userFields(log.new_value) !== null
       : log.action === "UPDATE" && userFields(log.old_value) !== null && userFields(log.new_value) !== null;
+  }
+  if (log.entity_type === "COMPANY") {
+    if (!log.entity_id) return false;
+    return log.action === "CREATE"
+      ? companyFields(log.new_value) !== null
+      : log.action === "UPDATE" && companyFields(log.old_value) !== null && companyFields(log.new_value) !== null;
+  }
+  if (log.entity_type === "COMPANY_DEBT") {
+    return (
+      Boolean(log.entity_id) &&
+      log.action === "UPDATE" &&
+      companyDebtFields(log.old_value) !== null &&
+      companyDebtFields(log.new_value) !== null
+    );
+  }
+  if (log.entity_type === "COMPANY_PAYMENT") {
+    return (
+      Boolean(log.entity_id) &&
+      log.action === "UPDATE" &&
+      companyPaymentFields(log.old_value) !== null &&
+      companyPaymentFields(log.new_value) !== null
+    );
   }
   if (log.entity_type !== "DEBTOR" || debtorId(log) === null) return false;
   if (log.action === "UPDATE") return fields(log.old_value) !== null && fields(log.new_value) !== null;
@@ -118,6 +228,30 @@ function sameFields(current: object, expected: object): boolean {
   return Object.keys(expected).every((key) => Reflect.get(current, key) === Reflect.get(expected, key));
 }
 
+function sameCompanyDebt(
+  current: { company_id: number; amount: Prisma.Decimal; note: string | null; items: Prisma.JsonValue | null },
+  expected: CompanyDebtFields,
+): boolean {
+  return (
+    current.company_id === expected.company_id &&
+    current.amount.equals(expected.amount) &&
+    current.note === expected.note &&
+    JSON.stringify(current.items) === JSON.stringify(expected.items)
+  );
+}
+
+function sameCompanyPayment(
+  current: { company_id: number; amount: Prisma.Decimal; payment_type: string; note: string | null },
+  expected: CompanyPaymentFields,
+): boolean {
+  return (
+    current.company_id === expected.company_id &&
+    current.amount.equals(expected.amount) &&
+    current.payment_type === expected.payment_type &&
+    current.note === expected.note
+  );
+}
+
 /** Serializable transaction protects against two admins undoing the same action concurrently. */
 export async function undoAuditAction(
   clientId: number,
@@ -138,7 +272,7 @@ export async function undoAuditAction(
     });
     if (alreadyUndone) throw new AuditUndoError("Bu amal allaqachon ortga qaytarilgan");
 
-    const targetId = log.entity_type === "USER" ? log.entity_id! : debtorId(log)!;
+    const targetId = log.entity_type === "DEBTOR" ? debtorId(log)! : log.entity_id!;
     if (log.entity_type === "USER") {
       if (targetId === userId) throw new AuditUndoError("O‘z hisobingizdagi amalni bekor qilib bo‘lmaydi");
       const lockedUser = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
@@ -174,6 +308,135 @@ export async function undoAuditAction(
         },
       });
     }
+
+    if (log.entity_type === "COMPANY") {
+      const lockedCompany = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
+        SELECT id FROM companies WHERE id=${targetId} AND client_id=${clientId} FOR UPDATE`);
+      if (lockedCompany.length !== 1) throw new AuditUndoError("Kompaniya mavjud emas");
+      const currentCompany = await tx.company.findFirst({ where: { id: targetId, client_id: clientId } });
+      const expectedCompany = companyFields(log.new_value)!;
+      if (!currentCompany || !sameFields(currentCompany, expectedCompany))
+        throw new AuditUndoError("Kompaniya ma’lumoti keyin o‘zgargan");
+
+      if (log.action === "UPDATE") {
+        await tx.company.update({
+          where: { id: targetId, client_id: clientId },
+          data: companyFields(log.old_value)!,
+        });
+      } else {
+        const [debts, payments] = await Promise.all([
+          tx.companyDebt.count({ where: { company_id: targetId, client_id: clientId } }),
+          tx.companyPayment.count({ where: { company_id: targetId, client_id: clientId } }),
+        ]);
+        if (debts || payments || !currentCompany.total_debt.isZero())
+          throw new AuditUndoError("Kompaniyada qarz yoki to‘lovlar bor; yaratishni bekor qilib bo‘lmaydi");
+        await tx.company.delete({ where: { id: targetId, client_id: clientId } });
+      }
+
+      return tx.auditLog.create({
+        data: {
+          client_id: clientId,
+          user_id: userId,
+          action: "UNDO",
+          entity_type: "AUDIT_LOG",
+          entity_id: id,
+          old_value: { source_action: log.action, source_entity_type: "COMPANY", source_entity_id: targetId },
+          new_value: log.action === "UPDATE" ? companyFields(log.old_value)! : Prisma.JsonNull,
+          description: `Audit #${id} ortga qaytarildi (${log.action} COMPANY #${targetId})`,
+        },
+      });
+    }
+
+    if (log.entity_type === "COMPANY_DEBT") {
+      const lockedDebt = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
+        SELECT id FROM company_debts WHERE id=${targetId} AND client_id=${clientId} FOR UPDATE`);
+      if (lockedDebt.length !== 1) throw new AuditUndoError("Kompaniya qarzi mavjud emas");
+      const currentDebt = await tx.companyDebt.findFirst({ where: { id: targetId, client_id: clientId } });
+      const expectedDebt = companyDebtFields(log.new_value)!;
+      const previousDebt = companyDebtFields(log.old_value)!;
+      if (!currentDebt || !sameCompanyDebt(currentDebt, expectedDebt))
+        throw new AuditUndoError("Kompaniya qarzi keyin o‘zgargan");
+
+      const delta = new Prisma.Decimal(previousDebt.amount).minus(currentDebt.amount);
+      await tx.companyDebt.update({
+        where: { id: targetId, client_id: clientId },
+        data: {
+          amount: previousDebt.amount,
+          note: previousDebt.note,
+          items: previousDebt.items === null ? Prisma.DbNull : (previousDebt.items as Prisma.InputJsonValue),
+        },
+      });
+      if (!delta.isZero()) {
+        await tx.company.update({
+          where: { id: currentDebt.company_id, client_id: clientId },
+          data: { total_debt: { increment: delta } },
+        });
+      }
+      await companyDailySnapshotService.refreshAffectedDates(clientId, currentDebt.created_at, tx);
+
+      return tx.auditLog.create({
+        data: {
+          client_id: clientId,
+          user_id: userId,
+          action: "UNDO",
+          entity_type: "AUDIT_LOG",
+          entity_id: id,
+          old_value: {
+            source_action: log.action,
+            source_entity_type: "COMPANY_DEBT",
+            source_entity_id: targetId,
+          },
+          new_value: previousDebt as Prisma.InputJsonObject,
+          description: `Audit #${id} ortga qaytarildi (UPDATE COMPANY_DEBT #${targetId})`,
+        },
+      });
+    }
+
+    if (log.entity_type === "COMPANY_PAYMENT") {
+      const lockedPayment = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
+        SELECT id FROM company_payments WHERE id=${targetId} AND client_id=${clientId} FOR UPDATE`);
+      if (lockedPayment.length !== 1) throw new AuditUndoError("Kompaniya to‘lovi mavjud emas");
+      const currentPayment = await tx.companyPayment.findFirst({ where: { id: targetId, client_id: clientId } });
+      const expectedPayment = companyPaymentFields(log.new_value)!;
+      const previousPayment = companyPaymentFields(log.old_value)!;
+      if (!currentPayment || !sameCompanyPayment(currentPayment, expectedPayment))
+        throw new AuditUndoError("Kompaniya to‘lovi keyin o‘zgargan");
+
+      const delta = currentPayment.amount.minus(previousPayment.amount);
+      await tx.companyPayment.update({
+        where: { id: targetId, client_id: clientId },
+        data: {
+          amount: previousPayment.amount,
+          payment_type: previousPayment.payment_type,
+          note: previousPayment.note,
+        },
+      });
+      if (!delta.isZero()) {
+        await tx.company.update({
+          where: { id: currentPayment.company_id, client_id: clientId },
+          data: { total_debt: { increment: delta } },
+        });
+      }
+      await companyDailySnapshotService.refreshAffectedDates(clientId, currentPayment.created_at, tx);
+
+      return tx.auditLog.create({
+        data: {
+          client_id: clientId,
+          user_id: userId,
+          action: "UNDO",
+          entity_type: "AUDIT_LOG",
+          entity_id: id,
+          old_value: {
+            source_action: log.action,
+            source_entity_type: "COMPANY_PAYMENT",
+            source_entity_id: targetId,
+          },
+          new_value: previousPayment,
+          description: `Audit #${id} ortga qaytarildi (UPDATE COMPANY_PAYMENT #${targetId})`,
+        },
+      });
+    }
+
     const locked = await tx.$queryRaw<Array<{ id: number }>>(Prisma.sql`
       SELECT id FROM debtors WHERE id=${targetId} AND client_id=${clientId} FOR UPDATE`);
     if (locked.length !== 1) throw new AuditUndoError("Qarzdor mavjud emas");

@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { createDashboardColumns } from "./columns";
 import { DataTableView } from "./data-table.view";
 import { DebtorView } from "@/types/view";
 import { rowToViewDebtor } from "@/lib/mappers/debtor.mapper";
+import { invalidateRecentAuditActions } from "@/features/audit-log";
 
 type DataTableContainerProps = {
   data: DebtorView[];
@@ -49,6 +51,7 @@ function parseDebtorsFromApi(json: ApiDebtorRow[], debtLimit: number): DebtorVie
  * - Builds table columns with business callbacks
  */
 export function DataTable({ data: initialData, debtLimit }: DataTableContainerProps) {
+  const queryClient = useQueryClient();
   const [data, setData] = React.useState<DebtorView[]>(() => initialData);
   const [search, setSearch] = React.useState("");
   const [searchResults, setSearchResults] = React.useState<DebtorView[] | null>(null);
@@ -85,8 +88,10 @@ export function DataTable({ data: initialData, debtLimit }: DataTableContainerPr
       }
     } catch (error) {
       console.error("Error refreshing debtors:", error);
+    } finally {
+      await invalidateRecentAuditActions(queryClient);
     }
-  }, [fetchDebtors, search]);
+  }, [fetchDebtors, queryClient, search]);
 
   const [searchLoading, setSearchLoading] = React.useState(false);
   React.useEffect(() => {

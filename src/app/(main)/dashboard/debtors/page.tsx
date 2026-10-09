@@ -11,6 +11,7 @@ import { debtService } from "@/lib/services/debt.service";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { redirect } from "next/navigation";
+import { RecentActions } from "../default/_components/recent-actions";
 
 // Ensure this page is always dynamic and not cached
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ export default async function DebtorsPage({
   const sortOrder = (params.sortOrder === "asc" ? "asc" : "desc") as "asc" | "desc";
   const status = (params.status as string) || "all";
   const debtLimit = await debtService.debtLimit(clientId);
+  const canViewAudit = await hasPermission(session, "audit.view");
 
   let domainStatus: DebtorStatus | undefined;
   switch (status) {
@@ -62,40 +64,47 @@ export default async function DebtorsPage({
   const totalPayments = await debtorService.debtorsTotalPayments(clientId);
 
   return (
-    <div className="@container/main flex flex-col gap-4 md:gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
+    <div className={canViewAudit ? "grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]" : ""}>
+      <div className="@container/main flex flex-col gap-4 md:gap-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-6 2xl:grid-cols-4">
-        <SectionCard
-          title={t("totalDebtors")}
-          count={debtorsFromService.total}
-          color="text-indigo-600"
-          icon={<Users className="!size-4" />}
-        />
-        <SectionCard
-          title={t("totalDebt")}
-          defaultVisible
-          amount={totalDebt}
-          icon={<BadgeDollarSign className="!h-4 !w-4" />}
-        />
-        <SectionCard
-          title={t("totalPayments")}
-          defaultVisible
-          color="text-green-600"
-          amount={totalPayments}
-          icon={<HandCoinsIcon className="!h-4 !w-4" />}
-        />
-      </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-6 2xl:grid-cols-4">
+          <SectionCard
+            title={t("totalDebtors")}
+            count={debtorsFromService.total}
+            color="text-indigo-600"
+            icon={<Users className="!size-4" />}
+          />
+          <SectionCard
+            title={t("totalDebt")}
+            defaultVisible
+            amount={totalDebt}
+            icon={<BadgeDollarSign className="!h-4 !w-4" />}
+          />
+          <SectionCard
+            title={t("totalPayments")}
+            defaultVisible
+            color="text-green-600"
+            amount={totalPayments}
+            icon={<HandCoinsIcon className="!h-4 !w-4" />}
+          />
+        </div>
 
-      <DebtorsTable
-        debtors={debtorViews}
-        totalPages={debtorsFromService.totalPages}
-        currentPage={debtorsFromService.page}
-        debtLimit={debtLimit}
-      />
+        <DebtorsTable
+          debtors={debtorViews}
+          totalPages={debtorsFromService.totalPages}
+          currentPage={debtorsFromService.page}
+          debtLimit={debtLimit}
+        />
+      </div>
+      {canViewAudit && (
+        <aside className="hidden 2xl:block">
+          <RecentActions />
+        </aside>
+      )}
     </div>
   );
 }

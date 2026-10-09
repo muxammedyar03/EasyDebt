@@ -8,6 +8,9 @@ jest.mock("@/lib/security/serializable", () => ({
   serializableTransaction: (work: (tx: unknown) => Promise<unknown>) => work(mockTx),
 }));
 jest.mock("@/lib/security/refresh-debtor-status", () => ({ refreshDebtorStatus: jest.fn().mockResolvedValue({}) }));
+jest.mock("@/lib/services/company-daily-snapshot.service", () => ({
+  companyDailySnapshotService: { refreshAffectedDates: jest.fn().mockResolvedValue(undefined) },
+}));
 
 const now = new Date("2026-09-30T10:00:00Z");
 const debtLog = {
@@ -32,11 +35,28 @@ const paymentLog = {
   entity_id: 8,
   new_value: { debtor_id: 3, amount: 100, payment_type: "CASH", previousBalance: 100, newBalance: 0 },
 } as AuditLog;
+const companyDebtLog = {
+  ...debtLog,
+  id: 43,
+  action: "CREATE",
+  entity_type: "COMPANY_DEBT",
+  entity_id: 9,
+  new_value: { company_id: 6, amount: "100.00" },
+} as AuditLog;
+const companyPaymentLog = {
+  ...companyDebtLog,
+  id: 44,
+  entity_type: "COMPANY_PAYMENT",
+  entity_id: 10,
+  new_value: { company_id: 6, amount: "100.00", payment_type: "CARD" },
+} as AuditLog;
 
 describe("financial cancellation", () => {
   it("offers only recent, fully recognizable creation audit entries", () => {
     expect(canCancelAuditLog(debtLog, now)).toBe(true);
     expect(canCancelAuditLog(paymentLog, now)).toBe(true);
+    expect(canCancelAuditLog(companyDebtLog, now)).toBe(true);
+    expect(canCancelAuditLog(companyPaymentLog, now)).toBe(true);
     expect(canCancelAuditLog({ ...debtLog, action: "DEBT_UPDATED" }, now)).toBe(false);
     expect(canCancelAuditLog({ ...paymentLog, old_value: { amount: 10 } }, now)).toBe(false);
     expect(canCancelAuditLog({ ...debtLog, created_at: new Date(now.getTime() - UNDO_WINDOW_MS - 1) }, now)).toBe(
@@ -55,6 +75,12 @@ describe("financial cancellation", () => {
   const createPayment = jest.fn();
   const updateDebtor = jest.fn();
   const createAudit = jest.fn();
+  const findCompany = jest.fn();
+  const updateCompany = jest.fn();
+  const findCompanyDebt = jest.fn();
+  const createCompanyDebt = jest.fn();
+  const findCompanyPayment = jest.fn();
+  const createCompanyPayment = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -80,6 +106,24 @@ describe("financial cancellation", () => {
     });
     createDebt.mockResolvedValue({ id: 101 });
     createPayment.mockResolvedValue({ id: 102 });
+    findCompany.mockResolvedValue({ id: 6, external_id: "company-id" });
+    findCompanyDebt.mockResolvedValue({
+      id: 9,
+      company_id: 6,
+      created_by: 11,
+      amount: new Prisma.Decimal(100),
+      reverses_company_debt_id: null,
+    });
+    createCompanyDebt.mockResolvedValue({ id: 103, created_at: now });
+    findCompanyPayment.mockResolvedValue({
+      id: 10,
+      company_id: 6,
+      created_by: 11,
+      amount: new Prisma.Decimal(100),
+      payment_type: "CARD",
+      reverses_company_payment_id: null,
+    });
+    createCompanyPayment.mockResolvedValue({ id: 104, created_at: now });
     createAudit.mockResolvedValue({ id: 55 });
     mockTx = {
       auditLog: {
@@ -91,6 +135,9 @@ describe("financial cancellation", () => {
       debtor: { findFirstOrThrow: findDebtor, update: updateDebtor },
       debt: { findFirst: findDebt, create: createDebt },
       payment: { findFirst: findPayment, create: createPayment },
+      company: { findFirstOrThrow: findCompany, update: updateCompany },
+      companyDebt: { findFirst: findCompanyDebt, create: createCompanyDebt },
+      companyPayment: { findFirst: findCompanyPayment, create: createCompanyPayment },
       $queryRaw: locked,
     };
   });
@@ -148,5 +195,39 @@ describe("financial cancellation", () => {
     findAudit.mockResolvedValueOnce(null);
     await expect(cancelAuditAction(5, 99, 41, "Xato kiritilgan", now)).rejects.toMatchObject({ status: 404 });
     expect(createDebt).not.toHaveBeenCalled();
+  });
+
+  it("posts company debt and payment reversals and restores the company balance", async () => {
+    findAudit.mockResolvedValueOnce(companyDebtLog);
+    await expect(cancelAuditAction(4, 99, 43, "Xato kiritilgan", now)).resolves.toEqual({
+      audit: { id: 55 },
+      companyExternalId: "company-id",
+    });
+    expect(createCompanyDebt).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        company_id: 6,
+        amount: new Prisma.Decimal(-100),
+        reverses_company_debt_id: 9,
+      }),
+    });
+    expect(updateCompany).toHaveBeenLastCalledWith({
+      where: { id: 6, client_id: 4 },
+      data: { total_debt: { decrement: new Prisma.Decimal(100) } },
+    });
+
+    findAudit.mockResolvedValueOnce(companyPaymentLog);
+    await cancelAuditAction(4, 99, 44, "Noto‘g‘ri to‘lov", now);
+    expect(createCompanyPayment).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        company_id: 6,
+        amount: new Prisma.Decimal(-100),
+        payment_type: "CARD",
+        reverses_company_payment_id: 10,
+      }),
+    });
+    expect(updateCompany).toHaveBeenLastCalledWith({
+      where: { id: 6, client_id: 4 },
+      data: { total_debt: { increment: new Prisma.Decimal(100) } },
+    });
   });
 });

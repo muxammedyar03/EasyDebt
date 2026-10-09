@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 import { getErrorMessage } from "@/lib/errors";
@@ -24,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addCompanyPaymentSchema, type AddCompanyPaymentFormData } from "@/lib/validation/company-payment";
 import { createCompanyPayment, validateCompanyReceiptFile } from "../api";
+import { invalidateRecentAuditActions } from "@/features/audit-log";
 
 export interface AddCompanyPaymentDialogProps {
   open: boolean;
@@ -41,6 +43,7 @@ export function AddCompanyPaymentDialog({
   onSuccess,
 }: AddCompanyPaymentDialogProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const pendingRequest = React.useRef<{ key: string; fingerprint: string; receipt: File | null } | null>(null);
   const submitting = React.useRef(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -82,6 +85,7 @@ export function AddCompanyPaymentDialog({
         note: data.note?.trim() || null,
         receipt,
       });
+      await invalidateRecentAuditActions(queryClient);
       pendingRequest.current = null;
       toast.success("To'lov qo'shildi");
       reset({ payment_type: "CASH" });

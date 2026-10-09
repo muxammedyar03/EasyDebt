@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 import { getErrorMessage } from "@/lib/errors";
@@ -23,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { addCompanyDebtSchema, type AddCompanyDebtFormData } from "@/lib/validation/company-debt";
 import { createCompanyDebt } from "../api";
+import { invalidateRecentAuditActions } from "@/features/audit-log";
 
 export interface AddCompanyDebtDialogProps {
   open: boolean;
@@ -40,6 +42,7 @@ export function AddCompanyDebtDialog({
   onSuccess,
 }: AddCompanyDebtDialogProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = React.useState(false);
   const [amount, setAmount] = React.useState("");
 
@@ -61,6 +64,7 @@ export function AddCompanyDebtDialog({
         amount: parseFloat(data.amount.replace(/\s/g, "")),
         note: data.note?.trim() || null,
       });
+      await invalidateRecentAuditActions(queryClient);
       toast.success("Qarz qo'shildi");
       reset();
       setAmount("");

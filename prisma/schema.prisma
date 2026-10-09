@@ -412,11 +412,15 @@ model CompanyDebt {
   created_at  DateTime @default(now())
   created_by  Int
   client_id   Int
+  reverses_company_debt_id Int? @unique
 
   client  Client  @relation(fields: [client_id], references: [id])
   company Company @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User    @relation("CompanyDebtCreatedBy", fields: [created_by], references: [id])
+  reverses CompanyDebt? @relation("CompanyDebtReversal", fields: [reverses_company_debt_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
+  reversals CompanyDebt[] @relation("CompanyDebtReversal")
 
+  @@unique([id, client_id])
   @@index([company_id])
   @@index([created_at])
   @@index([external_id])
@@ -438,11 +442,15 @@ model CompanyPayment {
   created_at   DateTime    @default(now())
   created_by   Int
   client_id    Int
+  reverses_company_payment_id Int? @unique
 
   client  Client  @relation(fields: [client_id], references: [id])
   company Company @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
   creator User    @relation("CompanyPaymentCreatedBy", fields: [created_by], references: [id])
+  reverses CompanyPayment? @relation("CompanyPaymentReversal", fields: [reverses_company_payment_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
+  reversals CompanyPayment[] @relation("CompanyPaymentReversal")
 
+  @@unique([id, client_id])
   @@index([company_id])
   @@index([created_at])
   @@index([external_id])

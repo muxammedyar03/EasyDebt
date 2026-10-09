@@ -8,6 +8,7 @@
  */
 
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import { DebtorCard } from "@/components/mobile/debtor-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuickAddDebt } from "@/features/create-debt/ui";
 import { QuickAddPayment } from "@/features/make-payment/ui";
+import { invalidateRecentAuditActions } from "@/features/audit-log";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { bulkDeleteDebtors, deleteDebtorById, exportDebtorsListToExcel } from "@/lib/debtors";
@@ -64,6 +66,7 @@ const selectColumn: ColumnDef<DebtorView> = {
 export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: DebtorsTableProps) {
   const translate = useTranslations();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const { searchParams, searchValue, setSearchValue, isSearching, handleStatusFilter, handlePageChange } =
     useDebtorsTableUrl();
@@ -81,8 +84,9 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
   const [importDialog, setImportDialog] = React.useState(false);
 
   const refresh = React.useCallback(() => {
+    void invalidateRecentAuditActions(queryClient);
     router.refresh();
-  }, [router]);
+  }, [queryClient, router]);
 
   const columns = React.useMemo(
     () => [selectColumn, ...createDashboardColumns({ debtLimit, onDataChange: refresh })],
@@ -113,24 +117,24 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
       const ok = await bulkDeleteDebtors(selectedIds);
       if (ok) {
         table.resetRowSelection();
-        router.refresh();
+        refresh();
       }
     } catch (error) {
       console.error("Error deleting debtors:", error);
     }
-  }, [selectedIds, router, translate, table]);
+  }, [selectedIds, refresh, translate, table]);
 
   const handleDelete = React.useCallback(
     async (id: number) => {
       if (!confirm(translate("debtorsPage.confirmDelete"))) return;
       try {
         const ok = await deleteDebtorById(id);
-        if (ok) router.refresh();
+        if (ok) refresh();
       } catch (error) {
         console.error("Error deleting debtor:", error);
       }
     },
-    [router, translate],
+    [refresh, translate],
   );
 
   const handleExcelExport = React.useCallback(async () => {
@@ -243,6 +247,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         onOpenChange={(open) => setQuickDebtDialog({ ...quickDebtDialog, open })}
         debtorId={quickDebtDialog.debtorId}
         debtorName={quickDebtDialog.debtorName}
+        onSuccess={refresh}
       />
 
       <QuickAddPayment
@@ -251,6 +256,7 @@ export function DebtorsTable({ debtors, totalPages, currentPage, debtLimit }: De
         debtorId={quickPaymentDialog.debtorId}
         debtorName={quickPaymentDialog.debtorName}
         totalDebt={quickPaymentDialog.totalDebt}
+        onSuccess={refresh}
       />
 
       <ExportImportDialog open={exportDialog} onOpenChange={setExportDialog} mode="export" />

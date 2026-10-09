@@ -185,8 +185,18 @@ export class CompanyPaymentService {
           action: "UPDATE",
           entityType: "COMPANY_PAYMENT",
           entityId: id,
-          oldValue: { amount: existing.amount.toString(), payment_type: existing.payment_type, note: existing.note },
-          newValue: { amount: payment.amount.toString(), payment_type: payment.payment_type, note: payment.note },
+          oldValue: {
+            company_id: existing.company_id,
+            amount: existing.amount.toString(),
+            payment_type: existing.payment_type,
+            note: existing.note,
+          },
+          newValue: {
+            company_id: payment.company_id,
+            amount: payment.amount.toString(),
+            payment_type: payment.payment_type,
+            note: payment.note,
+          },
           description: `Kompaniya to'lovi #${id} yangilandi`,
         });
       return payment;

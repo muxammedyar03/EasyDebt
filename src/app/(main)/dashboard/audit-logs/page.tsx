@@ -6,10 +6,10 @@ import { getTranslations } from "next-intl/server";
 import { AuditLogsTable } from "./_components/audit-logs-table";
 import { AuditLog, Prisma } from "@prisma/client";
 import { AuditLogTableProps } from "@/types/types";
-import { toast } from "sonner";
 import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { redirect } from "next/navigation";
+import { auditLogService } from "@/lib/services/audit-log.service";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -99,87 +99,33 @@ export default async function AuditLogsPage({
 
   // Get user names
   const userIds = [...new Set(auditLogs.map((log: AuditLog) => log.user_id).filter((id): id is number => id !== null))];
-  const users = await prisma.user.findMany({
-    where: {
-      id: {
-        in: userIds,
+  const [users, presentations] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        id: {
+          in: userIds,
+        },
       },
-    },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      first_name: true,
-      last_name: true,
-    },
-  });
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+      },
+    }),
+    auditLogService.getLogPresentations(clientId, auditLogs),
+  ]);
 
   const userMap = new Map(users.map((user) => [user.id, user]));
-
-  // Get debtor IDs from new_value (for all debtor-related actions)
-  const debtorIds = new Set<number>();
-  auditLogs.forEach((log) => {
-    if (
-      (log.action === "DEBT_ADDED" ||
-        log.action === "PAYMENT_ADDED" ||
-        log.action === "CREATE" ||
-        log.action === "UPDATE" ||
-        log.action === "DELETE") &&
-      log.new_value
-    ) {
-      try {
-        const value = typeof log.new_value === "string" ? JSON.parse(log.new_value) : log.new_value;
-        if (value && typeof value === "object" && "debtor_id" in value) {
-          debtorIds.add(value.debtor_id as number);
-        }
-      } catch (e) {
-        // Ignore parse errors
-        console.error(e);
-        toast(t("errorOccurred"), { description: String(e) });
-      }
-    }
-  });
-
-  // Fetch debtor names in one query
-  const debtors = await prisma.debtor.findMany({
-    where: {
-      id: {
-        in: Array.from(debtorIds),
-      },
-    },
-    select: {
-      id: true,
-      first_name: true,
-      last_name: true,
-    },
-  });
-
-  const debtorMap = new Map(debtors.map((debtor) => [debtor.id, `${debtor.first_name} ${debtor.last_name}`]));
 
   const logsWithUsers = auditLogs.map((log) => ({
     ...log,
     user: log.user_id ? userMap.get(log.user_id) || null : null,
-    debtorName: (() => {
-      if (
-        (log.action === "DEBT_ADDED" ||
-          log.action === "PAYMENT_ADDED" ||
-          log.action === "CREATE" ||
-          log.action === "UPDATE" ||
-          log.action === "DELETE") &&
-        log.new_value
-      ) {
-        try {
-          const value = typeof log.new_value === "string" ? JSON.parse(log.new_value) : log.new_value;
-          if (value && typeof value === "object" && "debtor_id" in value) {
-            return debtorMap.get(value.debtor_id as number) || null;
-          }
-        } catch (e) {
-          toast(t("errorOccurred"), { description: String(e) });
-          return null;
-        }
-      }
-      return null;
-    })(),
+    subjectName: presentations.get(log.id)?.subjectName ?? null,
+    amount: presentations.get(log.id)?.amount ?? null,
+    displayEntityType: presentations.get(log.id)?.displayEntityType ?? log.entity_type,
+    sourceAction: presentations.get(log.id)?.sourceAction ?? null,
   }));
 
   return (

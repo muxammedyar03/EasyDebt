@@ -21,6 +21,18 @@ export async function deleteEmptyRecords(kind: "debtor" | "company", clientId: n
           (await tx.paymentReminder.count({ where }))
         : (await tx.companyDebt.count({ where })) + (await tx.companyPayment.count({ where }));
     if (count) throw new RecordDeletionError("Records with financial history or reminders cannot be deleted");
+    const subjects =
+      kind === "debtor"
+        ? (
+            await tx.debtor.findMany({
+              where: { id: { in: ids }, client_id: clientId },
+              select: { id: true, first_name: true, last_name: true },
+            })
+          ).map((row) => ({ id: row.id, name: `${row.first_name} ${row.last_name}`.trim() }))
+        : await tx.company.findMany({
+            where: { id: { in: ids }, client_id: clientId },
+            select: { id: true, name: true },
+          });
     if (kind === "debtor") await tx.debtor.deleteMany({ where: { id: { in: ids }, client_id: clientId } });
     else await tx.company.deleteMany({ where: { id: { in: ids }, client_id: clientId } });
     await tx.auditLog.create({
@@ -29,7 +41,7 @@ export async function deleteEmptyRecords(kind: "debtor" | "company", clientId: n
         user_id: actorId,
         action: "DELETE",
         entity_type: kind.toUpperCase(),
-        old_value: { ids },
+        old_value: { ids, subjects },
       },
     });
   });

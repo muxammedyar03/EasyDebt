@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, RotateCcw } from "lucide-react";
+import { Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { invalidateRecentAuditActions } from "@/features/audit-log";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,7 @@ export function UndoAuditButton({
 }) {
   const t = useTranslations("audit");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -44,6 +47,7 @@ export function UndoAuditButton({
       if (!response.ok) throw new Error(result.error || (kind === "cancel" ? t("cancelFailed") : t("undoFailed")));
       toast.success(kind === "cancel" ? t("cancelSuccess") : t("undoSuccess"));
       setOpen(false);
+      await invalidateRecentAuditActions(queryClient);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : kind === "cancel" ? t("cancelFailed") : t("undoFailed"));
@@ -58,13 +62,13 @@ export function UndoAuditButton({
         type="button"
         size={iconOnly ? "icon" : "sm"}
         variant={iconOnly ? "ghost" : "outline"}
-        className={iconOnly ? "text-foreground hover:text-primary size-9" : undefined}
+        className={iconOnly ? "text-foreground bg-input hover:text-primary h-5 px-4 py-1" : undefined}
         disabled={pending}
         title={title}
         aria-label={title}
         onClick={() => (kind === "cancel" ? setOpen(true) : void submit())}
       >
-        {kind === "cancel" ? <Ban className="size-5" /> : <RotateCcw className="size-5" />}
+        {kind !== "cancel" ? <Undo2 className="size-4" /> : <X className="size-3.5" />}
         {!iconOnly && <span className="ml-1">{title}</span>}
       </Button>
       {kind === "cancel" && (

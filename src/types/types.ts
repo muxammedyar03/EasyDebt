@@ -119,5 +119,8 @@ export interface AuditLogTableProps {
     first_name: string | null;
     last_name: string | null;
   } | null;
-  debtorName?: string | null;
+  subjectName: string | null;
+  amount: number | null;
+  displayEntityType: string;
+  sourceAction: string | null;
 }

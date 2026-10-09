@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as z from "zod";
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createCompany, updateCompany } from "../api";
+import { invalidateRecentAuditActions } from "@/features/audit-log";
 
 type AddCompanyFormData = {
   name: string;
@@ -49,6 +51,7 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
   const t = useTranslations("company");
   const tCommon = useTranslations("common");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = React.useState(false);
   const isEdit = Boolean(company);
 
@@ -106,6 +109,7 @@ export function AddCompanyDialog({ open, onOpenChange, onSuccess, company }: Add
         await createCompany(payload);
         toast.success(t("addSuccess"));
       }
+      await invalidateRecentAuditActions(queryClient);
 
       onOpenChange(false);
       requestAnimationFrame(() => {

@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { domainToViewCompany } from "@/lib/mappers/company.mapper";
 import type { CompanyFilterStatus, CompanySortBy } from "@/types/domain/company.domain";
 import { CompaniesClient } from "./_components/companies-client";
+import { RecentActions } from "../default/_components/recent-actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,7 @@ export default async function MyDebtsPage({
   const dateTo = params.dateTo ? new Date(String(params.dateTo)) : undefined;
   const minAmount = params.minAmount ? Number(params.minAmount) : undefined;
   const maxAmount = params.maxAmount ? Number(params.maxAmount) : undefined;
+  const canViewAudit = await hasPermission(session, "audit.view");
 
   const [result, stats] = await Promise.all([
     companyService.findMany(
@@ -55,45 +57,52 @@ export default async function MyDebtsPage({
   const companies = result.data.map(domainToViewCompany);
 
   return (
-    <div className="@container/main flex flex-col gap-4 md:gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-      </div>
+    <div className={canViewAudit ? "grid gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]" : ""}>
+      <div className="@container/main flex flex-col gap-4 md:gap-6">
+        <div>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+        </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
-        <SectionCard
-          title={t("companies")}
-          count={stats.totalCompanies}
-          color="text-indigo-600"
-          icon={<Building2 className="!size-4" />}
-        />
-        <SectionCard
-          title={t("totalDebt")}
-          defaultVisible
-          amount={stats.totalDebt}
-          icon={<BadgeDollarSign className="!h-4 !w-4" />}
-        />
-        <SectionCard
-          title={t("totalPayments")}
-          defaultVisible
-          color="text-green-600"
-          amount={stats.totalPaymentsAmount}
-          icon={<HandCoinsIcon className="!h-4 !w-4" />}
-        />
-        <SectionCard
-          title={t("todayActivity")}
-          defaultVisible
-          amount={stats.todayDebtsAmount + stats.todayPaymentsAmount}
-          description={t("todayActivityDesc", {
-            debts: stats.todayDebtsCount,
-            payments: stats.todayPaymentsCount,
-          })}
-          icon={<HandCoinsIcon className="!h-4 !w-4" />}
-        />
-      </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+          <SectionCard
+            title={t("companies")}
+            count={stats.totalCompanies}
+            color="text-indigo-600"
+            icon={<Building2 className="!size-4" />}
+          />
+          <SectionCard
+            title={t("totalDebt")}
+            defaultVisible
+            amount={stats.totalDebt}
+            icon={<BadgeDollarSign className="!h-4 !w-4" />}
+          />
+          <SectionCard
+            title={t("totalPayments")}
+            defaultVisible
+            color="text-green-600"
+            amount={stats.totalPaymentsAmount}
+            icon={<HandCoinsIcon className="!h-4 !w-4" />}
+          />
+          <SectionCard
+            title={t("todayActivity")}
+            defaultVisible
+            amount={stats.todayDebtsAmount + stats.todayPaymentsAmount}
+            description={t("todayActivityDesc", {
+              debts: stats.todayDebtsCount,
+              payments: stats.todayPaymentsCount,
+            })}
+            icon={<HandCoinsIcon className="!h-4 !w-4" />}
+          />
+        </div>
 
-      <CompaniesClient companies={companies} currentPage={result.page} totalPages={result.totalPages} />
+        <CompaniesClient companies={companies} currentPage={result.page} totalPages={result.totalPages} />
+      </div>
+      {canViewAudit && (
+        <aside className="hidden 2xl:block">
+          <RecentActions />
+        </aside>
+      )}
     </div>
   );
 }

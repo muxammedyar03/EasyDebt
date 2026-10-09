@@ -102,8 +102,18 @@ export class CompanyDebtService {
           action: "UPDATE",
           entityType: "COMPANY_DEBT",
           entityId: id,
-          oldValue: { amount: existing.amount.toString(), note: existing.note },
-          newValue: { amount: debt.amount.toString(), note: debt.note },
+          oldValue: {
+            company_id: existing.company_id,
+            amount: existing.amount.toString(),
+            note: existing.note,
+            items: existing.items,
+          },
+          newValue: {
+            company_id: debt.company_id,
+            amount: debt.amount.toString(),
+            note: debt.note,
+            items: debt.items,
+          },
           description: `Kompaniya qarzi #${id} yangilandi`,
         });
       return debt;

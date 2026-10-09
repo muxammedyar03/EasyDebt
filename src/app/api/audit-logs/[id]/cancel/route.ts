@@ -25,7 +25,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     revalidatePath("/dashboard/audit-logs");
     revalidatePath("/dashboard/default");
     revalidatePath("/dashboard/debtors");
-    revalidatePath(`/dashboard/default/debitor/${result.debtorExternalId}`);
+    if ("debtorExternalId" in result) revalidatePath(`/dashboard/default/debitor/${result.debtorExternalId}`);
+    revalidatePath("/dashboard/my-debts");
+    if ("companyExternalId" in result) revalidatePath(`/dashboard/my-debts/${result.companyExternalId}`);
     revalidatePath("/dashboard/reports");
     return NextResponse.json({ id: result.audit.id, ok: true });
   } catch (error) {

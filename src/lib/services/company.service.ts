@@ -322,7 +322,12 @@ export class CompanyService {
         action: "CREATE",
         entityType: "COMPANY",
         entityId: company.id,
-        newValue: { name: company.name },
+        newValue: {
+          name: company.name,
+          contact_person: company.contact_person,
+          phone_number: company.phone_number,
+          address: company.address,
+        },
         description: `Yangi kompaniya ${company.name} yaratildi`,
       });
       return company;

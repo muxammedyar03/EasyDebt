@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,7 @@ export function AuditLogsTable({
 }: AuditLogsTableProps) {
   const t = useTranslations("audit");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getActionBadge, getEntityTypeName, formatDate } = useTableUtils();
@@ -53,6 +54,7 @@ export function AuditLogsTable({
   const [isExporting, setIsExporting] = React.useState(false);
   const undoable = new Set(undoableIds);
   const cancellable = new Set(cancellableIds);
+  const formatAmount = (amount: number) => `${amount.toLocaleString(locale)} ${tCommon("som")}`;
 
   // Search handler
   const handleSearch = React.useCallback(() => {
@@ -177,7 +179,10 @@ export function AuditLogsTable({
                   <CardContent className="p-4 py-0">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        {getActionBadge(log.action, log.entity_type)}
+                        <div className="flex flex-wrap items-center gap-1">
+                          {getActionBadge(log.action, log.displayEntityType)}
+                          {log.sourceAction && getActionBadge(log.sourceAction, log.displayEntityType)}
+                        </div>
                         <span className="text-muted-foreground text-xs">{formatDate(log.created_at)}</span>
                       </div>
                       <div>
@@ -185,11 +190,11 @@ export function AuditLogsTable({
                           {log.user ? `${log.user.username} (${log.user.email})` : tCommon("system")}
                         </p>
                         <p className="text-muted-foreground text-xs">
-                          {getEntityTypeName(log.entity_type)}
-                          {log.entity_id && ` #${log.entity_id}`}
+                          {getEntityTypeName(log.displayEntityType)}
+                          {log.amount !== null && ` · ${formatAmount(log.amount)}`}
                         </p>
+                        {log.subjectName && <p className="text-xs font-medium">{log.subjectName}</p>}
                       </div>
-                      {log.description && <p className="text-muted-foreground text-xs">{log.description}</p>}
                       {undoable.has(log.id) && <UndoAuditButton id={log.id} />}
                       {cancellable.has(log.id) && <UndoAuditButton id={log.id} kind="cancel" />}
                       {log.ip_address && (
@@ -223,7 +228,7 @@ export function AuditLogsTable({
                   ) : (
                     logs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="w-28">
+                        <TableCell className="w-1/3">
                           {log.user ? (
                             <div>
                               <p className="font-medium">
@@ -240,24 +245,27 @@ export function AuditLogsTable({
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="w-32 space-y-1">
-                          {getActionBadge(log.action, log.entity_type)}
-                          <div className="flex items-end gap-2 pl-2">
-                            <p className="font-medium">{getEntityTypeName(log.entity_type)}</p>
-                            {log.entity_id && <p className="text-muted-foreground text-xs">ID: {log.entity_id}</p>}
+                        <TableCell className="w-1/3 space-y-1">
+                          <div className="flex flex-wrap items-center gap-1">
+                            {getActionBadge(log.action, log.displayEntityType)}
+                            {log.sourceAction && getActionBadge(log.sourceAction, log.displayEntityType)}
                           </div>
+                          {log.subjectName && <p className="text-muted-foreground pl-2 text-xs">{log.subjectName}</p>}
                         </TableCell>
-                        <TableCell className="text-muted-foreground w-1/2 min-w-0 text-xs">
-                          {log.description ? (
-                            <p className="truncate whitespace-break-spaces">{log.description}</p>
-                          ) : null}
+                        <TableCell className="text-muted-foreground flex min-w-0 items-center justify-between text-xs">
+                          <div className="flex items-end gap-2 pl-2">
+                            <p className="font-medium">{getEntityTypeName(log.displayEntityType)}</p>
+                            {log.amount !== null && (
+                              <p className="text-muted-foreground text-xs">{formatAmount(log.amount)}</p>
+                            )}
+                          </div>
                           {undoable.has(log.id) && (
-                            <div className="mt-2">
+                            <div>
                               <UndoAuditButton id={log.id} />
                             </div>
                           )}
                           {cancellable.has(log.id) && (
-                            <div className="mt-2">
+                            <div className={undoable.has(log.id) ? "mt-2" : undefined}>
                               <UndoAuditButton id={log.id} kind="cancel" />
                             </div>
                           )}
