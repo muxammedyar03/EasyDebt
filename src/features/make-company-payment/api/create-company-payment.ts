@@ -1,4 +1,6 @@
-import { COMPANY_RECEIPT_MAX_BYTES, isAllowedCompanyReceiptMime } from "@/lib/validation/company-payment";
+import { validateCompanyReceiptFile } from "@/lib/validation/company-receipt";
+
+export { validateCompanyReceiptFile };
 
 export type CreateCompanyPaymentPayload = {
   idempotencyKey?: string;
@@ -8,16 +10,6 @@ export type CreateCompanyPaymentPayload = {
   note?: string | null;
   receipt?: File | null;
 };
-
-export function validateCompanyReceiptFile(file: File): string | null {
-  if (!isAllowedCompanyReceiptMime(file.type)) {
-    return "Faqat JPEG, PNG, WEBP yoki PDF yuklash mumkin";
-  }
-  if (file.size > COMPANY_RECEIPT_MAX_BYTES) {
-    return "Fayl hajmi 2MB dan oshmasligi kerak";
-  }
-  return null;
-}
 
 export async function createCompanyPayment(payload: CreateCompanyPaymentPayload) {
   const form = new FormData();

@@ -143,7 +143,9 @@ function collectSubjectReferences(logs: RecentAuditLogRecord[]): RecentAuditSubj
     if (log.entity_type === "PAYMENT" && !debtorId) references.paymentIds.add(log.entity_id);
     if (log.entity_type === "PAYMENT_REMINDER" && !debtorId) references.reminderIds.add(log.entity_id);
     if (log.entity_type === "COMPANY") references.companyIds.add(log.entity_id);
-    if (log.entity_type === "COMPANY_DEBT" && !companyId) references.companyDebtIds.add(log.entity_id);
+    if ((log.entity_type === "COMPANY_DEBT" || log.entity_type === "COMPANY_DEBT_RECEIPT") && !companyId) {
+      references.companyDebtIds.add(log.entity_id);
+    }
     if ((log.entity_type === "COMPANY_PAYMENT" || log.entity_type === "COMPANY_PAYMENT_RECEIPT") && !companyId) {
       references.companyPaymentIds.add(log.entity_id);
     }
@@ -229,7 +231,7 @@ function resolvedSubject(log: RecentAuditLogRecord, subjects: SubjectMaps): Audi
     referenced = subjects.reminders.get(log.entity_id) ?? null;
   } else if (log.entity_id && log.entity_type === "COMPANY") {
     referenced = subjects.companies.get(log.entity_id) ?? null;
-  } else if (log.entity_id && log.entity_type === "COMPANY_DEBT") {
+  } else if (log.entity_id && (log.entity_type === "COMPANY_DEBT" || log.entity_type === "COMPANY_DEBT_RECEIPT")) {
     referenced = subjects.companyDebts.get(log.entity_id) ?? null;
   } else if (
     log.entity_id &&

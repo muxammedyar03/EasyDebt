@@ -5,10 +5,11 @@ import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
-import { prismaToDomainCompanyPayment } from "@/lib/mappers/company.mapper";
+import { companyDebtService } from "@/lib/services/company-debt.service";
 import type { Prisma } from "@prisma/client";
 
 type PaymentWithCompany = Prisma.CompanyPaymentGetPayload<{ include: { company: true } }>;
+type DebtWithCompany = Prisma.CompanyDebtGetPayload<{ include: { company: true } }>;
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,21 +26,56 @@ export async function GET(request: NextRequest) {
     }
 
     const sp = request.nextUrl.searchParams;
-    const page = Number(sp.get("page") || 1);
-    const limit = Number(sp.get("limit") || 20);
+    const page = Math.max(1, Number(sp.get("page") || 1));
+    const limit = Math.min(100, Math.max(1, Number(sp.get("limit") || 20)));
+    const take = page * limit;
 
-    const result = await companyPaymentService.listWithReceipts(clientId, { page, limit });
-    const rows = result.rows as PaymentWithCompany[];
+    const [paymentsResult, debtsResult] = await Promise.all([
+      companyPaymentService.listWithReceipts(clientId, { page: 1, limit: take }),
+      companyDebtService.listWithReceipts(clientId, take),
+    ]);
+    const payments = paymentsResult.rows as PaymentWithCompany[];
+    const debts = debtsResult.rows as DebtWithCompany[];
+    const total = paymentsResult.total + debtsResult.total;
+    const data = [
+      ...payments.map((row) => ({
+        kind: "PAYMENT" as const,
+        id: row.id,
+        companyId: row.company_id,
+        companyName: row.company.name,
+        amount: row.amount.toNumber(),
+        note: row.note,
+        paymentType: row.payment_type,
+        receiptPath: row.receipt_path,
+        receiptName: row.receipt_name,
+        receiptMime: row.receipt_mime,
+        receiptSize: row.receipt_size,
+        createdAt: row.created_at,
+      })),
+      ...debts.map((row) => ({
+        kind: "DEBT" as const,
+        id: row.id,
+        companyId: row.company_id,
+        companyName: row.company.name,
+        amount: row.amount.toNumber(),
+        note: row.note,
+        paymentType: null,
+        receiptPath: row.receipt_path,
+        receiptName: row.receipt_name,
+        receiptMime: row.receipt_mime,
+        receiptSize: row.receipt_size,
+        createdAt: row.created_at,
+      })),
+    ]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice((page - 1) * limit, page * limit);
 
     return NextResponse.json({
-      data: rows.map((row) => ({
-        ...prismaToDomainCompanyPayment(row),
-        companyName: row.company?.name ?? "—",
-      })),
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
     });
   } catch (error) {
     console.error("Error listing company receipts:", error);

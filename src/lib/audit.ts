@@ -24,6 +24,7 @@ export type EntityType =
   | "COMPANY"
   | "COMPANY_DEBT"
   | "COMPANY_PAYMENT"
+  | "COMPANY_DEBT_RECEIPT"
   | "COMPANY_PAYMENT_RECEIPT"
   | "CLIENT";
 

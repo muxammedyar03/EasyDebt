@@ -46,6 +46,9 @@ export type CompanyDetailView = CompanyView & {
     amount: number;
     amountFormatted: string;
     note: string | null;
+    receiptPath: string | null;
+    receiptName: string | null;
+    receiptMime: string | null;
     createdAt: Date;
     createdAtFormatted: string;
   }>;

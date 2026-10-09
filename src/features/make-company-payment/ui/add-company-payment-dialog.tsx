@@ -6,7 +6,8 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, PaperclipIcon, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { getErrorMessage } from "@/lib/errors";
 import { formatNumber } from "@/lib/format";
@@ -42,6 +43,8 @@ export function AddCompanyPaymentDialog({
   companyName,
   onSuccess,
 }: AddCompanyPaymentDialogProps) {
+  const t = useTranslations("companyTransactions");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const queryClient = useQueryClient();
   const pendingRequest = React.useRef<{ key: string; fingerprint: string; receipt: File | null } | null>(null);
@@ -87,7 +90,7 @@ export function AddCompanyPaymentDialog({
       });
       await invalidateRecentAuditActions(queryClient);
       pendingRequest.current = null;
-      toast.success("To'lov qo'shildi");
+      toast.success(t("paymentAdded"));
       reset({ payment_type: "CASH" });
       setAmount("");
       setReceipt(null);
@@ -100,7 +103,7 @@ export function AddCompanyPaymentDialog({
         }, 150);
       });
     } catch (error) {
-      toast.error(getErrorMessage(error, "To'lov qo'shishda xatolik"));
+      toast.error(getErrorMessage(error, t("paymentAddError")));
     } finally {
       submitting.current = false;
       setIsLoading(false);
@@ -111,16 +114,18 @@ export function AddCompanyPaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>To&apos;lov qo&apos;shish</DialogTitle>
+          <DialogTitle>{t("addPaymentTitle")}</DialogTitle>
           <DialogDescription>
-            <span className="font-medium">{companyName}</span> ga to&apos;lov
+            {t.rich("addPaymentDescription", {
+              company: () => <span className="font-medium">{companyName}</span>,
+            })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="amount">
-                Summa <span className="text-destructive">*</span>
+                {tCommon("amount")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount"
@@ -133,34 +138,46 @@ export function AddCompanyPaymentDialog({
                   setValue("amount", formatted, { shouldValidate: true });
                 }}
               />
-              {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
+              {errors.amount && <p className="text-destructive text-sm">{t("paymentAmountRequired")}</p>}
             </div>
 
             <div className="grid gap-2">
-              <Label>To&apos;lov usuli</Label>
+              <Label>{t("paymentMethod")}</Label>
               <Tabs
                 value={paymentType}
                 onValueChange={(v) => setValue("payment_type", v as AddCompanyPaymentFormData["payment_type"])}
               >
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="CASH">Naqd</TabsTrigger>
+                  <TabsTrigger value="CASH">{t("cash")}</TabsTrigger>
                   <TabsTrigger value="CLICK">Click</TabsTrigger>
-                  <TabsTrigger value="CARD">Karta</TabsTrigger>
+                  <TabsTrigger value="CARD">{t("card")}</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="note">Izoh (ixtiyoriy)</Label>
-              <Textarea id="note" placeholder="To'lov haqida..." {...register("note")} disabled={isLoading} />
+              <Label htmlFor="note">{tCommon("noteOptional")}</Label>
+              <Textarea
+                id="note"
+                placeholder={t("paymentNotePlaceholder")}
+                {...register("note")}
+                disabled={isLoading}
+              />
               {errors.note && <p className="text-destructive text-sm">{errors.note.message}</p>}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="receipt">Chek / rasm (ixtiyoriy, max 2MB)</Label>
+            <div className="border-1.5 relative grid h-32 gap-2 rounded-xl border border-dashed border-gray-300 dark:border-gray-600">
+              <Label
+                htmlFor="receipt"
+                className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center"
+              >
+                <Upload className="text-muted-foreground size-10" strokeWidth={2.5} />
+                <span className="text-muted-foreground text-xs">{t("attachmentLabel")}</span>
+              </Label>
               <Input
                 id="receipt"
                 type="file"
+                className="absolute top-0 left-0 h-full w-full opacity-0"
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 disabled={isLoading}
                 onChange={(e) => {
@@ -170,26 +187,30 @@ export function AddCompanyPaymentDialog({
                     setReceiptError(null);
                     return;
                   }
-                  const err = validateCompanyReceiptFile(file);
+                  const err = validateCompanyReceiptFile(file, {
+                    invalidType: t("attachmentInvalidType"),
+                    tooLarge: t("attachmentTooLarge"),
+                  });
                   setReceiptError(err);
                   setReceipt(err ? null : file);
                 }}
               />
               {receiptError && <p className="text-destructive text-sm">{receiptError}</p>}
-              {receipt && !receiptError && (
-                <p className="text-muted-foreground text-xs">
-                  {receipt.name} ({Math.round(receipt.size / 1024)} KB)
-                </p>
-              )}
             </div>
+            {receipt && !receiptError && (
+              <p className="flex items-center text-sm">
+                <PaperclipIcon className="mr-2 h-4 w-4" />
+                {t("attachmentSelected", { name: receipt.name, size: Math.round(receipt.size / 1024) })}
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Bekor qilish
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading || Boolean(receiptError)}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              To&apos;lash
+              {t("pay")}
             </Button>
           </DialogFooter>
         </form>

@@ -6,8 +6,13 @@ export { addCompanyDebtSchema, createCompanyDebtApiSchema, type AddCompanyDebtFo
 export {
   addCompanyPaymentSchema,
   createCompanyPaymentApiSchema,
+  type AddCompanyPaymentFormData,
+} from "./company-payment";
+export {
   COMPANY_RECEIPT_MAX_BYTES,
   COMPANY_RECEIPT_ALLOWED_MIME,
   isAllowedCompanyReceiptMime,
-  type AddCompanyPaymentFormData,
-} from "./company-payment";
+  validateCompanyReceiptFile,
+  type CompanyReceiptMime,
+  type CompanyReceiptValidationMessages,
+} from "./company-receipt";

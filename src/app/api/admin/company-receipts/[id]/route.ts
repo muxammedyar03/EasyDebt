@@ -6,10 +6,11 @@ import { getSession } from "@/lib/auth";
 import { requireClientId } from "@/lib/tenant";
 import { getApiErrorMessage } from "@/lib/errors";
 import { companyPaymentService } from "@/lib/services/company-payment.service";
+import { companyDebtService } from "@/lib/services/company-debt.service";
 import { deleteCompanyReceiptFile, getCompanyReceiptAbsolutePath } from "@/lib/companies/receipt-storage";
-import { buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
+import { buildCompanyDebtReceiptFileName, buildCompanyReceiptFileName } from "@/lib/companies/receipt-display";
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (session && !(await hasPermission(session, "company-receipts.view")))
@@ -24,29 +25,40 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     const { id } = await params;
-    const paymentId = parseInt(id, 10);
-    if (isNaN(paymentId)) {
+    const recordId = parseInt(id, 10);
+    if (isNaN(recordId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const payment = await companyPaymentService.findById(clientId, paymentId);
-    if (!payment?.receiptPath) {
+    const isDebt = request.nextUrl.searchParams.get("kind") === "DEBT";
+    const record = isDebt
+      ? await companyDebtService.findById(clientId, recordId)
+      : await companyPaymentService.findById(clientId, recordId);
+    if (!record?.receiptPath) {
       return NextResponse.json({ error: "Chek topilmadi" }, { status: 404 });
     }
 
-    const absolute = getCompanyReceiptAbsolutePath(payment.receiptPath);
+    const absolute = getCompanyReceiptAbsolutePath(record.receiptPath);
     const buffer = await readFile(absolute);
-    const filename = buildCompanyReceiptFileName({
-      companyName: payment.company?.name || "kompaniya",
-      paymentId: payment.id,
-      date: payment.createdAt,
-      mime: payment.receiptMime,
-      receiptPath: payment.receiptPath,
-    });
+    const filename = isDebt
+      ? buildCompanyDebtReceiptFileName({
+          companyName: record.company?.name || "kompaniya",
+          debtId: record.id,
+          date: record.createdAt,
+          mime: record.receiptMime,
+          receiptPath: record.receiptPath,
+        })
+      : buildCompanyReceiptFileName({
+          companyName: record.company?.name || "kompaniya",
+          paymentId: record.id,
+          date: record.createdAt,
+          mime: record.receiptMime,
+          receiptPath: record.receiptPath,
+        });
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": payment.receiptMime || "application/octet-stream",
+        "Content-Type": record.receiptMime || "application/octet-stream",
         "Content-Disposition": `inline; filename="${filename.replace(/"/g, "")}"`,
         "Cache-Control": "private, max-age=3600",
       },
@@ -57,7 +69,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
     if (session && !(await hasPermission(session, "company-receipts.delete")))
@@ -72,17 +84,22 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     }
 
     const { id } = await params;
-    const paymentId = parseInt(id, 10);
-    if (isNaN(paymentId)) {
+    const recordId = parseInt(id, 10);
+    if (isNaN(recordId)) {
       return NextResponse.json({ error: "Noto'g'ri ID" }, { status: 400 });
     }
 
-    const payment = await companyPaymentService.findById(clientId, paymentId);
-    if (!payment) {
-      return NextResponse.json({ error: "To'lov topilmadi" }, { status: 404 });
+    const isDebt = request.nextUrl.searchParams.get("kind") === "DEBT";
+    const record = isDebt
+      ? await companyDebtService.findById(clientId, recordId)
+      : await companyPaymentService.findById(clientId, recordId);
+    if (!record) {
+      return NextResponse.json({ error: isDebt ? "Qarz topilmadi" : "To'lov topilmadi" }, { status: 404 });
     }
 
-    const deletedPath = await companyPaymentService.removeReceipt(clientId, paymentId, session.userId);
+    const deletedPath = isDebt
+      ? await companyDebtService.removeReceipt(clientId, recordId, session.userId)
+      : await companyPaymentService.removeReceipt(clientId, recordId, session.userId);
     await deleteCompanyReceiptFile(deletedPath);
 
     return NextResponse.json({ success: true });

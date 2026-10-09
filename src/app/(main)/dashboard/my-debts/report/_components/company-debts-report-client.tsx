@@ -10,6 +10,7 @@ import {
   CreditCard,
   Download,
   Filter,
+  FileText,
   Loader2,
   RefreshCw,
   Search,
@@ -19,6 +20,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +30,7 @@ import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
 import { exportToExcel, formatNumberForExcel } from "@/lib/excel-export";
 import { getPaymentTypeClass } from "@/lib/utils";
+import { companyDebtReceiptUrl, getReceiptDisplayName } from "@/lib/companies/receipt-display";
 import {
   type PeriodTimeRange,
   getPeriodBounds,
@@ -46,6 +49,9 @@ type DebtRow = {
   companyExternalId?: string;
   amount: number;
   note: string | null;
+  receiptPath?: string | null;
+  receiptName?: string | null;
+  receiptMime?: string | null;
   createdAt: string;
 };
 
@@ -94,7 +100,7 @@ type FetchParams = {
   sortAsc: boolean;
 };
 
-async function fetchReport(params: FetchParams): Promise<ReportResponse> {
+async function fetchReport(params: FetchParams, fallbackError: string): Promise<ReportResponse> {
   const qs = new URLSearchParams({
     dateFrom: params.dateFrom,
     dateTo: params.dateTo,
@@ -109,15 +115,15 @@ async function fetchReport(params: FetchParams): Promise<ReportResponse> {
   const res = await fetch(`/api/company-reports/period?${qs}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Hisobotni yuklashda xatolik");
+    throw new Error((err as { error?: string }).error || fallbackError);
   }
   return res.json();
 }
 
-function paymentTypeLabel(type: string) {
-  if (type === "CASH") return "Naqd";
-  if (type === "CARD") return "Karta";
-  if (type === "CLICK") return "Click";
+function paymentTypeLabel(type: string, labels: { cash: string; card: string; click: string }) {
+  if (type === "CASH") return labels.cash;
+  if (type === "CARD") return labels.card;
+  if (type === "CLICK") return labels.click;
   return type;
 }
 
@@ -138,17 +144,18 @@ function PaginationBar({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const t = useTranslations("companyTransactions");
   if (totalPages <= 1) return null;
   return (
     <div className="mt-4 flex items-center justify-between gap-3">
       <Button variant="outline" className="h-11 px-5" disabled={page === 1} onClick={onPrev}>
-        Oldingi
+        {t("previous")}
       </Button>
       <span className="text-muted-foreground text-sm font-medium">
         {page} / {totalPages}
       </span>
       <Button variant="outline" className="h-11 px-5" disabled={page === totalPages} onClick={onNext}>
-        Keyingi
+        {t("next")}
       </Button>
     </div>
   );
@@ -164,6 +171,7 @@ function CompanyLink({ name, externalId }: { name: string; externalId?: string }
 }
 
 export function CompanyDebtsReportClient() {
+  const t = useTranslations("companyTransactions");
   const today = todayInputDate();
   const [selectedDate, setSelectedDate] = React.useState(today);
   const [timeRange, setTimeRange] = React.useState<PeriodTimeRange>("daily");
@@ -186,15 +194,18 @@ export function CompanyDebtsReportClient() {
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["company-period-report", dateFrom, dateTo, paymentsPage, debtsPage, searchApplied, sortKey, sortAsc],
     queryFn: () =>
-      fetchReport({
-        dateFrom,
-        dateTo,
-        paymentsPage,
-        debtsPage,
-        search: searchApplied,
-        sort: sortKey,
-        sortAsc,
-      }),
+      fetchReport(
+        {
+          dateFrom,
+          dateTo,
+          paymentsPage,
+          debtsPage,
+          search: searchApplied,
+          sort: sortKey,
+          sortAsc,
+        },
+        t("reportLoadError"),
+      ),
     placeholderData: keepPreviousData,
   });
 
@@ -215,10 +226,10 @@ export function CompanyDebtsReportClient() {
     if (!data) return;
     try {
       await exportToExcel({
-        headers: ["Tur", "Sana", "Kompaniya", "Summa", "Izoh", "Usul"],
+        headers: [t("type"), t("date"), t("company"), t("amount"), t("note"), t("method")],
         rows: [
           ...data.debts.map((d) => [
-            "Qarz",
+            t("debt"),
             formatDateUz(new Date(d.createdAt)),
             d.companyName,
             formatNumberForExcel(d.amount),
@@ -226,19 +237,23 @@ export function CompanyDebtsReportClient() {
             "-",
           ]),
           ...data.payments.map((p) => [
-            "To'lov",
+            t("payment"),
             formatDateUz(new Date(p.createdAt)),
             p.companyName,
             formatNumberForExcel(p.amount),
             p.note || "",
-            p.paymentType,
+            paymentTypeLabel(p.paymentType, {
+              cash: t("cash"),
+              card: t("card"),
+              click: t("click"),
+            }),
           ]),
         ],
         filename: `kompaniya_hisobot_${dateFrom}_${dateTo}`,
       });
-      toast.success("Excel yuklandi");
+      toast.success(t("exportSuccess"));
     } catch (err) {
-      toast.error(getErrorMessage(err, "Export xatosi"));
+      toast.error(getErrorMessage(err, t("exportError")));
     }
   };
 
@@ -253,21 +268,19 @@ export function CompanyDebtsReportClient() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight uppercase sm:text-3xl">Qarz hisoboti</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Tanlangan davr bo&apos;yicha kompaniyalarga qarz va to&apos;lovlar tarixi
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight uppercase sm:text-3xl">{t("reportTitle")}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t("reportSubtitle")}</p>
         </div>
         <Button onClick={() => void handleExport()} className="h-11 shrink-0 px-5" disabled={!data}>
           <Download className="mr-2 h-4 w-4" />
-          Export
+          {t("export")}
         </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="bg-card rounded-xl border p-5 shadow-sm">
           <div className="flex flex-row items-center justify-between pb-2">
-            <h3 className="text-sm font-medium">Jami qarz</h3>
+            <h3 className="text-sm font-medium">{t("totalDebt")}</h3>
             <HandCoinsIcon className="h-5 w-5 text-red-500" />
           </div>
           <div className="text-lg font-bold text-red-600 md:text-2xl">{formatCurrencyUzs(data?.debtsSum ?? 0)}</div>
@@ -275,7 +288,7 @@ export function CompanyDebtsReportClient() {
 
         <div className="bg-card rounded-xl border p-5 shadow-sm">
           <div className="flex flex-row items-center justify-between pb-2">
-            <h3 className="text-sm font-medium">Jami to&apos;lov</h3>
+            <h3 className="text-sm font-medium">{t("totalPayments")}</h3>
             <Banknote className="h-5 w-5 text-green-500" />
           </div>
           <div className="text-lg font-bold text-green-600 md:text-2xl">
@@ -285,7 +298,7 @@ export function CompanyDebtsReportClient() {
         <div className="bg-card rounded-xl border p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
-              <p className="text-muted-foreground text-sm font-medium">Qo&apos;shilgan qarz</p>
+              <p className="text-muted-foreground text-sm font-medium">{t("addedDebt")}</p>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xl font-bold text-red-600 md:text-2xl">{formatCurrencyUzs(data?.debtsSum ?? 0)}</p>
                 <Badge variant="secondary" className="h-7 min-w-7 px-2 text-sm">
@@ -300,7 +313,7 @@ export function CompanyDebtsReportClient() {
         <div className="bg-card rounded-xl border p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
-              <p className="text-muted-foreground text-sm font-medium">To&apos;lovlar</p>
+              <p className="text-muted-foreground text-sm font-medium">{t("payments")}</p>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-xl font-bold text-emerald-600 md:text-2xl">
                   {formatCurrencyUzs(data?.paymentsSum ?? 0)}
@@ -324,7 +337,7 @@ export function CompanyDebtsReportClient() {
               onClick={() => setTimeRange(range)}
               className="h-11 flex-1 text-sm font-medium"
             >
-              {range === "daily" ? "Kunlik" : range === "week" ? "Haftalik" : "Oylik"}
+              {range === "daily" ? t("daily") : range === "week" ? t("weekly") : t("monthly")}
             </Button>
           ))}
         </div>
@@ -349,14 +362,14 @@ export function CompanyDebtsReportClient() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="bg-card rounded-xl border p-5">
           <div className="flex flex-row items-center justify-between pb-2">
-            <h3 className="text-sm font-medium">Naqd</h3>
+            <h3 className="text-sm font-medium">{t("cash")}</h3>
             <Wallet className="text-muted-foreground h-5 w-5" />
           </div>
           <div className="text-xl font-bold md:text-2xl">{formatCurrencyUzs(data?.cash ?? 0)}</div>
         </div>
         <div className="bg-card rounded-xl border p-5">
           <div className="flex flex-row items-center justify-between pb-2">
-            <h3 className="text-sm font-medium">Karta</h3>
+            <h3 className="text-sm font-medium">{t("card")}</h3>
             <CreditCard className="text-muted-foreground h-5 w-5" />
           </div>
           <div className="text-xl font-bold md:text-2xl">{formatCurrencyUzs(data?.card ?? 0)}</div>
@@ -374,9 +387,9 @@ export function CompanyDebtsReportClient() {
         <div className="flex flex-wrap gap-2">
           {(
             [
-              ["date", "Sana"],
-              ["amount", "Summa"],
-              ["name", "Nomi"],
+              ["date", t("date")],
+              ["amount", t("amount")],
+              ["name", t("name")],
             ] as const
           ).map(([key, label]) => (
             <Button
@@ -400,7 +413,7 @@ export function CompanyDebtsReportClient() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") applySearch(searchLocal);
               }}
-              placeholder="Qidirish..."
+              placeholder={t("searchPlaceholder")}
               className="h-12 pr-12 text-base"
             />
             <Button
@@ -438,36 +451,38 @@ export function CompanyDebtsReportClient() {
       </div>
 
       <p className="text-muted-foreground text-sm">
-        Davr: {formatDateUz(dateFrom)} — {formatDateUz(dateTo)}
+        {t("period")}: {formatDateUz(dateFrom)} — {formatDateUz(dateTo)}
       </p>
 
       <Tabs defaultValue="payments" className="space-y-4">
         <TabsList className="grid h-12 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
           <TabsTrigger value="payments" className="text-sm font-medium">
-            To&apos;lovlar ({data?.paymentsTotal ?? 0})
+            {t("paymentsTab", { count: data?.paymentsTotal ?? 0 })}
           </TabsTrigger>
           <TabsTrigger value="debts" className="text-sm font-medium">
-            Qarzlar ({data?.debtsTotal ?? 0})
+            {t("debtsTab", { count: data?.debtsTotal ?? 0 })}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="space-y-3">
           <div>
-            <h2 className="text-xl font-bold">To&apos;lovlar ro&apos;yxati</h2>
-            <p className="text-muted-foreground text-base">Jami: {formatCurrencyUzs(data?.paymentsSum ?? 0)}</p>
+            <h2 className="text-xl font-bold">{t("paymentsList")}</h2>
+            <p className="text-muted-foreground text-base">
+              {t("totalAmount", { amount: formatCurrencyUzs(data?.paymentsSum ?? 0) })}
+            </p>
           </div>
 
           <section className="bg-muted/30 min-h-[320px] rounded-xl border p-4 sm:p-5">
             {isLoading && !data ? (
               <div className="text-muted-foreground flex h-64 items-center justify-center gap-2 text-sm">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Yuklanmoqda...
+                {t("loading")}
               </div>
             ) : error ? (
               <div className="text-destructive flex h-64 items-center justify-center text-sm">{error.message}</div>
             ) : payments.length === 0 ? (
               <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
-                To&apos;lovlar topilmadi
+                {t("noPayments")}
               </div>
             ) : (
               <ul className="bg-background divide-y rounded-lg border">
@@ -480,12 +495,21 @@ export function CompanyDebtsReportClient() {
                       <CompanyLink name={p.companyName} externalId={p.companyExternalId} />
                       <p className="text-muted-foreground truncate text-xs">{p.note || "—"}</p>
                       <p className="text-muted-foreground text-xs">
-                        {formatDateUz(new Date(p.createdAt), true)} · {paymentTypeLabel(p.paymentType)}
+                        {formatDateUz(new Date(p.createdAt), true)} ·
+                        {paymentTypeLabel(p.paymentType, {
+                          cash: t("cash"),
+                          card: t("card"),
+                          click: t("click"),
+                        })}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge className={`h-8 px-3 ${getPaymentTypeClass(p.paymentType as "CASH" | "CLICK" | "CARD")}`}>
-                        {paymentTypeLabel(p.paymentType)}
+                        {paymentTypeLabel(p.paymentType, {
+                          cash: t("cash"),
+                          card: t("card"),
+                          click: t("click"),
+                        })}
                       </Badge>
                       <span className="font-bold text-emerald-600 tabular-nums">{formatCurrencyUzs(p.amount)}</span>
                     </div>
@@ -505,20 +529,20 @@ export function CompanyDebtsReportClient() {
 
         <TabsContent value="debts" className="space-y-3">
           <div>
-            <h2 className="text-xl font-bold">Qarzlar ro&apos;yxati</h2>
-            <p className="text-muted-foreground text-base">Jami: {formatCurrencyUzs(data?.debtsSum ?? 0)}</p>
+            <h2 className="text-xl font-bold">{t("debtsList")}</h2>
+            <p className="text-muted-foreground text-base">
+              {t("totalAmount", { amount: formatCurrencyUzs(data?.debtsSum ?? 0) })}
+            </p>
           </div>
 
           <section className="bg-muted/30 min-h-[320px] rounded-xl border p-4 sm:p-5">
             {isLoading && !data ? (
               <div className="text-muted-foreground flex h-64 items-center justify-center gap-2 text-sm">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Yuklanmoqda...
+                {t("loading")}
               </div>
             ) : debts.length === 0 ? (
-              <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
-                Qarzlar topilmadi
-              </div>
+              <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">{t("noDebts")}</div>
             ) : (
               <ul className="bg-background divide-y rounded-lg border">
                 {debts.map((d) => (
@@ -526,6 +550,23 @@ export function CompanyDebtsReportClient() {
                     <div className="min-w-0 space-y-1">
                       <CompanyLink name={d.companyName} externalId={d.companyExternalId} />
                       <p className="text-muted-foreground truncate text-xs">{d.note || "—"}</p>
+                      {d.receiptPath && (
+                        <a
+                          href={companyDebtReceiptUrl(d.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary flex items-center gap-1 text-xs font-medium hover:underline"
+                        >
+                          <FileText className="size-3.5" />
+                          <span className="max-w-56 truncate">
+                            {getReceiptDisplayName({
+                              receiptName: d.receiptName,
+                              receiptPath: d.receiptPath,
+                              receiptMime: d.receiptMime,
+                            })}
+                          </span>
+                        </a>
+                      )}
                       <p className="text-muted-foreground text-xs">{formatDateUz(new Date(d.createdAt))}</p>
                     </div>
                     <span className="shrink-0 font-semibold tabular-nums">{formatCurrencyUzs(d.amount)}</span>

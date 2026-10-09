@@ -21,6 +21,9 @@ export type CompanyDayDebtActivity = {
   companyExternalId?: string;
   amount: number;
   note: string | null;
+  receiptPath?: string | null;
+  receiptName?: string | null;
+  receiptMime?: string | null;
   createdAt: Date;
 };
 

@@ -124,6 +124,14 @@ export function useTableUtils() {
       }
     }
 
+    if (entity_type === "COMPANY_DEBT_RECEIPT") {
+      return action === "DELETE" ? (
+        <Badge variant="destructive">{t("badgeDebtReceiptDeleted")}</Badge>
+      ) : (
+        <Badge variant="outline">{action}</Badge>
+      );
+    }
+
     if (entity_type === "USER") {
       switch (action) {
         case "LOGIN":
@@ -179,6 +187,8 @@ export function useTableUtils() {
         return t("entityCompanyPayment");
       case "COMPANY_PAYMENT_RECEIPT":
         return t("entityCompanyPaymentReceipt");
+      case "COMPANY_DEBT_RECEIPT":
+        return t("entityCompanyDebtReceipt");
       case "TENANT_BACKUP":
         return t("entityTenantBackup");
       default:

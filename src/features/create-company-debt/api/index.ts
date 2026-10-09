@@ -1,1 +1,1 @@
-export { createCompanyDebt, type CreateCompanyDebtPayload } from "./create-company-debt";
+export { createCompanyDebt, validateCompanyReceiptFile, type CreateCompanyDebtPayload } from "./create-company-debt";

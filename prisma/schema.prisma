@@ -19,20 +19,20 @@ model Client {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  users                   User[]
-  debtors                 Debtor[]
-  debts                   Debt[]
-  payments                Payment[]
-  settings                Settings[]
-  audit_logs              AuditLog[]
-  notifications           Notification[]
-  payment_reminders       PaymentReminder[]
-  import_histories        ImportHistory[]
-  companies               Company[]
-  company_debts           CompanyDebt[]
-  company_payments        CompanyPayment[]
-  company_daily_snapshots CompanyDailySnapshot[]
-  permission_overrides     ClientPermission[]
+  users                     User[]
+  debtors                   Debtor[]
+  debts                     Debt[]
+  payments                  Payment[]
+  settings                  Settings[]
+  audit_logs                AuditLog[]
+  notifications             Notification[]
+  payment_reminders         PaymentReminder[]
+  import_histories          ImportHistory[]
+  companies                 Company[]
+  company_debts             CompanyDebt[]
+  company_payments          CompanyPayment[]
+  company_daily_snapshots   CompanyDailySnapshot[]
+  permission_overrides      ClientPermission[]
   user_permission_overrides UserPermission[]
 
   @@map("clients")
@@ -141,21 +141,21 @@ model Debtor {
 }
 
 model Debt {
-  id          Int      @id @default(autoincrement())
-  external_id String   @unique @default(uuid())
-  debtor_id   Int
-  amount      Decimal  @db.Decimal(10, 2)
-  description String?
-  items       Json?
-  created_at  DateTime @default(now())
-  created_by  Int
-  client_id   Int
-  reverses_debt_id Int? @unique
+  id               Int      @id @default(autoincrement())
+  external_id      String   @unique @default(uuid())
+  debtor_id        Int
+  amount           Decimal  @db.Decimal(10, 2)
+  description      String?
+  items            Json?
+  created_at       DateTime @default(now())
+  created_by       Int
+  client_id        Int
+  reverses_debt_id Int?     @unique
 
-  client  Client @relation(fields: [client_id], references: [id])
-  debtor  Debtor @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
-  creator User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
-  reverses Debt? @relation("DebtReversal", fields: [reverses_debt_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
+  client    Client @relation(fields: [client_id], references: [id])
+  debtor    Debtor @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
+  creator   User   @relation("DebtCreatedBy", fields: [created_by], references: [id])
+  reverses  Debt?  @relation("DebtReversal", fields: [reverses_debt_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
   reversals Debt[] @relation("DebtReversal")
 
   @@unique([id, client_id])
@@ -167,22 +167,22 @@ model Debt {
 }
 
 model Payment {
-  id            Int         @id @default(autoincrement())
-  external_id   String      @unique @default(uuid())
-  debtor_id     Int
-  amount        Decimal     @db.Decimal(10, 2)
-  payment_type  PaymentType @default(CASH)
-  note          String?
-  resets_rating Boolean     @default(false)
-  created_at    DateTime    @default(now())
-  created_by    Int
-  client_id     Int
-  reverses_payment_id Int? @unique
+  id                  Int         @id @default(autoincrement())
+  external_id         String      @unique @default(uuid())
+  debtor_id           Int
+  amount              Decimal     @db.Decimal(10, 2)
+  payment_type        PaymentType @default(CASH)
+  note                String?
+  resets_rating       Boolean     @default(false)
+  created_at          DateTime    @default(now())
+  created_by          Int
+  client_id           Int
+  reverses_payment_id Int?        @unique
 
-  client  Client @relation(fields: [client_id], references: [id])
-  debtor  Debtor @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
-  creator User   @relation("PaymentCreatedBy", fields: [created_by], references: [id])
-  reverses Payment? @relation("PaymentReversal", fields: [reverses_payment_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
+  client    Client    @relation(fields: [client_id], references: [id])
+  debtor    Debtor    @relation(fields: [debtor_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
+  creator   User      @relation("PaymentCreatedBy", fields: [created_by], references: [id])
+  reverses  Payment?  @relation("PaymentReversal", fields: [reverses_payment_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
   reversals Payment[] @relation("PaymentReversal")
 
   @@unique([id, client_id])
@@ -403,51 +403,56 @@ model Company {
 }
 
 model CompanyDebt {
-  id          Int      @id @default(autoincrement())
-  external_id String   @unique @default(uuid())
-  company_id  Int
-  amount      Decimal  @db.Decimal(10, 2)
-  note        String?
-  items       Json?
-  created_at  DateTime @default(now())
-  created_by  Int
-  client_id   Int
-  reverses_company_debt_id Int? @unique
+  id                       Int      @id @default(autoincrement())
+  external_id              String   @unique @default(uuid())
+  company_id               Int
+  amount                   Decimal  @db.Decimal(10, 2)
+  note                     String?
+  items                    Json?
+  receipt_path             String?
+  receipt_name             String?
+  receipt_mime             String?
+  receipt_size             Int?
+  created_at               DateTime @default(now())
+  created_by               Int
+  client_id                Int
+  reverses_company_debt_id Int?     @unique
 
-  client  Client  @relation(fields: [client_id], references: [id])
-  company Company @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
-  creator User    @relation("CompanyDebtCreatedBy", fields: [created_by], references: [id])
-  reverses CompanyDebt? @relation("CompanyDebtReversal", fields: [reverses_company_debt_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
+  client    Client        @relation(fields: [client_id], references: [id])
+  company   Company       @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
+  creator   User          @relation("CompanyDebtCreatedBy", fields: [created_by], references: [id])
+  reverses  CompanyDebt?  @relation("CompanyDebtReversal", fields: [reverses_company_debt_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
   reversals CompanyDebt[] @relation("CompanyDebtReversal")
 
   @@unique([id, client_id])
   @@index([company_id])
   @@index([created_at])
   @@index([external_id])
+  @@index([receipt_path])
   @@index([client_id])
   @@map("company_debts")
 }
 
 model CompanyPayment {
-  id           Int         @id @default(autoincrement())
-  external_id  String      @unique @default(uuid())
-  company_id   Int
-  amount       Decimal     @db.Decimal(10, 2)
-  payment_type PaymentType @default(CASH)
-  note         String?
-  receipt_path String?
-  receipt_name String?
-  receipt_mime String?
-  receipt_size Int?
-  created_at   DateTime    @default(now())
-  created_by   Int
-  client_id    Int
-  reverses_company_payment_id Int? @unique
+  id                          Int         @id @default(autoincrement())
+  external_id                 String      @unique @default(uuid())
+  company_id                  Int
+  amount                      Decimal     @db.Decimal(10, 2)
+  payment_type                PaymentType @default(CASH)
+  note                        String?
+  receipt_path                String?
+  receipt_name                String?
+  receipt_mime                String?
+  receipt_size                Int?
+  created_at                  DateTime    @default(now())
+  created_by                  Int
+  client_id                   Int
+  reverses_company_payment_id Int?        @unique
 
-  client  Client  @relation(fields: [client_id], references: [id])
-  company Company @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
-  creator User    @relation("CompanyPaymentCreatedBy", fields: [created_by], references: [id])
-  reverses CompanyPayment? @relation("CompanyPaymentReversal", fields: [reverses_company_payment_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
+  client    Client           @relation(fields: [client_id], references: [id])
+  company   Company          @relation(fields: [company_id, client_id], references: [id, client_id], onDelete: Cascade, onUpdate: Restrict)
+  creator   User             @relation("CompanyPaymentCreatedBy", fields: [created_by], references: [id])
+  reverses  CompanyPayment?  @relation("CompanyPaymentReversal", fields: [reverses_company_payment_id, client_id], references: [id, client_id], onDelete: NoAction, onUpdate: NoAction)
   reversals CompanyPayment[] @relation("CompanyPaymentReversal")
 
   @@unique([id, client_id])

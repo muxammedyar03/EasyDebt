@@ -42,6 +42,7 @@ const ENTITY_TYPE_VALUES = [
   "COMPANY_DEBT",
   "COMPANY_PAYMENT",
   "COMPANY_PAYMENT_RECEIPT",
+  "COMPANY_DEBT_RECEIPT",
 ] as const;
 
 type AuditLogFilterContentProps = {
@@ -116,6 +117,7 @@ function AuditLogFilterContent({
               COMPANY_DEBT: "entityCompanyDebt",
               COMPANY_PAYMENT: "entityCompanyPayment",
               COMPANY_PAYMENT_RECEIPT: "entityCompanyPaymentReceipt",
+              COMPANY_DEBT_RECEIPT: "entityCompanyDebtReceipt",
             } as const
           )[value],
         ),

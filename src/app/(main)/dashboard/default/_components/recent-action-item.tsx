@@ -23,6 +23,7 @@ type AuditActionLabelKey =
   | "badgeDebtAdded"
   | "badgeDebtDeleted"
   | "badgeDebtUpdated"
+  | "badgeDebtReceiptDeleted"
   | "badgeDebtorCreated"
   | "badgeDebtorDeleted"
   | "badgeDebtorUpdated"
@@ -106,6 +107,9 @@ function actionLabel(action: string, entityType: string): AuditActionLabel | nul
     COMPANY_PAYMENT_RECEIPT: {
       CREATE: coloredActionLabel("badgeReceiptAdded", ACTION_COLORS.add),
       DELETE: coloredActionLabel("badgeReceiptDeleted", ACTION_COLORS.remove),
+    },
+    COMPANY_DEBT_RECEIPT: {
+      DELETE: coloredActionLabel("badgeDebtReceiptDeleted", ACTION_COLORS.remove),
     },
     USER: {
       LOGIN: coloredActionLabel("badgeLogin", ACTION_COLORS.login),

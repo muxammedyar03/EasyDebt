@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrencyUzs, formatDateUz } from "@/lib/format";
 import { getPaymentTypeClass } from "@/lib/utils";
-import { getReceiptDisplayName, companyPaymentReceiptUrl } from "@/lib/companies/receipt-display";
+import {
+  companyDebtReceiptUrl,
+  companyPaymentReceiptUrl,
+  getReceiptDisplayName,
+} from "@/lib/companies/receipt-display";
 import type { CompanyDomain } from "@/types/domain/company.domain";
 
 type Props = {
@@ -40,16 +44,42 @@ export function CompanyHistoryTables({ kind, company }: Props) {
                     <TableHead>Sana</TableHead>
                     <TableHead>Summa</TableHead>
                     <TableHead>Izoh</TableHead>
+                    <TableHead>Attachments</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {slice.map((d) => (
-                    <TableRow key={d.id}>
-                      <TableCell>{formatDateUz(d.createdAt, true)}</TableCell>
-                      <TableCell className="font-semibold text-red-600">{formatCurrencyUzs(d.amount)}</TableCell>
-                      <TableCell className="max-w-[280px] truncate">{d.note || "—"}</TableCell>
-                    </TableRow>
-                  ))}
+                  {slice.map((d) => {
+                    const name = getReceiptDisplayName(d);
+                    return (
+                      <TableRow key={d.id}>
+                        <TableCell>{formatDateUz(d.createdAt, true)}</TableCell>
+                        <TableCell className="font-semibold text-red-600">{formatCurrencyUzs(d.amount)}</TableCell>
+                        <TableCell className="max-w-[280px] truncate">{d.note || "—"}</TableCell>
+                        <TableCell>
+                          {d.receiptPath ? (
+                            <div className="flex max-w-[240px] items-center gap-1">
+                              <a
+                                href={companyDebtReceiptUrl(d.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary min-w-0 flex-1 truncate text-sm font-medium hover:underline"
+                                title={name}
+                              >
+                                {name}
+                              </a>
+                              <Button asChild variant="ghost" size="icon" className="size-8 shrink-0">
+                                <a href={companyDebtReceiptUrl(d.id, true)} title="Yuklab olish">
+                                  <Download className="size-3.5" />
+                                </a>
+                              </Button>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

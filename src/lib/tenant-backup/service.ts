@@ -28,11 +28,13 @@ const snapshotSchema = z
     receipts: z.array(
       z
         .object({
-          paymentId: z.number().int().positive(),
+          paymentId: z.number().int().positive().optional(),
+          debtId: z.number().int().positive().optional(),
           sha256: z.string().regex(/^[a-f0-9]{64}$/),
           data: z.string(),
         })
-        .strict(),
+        .strict()
+        .refine((file) => Boolean(file.paymentId) !== Boolean(file.debtId), "Receipt must belong to one record"),
     ),
   })
   .strict();
@@ -104,6 +106,25 @@ export async function exportTenant(clientId: number, actorId: number): Promise<T
           if (size > MAX_BACKUP_BYTES) throw new BackupError("Backup with receipts exceeds 100 MiB", 413);
           receipts.push({
             paymentId: Number(payment.id),
+            sha256: createHash("sha256").update(bytes).digest("hex"),
+            data: bytes.toString("base64"),
+          });
+        }
+        for (const debt of tables.company_debts) {
+          if (!debt.receipt_path) continue;
+          let bytes: Buffer;
+          try {
+            const absolute = getCompanyReceiptAbsolutePath(String(debt.receipt_path));
+            const info = await stat(absolute);
+            if (!info.isFile() || info.size > 2 * 1024 * 1024) throw new Error("Invalid receipt file");
+            bytes = await readFile(absolute);
+          } catch {
+            throw new BackupError(`Receipt file missing for company debt ${debt.id}; refusing incomplete backup`, 409);
+          }
+          size += Math.ceil((bytes.length * 4) / 3);
+          if (size > MAX_BACKUP_BYTES) throw new BackupError("Backup with receipts exceeds 100 MiB", 413);
+          receipts.push({
+            debtId: Number(debt.id),
             sha256: createHash("sha256").update(bytes).digest("hex"),
             data: bytes.toString("base64"),
           });
@@ -202,18 +223,22 @@ export function validateSnapshot(input: unknown, clientId: number): TenantSnapsh
   const payments = new Map(
     snapshot.tables.company_payments.filter((row) => row.receipt_path).map((row) => [row.id, row]),
   );
+  const companyDebts = new Map(
+    snapshot.tables.company_debts.filter((row) => row.receipt_path).map((row) => [row.id, row]),
+  );
   if (
-    payments.size !== snapshot.receipts.length ||
-    new Set(snapshot.receipts.map((r) => r.paymentId)).size !== snapshot.receipts.length
+    payments.size + companyDebts.size !== snapshot.receipts.length ||
+    new Set(snapshot.receipts.map((r) => (r.paymentId ? `payment:${r.paymentId}` : `debt:${r.debtId}`))).size !==
+      snapshot.receipts.length
   )
     throw new BackupError("Receipt inventory mismatch");
   for (const file of snapshot.receipts) {
-    const payment = payments.get(file.paymentId);
+    const record = file.paymentId ? payments.get(file.paymentId) : companyDebts.get(file.debtId);
     const bytes = Buffer.from(file.data, "base64");
     if (
-      !payment ||
+      !record ||
       createHash("sha256").update(bytes).digest("hex") !== file.sha256 ||
-      bytes.length !== payment.receipt_size
+      bytes.length !== record.receipt_size
     )
       throw new BackupError("Receipt integrity check failed");
   }
@@ -285,14 +310,30 @@ export async function restoreTenant(snapshot: TenantSnapshot, actorId: number, m
                 ).map((row) => row.id),
               )
             : new Set<number>();
+        const existingReceiptDebts =
+          mode === "merge"
+            ? new Set(
+                (
+                  await tx.$queryRaw<Array<{ id: number }>>(
+                    Prisma.sql`SELECT id FROM company_debts WHERE client_id=${snapshot.client.id}`,
+                  )
+                ).map((row) => row.id),
+              )
+            : new Set<number>();
         for (const file of snapshot.receipts) {
-          if (existingReceiptPayments.has(file.paymentId)) continue;
+          if (
+            (file.paymentId && existingReceiptPayments.has(file.paymentId)) ||
+            (file.debtId && existingReceiptDebts.has(file.debtId))
+          )
+            continue;
           const relative = path.join("uploads", "company-receipts", `restore-${randomUUID()}.bin`);
           const absolute = getCompanyReceiptAbsolutePath(relative);
           await mkdir(path.dirname(absolute), { recursive: true });
           await writeFile(absolute, Buffer.from(file.data, "base64"), { flag: "wx" });
           createdFiles.push(absolute);
-          snapshot.tables.company_payments.find((row) => row.id === file.paymentId)!.receipt_path = relative;
+          const records = file.paymentId ? snapshot.tables.company_payments : snapshot.tables.company_debts;
+          const recordId = file.paymentId ?? file.debtId;
+          records.find((row) => row.id === recordId)!.receipt_path = relative;
         }
 
         for (const table of [...TENANT_BACKUP_TABLES].reverse()) {

@@ -5,7 +5,7 @@ import {
   COMPANY_RECEIPT_ALLOWED_MIME,
   COMPANY_RECEIPT_MAX_BYTES,
   isAllowedCompanyReceiptMime,
-} from "@/lib/validation/company-payment";
+} from "@/lib/validation/company-receipt";
 import { sanitizeReceiptOriginalName } from "@/lib/companies/receipt-display";
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads", "company-receipts");

@@ -39,6 +39,23 @@ export function buildCompanyReceiptFileName(args: {
   return `${company}-tolov-cheki-${args.paymentId}-${yyyy}-${mm}-${dd}.${ext}`;
 }
 
+/** Format: {company}-qarz-hujjati-{debtId}-{YYYY-MM-DD}.{ext} */
+export function buildCompanyDebtReceiptFileName(args: {
+  companyName: string;
+  debtId: number;
+  date: Date | string;
+  mime?: string | null;
+  receiptPath?: string | null;
+}): string {
+  const company = sanitizeFileSlug(args.companyName) || "kompaniya";
+  const d = new Date(args.date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const ext = receiptExt(args.mime, args.receiptPath);
+  return `${company}-qarz-hujjati-${args.debtId}-${yyyy}-${mm}-${dd}.${ext}`;
+}
+
 export function sanitizeReceiptOriginalName(originalName: string, mime: string): string {
   const cleaned = (originalName || "").replace(/\\/g, "/").split("/").pop() || "";
   const base = cleaned.replace(/[^\w.\-()\s\u0400-\u04FF]+/g, "_").trim();
@@ -77,5 +94,10 @@ export function getReceiptDisplayName(input: {
 
 export function companyPaymentReceiptUrl(paymentId: number, download = false) {
   const base = `/api/company-payments/${paymentId}/receipt`;
+  return download ? `${base}?download=1` : base;
+}
+
+export function companyDebtReceiptUrl(debtId: number, download = false) {
+  const base = `/api/company-debts/${debtId}/receipt`;
   return download ? `${base}?download=1` : base;
 }

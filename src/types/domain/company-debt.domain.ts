@@ -12,6 +12,10 @@ export type CompanyDebtDomain = {
   amount: number;
   note: string | null;
   items: DebtItem[] | null;
+  receiptPath: string | null;
+  receiptName: string | null;
+  receiptMime: string | null;
+  receiptSize: number | null;
   createdAt: Date;
   createdBy: number;
   company?: CompanyDomain;
@@ -26,6 +30,10 @@ export type CreateCompanyDebtDomainInput = {
   amount: number;
   note?: string | null;
   items?: DebtItem[] | null;
+  receiptPath?: string | null;
+  receiptName?: string | null;
+  receiptMime?: string | null;
+  receiptSize?: number | null;
   createdBy: number;
 };
 

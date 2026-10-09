@@ -181,6 +181,9 @@ export class CompanyDailySnapshotService {
       companyName: d.company.name,
       amount: d.amount.toNumber(),
       note: d.note,
+      receiptPath: d.receipt_path,
+      receiptName: d.receipt_name,
+      receiptMime: d.receipt_mime,
       createdAt: d.created_at,
     }));
 
@@ -251,6 +254,9 @@ export class CompanyDailySnapshotService {
         companyName: d.company.name,
         amount: d.amount.toNumber(),
         note: d.note,
+        receiptPath: d.receipt_path,
+        receiptName: d.receipt_name,
+        receiptMime: d.receipt_mime,
         createdAt: d.created_at,
       })),
       payments: payments.map((p) => ({

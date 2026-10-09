@@ -5,7 +5,7 @@ import { createRequiredAuditLog } from "@/lib/audit";
  */
 
 import { companyDebtRepository } from "@/entities/company-debt/api";
-import { prismaToDomainCompanyDebt } from "@/lib/mappers/company.mapper";
+import { prismaToDomainCompany, prismaToDomainCompanyDebt } from "@/lib/mappers/company.mapper";
 import { companyDailySnapshotService } from "@/lib/services/company-daily-snapshot.service";
 import type {
   CompanyDebtDomain,
@@ -13,11 +13,20 @@ import type {
   UpdateCompanyDebtDomainInput,
 } from "@/types/domain/company-debt.domain";
 import { Prisma } from "@prisma/client";
+import { buildCompanyDebtReceiptFileName } from "@/lib/companies/receipt-display";
+
+type CompanyDebtWithCompany = Prisma.CompanyDebtGetPayload<{ include: { company: true } }>;
 
 export class CompanyDebtService {
   async findById(clientId: number, id: number): Promise<CompanyDebtDomain | null> {
-    const row = await companyDebtRepository.findFirst({ id, client_id: clientId });
-    return row ? prismaToDomainCompanyDebt(row) : null;
+    const row = (await companyDebtRepository.findFirst(
+      { id, client_id: clientId },
+      { company: true },
+    )) as CompanyDebtWithCompany | null;
+    if (!row) return null;
+    const domain = prismaToDomainCompanyDebt(row);
+    domain.company = prismaToDomainCompany(row.company);
+    return domain;
   }
 
   async create(clientId: number, input: CreateCompanyDebtDomainInput): Promise<CompanyDebtDomain> {
@@ -27,16 +36,35 @@ export class CompanyDebtService {
         throw new Error("Kompaniya topilmadi");
       }
 
-      const debt = await tx.companyDebt.create({
+      let debt = await tx.companyDebt.create({
         data: {
           company_id: input.companyId,
           client_id: clientId,
           amount: input.amount,
           note: input.note?.trim() || null,
           items: input.items === undefined ? undefined : (input.items as Prisma.InputJsonValue),
+          receipt_path: input.receiptPath ?? null,
+          receipt_name: input.receiptName ?? null,
+          receipt_mime: input.receiptMime ?? null,
+          receipt_size: input.receiptSize ?? null,
           created_by: input.createdBy,
         },
       });
+
+      if (debt.receipt_path) {
+        debt = await tx.companyDebt.update({
+          where: { id: debt.id },
+          data: {
+            receipt_name: buildCompanyDebtReceiptFileName({
+              companyName: company.name,
+              debtId: debt.id,
+              date: debt.created_at,
+              mime: debt.receipt_mime,
+              receiptPath: debt.receipt_path,
+            }),
+          },
+        });
+      }
 
       const now = new Date();
       await tx.company.update({
@@ -136,6 +164,43 @@ export class CompanyDebtService {
       });
       await companyDailySnapshotService.refreshAffectedDates(clientId, existing.created_at, tx);
     });
+  }
+
+  /** Clear the DB reference and record the actor together. Delete the file only after commit. */
+  async removeReceipt(clientId: number, id: number, actorId: number): Promise<string | null> {
+    return serializableTransaction(async (tx) => {
+      const debt = await tx.companyDebt.findFirst({ where: { id, client_id: clientId } });
+      if (!debt) throw new Error("Qarz topilmadi");
+      if (!debt.receipt_path) return null;
+
+      await tx.companyDebt.update({
+        where: { id, client_id: clientId },
+        data: { receipt_path: null, receipt_name: null, receipt_mime: null, receipt_size: null },
+      });
+      await createRequiredAuditLog(tx, {
+        clientId,
+        userId: actorId,
+        action: "DELETE",
+        entityType: "COMPANY_DEBT_RECEIPT",
+        entityId: id,
+        oldValue: { receipt_path: debt.receipt_path },
+        description: `Kompaniya qarz hujjati #${id} o'chirildi`,
+      });
+      return debt.receipt_path;
+    });
+  }
+
+  async listWithReceipts(clientId: number, limit: number) {
+    const where = { client_id: clientId, receipt_path: { not: null } };
+    const [rows, total] = await Promise.all([
+      companyDebtRepository.findMany(where, {
+        take: limit,
+        orderBy: { created_at: "desc" },
+        include: { company: true },
+      }) as Promise<CompanyDebtWithCompany[]>,
+      companyDebtRepository.count(where),
+    ]);
+    return { rows, total };
   }
 }
 
