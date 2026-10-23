@@ -1,13 +1,13 @@
 /**
- * RECEIPT PRINTER — Print Logic
+ * RECEIPT PRINTER — Print Logic (Web & Tauri Desktop Thermal Printer)
  *
- * Iframe yordamida termal printerga chek chop etish.
- * Bu yondashuv barcha @media print muammolarini hal qiladi va React batch state
- * yangilanishlaridan mustaqil ishlaydi (HTML kod sinxron hosil qilinadi).
+ * Iframe va Tauri v2 native print integratsiyasi yordamida 80mm / 58mm
+ * termal printerga chek chop etish.
  */
 
 import { generateSingleReceiptHtml, generateTimelineReceiptHtml } from "./format-receipt";
 import type { SingleReceiptData, TimelineReceiptData } from "../model/types";
+import { getPreferredThermalWidth, invokeTauriCommand, isTauriDesktop } from "@/lib/desktop/tauri-bridge";
 
 const RECEIPT_CONTAINER_ID = "receipt-print-area";
 
@@ -15,16 +15,22 @@ export function getReceiptContainerId(): string {
   return RECEIPT_CONTAINER_ID;
 }
 
-function getReceiptPrintStyles(): string {
+function getReceiptPrintStyles(paperWidth: "80mm" | "58mm" = "80mm"): string {
+  const maxWidth = paperWidth === "58mm" ? "54mm" : "76mm";
+  const baseFontSize = paperWidth === "58mm" ? "11px" : "12px";
+
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 12px;
+      font-size: ${baseFontSize};
       line-height: 1.4;
       color: #000;
       background: #fff;
-      padding: 4mm 2mm;
+      width: ${maxWidth};
+      max-width: ${maxWidth};
+      margin: 0 auto;
+      padding: 3mm 1.5mm;
     }
     .receipt-header { text-align: center; margin-bottom: 4mm; }
     .receipt-app-name {
@@ -52,7 +58,7 @@ function getReceiptPrintStyles(): string {
       align-items: flex-start; padding: 0.5mm 0; gap: 2mm;
     }
     .receipt-label { font-weight: 400; white-space: nowrap; flex-shrink: 0; }
-    .receipt-value { font-weight: 600; text-align: right; word-break: break-word; }
+    .receipt-value { font-weight: 600; text-align: right; word-break: break-word; font-variant-numeric: tabular-nums; }
     .receipt-row-bold .receipt-label,
     .receipt-row-bold .receipt-value { font-weight: 700; font-size: 13px; }
     .receipt-line { border-top: 1px dashed #000; margin: 2mm 0; }
@@ -67,34 +73,29 @@ function getReceiptPrintStyles(): string {
     .receipt-table th {
       font-weight: 700; font-size: 10px; background: #f0f0f0;
     }
-    .receipt-table td { font-size: 9px; }
+    .receipt-table td { font-size: 9px; font-variant-numeric: tabular-nums; }
     .receipt-debt { font-weight: 600; }
     .receipt-payment { font-weight: 600; }
     .receipt-footer { text-align: center; margin-top: 4mm; font-size: 11px; }
     .receipt-footer p { margin: 1mm 0; }
     .receipt-app-url { font-size: 9px; color: #666; }
-    @page { margin: 2mm; size: auto; }
+    @page { margin: 2mm; size: ${paperWidth} auto; }
   `;
 }
 
 /**
- * Chek chop etish.
- *
- * Agar `data` berilgan bo'lsa, uni sinxron ravishda HTMLga o'tkazib iframe orqali print qiladi.
- * Agar `data` berilmasa, DOMdan hidden `receipt-print-area`ni izlaydi (fallback).
+ * Chek chop etish (Tauri Desktop + Web Iframe)
  */
 export function printReceipt(data?: SingleReceiptData | TimelineReceiptData | null, onAfterPrint?: () => void): void {
   let receiptHtml = "";
 
   if (data) {
-    // Sinxron ravishda to'g'ridan-to'g'ri HTML generatsiya qilish (Timing bugni oldini oladi!)
     if ("timeline" in data) {
       receiptHtml = generateTimelineReceiptHtml(data);
     } else {
       receiptHtml = generateSingleReceiptHtml(data);
     }
   } else {
-    // DOMdan qidirish (fallback)
     const receiptEl = document.getElementById(RECEIPT_CONTAINER_ID);
     if (receiptEl) {
       receiptHtml = receiptEl.innerHTML;
@@ -106,7 +107,15 @@ export function printReceipt(data?: SingleReceiptData | TimelineReceiptData | nu
     return;
   }
 
-  // Iframe yaratish
+  const paperWidth = getPreferredThermalWidth();
+
+  if (isTauriDesktop()) {
+    void invokeTauriCommand("print_thermal_receipt", {
+      html: receiptHtml,
+      paper_width: paperWidth,
+    });
+  }
+
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
   iframe.style.right = "0";
@@ -130,15 +139,14 @@ export function printReceipt(data?: SingleReceiptData | TimelineReceiptData | nu
     <html>
     <head>
       <meta charset="utf-8" />
-      <title>Chek</title>
-      <style>${getReceiptPrintStyles()}</style>
+      <title>EasyDebt Chek (${paperWidth})</title>
+      <style>${getReceiptPrintStyles(paperWidth)}</style>
     </head>
     <body>${receiptHtml}</body>
     </html>
   `);
   doc.close();
 
-  // Print qilish va tozalash
   setTimeout(() => {
     try {
       iframe.contentWindow?.focus();

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { SidebarProviderWithWidth } from "@/app/(main)/dashboard/_components/sidebar/sidebar-provider-with-width";
+import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
@@ -18,16 +19,13 @@ import {
   type NavbarStyle,
 } from "@/types/preferences/layout";
 import { getDashboardLayoutData } from "@/lib/dashboard-layout";
-import { getEffectivePermissionKeys } from "@/lib/security/permission-access";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
-import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
-import { ClientSwitcher } from "./_components/client-switcher";
+import { DesktopSyncBar } from "./_components/desktop-sync-bar";
 import HeaderLockButton from "../_components/HeaderLockButton.client";
 import PinGate from "../_components/PinGate.client";
-import { Separator } from "@/components/ui/separator";
+import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -41,32 +39,29 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference<NavbarStyle>("navbar_style", NAVBAR_STYLE_VALUES, "scroll"),
   ]);
 
-  const {
-    session,
-    debtLimit,
-    overdueDays,
-    activeUser: formattedActiveUser,
-    notifications,
-    unreadCount,
-    currentClient,
-    clients,
-  } = layoutData;
-  const allowedPermissions = await getEffectivePermissionKeys(session);
+  const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
+
+  const layoutPreferences = {
+    contentLayout,
+    variant: sidebarVariant,
+    collapsible: sidebarCollapsible,
+    navbarStyle,
+  };
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} allowedPermissions={allowedPermissions} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
+          "data-[content-layout=centered]:!mx-auto data-[content-layout=centered]:max-w-screen-2xl",
           "max-[113rem]:peer-data-[variant=inset]:!mr-2 min-[101rem]:peer-data-[variant=inset]:peer-data-[state=collapsed]:!mr-auto",
         )}
       >
         <header
           data-navbar-style={navbarStyle}
           className={cn(
-            "flex h-18 w-full shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-18",
-            // Handle sticky navbar style with conditional classes so blur, background, z-index, and rounded corners remain consistent across all SidebarVariant layouts.
+            "flex h-18 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-18",
             "data-[navbar-style=sticky]:bg-background/50 data-[navbar-style=sticky]:sticky data-[navbar-style=sticky]:top-0 data-[navbar-style=sticky]:z-50 data-[navbar-style=sticky]:overflow-hidden data-[navbar-style=sticky]:rounded-t-[inherit] data-[navbar-style=sticky]:backdrop-blur-md",
           )}
         >
@@ -74,35 +69,22 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-1 lg:gap-2">
               <SidebarTrigger className="text-2xl md:-ml-4" />
               <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-              <div className="block sm:hidden">
-                {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
-              </div>
-              <div className="hidden sm:block">{session?.userId && <HeaderLockButton />}</div>
+              <DesktopSyncBar />
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden sm:block">
-                {session && <ClientSwitcher role={session.role} currentClient={currentClient} clients={clients} />}
-              </div>
-              {allowedPermissions.includes("notifications.view") && (
-                <NotificationsDropdown notifications={notifications} unreadCount={unreadCount} />
-              )}
-              <div className="hidden sm:block">
-                <LanguageSwitcher />
-              </div>
-              <div className="hidden sm:block">
-                <ThemeSwitcher />
-              </div>
-              <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
+              <NotificationsDropdown notifications={notifications} />
+              <div>{session?.userId && <HeaderLockButton />}</div>
+              <ThemeSwitcher />
+              <AccountSwitcher
+                activeUser={formattedActiveUser}
+                debtLimit={debtLimit}
+                overdueDays={overdueDays}
+                layoutPreferences={layoutPreferences}
+              />
             </div>
           </div>
         </header>
-        <div
-          data-slot="dashboard-content"
-          data-content-layout={contentLayout}
-          className="h-full w-full p-4 data-[content-layout=centered]:mx-auto data-[content-layout=centered]:max-w-screen-2xl md:p-6"
-        >
-          {children}
-        </div>
+        <div className="h-full p-4 md:p-6">{children}</div>
         {session?.userId ? <PinGate userId={session.userId} pinLength={4} /> : null}
       </SidebarInset>
     </SidebarProviderWithWidth>

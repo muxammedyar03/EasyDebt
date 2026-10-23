@@ -22,9 +22,6 @@
 *.pem
 *.sh
 
-# uploaded company payment receipts
-/uploads/
-
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -33,6 +30,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.build
 .env.production
 .env.demo
 .env.development
@@ -50,3 +48,9 @@ push-notifications.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# desktop local storage & tauri build artifacts
+/.local-data/
+/src-tauri/target/
+/src-tauri/gen/schemas/
+

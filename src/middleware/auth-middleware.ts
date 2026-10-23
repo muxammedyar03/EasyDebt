@@ -1,7 +1,14 @@
 import { jwtVerify } from "jose";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { getJwtKey } from "@/lib/security/secrets";
+const GUEST_SESSION_COOKIE = "guest-demo-session";
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-this-in-production");
+
+function clearSessionCookies(response: NextResponse) {
+  response.cookies.set("auth-token", "", { path: "/", maxAge: 0 });
+  response.cookies.set(GUEST_SESSION_COOKIE, "", { path: "/", maxAge: 0 });
+}
 
 export async function authMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -11,13 +18,12 @@ export async function authMiddleware(req: NextRequest) {
   let isAuthenticated = false;
   if (token) {
     try {
-      await jwtVerify(token, getJwtKey(), { algorithms: ["HS256"], audience: "easydebt-session" });
+      await jwtVerify(token, JWT_SECRET);
       isAuthenticated = true;
     } catch (error) {
-      // Token is invalid, clear it
       console.error("Invalid token:", error);
       const response = NextResponse.redirect(new URL("/auth/login", req.url));
-      response.cookies.delete("auth-token");
+      clearSessionCookies(response);
       return response;
     }
   }
@@ -27,7 +33,13 @@ export async function authMiddleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  // Login remains reachable with a revoked cookie. Authoritative session checks
-  // run on the server; Edge cannot check user/tenant status in PostgreSQL.
+  // Redirect authenticated users away from login/register
+  if (
+    isAuthenticated &&
+    (pathname === "/auth/login" || pathname === "/auth/v2/register" || pathname.startsWith("/auth/v2"))
+  ) {
+    return NextResponse.redirect(new URL("/dashboard/default", req.url));
+  }
+
   return NextResponse.next();
 }

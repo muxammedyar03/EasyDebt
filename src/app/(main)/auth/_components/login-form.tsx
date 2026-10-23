@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { KeyRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,22 +14,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 
 const FormSchema = z.object({
-  username: z.string().min(1, { message: "Логин обязательно для заполнения." }),
-  password: z.string().min(6, { message: "Пароль должен быть не менее 6 символов." }),
+  username: z.string().min(1, { message: "Login kiritilishi shart." }),
+  password: z.string().min(6, { message: "Parol kamida 6 ta belgidan iborat bo'lishi kerak." }),
   remember: z.boolean().optional(),
 });
 
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       username: "",
       password: "",
-      remember: false,
+      remember: true,
     },
   });
 
@@ -51,62 +50,44 @@ export function LoginForm() {
       const result = await response.json();
 
       if (!response.ok) {
-        toast.error("Login Failed", {
-          description: result.error || "Invalid credentials",
-          style: {
-            background: "white",
-            color: "black",
-          },
-          descriptionClassName: "!text-gray-600",
+        toast.error("Kirishda xatolik", {
+          description: result.error || "Login yoki parol noto'g'ri",
         });
         return;
       }
 
-      toast.success("Login Successful", {
-        description: `Welcome back, ${result.user.username}!`,
-        style: {
-          background: "white",
-          color: "black",
-        },
-        descriptionClassName: "!text-gray-600",
+      toast.success("Muvaffaqiyatli kirdingiz", {
+        description: `Xush kelibsiz, ${result.user.username}!`,
       });
 
-      // Redirect to dashboard
       router.push("/dashboard/default");
       router.refresh();
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Error", {
-        description: "An unexpected error occurred",
-        style: {
-          background: "white",
-          color: "black",
-        },
-        descriptionClassName: "!text-gray-600",
+      toast.error("Xatolik", {
+        description: "Tizimga ulanishda kutilmagan xatolik yuz berdi",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleQuickFillAdmin = () => {
+    form.setValue("username", "admin");
+    form.setValue("password", "admin123");
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Логин</FormLabel>
+              <FormLabel>Foydalanuvchi nomi (Login)</FormLabel>
               <FormControl>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Введите ваш логин"
-                  autoComplete="username"
-                  className="h-12 rounded-xl text-base md:text-base"
-                  {...field}
-                />
+                <Input id="username" type="text" placeholder="admin" autoComplete="username" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -117,29 +98,15 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Пароль</FormLabel>
+              <FormLabel>Parol</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Введите пароль"
-                    autoComplete="current-password"
-                    className="h-12 rounded-xl pr-11 text-base md:text-base"
-                    {...field}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1.5 size-9 -translate-y-1/2"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                  </Button>
-                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -159,14 +126,27 @@ export function LoginForm() {
                 />
               </FormControl>
               <FormLabel htmlFor="login-remember" className="text-muted-foreground ml-1 text-sm font-medium">
-                Запомнить меня на 30 дней
+                Meni 30 kun eslab qolish
               </FormLabel>
             </FormItem>
           )}
         />
-        <Button className="h-12 w-full rounded-xl text-base" type="submit" disabled={isLoading}>
-          {isLoading ? "Вход..." : "Войти"}
+        <Button className="w-full" type="submit" disabled={isLoading}>
+          {isLoading ? "Kirilmoqda..." : "Tizimga kirish"}
         </Button>
+
+        <div className="pt-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground w-full text-xs"
+            onClick={handleQuickFillAdmin}
+          >
+            <KeyRound className="mr-1.5 size-3.5" />
+            Lokal Desktop Admin ma&apos;lumotlarini to&apos;ldirish (admin / admin123)
+          </Button>
+        </div>
       </form>
     </Form>
   );

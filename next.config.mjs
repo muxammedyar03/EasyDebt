@@ -1,14 +1,6 @@
 /** @type {import('next').NextConfig} */
-import createNextIntlPlugin from "next-intl/plugin";
-
-const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
-
 const nextConfig = {
-  output: "standalone", // Required for Docker deployment
-  // Lint commit (lint-staged), local build va IDE da ishlaydi; deploy build da qayta lint kerak emas
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  output: "standalone", // Required for Docker and Tauri standalone deployment
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
@@ -36,24 +28,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/.well-known/replay-qa-security-nonce",
-        headers: [
-          {
-            key: "Content-Type",
-            value: "text/plain; charset=utf-8",
-          },
-        ],
-      },
-      {
         source: "/:path*",
         headers: [
           {
             key: "X-DNS-Prefetch-Control",
             value: "on",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
           },
           {
             key: "X-Content-Type-Options",
@@ -67,6 +46,6 @@ const nextConfig = {
       },
     ];
   },
-};
+}
 
-export default withNextIntl(nextConfig);
+export default nextConfig
