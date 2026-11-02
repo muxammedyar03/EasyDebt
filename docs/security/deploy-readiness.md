@@ -1,9 +1,0 @@
-# Readiness, receipt persistence and release identity
-
-The public /api/health endpoint returns only ok/unavailable, disables caching and checks database connectivity with transaction/statement timeouts. Compose healthcheck already targets this route. Deployment now waits up to 120 seconds for healthy status and fails if it does not become healthy.
-
-Application uploads use named volume feat_debt_uploads. Before the first mount, scripts/deploy/prepare-receipts.sh stops the old container and preserves its uploads to a retained /var/tmp/easydebt-receipts.* safety copy, then seeds the volume. A copy/seed error aborts and restarts the previous running container. Missing source directory is explicitly verified; arbitrary IO errors are not treated as empty uploads. Subsequent deployments recognize the mounted volume and skip migration. First installation uses the directory owned by nextjs in the new image. Back up this volume alongside the database; it is not an off-server backup.
-
-App and migration image tags now share the exact commit SHA. Migration uses the dependency stage's lockfile-resolved tools. SSH deployment checks out that exact commit and refuses tracked local modifications. Deployments on the same ref are serialized. Global Docker pruning has been removed to preserve rollback images and other projects.
-
-Validation: endpoint success/failure tests; YAML parsing; bash syntax; offline Docker-command test of six receipt migration safety paths. Actual Docker build, volume ownership and upload/redeploy/download require the CI/VPS runtime. Health failure marks deployment failed, but this change does not provide a full automatic app+schema rollback; restarting the current container is only a recovery attempt. Database restoration/migration rollback remains a separate procedure.

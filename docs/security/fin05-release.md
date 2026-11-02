@@ -1,9 +1,0 @@
-# FIN-05: company history and business dates
-
-Company debt/payment mutations rebuild snapshots from the original ledger entry's business day through all later saved/activity dates. The rebuild runs in the same Serializable transaction as the ledger and company balance update. A failed rebuild rolls back the financial mutation. PostgreSQL aggregates and a running sum replace a separate query for every historical day. Every source and destination is scoped by client_id; decimal arithmetic and advance (negative outstanding) balances are preserved.
-
-Company reports use Asia/Tashkent days independently of the Node/PostgreSQL process timezone. Prisma timestamp-without-time-zone columns contain UTC instants; SQL first interprets them as UTC and then groups by Tashkent day. Period API date-only values are validated without local-time parsing or overflow normalization. One-month-ago reports clamp at month end.
-
-Exact snapshot reads recompute and upsert that date within a Serializable transaction. Charts read ledger aggregates directly in one SQL statement and fill inactive days in memory; stale imported/legacy snapshot totals are never used as chart balances. This avoids requiring a production-wide backfill or rewriting all snapshots on every chart read. Existing saved snapshots are repaired from a mutation's affected day onward, or individually when requested.
-
-Validation: PGlite SQL fixture covers midnight, exact decimals, idle days, future entries, historical edit/delete, rollback, stale chart cache and second-tenant isolation. Jest covers business-date boundaries and transaction integration. Run `node --import tsx scripts/tests/company-snapshot-history.ts` plus Jest, TypeScript and ESLint. PGlite does not replace multi-connection native PostgreSQL concurrency/load tests; performance on large ledgers remains PERF-01/CAP-01 work. No schema migration is required.
