@@ -255,6 +255,14 @@ async function preflight(tx: Prisma.TransactionClient, snapshot: TenantSnapshot)
     const columns = await tx.$queryRaw<
       Array<{ column_name: string }>
     >`SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=${table}`;
+    const colSet = new Set(columns.map((c) => c.column_name));
+    for (const row of rows) {
+      for (const k of Object.keys(row)) {
+        if (!colSet.has(k)) {
+          delete row[k];
+        }
+      }
+    }
     const keys = columns
       .map((c) => c.column_name)
       .sort()

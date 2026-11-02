@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build && node scripts/copy-standalone-assets.mjs",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
@@ -66,6 +66,7 @@
     "jspdf": "^4.0.0",
     "lucide-react": "^0.453.0",
     "next": "^16.0.8",
+    "next-intl": "^4.14.9",
     "next-themes": "^0.4.6",
     "qrcode": "^1.5.4",
     "radix-ui": "^1.4.3",
@@ -85,10 +86,12 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.14",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.16.0",
     "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4.1.14",
+    "@tauri-apps/cli": "^2.12.4",
     "@testing-library/react": "^16.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jest": "^29.5.12",

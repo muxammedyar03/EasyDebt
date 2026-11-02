@@ -118,6 +118,7 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
     const totalDebt = new Prisma.Decimal(Number(payload.total_debt ?? 0));
     const isOverdue = Boolean(payload.is_overdue ?? false);
     const createdBy = Number(payload.created_by ?? 1);
+    const clientId = Number(payload.client_id ?? 1);
 
     await prisma.debtor.upsert({
       where: { external_id: item.externalId },
@@ -130,6 +131,7 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
         total_debt: totalDebt,
         is_overdue: isOverdue,
         created_by: createdBy,
+        client_id: clientId,
       },
       update: {
         first_name: firstName,
@@ -164,6 +166,7 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
     const amount = new Prisma.Decimal(Number(payload.amount ?? 0));
     const description = (payload.description as string | null) ?? null;
     const createdBy = Number(payload.created_by ?? 1);
+    const clientId = Number(payload.client_id ?? 1);
 
     await prisma.debt.upsert({
       where: { external_id: item.externalId },
@@ -174,6 +177,7 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
         description,
         items: (payload.items as Prisma.InputJsonValue) ?? Prisma.JsonNull,
         created_by: createdBy,
+        client_id: clientId,
       },
       update: {
         amount,
@@ -205,6 +209,7 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
     const paymentType = (payload.payment_type as PaymentType) ?? PaymentType.CASH;
     const note = (payload.note as string | null) ?? null;
     const createdBy = Number(payload.created_by ?? 1);
+    const clientId = Number(payload.client_id ?? 1);
 
     await prisma.payment.upsert({
       where: { external_id: item.externalId },
@@ -215,6 +220,7 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
         payment_type: paymentType,
         note,
         created_by: createdBy,
+        client_id: clientId,
       },
       update: {
         amount,
@@ -227,10 +233,11 @@ async function applyOutboxItemToPostgres(item: SyncOutboxItem): Promise<void> {
   if (item.entityType === "SETTINGS") {
     const key = String(payload.key ?? "");
     const value = String(payload.value ?? "");
+    const clientId = Number(payload.client_id ?? 1);
     if (key) {
       await prisma.settings.upsert({
-        where: { key },
-        create: { key, value },
+        where: { client_id_key: { client_id: clientId, key } },
+        create: { client_id: clientId, key, value },
         update: { value },
       });
     }

@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { validatePreferenceCookie } from "@/lib/security/preference-cookie";
 
 // export async function getValueFromCookie(key: string): Promise<string | undefined> {
@@ -14,8 +14,11 @@ export async function setValueToCookie(
   options: { path?: string; maxAge?: number } = {},
 ): Promise<void> {
   const safeOptions = validatePreferenceCookie(key, value, options);
+  const headerStore = await headers();
+  const proto = headerStore.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const secure = process.env.NODE_ENV === "production" && proto === "https";
   const cookieStore = await cookies();
-  cookieStore.set(key, value, safeOptions);
+  cookieStore.set(key, value, { ...safeOptions, secure });
 }
 
 export async function getPreference<T extends string>(key: string, allowed: readonly T[], fallback: T): Promise<T> {

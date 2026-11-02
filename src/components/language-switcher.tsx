@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Languages } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import {
 import { setValueToCookie } from "@/server/server-actions";
 import { LOCALE_COOKIE, type AppLocale } from "@/i18n/config";
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("common");
   const router = useRouter();
@@ -28,7 +29,7 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-10 gap-2 px-3 md:h-12" aria-label={t("language")}>
+        <Button variant="outline" className={cn("h-10 gap-2 px-3 md:h-12", className)} aria-label={t("language")}>
           <Languages className="h-4 w-4 md:!h-5 md:!w-5" />
           <span className="hidden text-sm font-medium sm:inline">{locale.toUpperCase()}</span>
         </Button>

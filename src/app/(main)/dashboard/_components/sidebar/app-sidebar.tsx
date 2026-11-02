@@ -58,9 +58,9 @@ import { NavUser } from "./nav-user";
 // };
 
 function AppSidebarInner({
-  allowedPermissions,
+  allowedPermissions = [],
   ...props
-}: React.ComponentProps<typeof Sidebar> & { allowedPermissions: string[] }) {
+}: React.ComponentProps<typeof Sidebar> & { allowedPermissions?: string[] }) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>

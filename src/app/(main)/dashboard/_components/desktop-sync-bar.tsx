@@ -75,6 +75,9 @@ export function DesktopSyncBar() {
     }
   }, []);
 
+  const statusRef = React.useRef<SyncStatusReport | null>(null);
+  statusRef.current = status;
+
   const handleSyncNow = React.useCallback(
     async (silent = false) => {
       setIsSyncing(true);
@@ -93,11 +96,8 @@ export function DesktopSyncBar() {
             toast.success("Sinxronizatsiya yakunlandi", {
               description: data.message,
             });
-            if (data.pushedCount > 0 && status?.syncMeta?.nativeNotifications) {
-              void sendDesktopNativeNotification(
-                "EasyDebt Desktop — Sinxronizatsiya",
-                data.message,
-              );
+            if (data.pushedCount > 0 && statusRef.current?.syncMeta?.nativeNotifications) {
+              void sendDesktopNativeNotification("EasyDebt Desktop — Sinxronizatsiya", data.message);
             }
           } else {
             toast.warning("Sinxronizatsiya", {
@@ -105,7 +105,9 @@ export function DesktopSyncBar() {
             });
           }
         }
-        router.refresh();
+        if (data.pushedCount > 0 || data.pulledCount > 0) {
+          router.refresh();
+        }
       } catch (err) {
         if (!silent) {
           toast.error("Sinxronizatsiya xatosi", {
@@ -116,7 +118,7 @@ export function DesktopSyncBar() {
         setIsSyncing(false);
       }
     },
-    [router, status?.syncMeta?.nativeNotifications],
+    [router],
   );
 
   React.useEffect(() => {
@@ -153,10 +155,10 @@ export function DesktopSyncBar() {
     }, 15000);
 
     return () => {
-      window.removeentListener("online", onOnline);
- n      window.removeeventListener("offline", onOffline);
-      unlistenSync?.(
- n      window.clearInterval(interval);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      unlistenSync?.();
+      window.clearInterval(interval);
     };
   }, [fetchStatus, handleSyncNow]);
 
@@ -277,7 +279,7 @@ export function DesktopSyncBar() {
     }
   };
 
-  const handleImportBackup = async (e: React.Changeevent<HTMLInputElement>) => {
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -339,11 +341,7 @@ export function DesktopSyncBar() {
     <div className="flex items-center gap-1.5">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 gap-2 px-3 text-xs font-medium whitespace-nowrap shrink-0"
-          >
+          <Button variant="outline" size="sm" className="h-9 shrink-0 gap-2 px-3 text-xs font-medium whitespace-nowrap">
             {isSyncing ? (
               <RefreshCw className="size-3.5 animate-spin text-amber-600" />
             ) : isOffline ? (
@@ -351,17 +349,13 @@ export function DesktopSyncBar() {
             ) : (
               <Cloud className="size-3.5 text-emerald-600" />
             )}
-            <span className="hidden sm:inline">
-              {isOffline ? "Offlayn · Lokal" : "Onlayn · Sinxron"}
-            </span>
+            <span className="hidden sm:inline">{isOffline ? "Offlayn · Lokal" : "Onlayn · Sinxron"}</span>
             {pendingCount > 0 && (
               <>
                 <span aria-hidden="true" className="text-muted-foreground">
                   ·
                 </span>
-                <span className="font-mono font-semibold text-amber-600 tabular-nums">
-                  {pendingCount} navbatda
-                </span>
+                <span className="font-mono font-semibold text-amber-600 tabular-nums">{pendingCount} navbatda</span>
               </>
             )}
           </Button>
@@ -386,11 +380,13 @@ export function DesktopSyncBar() {
                 EasyDebt Desktop &amp; Offline-First Sinxronizatsiya Markazi
               </span>
               <span className="text-muted-foreground font-mono text-xs font-normal tabular-nums">
-                {runtimeInfo?.is_tauri ? "Tauri v2 Native" : "Desktop Web Runtime"} · v{runtimeInfo?.app_version ?? "2.0.0"}
+                {runtimeInfo?.is_tauri ? "Tauri v2 Native" : "Desktop Web Runtime"} · v
+                {runtimeInfo?.app_version ?? "2.0.0"}
               </span>
             </DialogTitle>
             <DialogDescription>
-              Ma&apos;lumotlar kompyuter xotirasida lokal saqlanadi va internet bo&apos;lganda asosiy server bazasi bilan sinxronlanadi.
+              Ma&apos;lumotlar kompyuter xotirasida lokal saqlanadi va internet bo&apos;lganda asosiy server bazasi
+              bilan sinxronlanadi.
             </DialogDescription>
           </DialogHeader>
 
@@ -414,14 +410,13 @@ export function DesktopSyncBar() {
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Navbatdagi yozuvlar</p>
-              <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
-                {pendingCount} ta kutilmoqda
-              </p>
+              <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">{pendingCount} ta kutilmoqda</p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Lokal bazadagi yozuvlar</p>
               <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums">
-                {status?.localCounts.debtors ?? 0} qarzdor · {(status?.localCounts.debts ?? 0) + (status?.localCounts.payments ?? 0)} amal
+                {status?.localCounts.debtors ?? 0} qarzdor ·{" "}
+                {(status?.localCounts.debts ?? 0) + (status?.localCounts.payments ?? 0)} amal
               </p>
             </div>
             <div>
@@ -449,8 +444,14 @@ export function DesktopSyncBar() {
             <TabsContent value="outbox" className="space-y-4 pt-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="text-muted-foreground text-xs">
-                  Jami sinxronlangan: <span className="text-foreground font-mono font-semibold tabular-nums">{status?.totalSyncedCount ?? 0}</span> ·
-                  Xatolar: <span className="text-foreground font-mono font-semibold tabular-nums">{status?.failedCount ?? 0}</span>
+                  Jami sinxronlangan:{" "}
+                  <span className="text-foreground font-mono font-semibold tabular-nums">
+                    {status?.totalSyncedCount ?? 0}
+                  </span>{" "}
+                  · Xatolar:{" "}
+                  <span className="text-foreground font-mono font-semibold tabular-nums">
+                    {status?.failedCount ?? 0}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {(status?.failedCount ?? 0) > 0 && (
@@ -475,7 +476,9 @@ export function DesktopSyncBar() {
                   <div className="text-muted-foreground flex flex-col items-center justify-center py-10 text-center text-sm">
                     <CheckCircle2 className="mb-2 size-6 text-emerald-600" />
                     <p className="font-medium">Sinxronizatsiya navbati bo&apos;sh</p>
-                    <p className="text-xs">Yangi qarz, to&apos;lov yoki qarzdor qo&apos;shilganda bu yerda aks etadi.</p>
+                    <p className="text-xs">
+                      Yangi qarz, to&apos;lov yoki qarzdor qo&apos;shilganda bu yerda aks etadi.
+                    </p>
                   </div>
                 ) : (
                   <table className="w-full text-left text-xs">
@@ -552,11 +555,15 @@ export function DesktopSyncBar() {
                     <div className="text-muted-foreground text-xs">Qarzlar</div>
                   </div>
                   <div className="rounded border p-2">
-                    <div className="font-mono text-base font-bold tabular-nums">{status?.localCounts.payments ?? 0}</div>
+                    <div className="font-mono text-base font-bold tabular-nums">
+                      {status?.localCounts.payments ?? 0}
+                    </div>
                     <div className="text-muted-foreground text-xs">To&apos;lovlar</div>
                   </div>
                   <div className="rounded border p-2">
-                    <div className="font-mono text-base font-bold tabular-nums">{status?.localCounts.reminders ?? 0}</div>
+                    <div className="font-mono text-base font-bold tabular-nums">
+                      {status?.localCounts.reminders ?? 0}
+                    </div>
                     <div className="text-muted-foreground text-xs">Eslatmalar</div>
                   </div>
                 </div>
@@ -734,20 +741,12 @@ export function DesktopSyncBar() {
                     <Bell className="mr-1.5 size-3.5" />
                     Test Bildirishnoma
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void controlDesktopWindow("toggle_maximize")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => void controlDesktopWindow("toggle_maximize")}>
                     <Maximize2 className="mr-1.5 size-3.5" />
                     To&apos;liq ekran
                   </Button>
                   {runtimeInfo?.is_tauri && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void controlDesktopWindow("hide_to_tray")}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => void controlDesktopWindow("hide_to_tray")}>
                       <Minimize2 className="mr-1.5 size-3.5" />
                       Treyga yig&apos;ish
                     </Button>

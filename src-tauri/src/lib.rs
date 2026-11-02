@@ -127,6 +127,47 @@ fn print_thermal_receipt(
     }
 }
 
+fn ensure_backend_server() {
+    use std::net::{SocketAddr, TcpStream};
+    use std::time::Duration;
+
+    let addr: SocketAddr = "127.0.0.1:3000".parse().unwrap();
+    if TcpStream::connect_timeout(&addr, Duration::from_millis(400)).is_err() {
+        eprintln!("[EasyDebt Tauri] Port 3000 not responding, starting Next.js standalone server...");
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let project_dir = manifest_dir
+            .parent()
+            .map(|parent| parent.to_path_buf())
+            .unwrap_or(manifest_dir);
+        let script = project_dir.join("scripts/start-tauri-standalone.mjs");
+        if script.exists() {
+            let log_file = std::fs::File::create(
+                dirs_next().unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+                    .join(".easydebt-desktop-server.log")
+            );
+
+            let mut cmd = std::process::Command::new("node");
+            cmd.arg(&script).current_dir(&project_dir);
+
+            if let Ok(file) = log_file {
+                let stdout_file = file.try_clone().unwrap_or(file);
+                cmd.stdout(stdout_file);
+            }
+
+            match cmd.spawn() {
+                Ok(_) => eprintln!("[EasyDebt Tauri] Next.js server spawned successfully"),
+                Err(e) => eprintln!("[EasyDebt Tauri] Failed to spawn Next.js server: {}", e),
+            }
+        }
+    } else {
+        eprintln!("[EasyDebt Tauri] Next.js server is already running on port 3000");
+    }
+}
+
+fn dirs_next() -> Option<std::path::PathBuf> {
+    std::env::var_os("HOME").map(std::path::PathBuf::from)
+}
+
 fn setup_system_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let show_item = MenuItem::with_id(
         app,
@@ -220,6 +261,7 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
+            ensure_backend_server();
             if let Err(err) = setup_system_tray(app) {
                 eprintln!("[EasyDebt Tauri] System tray init warning: {}", err);
             }

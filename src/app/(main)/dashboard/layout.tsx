@@ -1,9 +1,11 @@
 import { ReactNode } from "react";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { SidebarProviderWithWidth } from "@/app/(main)/dashboard/_components/sidebar/sidebar-provider-with-width";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,7 @@ import {
   type NavbarStyle,
 } from "@/types/preferences/layout";
 import { getDashboardLayoutData } from "@/lib/dashboard-layout";
+import { getEffectivePermissionKeys } from "@/lib/security/permission-access";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { NotificationsDropdown } from "./_components/notifications-dropdown";
@@ -40,17 +43,14 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
 
   const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
-
-  const layoutPreferences = {
-    contentLayout,
-    variant: sidebarVariant,
-    collapsible: sidebarCollapsible,
-    navbarStyle,
-  };
+  if (!session) {
+    redirect("/auth/login");
+  }
+  const allowedPermissions = await getEffectivePermissionKeys(session);
 
   return (
     <SidebarProviderWithWidth defaultOpenFromCookie={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} allowedPermissions={allowedPermissions} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
@@ -74,13 +74,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-2">
               <NotificationsDropdown notifications={notifications} />
               <div>{session?.userId && <HeaderLockButton />}</div>
+              <LanguageSwitcher className="hidden h-12 md:inline-flex" />
               <ThemeSwitcher />
-              <AccountSwitcher
-                activeUser={formattedActiveUser}
-                debtLimit={debtLimit}
-                overdueDays={overdueDays}
-                layoutPreferences={layoutPreferences}
-              />
+              <AccountSwitcher activeUser={formattedActiveUser} debtLimit={debtLimit} overdueDays={overdueDays} />
             </div>
           </div>
         </header>

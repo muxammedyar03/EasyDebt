@@ -219,7 +219,7 @@ export function LayoutSettingsClient({
             />
           </section>
 
-          <section className="space-y-2.5 sm:hidden">
+          <section className="space-y-2.5">
             <h2 className="text-sm font-semibold">{tCommon("language")}</h2>
             <SegmentGroup
               value={locale}

@@ -7,7 +7,7 @@
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../public"
+    "frontendDist": "frontend"
   },
   "app": {
     "withGlobalTauri": true,
@@ -32,9 +32,7 @@
   "bundle": {
     "active": true,
     "targets": ["msi", "nsis", "dmg", "app", "deb", "appimage"],
-    "icon": [
-      "../public/avatars/user.png"
-    ],
+    "icon": ["../public/avatars/user.png"],
     "category": "Finance",
     "shortDescription": "EasyDebt Offline-First Debt Management System",
     "longDescription": "EasyDebt Desktop — do'kon va korxonalar uchun offlayn ishlovchi hamda bulutli server bilan sinxronlanuvchi qarzlar va to'lovlar boshqaruv dasturi."

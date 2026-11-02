@@ -156,10 +156,7 @@ export function setPreferredThermalWidth(width: "80mm" | "58mm"): void {
   window.localStorage.setItem("easydebt_thermal_width", width);
 }
 
-export async function listenToTauriDesktopEvent(
-  eventName: string,
-  callback: () => void,
-): Promise<() => void> {
+export async function listenToTauriDesktopEvent(eventName: string, callback: () => void): Promise<() => void> {
   const tauri = getTauriGlobal();
   if (tauri?.event?.listen) {
     try {

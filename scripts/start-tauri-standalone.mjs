@@ -15,9 +15,7 @@ import os from "node:os";
 const PORT = process.env.PORT || "3000";
 const HOSTNAME = process.env.HOSTNAME || "127.0.0.1";
 
-const appDataDir =
-  process.env.EASYDEBT_DATA_DIR ||
-  path.join(os.homedir(), ".easydebt-desktop");
+const appDataDir = process.env.EASYDEBT_DATA_DIR || path.join(os.homedir(), ".easydebt-desktop");
 
 if (!fs.existsSync(appDataDir)) {
   fs.mkdirSync(appDataDir, { recursive: true });
@@ -25,6 +23,17 @@ if (!fs.existsSync(appDataDir)) {
 
 const localDbPath = path.join(appDataDir, "easydebt-desktop-db.json");
 const standaloneServerPath = path.join(process.cwd(), ".next", "standalone", "server.js");
+
+const standaloneDir = path.join(process.cwd(), ".next", "standalone");
+const standaloneStatic = path.join(standaloneDir, ".next", "static");
+const standalonePublic = path.join(standaloneDir, "public");
+
+if (fs.existsSync(path.join(process.cwd(), ".next", "static"))) {
+  fs.cpSync(path.join(process.cwd(), ".next", "static"), standaloneStatic, { recursive: true, force: true });
+}
+if (fs.existsSync(path.join(process.cwd(), "public"))) {
+  fs.cpSync(path.join(process.cwd(), "public"), standalonePublic, { recursive: true, force: true });
+}
 
 console.log(`[EasyDebt Desktop] Local DB path: ${localDbPath}`);
 console.log(`[EasyDebt Desktop] Starting Next.js standalone server on http://${HOSTNAME}:${PORT}`);
@@ -44,8 +53,6 @@ if (fs.existsSync(standaloneServerPath)) {
     process.exit(code ?? 0);
   });
 } else {
-  console.error(
-    `[EasyDebt Desktop] Standalone build not found at ${standaloneServerPath}. Run "npm run build" first.`,
-  );
+  console.error(`[EasyDebt Desktop] Standalone build not found at ${standaloneServerPath}. Run "npm run build" first.`);
   process.exit(1);
 }

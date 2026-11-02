@@ -19,7 +19,7 @@ export type SavedCompanyReceipt = {
 
 export function getCompanyReceiptAbsolutePath(relativePath: string): string {
   const normalized = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, "");
-  const absolute = path.join(process.cwd(), normalized);
+  const absolute = path.join(/*turbopackIgnore: true*/ process.cwd(), normalized);
   if (!absolute.startsWith(UPLOAD_DIR + path.sep)) {
     throw new Error("Noto'g'ri fayl yo'li");
   }

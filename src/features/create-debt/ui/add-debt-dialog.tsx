@@ -82,7 +82,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
 
       await invalidateHeaderNotifications(queryClient);
 
-      toast.success(translate("debtAddedSuccess"));
+      toast.success(translate("debt.debtAddedSuccess"));
       reset();
       setAmount("");
       setSelectedDate(undefined);
@@ -98,7 +98,7 @@ export function AddDebtDialog({ open, onOpenChange, debtorId, debtorName, onSucc
       });
     } catch (error) {
       console.error("Error adding debt:", error);
-      toast.error(getErrorMessage(error, translate("debtAddError")));
+      toast.error(getErrorMessage(error, translate("debt.debtAddError")));
     } finally {
       setIsLoading(false);
     }

@@ -89,9 +89,14 @@ export async function getSession(): Promise<JWTPayload | null> {
 
 export async function setAuthCookie(token: string) {
   const cookieStore = await cookies();
+  const isProductionHttps =
+    process.env.NODE_ENV === "production" &&
+    process.env.COOKIE_SECURE !== "false" &&
+    Boolean(process.env.NEXT_PUBLIC_APP_URL?.startsWith("https://") || process.env.VERCEL);
+
   cookieStore.set("auth-token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProductionHttps,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
