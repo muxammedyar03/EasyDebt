@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1080" width="100%" height="100%">
+  <defs>
+    <!-- Asosiy fon gradienti -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060a12" />
+      <stop offset="50%" stop-color="#0b1325" />
+      <stop offset="100%" stop-color="#050811" />
+    </linearGradient>
+
+    <!-- Logotipning yorqin ko'k-feruza gradientlari -->
+    <linearGradient id="cyanBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+
+    <linearGradient id="deepBlue" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+
+    <linearGradient id="ribbonLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#00f2fe" />
+    </linearGradient>
+
+    <!-- Shaffof (Glassmorphism) effekt uchun gradient -->
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02" />
+    </linearGradient>
+
+    <linearGradient id="glassBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.04" />
+    </linearGradient>
+
+    <!-- 1. FON SHAKLLARI UCHUN: Chegarasiz kuchli Blur (Pure Mesh Glow) -->
+    <filter id="pureBlur" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="110" />
+    </filter>
+
+    <!-- 2. LOGOTIP SHAKLLARI UCHUN: Yumshoq neon Blur (chegarasiz nurlanish) -->
+    <filter id="logoGlowBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="28" />
+    </filter>
+
+    <!-- 3. OQIM CHIZIQLARI UCHUN: O'rtacha Blur -->
+    <filter id="waveBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="16" />
+    </filter>
+
+    <!-- Kartochkalar uchun yumshoq soya -->
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="25" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+
+    <!-- Orqa fon uchun to'r (Grid) naqshi -->
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.025" />
+    </pattern>
+
+    <!-- Logotip shakli (Qayta ishlatish uchun shablon) -->
+    <g id="eLogoShapes" transform="translate(-140, -160) scale(1.15)">
+      <path d="M 90 125 C 30 95, 35 20, 120 15 C 165 12, 205 35, 225 65 L 185 95 C 170 70, 145 55, 115 60 C 75 65, 70 100, 115 115 Z" fill="url(#deepBlue)" />
+      <path d="M 75 95 C 85 40, 130 15, 175 25 C 205 32, 225 50, 235 65 L 195 95 C 185 80, 170 68, 150 65 C 115 60, 90 75, 75 95 Z" fill="url(#ribbonLight)" />
+      <path d="M 105 140 C 30 165, 25 265, 125 275 C 175 280, 215 255, 235 220 L 195 190 C 180 215, 155 230, 125 225 C 75 220, 75 170, 130 155 Z" fill="url(#deepBlue)" />
+      <path d="M 45 195 C 45 135, 105 110, 195 115 C 195 145, 175 160, 135 160 C 90 160, 65 185, 75 225 C 60 215, 48 205, 45 195 Z" fill="url(#cyanBlue)" />
+      <path d="M 85 215 C 100 260, 145 280, 195 265 C 215 258, 230 240, 240 225 L 200 195 C 190 210, 175 222, 155 225 C 120 230, 95 220, 85 215 Z" fill="url(#ribbonLight)" />
+    </g>
+  </defs>
+
+  <!-- Asosiy konteyner -->
+  <rect width="960" height="1080" rx="32" fill="url(#bgGrad)" />
+
+  <!-- CHEGARASIZ GLOW GRADIENT SHAKLLAR (Aurora / Mesh effekti) -->
+  <g filter="url(#pureBlur)">
+    <ellipse cx="730" cy="240" rx="260" ry="200" fill="#00f2fe" opacity="0.28" />
+    <ellipse cx="230" cy="820" rx="320" ry="260" fill="#2563eb" opacity="0.35" />
+    <circle cx="480" cy="540" r="220" fill="#0ea5e9" opacity="0.25" />
+    <path d="M 150 300 Q 480 150, 800 450 T 300 900 Z" fill="url(#cyanBlue)" opacity="0.18" />
+  </g>
+
+  <!-- To'r (Grid) naqshi glow ustidan tushadi -->
+  <rect width="960" height="1080" rx="32" fill="url(#grid)" />
+
+  <!-- Xiralashtirilgan (Blurred) oqim chiziqlari -->
+  <g filter="url(#waveBlur)" opacity="0.5">
+    <path d="M -50 750 C 250 650, 400 900, 700 750 C 850 675, 950 720, 1050 650" fill="none" stroke="url(#cyanBlue)" stroke-width="12" />
+    <path d="M -50 820 C 200 700, 450 950, 750 780 C 880 710, 950 760, 1050 700" fill="none" stroke="url(#deepBlue)" stroke-width="8" />
+  </g>
+
+  <!-- MARKAZIY QISM: "E" Logotipi (Glow + Blurred Aura bilan) -->
+  <g transform="translate(480, 540)">
+    <!-- Orqa fon halqasi -->
+    <circle cx="0" cy="0" r="220" fill="none" stroke="url(#glassBorder)" stroke-width="1" stroke-dasharray="6 6" opacity="0.6" />
+    <circle cx="0" cy="0" r="180" fill="url(#glass)" stroke="url(#glassBorder)" stroke-width="1.5" filter="url(#softShadow)" />
+
+    <!-- 1-QATLAM: Chegarasiz Blurred Glow Logotip (Orqa fonda neon nurlanish beradi) -->
+    <use href="#eLogoShapes" filter="url(#logoGlowBlur)" opacity="0.85" transform="scale(1.05)" />
+
+    <!-- 2-QATLAM: Asosiy 3D Logotip (Agar logotipning o'zi ham butunlay blurred bo'lishini xohlasangiz, pastdagi qatorga filter="url(#waveBlur)" qo'shishingiz mumkin) -->
+    <use href="#eLogoShapes" filter="url(#softShadow)" />
+  </g>
+
+  <!-- SUZIB YURUVCHI UI KARTOCHKALAR -->
+  <!-- 1-Kartochka: O'sish ko'rsatkichi (Yuqori o'ngda) -->
+  <g transform="translate(620, 230)" filter="url(#softShadow)">
+    <rect width="240" height="110" rx="20" fill="url(#glass)" stroke="url(#glassBorder)" stroke-width="1.5" />
+    <circle cx="40" cy="40" r="18" fill="#00f2fe" fill-opacity="0.15" />
+    <path d="M 33 45 L 40 35 L 47 45 M 40 35 L 40 48" fill="none" stroke="#00f2fe" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="72" y="38" font-family="&#39;Inter&#39;, sans-serif" font-size="13" fill="#94a3b8">Чистый баланс</text>
+    <text x="72" y="62" font-family="&#39;Inter&#39;, sans-serif" font-size="20" font-weight="700" fill="#ffffff">+84.5%</text>
+    <path d="M 30 85 Q 60 90, 90 78 T 150 72 T 210 55" fill="none" stroke="url(#ribbonLight)" stroke-width="3" stroke-linecap="round" />
+  </g>
+
+  <!-- 2-Kartochka: Tranzaksiya/Nazorat (Pastki chapda) -->
+  <g transform="translate(100, 720)" filter="url(#softShadow)">
+    <rect width="260" height="100" rx="20" fill="url(#glass)" stroke="url(#glassBorder)" stroke-width="1.5" />
+    <rect x="24" y="26" width="48" height="48" rx="12" fill="#2563eb" fill-opacity="0.25" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.4" />
+    <path d="M 40 50 L 46 56 L 58 44" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="88" y="45" font-family="&#39;Inter&#39;, sans-serif" font-size="15" font-weight="600" fill="#ffffff">Умный учет долгов</text>
+    <text x="88" y="68" font-family="&#39;Inter&#39;, sans-serif" font-size="13" fill="#94a3b8">Авто-синхронизация 24/7</text>
+  </g>
+
+  <!-- 3-Kartochka: Xavfsizlik belgisi (Pastki o'ngda) -->
+  <g transform="translate(650, 780)" filter="url(#softShadow)">
+    <rect width="210" height="74" rx="18" fill="url(#glass)" stroke="url(#glassBorder)" stroke-width="1.5" />
+    <circle cx="38" cy="37" r="14" fill="#0ea5e9" fill-opacity="0.2" />
+    <circle cx="38" cy="37" r="6" fill="#00f2fe" />
+    <text x="66" y="34" font-family="&#39;Inter&#39;, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Защита данных</text>
+    <text x="66" y="52" font-family="&#39;Inter&#39;, sans-serif" font-size="12" fill="#64748b">SSL / Cloud Backup</text>
+  </g>
+</svg>

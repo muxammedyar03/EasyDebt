@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { Command } from "lucide-react";
+import Image from "next/image";
 
 import { APP_CONFIG } from "@/config/app-config";
 
@@ -8,13 +8,23 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
   return (
     <main>
       <div className="grid h-dvh justify-center p-2 lg:grid-cols-2">
-        <div className="bg-primary relative order-2 hidden h-full rounded-3xl lg:flex">
-          <div className="text-primary-foreground absolute top-10 space-y-1 px-10">
-            <Command className="size-10" />
-            <h1 className="text-2xl font-medium">{APP_CONFIG.name}</h1>
+        <div
+          className="relative order-2 hidden h-full rounded-3xl bg-cover bg-center bg-no-repeat lg:flex"
+          style={{ backgroundImage: "url(/images/edebt.svg)" }}
+        >
+          <div className="text-foreground absolute top-10 space-y-1 px-10">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/images/edebt2.png"
+                className="size-9 rounded-xl"
+                alt={APP_CONFIG.name}
+                width={40}
+                height={40}
+              />
+              <h1 className="text-2xl font-medium">{APP_CONFIG.name}</h1>
+            </div>
             <p className="text-sm">Дебети. Учет. Управление.</p>
           </div>
-
           {/* <div className="absolute bottom-10 flex w-full justify-between px-10">
             <div className="text-primary-foreground flex-1 space-y-1">
               <h2 className="font-medium">Ready to launch?</h2>

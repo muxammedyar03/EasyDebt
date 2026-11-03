@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 
-import { Command } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import {
@@ -67,10 +67,20 @@ function AppSidebarInner({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+            <SidebarMenuButton
+              asChild
+              className="group-data-[collapsible=icon]:!p-0 data-[slot=sidebar-menu-button]:!p-1.5"
+            >
               <Link href="/dashboard/default">
-                <Command className="md:!h-6 md:!w-6" />
-                <span className="text-xl font-semibold">{APP_CONFIG.name}</span>
+                <Image
+                  src="/images/edebt2.png"
+                  className="size-9 shrink-0 rounded-xl object-cover group-data-[collapsible=icon]:size-8"
+                  alt={APP_CONFIG.name}
+                  loading="lazy"
+                  width={40}
+                  height={40}
+                />
+                <span className="text-xl font-semibold group-data-[collapsible=icon]:hidden">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
