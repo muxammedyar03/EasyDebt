@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { isTauriDesktop } from "@/lib/desktop/tauri-bridge";
 
-const APP_VERSION = "v2.0.4";
+const APP_VERSION = "v2.0.7";
 
 export function SidebarDesktopDownload() {
   const t = useTranslations("desktopDownload");
