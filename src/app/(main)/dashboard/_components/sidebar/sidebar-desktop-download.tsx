@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Download, Monitor, HardDrive, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { useTranslations } from "next-intl";
+import { Download, Monitor, HardDrive, Sparkles, CheckCircle2 } from "lucide-react";
 
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from "@/components/ui/sidebar";
 import {
@@ -16,7 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { isTauriDesktop } from "@/lib/desktop/tauri-bridge";
 
+const APP_VERSION = "v2.0.4";
+
 export function SidebarDesktopDownload() {
+  const t = useTranslations("desktopDownload");
   const { isMobile, state } = useSidebar();
   const [mounted, setMounted] = React.useState(false);
   const [inTauri, setInTauri] = React.useState(false);
@@ -40,107 +45,139 @@ export function SidebarDesktopDownload() {
           <DialogTrigger asChild>
             <SidebarMenuButton
               size="default"
-              tooltip="Desktop versiyasini yuklab olish"
-              className="bg-primary/5 hover:bg-primary/10 text-primary group border-primary/20 border font-medium transition-all"
+              tooltip={t("tooltip")}
+              className="bg-primary/5 hover:bg-primary/10 text-primary group border-primary/20 hover:border-primary/40 border font-medium transition-all"
             >
               <Download className="size-4 shrink-0 transition-transform group-hover:-translate-y-0.5" />
               {!isCollapsed && (
                 <div className="flex flex-1 items-center justify-between text-xs leading-none">
-                  <span className="font-semibold">Desktop ilova</span>
+                  <span className="font-semibold">{t("buttonLabel")}</span>
                   <Badge variant="outline" className="border-primary/30 text-primary h-4 px-1 text-[10px]">
-                    v2.0.3
+                    {APP_VERSION}
                   </Badge>
                 </div>
               )}
             </SidebarMenuButton>
           </DialogTrigger>
 
-          <DialogContent className="max-w-md sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Monitor className="text-primary size-5" />
-                <span>EasyDebt Desktop — Kompyuter Dasturi</span>
-              </DialogTitle>
-              <DialogDescription>
-                Windows va Ubuntu kompyuterlarida internet uzilganda ham uzluksiz, offlayn ishlash imkoniyati.
-              </DialogDescription>
+          <DialogContent className="max-w-md sm:max-w-xl">
+            <DialogHeader className="space-y-3 pb-1">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 border-primary/20 flex size-12 shrink-0 items-center justify-center rounded-2xl border p-1 shadow-inner">
+                  <Image
+                    src="/images/edebt2.png"
+                    alt="EasyDebt Logo"
+                    width={40}
+                    height={40}
+                    className="size-9 object-contain"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <DialogTitle className="text-base font-semibold sm:text-lg">{t("title")}</DialogTitle>
+                    <Badge variant="secondary" className="font-mono text-[10px]">
+                      {APP_VERSION}
+                    </Badge>
+                  </div>
+                  <DialogDescription className="mt-1 text-xs sm:text-sm">{t("description")}</DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
 
-            <div className="space-y-3 py-2">
-              <div className="bg-muted/40 space-y-1.5 rounded-lg border p-3 text-xs">
+            <div className="space-y-3 pt-1">
+              {/* Features highlight box */}
+              <div className="bg-muted/40 border-border/80 space-y-2 rounded-xl border p-3.5 text-xs">
                 <div className="text-foreground flex items-center gap-1.5 font-medium">
-                  <Sparkles className="size-3.5 text-amber-500" />
-                  <span>Desktop versiyaning afzalliklari:</span>
+                  <Sparkles className="size-4 text-amber-500" />
+                  <span>{t("featuresTitle")}</span>
                 </div>
-                <ul className="text-muted-foreground list-inside list-disc space-y-0.5 pl-1">
-                  <li>Internet yo&apos;qligida ham qarz va to&apos;lovlarni kiritish (lokal SQLite/JSON)</li>
-                  <li>Internet paydo bo&apos;lganda avtomatik bulutga sinxronlash</li>
-                  <li>
-                    POS termal chek printerlariga (80mm / 58mm) to&apos;g&apos;ridan-to&apos;g&apos;ri tezkor chop etish
-                  </li>
-                  <li>Avtomatik tizim yangilanishlari (Auto-update)</li>
-                </ul>
+                <div className="grid gap-1.5 sm:grid-cols-2">
+                  <div className="text-muted-foreground flex items-start gap-1.5">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                    <span>{t("feature1")}</span>
+                  </div>
+                  <div className="text-muted-foreground flex items-start gap-1.5">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                    <span>{t("feature2")}</span>
+                  </div>
+                  <div className="text-muted-foreground flex items-start gap-1.5">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                    <span>{t("feature3")}</span>
+                  </div>
+                  <div className="text-muted-foreground flex items-start gap-1.5">
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                    <span>{t("feature4")}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                {/* Windows */}
-                <div className="hover:border-primary/50 flex flex-col justify-between rounded-lg border p-3 transition-colors">
+              {/* Operating System Cards */}
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {/* Windows Card */}
+                <div className="hover:border-primary/50 group relative flex flex-col justify-between rounded-xl border p-3.5 transition-all hover:shadow-sm">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">Windows</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        Tavsiya
+                      <div className="flex items-center gap-2">
+                        <Monitor className="text-primary size-4" />
+                        <span className="text-sm font-semibold">{t("windowsTitle")}</span>
+                      </div>
+                      <Badge className="border-sky-500/30 bg-sky-500/10 text-[10px] text-sky-500 hover:bg-sky-500/20">
+                        {t("windowsBadge")}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      Windows 10, 11 (64-bit). Standart o&apos;rnatuvchi fayl (.exe).
-                    </p>
+                    <p className="text-muted-foreground mt-2 text-xs leading-relaxed">{t("windowsDesc")}</p>
                   </div>
-                  <Button className="mt-3 w-full gap-1.5" size="sm" asChild>
+                  <Button className="mt-3.5 w-full gap-2 shadow-xs" size="sm" asChild>
                     <a href="/api/desktop/download?platform=windows" target="_blank" rel="noopener noreferrer">
-                      <Download className="size-3.5" />
-                      Windows (.exe)
+                      <Download className="size-3.5 transition-transform group-hover:-translate-y-0.5" />
+                      {t("windowsBtn")}
                     </a>
                   </Button>
                 </div>
 
-                {/* Ubuntu / Debian */}
-                <div className="hover:border-primary/50 flex flex-col justify-between rounded-lg border p-3 transition-colors">
+                {/* Ubuntu / Debian Card */}
+                <div className="hover:border-primary/50 group relative flex flex-col justify-between rounded-xl border p-3.5 transition-all hover:shadow-sm">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">Ubuntu / Debian</span>
+                      <div className="flex items-center gap-2">
+                        <HardDrive className="text-primary size-4" />
+                        <span className="text-sm font-semibold">{t("ubuntuTitle")}</span>
+                      </div>
                       <Badge variant="outline" className="text-[10px]">
-                        Linux
+                        {t("ubuntuBadge")}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      Ubuntu 20.04+, Debian, Mint (.deb to&apos;plami).
-                    </p>
+                    <p className="text-muted-foreground mt-2 text-xs leading-relaxed">{t("ubuntuDesc")}</p>
                   </div>
-                  <Button variant="outline" className="mt-3 w-full gap-1.5" size="sm" asChild>
+                  <Button variant="outline" className="mt-3.5 w-full gap-2 shadow-xs" size="sm" asChild>
                     <a href="/api/desktop/download?platform=deb" target="_blank" rel="noopener noreferrer">
-                      <Download className="size-3.5" />
-                      Ubuntu (.deb)
+                      <Download className="size-3.5 transition-transform group-hover:-translate-y-0.5" />
+                      {t("ubuntuBtn")}
                     </a>
                   </Button>
                 </div>
               </div>
 
               {/* Linux AppImage Universal */}
-              <div className="flex items-center justify-between rounded-lg border p-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <HardDrive className="text-muted-foreground size-4" />
+              <div className="hover:border-primary/40 flex items-center justify-between rounded-xl border p-3 text-xs transition-colors">
+                <div className="flex items-center gap-2.5">
+                  <div className="bg-muted flex size-8 items-center justify-center rounded-lg">
+                    <HardDrive className="text-muted-foreground size-4" />
+                  </div>
                   <div>
-                    <span className="text-foreground font-medium">Linux Universal (Portativ)</span>
-                    <p className="text-muted-foreground text-[11px]">
-                      O&apos;rnatishsiz ishga tushuvchi .AppImage fayli
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground font-medium">{t("appimageTitle")}</span>
+                      <Badge variant="secondary" className="px-1 py-0 text-[9px] font-normal">
+                        {t("appimageBadge")}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground text-[11px]">{t("appimageDesc")}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" asChild className="h-8 gap-1 text-xs">
+                <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
                   <a href="/api/desktop/download?platform=appimage" target="_blank" rel="noopener noreferrer">
                     <Download className="size-3" />
-                    .AppImage
+                    {t("appimageBtn")}
                   </a>
                 </Button>
               </div>

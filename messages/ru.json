@@ -824,5 +824,28 @@
     "pdfPayment": "Платёж",
     "pdfFile": "Файл",
     "pdfGenerated": "Создано"
+  },
+  "desktopDownload": {
+    "buttonLabel": "Десктоп приложение",
+    "tooltip": "Скачать версию для ПК",
+    "title": "EasyDebt Desktop — Программа для ПК",
+    "description": "Бесперебойная офлайн-работа на Windows и Linux даже при отсутствии интернета.",
+    "featuresTitle": "Преимущества десктопной версии",
+    "feature1": "Учет долгов и платежей даже без интернета (локальная память)",
+    "feature2": "Автоматическая синхронизация с облаком при появлении сети",
+    "feature3": "Прямая печать чеков на POS термопринтерах (80мм / 58мм)",
+    "feature4": "Автоматические обновления системы в один клик (Auto-update)",
+    "windowsTitle": "Windows",
+    "windowsBadge": "Рекомендуется",
+    "windowsDesc": "Windows 10, 11 (64-bit). Стандартный установщик (.exe).",
+    "windowsBtn": "Windows (.exe)",
+    "ubuntuTitle": "Ubuntu / Debian",
+    "ubuntuBadge": "Linux",
+    "ubuntuDesc": "Ubuntu 20.04+, Debian, Mint (.deb пакет).",
+    "ubuntuBtn": "Ubuntu (.deb)",
+    "appimageTitle": "Linux Universal (Портативный)",
+    "appimageBadge": "Без установки",
+    "appimageDesc": "Запуск напрямую без установки (.AppImage файл).",
+    "appimageBtn": ".AppImage"
   }
 }

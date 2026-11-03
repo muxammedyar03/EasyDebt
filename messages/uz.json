@@ -824,5 +824,28 @@
     "pdfPayment": "To'lov",
     "pdfFile": "Fayl",
     "pdfGenerated": "Yaratilgan"
+  },
+  "desktopDownload": {
+    "buttonLabel": "Desktop ilova",
+    "tooltip": "Desktop versiyasini yuklab olish",
+    "title": "EasyDebt Desktop — Kompyuter Dasturi",
+    "description": "Windows va Ubuntu kompyuterlarida internet uzilganda ham uzluksiz, offlayn ishlash imkoniyati.",
+    "featuresTitle": "Desktop versiyaning afzalliklari",
+    "feature1": "Internet yo'qligida ham qarz va to'lovlarni kiritish (lokal xotira)",
+    "feature2": "Internet paydo bo'lganda avtomatik bulutga sinxronlash",
+    "feature3": "POS termal chek printerlariga (80mm / 58mm) to'g'ridan-to'g'ri chop etish",
+    "feature4": "Avtomatik tizim yangilanishlari (Auto-update)",
+    "windowsTitle": "Windows",
+    "windowsBadge": "Tavsiya",
+    "windowsDesc": "Windows 10, 11 (64-bit). Standart o'rnatuvchi fayl (.exe).",
+    "windowsBtn": "Windows (.exe)",
+    "ubuntuTitle": "Ubuntu / Debian",
+    "ubuntuBadge": "Linux",
+    "ubuntuDesc": "Ubuntu 20.04+, Debian, Mint (.deb to'plami).",
+    "ubuntuBtn": "Ubuntu (.deb)",
+    "appimageTitle": "Linux Universal (Portativ)",
+    "appimageBadge": "O'rnatishsiz",
+    "appimageDesc": "O'rnatishsiz to'g'ridan-to'g'ri ishga tushuvchi .AppImage fayli.",
+    "appimageBtn": ".AppImage"
   }
 }
