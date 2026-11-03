@@ -48,7 +48,7 @@ export function SidebarDesktopDownload() {
                 <div className="flex flex-1 items-center justify-between text-xs leading-none">
                   <span className="font-semibold">Desktop ilova</span>
                   <Badge variant="outline" className="border-primary/30 text-primary h-4 px-1 text-[10px]">
-                    v2.0
+                    v2.0.3
                   </Badge>
                 </div>
               )}
