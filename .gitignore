@@ -46,6 +46,12 @@ push-notifications.md
 # vercel
 .vercel
 
+# desktop installer artifacts
+*.deb
+*.AppImage
+*.exe
+*.msi
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

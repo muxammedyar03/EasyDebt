@@ -6,6 +6,7 @@ import { Cloud, CloudOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { flushOfflineQueue, getOfflineQueueCount } from "@/lib/offline/client-offline-sync";
 import {
   checkDesktopUpdate,
   downloadAndInstallDesktopUpdate,
@@ -22,6 +23,7 @@ export function DesktopSyncBar() {
   const [runtimeInfo, setRuntimeInfo] = React.useState<DesktopRuntimeInfo | null>(null);
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [browserOnline, setBrowserOnline] = React.useState(true);
+  const [localPendingCount, setLocalPendingCount] = React.useState(0);
 
   const handleInstallUpdate = React.useCallback(async () => {
     try {
@@ -86,6 +88,9 @@ export function DesktopSyncBar() {
     async (silent = false) => {
       setIsSyncing(true);
       try {
+        const { synced: offlineSynced } = await flushOfflineQueue();
+        setLocalPendingCount(getOfflineQueueCount());
+
         const res = await fetch("/api/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -96,6 +101,11 @@ export function DesktopSyncBar() {
           setStatus(data.status);
         }
         if (!silent) {
+          if (offlineSynced > 0) {
+            toast.success("Offlayn yozuvlar sinxronlandi", {
+              description: `${offlineSynced} ta lokal amal serverga saqlandi.`,
+            });
+          }
           if (data.success) {
             toast.success("Sinxronizatsiya yakunlandi", {
               description: data.message,
@@ -109,7 +119,7 @@ export function DesktopSyncBar() {
             });
           }
         }
-        if (data.pushedCount > 0 || data.pulledCount > 0) {
+        if (data.pushedCount > 0 || data.pulledCount > 0 || offlineSynced > 0) {
           router.refresh();
         }
       } catch (err) {
@@ -127,6 +137,7 @@ export function DesktopSyncBar() {
 
   React.useEffect(() => {
     setBrowserOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
+    setLocalPendingCount(getOfflineQueueCount());
     void fetchStatus();
     void getDesktopRuntimeInfo().then((info) => {
       setRuntimeInfo(info);
@@ -144,9 +155,14 @@ export function DesktopSyncBar() {
       setBrowserOnline(false);
       toast.warning("Internet uzildi — EasyDebt Offlayn (lokal xotira) rejimida ishlamoqda");
     };
+    const onQueueChanged = (e: Event) => {
+      const custom = e as CustomEvent<{ count: number }>;
+      setLocalPendingCount(custom.detail?.count ?? getOfflineQueueCount());
+    };
 
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    window.addEventListener("easydebt:offline-queue-changed", onQueueChanged);
 
     let unlistenSync: (() => void) | undefined;
     void listenToTauriDesktopEvent("desktop://trigger-sync", () => {
@@ -157,18 +173,20 @@ export function DesktopSyncBar() {
 
     const interval = window.setInterval(() => {
       void fetchStatus();
+      setLocalPendingCount(getOfflineQueueCount());
     }, 15000);
 
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      window.removeEventListener("easydebt:offline-queue-changed", onQueueChanged);
       unlistenSync?.();
       window.clearInterval(interval);
     };
   }, [fetchStatus, handleCheckUpdate, handleSyncNow]);
 
   const isOffline = !browserOnline || Boolean(status?.offlineModeForced);
-  const pendingCount = status?.pendingCount ?? 0;
+  const pendingCount = (status?.pendingCount ?? 0) + localPendingCount;
   const statusLabel =
     pendingCount > 0
       ? `${isOffline ? "Offlayn, lokal" : "Onlayn, sinxron"}, ${pendingCount} navbatda`

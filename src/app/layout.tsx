@@ -9,6 +9,7 @@ import { APP_CONFIG } from "@/config/app-config";
 import { getPreference } from "@/server/server-actions";
 import { QueryProvider } from "@/app/providers/query-provider";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { THEME_MODE_VALUES, THEME_PRESET_VALUES, type ThemePreset, type ThemeMode } from "@/types/preferences/theme";
 
 import "./globals.css";
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     >
       <body className={`min-h-screen antialiased ${inter.className}`} suppressHydrationWarning>
         <QueryProvider>
+          <ServiceWorkerRegister />
           <NextIntlClientProvider locale={locale} messages={messages}>
             <PreferencesStoreProvider themeMode={themeMode} themePreset={themePreset}>
               {children}
