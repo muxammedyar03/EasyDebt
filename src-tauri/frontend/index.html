@@ -75,14 +75,14 @@
     <button class="btn-retry" id="retryBtn" onclick="retryConnection()">Qayta urinish</button>
   </div>
   <script>
-    const TARGET_URL = "http://127.0.0.1:3000/dashboard/default";
+    const TARGET_URL = "https://easydebt.uz/dashboard/default";
     let attempts = 0;
-    const maxAttempts = 60;
+    const maxAttempts = 30;
 
     async function checkServer() {
       attempts++;
       try {
-        await fetch("http://127.0.0.1:3000/api/health", { method: "GET", mode: "no-cors", cache: "no-store" });
+        await fetch("https://easydebt.uz/api/health", { method: "GET", mode: "no-cors", cache: "no-store" });
         document.getElementById("msg").innerText = "Ulandi! Oynaga o'tilmoqda...";
         window.location.replace(TARGET_URL);
         return;
@@ -90,7 +90,7 @@
 
       if (attempts >= maxAttempts) {
         document.getElementById("spinner").style.display = "none";
-        document.getElementById("msg").innerText = "Lokal server javob bermadi. Server ishlayotganini tekshiring.";
+        document.getElementById("msg").innerText = "Serverga ulanib bo'lmadi. Internet aloqasini tekshiring.";
         document.getElementById("retryBtn").style.display = "inline-block";
         return;
       }

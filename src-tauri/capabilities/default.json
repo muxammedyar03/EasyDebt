@@ -3,6 +3,14 @@
   "identifier": "default",
   "description": "Default capabilities for EasyDebt Desktop main window, system tray, notifications, and thermal receipt printing",
   "windows": ["main", "receipt-print"],
+  "remote": {
+    "urls": [
+      "https://easydebt.uz/*",
+      "https://*.easydebt.uz/*",
+      "http://localhost:*/*",
+      "http://127.0.0.1:*/*"
+    ]
+  },
   "permissions": [
     "core:default",
     "core:window:allow-minimize",
