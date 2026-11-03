@@ -22,6 +22,7 @@
 .DS_Store
 *.pem
 *.sh
+!scripts/deploy/*.sh
 
 # debug
 npm-debug.log*

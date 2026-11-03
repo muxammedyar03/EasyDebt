@@ -210,6 +210,9 @@ jobs:
             echo "📝 Migration logs:"
             docker compose -f docker-compose.prod.yml logs --tail=50 migrate 2>/dev/null || true
 
+            echo "🧹 Cleaning up dangling/untagged Docker images..."
+            docker image prune -f
+
             echo "✅ Deployment complete!"
 
             # Keep previous images for rollback; never prune other projects globally.
