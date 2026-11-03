@@ -16,7 +16,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
             <div className="flex items-center gap-2">
               <Image
                 src="/images/edebt2.png"
-                className="size-9 rounded-xl"
+                className="size-9 object-contain"
                 alt={APP_CONFIG.name}
                 width={40}
                 height={40}

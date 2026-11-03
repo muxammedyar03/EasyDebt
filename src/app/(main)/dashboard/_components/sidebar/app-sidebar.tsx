@@ -74,7 +74,7 @@ function AppSidebarInner({
               <Link href="/dashboard/default">
                 <Image
                   src="/images/edebt2.png"
-                  className="size-9 shrink-0 rounded-xl object-cover group-data-[collapsible=icon]:size-8"
+                  className="size-9 shrink-0 object-contain group-data-[collapsible=icon]:size-8"
                   alt={APP_CONFIG.name}
                   loading="lazy"
                   width={40}
