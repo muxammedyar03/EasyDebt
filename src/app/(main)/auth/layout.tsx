@@ -12,12 +12,13 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
           className="relative order-2 hidden h-full rounded-3xl bg-cover bg-center bg-no-repeat lg:flex"
           style={{ backgroundImage: "url(/images/edebt.svg)" }}
         >
-          <div className="text-foreground absolute top-10 space-y-1 px-10">
+          <div className="absolute top-10 space-y-1 px-10 text-white">
             <div className="flex items-center gap-2">
               <Image
                 src="/images/edebt2.png"
                 className="size-9 object-contain"
                 alt={APP_CONFIG.name}
+                loading="lazy"
                 width={40}
                 height={40}
               />
