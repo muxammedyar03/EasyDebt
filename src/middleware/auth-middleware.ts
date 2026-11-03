@@ -22,10 +22,22 @@ export async function authMiddleware(req: NextRequest) {
       isAuthenticated = true;
     } catch (error) {
       console.error("Invalid token:", error);
+      if (pathname === "/auth/login") {
+        const response = NextResponse.next();
+        clearSessionCookies(response);
+        return response;
+      }
       const response = NextResponse.redirect(new URL("/auth/login", req.url));
       clearSessionCookies(response);
       return response;
     }
+  }
+
+  // Clear stale cookies when redirected with reason (e.g. session_expired)
+  if (pathname === "/auth/login" && req.nextUrl.searchParams.has("reason")) {
+    const response = NextResponse.next();
+    clearSessionCookies(response);
+    return response;
   }
 
   // Protect dashboard routes
@@ -33,11 +45,8 @@ export async function authMiddleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  // Redirect authenticated users away from login/register
-  if (
-    isAuthenticated &&
-    (pathname === "/auth/login" || pathname === "/auth/v2/register" || pathname.startsWith("/auth/v2"))
-  ) {
+  // Redirect authenticated users away from register
+  if (isAuthenticated && (pathname === "/auth/v2/register" || pathname.startsWith("/auth/v2"))) {
     return NextResponse.redirect(new URL("/dashboard/default", req.url));
   }
 

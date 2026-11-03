@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 
 import { APP_CONFIG } from "@/config/app-config";
 import { isAppLocale, LOCALE_COOKIE, type AppLocale } from "@/i18n/config";
+import { getSession } from "@/lib/auth";
 
 import { LoginForm } from "../_components/login-form";
 import { LoginLocaleSwitch } from "../_components/login-locale-switch";
@@ -23,6 +25,11 @@ const copy = {
 } as const;
 
 export default async function LoginV2() {
+  const session = await getSession();
+  if (session) {
+    redirect("/dashboard/default");
+  }
+
   const store = await cookies();
   const cookieLocale = store.get(LOCALE_COOKIE)?.value;
   const locale: AppLocale = isAppLocale(cookieLocale) ? cookieLocale : "ru";

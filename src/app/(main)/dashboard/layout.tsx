@@ -44,7 +44,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
   const { session, debtLimit, overdueDays, activeUser: formattedActiveUser, notifications } = layoutData;
   if (!session) {
-    redirect("/auth/login");
+    redirect("/auth/login?reason=session_expired");
   }
   const allowedPermissions = await getEffectivePermissionKeys(session);
 
