@@ -71,6 +71,7 @@ export function DesktopSyncBar() {
   );
 
   const fetchStatus = React.useCallback(async () => {
+    if (typeof window !== "undefined" && !navigator.onLine) return;
     try {
       const res = await fetch("/api/sync", { cache: "no-store" });
       if (!res.ok) return;

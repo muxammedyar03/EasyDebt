@@ -1,20 +1,21 @@
 /**
- * EasyDebt Service Worker
+ * EasyDebt Service Worker (High-Performance Offline & Push Engine)
  *
  * Handles:
  * - Push notifications & notification click routing
- * - Offline-First caching for static assets, Next.js chunks, fonts, and images
- * - Network-First caching for HTML pages and Next.js RSC payloads (avoids "Yuklanmoqda..." hanging when offline)
- * - Safe offline fallbacks
+ * - Fast Cache-First caching for static assets, Next.js chunks, fonts, and images (0ms local return)
+ * - Instant offline fallback when navigator.onLine === false (zero delay)
+ * - Network-First with quick fallback for dynamic pages and RSC payloads
  */
 
-const CACHE_VERSION = "easydebt-v2.1";
+const CACHE_VERSION = "easydebt-v2.2";
 const CACHE_STATIC = `easydebt-static-${CACHE_VERSION}`;
 const CACHE_PAGES = `easydebt-pages-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   "/favicon.ico",
   "/images/edebt2.png",
+  "/images/easydebt.png",
   "/dashboard/default",
 ];
 
@@ -49,13 +50,13 @@ const OFFLINE_PAGE_HTML = `<!DOCTYPE html>
   <div class="card">
     <div class="icon">📡</div>
     <h1>Internet aloqasi yo'q</h1>
-    <p>EasyDebt offlayn rejimda. Avval ochilgan sahifalar keshdan ishlaydi. Internet tiklangach barcha ma'lumotlar avtomatik yangilanadi.</p>
+    <p>EasyDebt offlayn rejimda ishlamoqda. Keshdagi ma'lumotlar saqlangan. Internet ulanganda avtomatik sinxronlanadi.</p>
     <button onclick="window.location.reload()">Qayta urinish</button>
   </div>
 </body>
 </html>`;
 
-// Install event
+// Install event - Precache key resources
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -67,7 +68,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate event - clean up obsolete caches
+// Activate event - Clean old caches and claim clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -82,13 +83,13 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Helper: fetch with network timeout
-function fetchWithTimeout(request, timeoutMs = 2800) {
+// Quick timeout helper (1200ms)
+function fetchWithTimeout(request, timeoutMs = 1200) {
   return new Promise((resolve, reject) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-      reject(new Error("Network timeout"));
+      reject(new Error("Timeout"));
     }, timeoutMs);
 
     fetch(request, { signal: controller.signal })
@@ -107,7 +108,7 @@ function fetchWithTimeout(request, timeoutMs = 2800) {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // Ignore non-GET requests
+  // Only handle GET requests
   if (request.method !== "GET") {
     return;
   }
@@ -119,8 +120,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 1. Static Assets (Cache-First / Stale-While-Revalidate)
-  const isStaticAsset =
+  // 1. Static Assets (Cache-First: return in 0ms without hitting network)
+  const isStatic =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/images/") ||
     url.pathname.startsWith("/avatars/") ||
@@ -132,77 +133,89 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".css") ||
     url.pathname.endsWith(".js");
 
-  if (isStaticAsset) {
+  if (isStatic) {
     event.respondWith(
       caches.open(CACHE_STATIC).then(async (cache) => {
         const cached = await cache.match(request);
-        const fetchPromise = fetch(request)
-          .then((networkRes) => {
-            if (networkRes && networkRes.status === 200) {
-              cache.put(request, networkRes.clone());
-            }
-            return networkRes;
-          })
-          .catch(() => null);
-
-        return cached || (await fetchPromise) || Response.error();
+        if (cached) {
+          return cached;
+        }
+        // If not cached, fetch from network and store in cache
+        try {
+          const res = await fetch(request);
+          if (res && res.status === 200) {
+            cache.put(request, res.clone());
+          }
+          return res;
+        } catch {
+          return Response.error();
+        }
       }),
     );
     return;
   }
 
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+
   // 2. Next.js RSC Data Requests (_rsc query param or RSC header)
-  const isRscRequest = url.searchParams.has("_rsc") || request.headers.get("RSC") === "1";
-  if (isRscRequest) {
+  const isRsc = url.searchParams.has("_rsc") || request.headers.get("RSC") === "1";
+  if (isRsc) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_PAGES);
+
+        // If explicitly offline, immediately return cached response (0ms)
+        if (isOffline) {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          return new Response("", { status: 200, headers: { "Content-Type": "text/x-component" } });
+        }
+
         try {
-          const networkRes = await fetchWithTimeout(request, 2200);
+          const networkRes = await fetchWithTimeout(request, 1000);
           if (networkRes && networkRes.status === 200) {
             cache.put(request, networkRes.clone());
           }
           return networkRes;
         } catch {
-          // If offline, serve previously cached RSC response to prevent "Yuklanmoqda..." spinner loop
           const cached = await cache.match(request);
-          if (cached) {
-            return cached;
-          }
-          // Return empty 200 payload so Next.js hydration doesn't hang
-          return new Response("", {
-            status: 200,
-            headers: { "Content-Type": "text/x-component" },
-          });
+          if (cached) return cached;
+          return new Response("", { status: 200, headers: { "Content-Type": "text/x-component" } });
         }
       })(),
     );
     return;
   }
 
-  // 3. Navigation Requests (HTML Pages: /dashboard, /dashboard/debtors, etc.)
+  // 3. Navigation Requests (HTML Pages: /dashboard/default, /dashboard/debtors, etc.)
   if (request.mode === "navigate") {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_PAGES);
+
+        // If explicitly offline, serve cached page immediately without waiting
+        if (isOffline) {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          const dashboardFallback = await cache.match("/dashboard/default");
+          if (dashboardFallback) return dashboardFallback;
+          return new Response(OFFLINE_PAGE_HTML, {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+
         try {
-          const networkRes = await fetchWithTimeout(request, 2500);
+          const networkRes = await fetchWithTimeout(request, 1200);
           if (networkRes && networkRes.status === 200) {
             cache.put(request, networkRes.clone());
           }
           return networkRes;
         } catch {
-          // Offline fallback: serve cached page
           const cached = await cache.match(request);
-          if (cached) {
-            return cached;
-          }
-          // Try dashboard default fallback
+          if (cached) return cached;
           const dashboardFallback = await cache.match("/dashboard/default");
-          if (dashboardFallback) {
-            return dashboardFallback;
-          }
-          // Friendly offline HTML
+          if (dashboardFallback) return dashboardFallback;
           return new Response(OFFLINE_PAGE_HTML, {
             status: 200,
             headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -218,18 +231,26 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_PAGES);
+
+        if (isOffline) {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          return new Response(JSON.stringify({ offline: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
         try {
-          const networkRes = await fetchWithTimeout(request, 2500);
+          const networkRes = await fetchWithTimeout(request, 1200);
           if (networkRes && networkRes.status === 200) {
             cache.put(request, networkRes.clone());
           }
           return networkRes;
         } catch {
           const cached = await cache.match(request);
-          if (cached) {
-            return cached;
-          }
-          return new Response(JSON.stringify({ offline: true, error: "Offline mode" }), {
+          if (cached) return cached;
+          return new Response(JSON.stringify({ offline: true }), {
             status: 200,
             headers: { "Content-Type": "application/json" },
           });

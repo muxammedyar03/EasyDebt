@@ -65,15 +65,37 @@ export function DataTable({ data: initialData, debtLimit }: DataTableContainerPr
 
   const fetchDebtors = React.useCallback(
     async (searchQuery?: string) => {
-      const url = searchQuery?.trim()
-        ? `/api/debtors?search=${encodeURIComponent(searchQuery.trim())}`
-        : "/api/debtors";
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch debtors");
-      const json = await response.json();
-      return parseDebtorsFromApi(json, debtLimit);
+      const q = searchQuery?.trim().toLowerCase();
+      if (!q) return initialData;
+
+      const filterLocally = () => {
+        const source = data.length ? data : initialData;
+        return source.filter((d) => {
+          const nameMatch =
+            d.fullName?.toLowerCase().includes(q) ||
+            d.firstName?.toLowerCase().includes(q) ||
+            d.lastName?.toLowerCase().includes(q);
+          const phoneMatch = d.phoneNumber?.toLowerCase().includes(q);
+          const addressMatch = d.address?.toLowerCase().includes(q);
+          return Boolean(nameMatch || phoneMatch || addressMatch);
+        });
+      };
+
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        return filterLocally();
+      }
+
+      try {
+        const url = `/api/debtors?search=${encodeURIComponent(q)}`;
+        const response = await fetch(url);
+        if (!response.ok) return filterLocally();
+        const json = await response.json();
+        return parseDebtorsFromApi(json, debtLimit);
+      } catch {
+        return filterLocally();
+      }
     },
-    [debtLimit],
+    [debtLimit, data, initialData],
   );
 
   const refreshDebtors = React.useCallback(async () => {
