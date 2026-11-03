@@ -78,7 +78,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'EasyDebt Desktop v__VERSION__'
-          releaseBody: 'EasyDebt Desktop rasmiy yangilanishi va o\'rnatuvchi paketlari (Windows & Ubuntu).'
+          releaseBody: "EasyDebt Desktop rasmiy yangilanishi va o'rnatuvchi paketlari (Windows & Ubuntu)."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
