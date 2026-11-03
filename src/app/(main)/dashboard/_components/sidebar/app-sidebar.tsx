@@ -19,6 +19,7 @@ import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
+import { SidebarDesktopDownload } from "./sidebar-desktop-download";
 
 // const data = {
 //   navSecondary: [
@@ -81,6 +82,7 @@ function AppSidebarInner({
         <NavSecondar items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
+        <SidebarDesktopDownload />
         <NavUser />
       </SidebarFooter>
     </Sidebar>

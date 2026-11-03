@@ -13,12 +13,11 @@ import {
   Upload,
   Monitor,
   CheckCircle2,
-  AlertTriangle,
   Trash2,
   RotateCcw,
-  Pin,
   Maximize2,
   Minimize2,
+  ArrowUpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,7 +35,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  checkDesktopUpdate,
   controlDesktopWindow,
+  downloadAndInstallDesktopUpdate,
   getDesktopRuntimeInfo,
   getPreferredThermalWidth,
   listenToTauriDesktopEvent,
@@ -45,6 +46,7 @@ import {
   setDesktopMinimizeToTray,
   setPreferredThermalWidth,
   type DesktopRuntimeInfo,
+  type DesktopUpdateResult,
 } from "@/lib/desktop/tauri-bridge";
 import { printReceipt } from "@/features/receipt-printer/lib/print-receipt";
 import type { SyncStatusReport } from "@/lib/sync/sync-engine";
@@ -60,6 +62,66 @@ export function DesktopSyncBar() {
   const [alwaysOnTop, setAlwaysOnTop] = React.useState(false);
   const [remoteUrlInput, setRemoteUrlInput] = React.useState("https://easydebt.uz");
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const [updateInfo, setUpdateInfo] = React.useState<DesktopUpdateResult | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = React.useState(false);
+  const [isInstallingUpdate, setIsInstallingUpdate] = React.useState(false);
+  const [updateProgress, setUpdateProgress] = React.useState<number | null>(null);
+
+  const handleInstallUpdate = React.useCallback(async () => {
+    setIsInstallingUpdate(true);
+    setUpdateProgress(0);
+    try {
+      const res = await downloadAndInstallDesktopUpdate((pct) => {
+        setUpdateProgress(pct);
+      });
+      if (res.success) {
+        toast.success("Yangilanish o'rnatildi!", {
+          description: "Yangi versiya kuchga kirishi uchun dasturni qayta ishga tushiring.",
+        });
+      } else {
+        toast.error("Yangilanishni o'rnatib bo'lmadi", {
+          description: res.error,
+        });
+      }
+    } catch (err) {
+      toast.error("Yangilashda xatolik", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsInstallingUpdate(false);
+    }
+  }, []);
+
+  const handleCheckUpdate = React.useCallback(
+    async (silent = false) => {
+      setIsCheckingUpdate(true);
+      try {
+        const res = await checkDesktopUpdate();
+        setUpdateInfo(res);
+        if (res.available) {
+          toast.info(`Yangi versiya mavjud: v${res.version}`, {
+            description: res.body || "Desktop dasturini yangilash mumkin",
+            action: {
+              label: "O'rnatish",
+              onClick: () => void handleInstallUpdate(),
+            },
+          });
+        } else if (!silent) {
+          toast.success("Sizda eng so'nggi versiya o'rnatilgan", {
+            description: `Joriy versiya: v${runtimeInfo?.app_version ?? "2.0.0"}`,
+          });
+        }
+      } catch {
+        if (!silent) {
+          toast.error("Yangilanishlarni tekshirishda xatolik yuz berdi");
+        }
+      } finally {
+        setIsCheckingUpdate(false);
+      }
+    },
+    [handleInstallUpdate, runtimeInfo?.app_version],
+  );
 
   const fetchStatus = React.useCallback(async () => {
     try {
@@ -128,6 +190,9 @@ export function DesktopSyncBar() {
     void getDesktopRuntimeInfo().then((info) => {
       setRuntimeInfo(info);
       setAlwaysOnTop(info.always_on_top);
+      if (info.is_tauri) {
+        void handleCheckUpdate(true);
+      }
     });
 
     const onOnline = () => {
@@ -160,7 +225,7 @@ export function DesktopSyncBar() {
       unlistenSync?.();
       window.clearInterval(interval);
     };
-  }, [fetchStatus, handleSyncNow]);
+  }, [fetchStatus, handleCheckUpdate, handleSyncNow]);
 
   const handleToggleOfflineMode = async (checked: boolean) => {
     try {
@@ -752,6 +817,67 @@ export function DesktopSyncBar() {
                     </Button>
                   )}
                 </div>
+              </div>
+
+              {/* Desktop Auto-Update Section */}
+              <div className="bg-muted/20 flex flex-col gap-3 rounded-lg border p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <ArrowUpCircle className="text-primary size-4" />
+                      <span>Desktop Dasturini Yangilash (Auto-Update)</span>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Joriy versiya:{" "}
+                      <span className="text-foreground font-mono font-medium">
+                        v{runtimeInfo?.app_version ?? "2.0.0"}
+                      </span>
+                      {updateInfo?.available && (
+                        <span className="ml-2 font-semibold text-emerald-600">
+                          (Yangi: v{updateInfo.version} mavjud!)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isCheckingUpdate || isInstallingUpdate}
+                      onClick={() => void handleCheckUpdate(false)}
+                    >
+                      <RefreshCw className={`mr-1.5 size-3.5 ${isCheckingUpdate ? "animate-spin" : ""}`} />
+                      Tekshirish
+                    </Button>
+                    {updateInfo?.available && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        disabled={isInstallingUpdate}
+                        onClick={() => void handleInstallUpdate()}
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        {isInstallingUpdate ? (
+                          <>
+                            <RefreshCw className="mr-1.5 size-3.5 animate-spin" />
+                            {updateProgress !== null ? `${updateProgress}%` : "O'rnatilmoqda..."}
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-1.5 size-3.5" />v{updateInfo.version} O&apos;rnatish
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {updateInfo?.available && updateInfo.body && (
+                  <div className="bg-background/80 text-muted-foreground rounded border p-2 text-xs">
+                    <p className="text-foreground mb-1 font-medium">O&apos;zgarishlar:</p>
+                    <p className="whitespace-pre-line">{updateInfo.body}</p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

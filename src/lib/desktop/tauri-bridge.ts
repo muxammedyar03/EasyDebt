@@ -172,3 +172,72 @@ export async function listenToTauriDesktopEvent(eventName: string, callback: () 
   }
   return () => {};
 }
+
+export interface DesktopUpdateResult {
+  available: boolean;
+  currentVersion?: string;
+  version?: string;
+  body?: string;
+  date?: string;
+}
+
+let activeUpdateInstance: unknown = null;
+
+export async function checkDesktopUpdate(): Promise<DesktopUpdateResult> {
+  if (!isTauriDesktop()) {
+    return { available: false };
+  }
+
+  try {
+    const { check } = await import("@tauri-apps/plugin-updater");
+    const update = await check();
+    if (update?.available) {
+      activeUpdateInstance = update;
+      return {
+        available: true,
+        currentVersion: update.currentVersion,
+        version: update.version,
+        body: update.body ?? "",
+        date: update.date ?? "",
+      };
+    }
+    return { available: false, currentVersion: update?.currentVersion };
+  } catch (err) {
+    console.warn("[EasyDebt Tauri] Updater check failed:", err);
+    return { available: false };
+  }
+}
+
+export async function downloadAndInstallDesktopUpdate(
+  onProgress?: (progressPercent: number) => void,
+): Promise<{ success: boolean; error?: string }> {
+  if (!isTauriDesktop() || !activeUpdateInstance) {
+    return { success: false, error: "Tauri update unavailable" };
+  }
+
+  try {
+    const update = activeUpdateInstance as {
+      downloadAndInstall: (
+        cb: (progress: { event: string; data?: { chunkLength?: number; contentLength?: number } }) => void,
+      ) => Promise<void>;
+    };
+
+    let downloadedBytes = 0;
+    await update.downloadAndInstall((event) => {
+      if (event.event === "Started") {
+        onProgress?.(0);
+      } else if (event.event === "Progress" && event.data?.chunkLength && event.data?.contentLength) {
+        downloadedBytes += event.data.chunkLength;
+        const pct = Math.min(100, Math.round((downloadedBytes / event.data.contentLength) * 100));
+        onProgress?.(pct);
+      } else if (event.event === "Finished") {
+        onProgress?.(100);
+      }
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("[EasyDebt Tauri] Update installation failed:", err);
+    return { success: false, error: String(err) };
+  }
+}

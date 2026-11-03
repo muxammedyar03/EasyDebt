@@ -260,6 +260,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             ensure_backend_server();
             if let Err(err) = setup_system_tray(app) {

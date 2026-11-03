@@ -31,10 +31,18 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis", "dmg", "app", "deb", "appimage"],
+    "targets": ["msi", "nsis", "deb", "appimage"],
     "icon": ["../public/avatars/user.png"],
     "category": "Finance",
     "shortDescription": "EasyDebt Offline-First Debt Management System",
     "longDescription": "EasyDebt Desktop — do'kon va korxonalar uchun offlayn ishlovchi hamda bulutli server bilan sinxronlanuvchi qarzlar va to'lovlar boshqaruv dasturi."
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEyODNFMjM5ODE2M0E1MDkKUldRSnBXT0JPZUtERW9UTHVqZVdKRzFlVXRVYU5rWk5EMFhraTZ5RDJQSmorTjA5Ykdub1FIaEQK",
+      "endpoints": [
+        "https://github.com/muxammedyar03/EasyDebt/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
