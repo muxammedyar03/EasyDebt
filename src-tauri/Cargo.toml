@@ -1,6 +1,6 @@
 [package]
 name = "easydebt-desktop"
-version = "2.0.7"
+version = "2.0.8"
 description = "EasyDebt Offline-First Desktop Application (Tauri v2)"
 authors = ["EasyDebt Team"]
 license = "MIT"

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { flushOfflineQueue, getOfflineQueueCount } from "@/lib/offline/client-offline-sync";
+import { offlineSyncService } from "@/lib/services/offline-sync.service";
 import {
   checkDesktopUpdate,
   downloadAndInstallDesktopUpdate,
@@ -90,6 +91,8 @@ export function DesktopSyncBar() {
       setIsSyncing(true);
       try {
         const { synced: offlineSynced } = await flushOfflineQueue();
+        const { synced: outboxSynced } = await offlineSyncService.flushOutboxToServer();
+        const totalOfflineSynced = offlineSynced + outboxSynced;
         setLocalPendingCount(getOfflineQueueCount());
 
         const res = await fetch("/api/sync", {
@@ -102,9 +105,9 @@ export function DesktopSyncBar() {
           setStatus(data.status);
         }
         if (!silent) {
-          if (offlineSynced > 0) {
+          if (totalOfflineSynced > 0) {
             toast.success("Offlayn yozuvlar sinxronlandi", {
-              description: `${offlineSynced} ta lokal amal serverga saqlandi.`,
+              description: `${totalOfflineSynced} ta lokal amal serverga saqlandi.`,
             });
           }
           if (data.success) {
@@ -140,6 +143,9 @@ export function DesktopSyncBar() {
     setBrowserOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
     setLocalPendingCount(getOfflineQueueCount());
     void fetchStatus();
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      void offlineSyncService.syncCloudToOffline();
+    }
     void getDesktopRuntimeInfo().then((info) => {
       setRuntimeInfo(info);
       if (info.is_tauri) {
@@ -151,6 +157,7 @@ export function DesktopSyncBar() {
       setBrowserOnline(true);
       toast.info("Internet aloqasi tiklandi — lokal o'zgarishlar sinxronlanmoqda...");
       void handleSyncNow(true);
+      void offlineSyncService.syncCloudToOffline();
     };
     const onOffline = () => {
       setBrowserOnline(false);

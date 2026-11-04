@@ -1,4 +1,5 @@
 import { saveOfflineMutation } from "@/lib/offline/client-offline-sync";
+import { offlineSyncService } from "@/lib/services/offline-sync.service";
 
 export type CreatePaymentPayload = {
   debtor_id: number;
@@ -11,12 +12,10 @@ export type CreatePaymentPayload = {
 };
 
 export async function createPayment(payload: CreatePaymentPayload): Promise<unknown> {
+  const label = `To'lov: ${payload.amount.toLocaleString()} so'm (${payload.payment_type})`;
   if (typeof window !== "undefined" && !navigator.onLine) {
-    saveOfflineMutation(
-      "payment",
-      payload as Record<string, unknown>,
-      `To'lov: ${payload.amount.toLocaleString()} so'm (${payload.payment_type})`,
-    );
+    saveOfflineMutation("payment", payload as Record<string, unknown>, label);
+    void offlineSyncService.recordOfflineAction("payment", payload as Record<string, unknown>, label);
     return { success: true, offline: true, message: "Offlayn saqlandi" };
   }
 
@@ -38,11 +37,8 @@ export async function createPayment(payload: CreatePaymentPayload): Promise<unkn
     return response.json();
   } catch (err) {
     if (typeof window !== "undefined" && !navigator.onLine) {
-      saveOfflineMutation(
-        "payment",
-        payload as Record<string, unknown>,
-        `To'lov: ${payload.amount.toLocaleString()} so'm (${payload.payment_type})`,
-      );
+      saveOfflineMutation("payment", payload as Record<string, unknown>, label);
+      void offlineSyncService.recordOfflineAction("payment", payload as Record<string, unknown>, label);
       return { success: true, offline: true, message: "Offlayn saqlandi" };
     }
     throw err;

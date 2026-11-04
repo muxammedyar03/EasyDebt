@@ -16,7 +16,7 @@ import { PaymentReminderDialog } from "./payment-reminder-dialog";
 import { ReminderStatusCard } from "./reminder-status-card";
 import { usePaymentReminder } from "@/hooks/use-payment-reminder";
 import { useDebtorDetail, DEBTOR_QUERY_KEY } from "@/features/view-debtor/hooks";
-import type { ViewDebtorComputed } from "@/features/view-debtor/model";
+import { computeViewValueSync, type ViewDebtorComputed } from "@/features/view-debtor/model";
 import { DebtorDomain } from "@/types/domain";
 import { APP_CONFIG } from "@/config/app-config";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -31,6 +31,9 @@ import {
   type TimelineReceiptData,
 } from "@/features/receipt-printer";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { useOfflineDebtor } from "@/hooks/use-offline-debtor";
+import { offlineDebtorToDomain } from "@/lib/mappers/offline-debtor.mapper";
 
 function DebtorDetailContent({
   initialDebtor,
@@ -325,14 +328,46 @@ function DebtorDetailContent({
 
 export function DebtorDetailClient({
   debtor: initialDebtor,
-  overdueDays,
+  overdueDays = 30,
   initialViewValue,
+  fallbackExternalId,
 }: {
-  debtor: DebtorDomain;
-  overdueDays: number;
+  debtor?: DebtorDomain | null;
+  overdueDays?: number;
   initialViewValue?: ViewDebtorComputed;
+  fallbackExternalId?: string;
 }) {
+  const targetId = fallbackExternalId || initialDebtor?.externalId;
+  const { debtor: offlineItem, isLoading } = useOfflineDebtor(targetId);
+
+  const activeDebtor = React.useMemo(() => {
+    if (initialDebtor) return initialDebtor;
+    if (offlineItem) return offlineDebtorToDomain(offlineItem);
+    return null;
+  }, [initialDebtor, offlineItem]);
+
+  const activeViewValue = React.useMemo(() => {
+    if (initialViewValue) return initialViewValue;
+    if (activeDebtor) return computeViewValueSync(activeDebtor, overdueDays);
+    return undefined;
+  }, [initialViewValue, activeDebtor, overdueDays]);
+
+  if (!activeDebtor) {
+    if (isLoading) {
+      return (
+        <div className="flex min-h-64 items-center justify-center">
+          <Loader2 className="text-primary size-6 animate-spin" />
+        </div>
+      );
+    }
+    return (
+      <div className="text-muted-foreground p-8 text-center">
+        <p>Qarzdor ma&apos;lumotlari topilmadi.</p>
+      </div>
+    );
+  }
+
   return (
-    <DebtorDetailContent initialDebtor={initialDebtor} overdueDays={overdueDays} initialViewValue={initialViewValue} />
+    <DebtorDetailContent initialDebtor={activeDebtor} overdueDays={overdueDays} initialViewValue={activeViewValue} />
   );
 }

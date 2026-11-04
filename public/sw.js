@@ -1,14 +1,15 @@
 /**
- * EasyDebt Service Worker (High-Performance Offline & Push Engine)
+ * EasyDebt Service Worker (High-Performance Offline & Push Engine v2.3)
  *
  * Handles:
  * - Push notifications & notification click routing
  * - Fast Cache-First caching for static assets, Next.js chunks, fonts, and images (0ms local return)
+ * - Automatic background pre-caching of navigation pages (debtors, customers, reports)
+ * - Debtor detail shell fallback: opens ANY debtor offline by loading data from IndexedDB
  * - Instant offline fallback when navigator.onLine === false (zero delay)
- * - Network-First with quick fallback for dynamic pages and RSC payloads
  */
 
-const CACHE_VERSION = "easydebt-v2.2";
+const CACHE_VERSION = "easydebt-v2.3";
 const CACHE_STATIC = `easydebt-static-${CACHE_VERSION}`;
 const CACHE_PAGES = `easydebt-pages-${CACHE_VERSION}`;
 
@@ -17,6 +18,15 @@ const PRECACHE_ASSETS = [
   "/images/edebt2.png",
   "/images/easydebt.png",
   "/dashboard/default",
+];
+
+const PRECACHE_PAGES = [
+  "/dashboard/default",
+  "/dashboard/debtors",
+  "/dashboard/customers",
+  "/dashboard/my-debts",
+  "/dashboard/reports",
+  "/dashboard/profile/me",
 ];
 
 const OFFLINE_PAGE_HTML = `<!DOCTYPE html>
@@ -68,7 +78,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate event - Clean old caches and claim clients immediately
+// Activate event - Clean old caches and pre-cache navigation pages in background
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -79,7 +89,20 @@ self.addEventListener("activate", (event) => {
           }
         }),
       );
-    }).then(() => self.clients.claim()),
+    }).then(async () => {
+      await self.clients.claim();
+      // Pre-cache navigation routes in the background
+      const pagesCache = await caches.open(CACHE_PAGES);
+      for (const path of PRECACHE_PAGES) {
+        fetch(path)
+          .then((res) => {
+            if (res && res.status === 200) {
+              pagesCache.put(path, res.clone());
+            }
+          })
+          .catch(() => {});
+      }
+    }),
   );
 });
 
@@ -140,7 +163,6 @@ self.addEventListener("fetch", (event) => {
         if (cached) {
           return cached;
         }
-        // If not cached, fetch from network and store in cache
         try {
           const res = await fetch(request);
           if (res && res.status === 200) {
@@ -168,6 +190,10 @@ self.addEventListener("fetch", (event) => {
         if (isOffline) {
           const cached = await cache.match(request);
           if (cached) return cached;
+          if (url.pathname.includes("/debitor/")) {
+            const rscShell = await cache.match("/offline-debtor-shell-rsc");
+            if (rscShell) return rscShell;
+          }
           return new Response("", { status: 200, headers: { "Content-Type": "text/x-component" } });
         }
 
@@ -175,11 +201,18 @@ self.addEventListener("fetch", (event) => {
           const networkRes = await fetchWithTimeout(request, 1000);
           if (networkRes && networkRes.status === 200) {
             cache.put(request, networkRes.clone());
+            if (url.pathname.includes("/debitor/")) {
+              cache.put("/offline-debtor-shell-rsc", networkRes.clone());
+            }
           }
           return networkRes;
         } catch {
           const cached = await cache.match(request);
           if (cached) return cached;
+          if (url.pathname.includes("/debitor/")) {
+            const rscShell = await cache.match("/offline-debtor-shell-rsc");
+            if (rscShell) return rscShell;
+          }
           return new Response("", { status: 200, headers: { "Content-Type": "text/x-component" } });
         }
       })(),
@@ -197,8 +230,16 @@ self.addEventListener("fetch", (event) => {
         if (isOffline) {
           const cached = await cache.match(request);
           if (cached) return cached;
+
+          // If accessing any debtor detail page while offline, fall back to debtor shell
+          if (url.pathname.includes("/debitor/")) {
+            const debtorShell = await cache.match("/offline-debtor-shell");
+            if (debtorShell) return debtorShell;
+          }
+
           const dashboardFallback = await cache.match("/dashboard/default");
           if (dashboardFallback) return dashboardFallback;
+
           return new Response(OFFLINE_PAGE_HTML, {
             status: 200,
             headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -209,13 +250,23 @@ self.addEventListener("fetch", (event) => {
           const networkRes = await fetchWithTimeout(request, 1200);
           if (networkRes && networkRes.status === 200) {
             cache.put(request, networkRes.clone());
+            if (url.pathname.includes("/debitor/")) {
+              cache.put("/offline-debtor-shell", networkRes.clone());
+            }
           }
           return networkRes;
         } catch {
           const cached = await cache.match(request);
           if (cached) return cached;
+
+          if (url.pathname.includes("/debitor/")) {
+            const debtorShell = await cache.match("/offline-debtor-shell");
+            if (debtorShell) return debtorShell;
+          }
+
           const dashboardFallback = await cache.match("/dashboard/default");
           if (dashboardFallback) return dashboardFallback;
+
           return new Response(OFFLINE_PAGE_HTML, {
             status: 200,
             headers: { "Content-Type": "text/html; charset=utf-8" },

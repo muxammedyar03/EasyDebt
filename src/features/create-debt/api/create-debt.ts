@@ -1,4 +1,5 @@
 import { saveOfflineMutation } from "@/lib/offline/client-offline-sync";
+import { offlineSyncService } from "@/lib/services/offline-sync.service";
 
 export type CreateDebtPayload = {
   debtor_id: number;
@@ -10,6 +11,11 @@ export type CreateDebtPayload = {
 export async function createDebt(payload: CreateDebtPayload): Promise<unknown> {
   if (typeof window !== "undefined" && !navigator.onLine) {
     saveOfflineMutation("debt", payload as Record<string, unknown>, `Qarz: ${payload.amount.toLocaleString()} so'm`);
+    void offlineSyncService.recordOfflineAction(
+      "debt",
+      payload as Record<string, unknown>,
+      `Qarz: ${payload.amount.toLocaleString()} so'm`,
+    );
     return { success: true, offline: true, message: "Offlayn saqlandi" };
   }
 
@@ -29,6 +35,11 @@ export async function createDebt(payload: CreateDebtPayload): Promise<unknown> {
   } catch (err) {
     if (typeof window !== "undefined" && !navigator.onLine) {
       saveOfflineMutation("debt", payload as Record<string, unknown>, `Qarz: ${payload.amount.toLocaleString()} so'm`);
+      void offlineSyncService.recordOfflineAction(
+        "debt",
+        payload as Record<string, unknown>,
+        `Qarz: ${payload.amount.toLocaleString()} so'm`,
+      );
       return { success: true, offline: true, message: "Offlayn saqlandi" };
     }
     throw err;

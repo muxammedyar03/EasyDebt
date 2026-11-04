@@ -1,7 +1,7 @@
 {
   "name": "debitor",
   "homepage": "easydebt.uz",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
