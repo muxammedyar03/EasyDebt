@@ -53,7 +53,7 @@ function CompanySearchInput({
           if (local !== value) onChange(local);
         }}
         onChange={(e) => setLocal(e.target.value)}
-        className="border-border h-11 border bg-white pr-10 pl-8 dark:bg-zinc-800"
+        className="border-border h-9 border bg-white pr-10 pl-8 dark:bg-zinc-800"
       />
       {(loading || local !== value) && (
         <div className="absolute top-1/2 right-3 -translate-y-1/2">
@@ -142,15 +142,15 @@ export function CompaniesToolbar({
           placeholder={t("searchPlaceholder")}
         />
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-11" onClick={handleExcel}>
+          <Button variant="outline" className="h-9" onClick={handleExcel}>
             <FileDown className="mr-2 h-4 w-4" />
             {tCommon("excel")}
           </Button>
-          <Button className="h-11" onClick={onAddCompany}>
+          <Button className="h-9" onClick={onAddCompany}>
             <Plus className="mr-2 h-4 w-4" />
             {t("addCompany")}
           </Button>
-          <Button className="h-11 w-11" onClick={toggleFilter}>
+          <Button className="h-9 w-9" onClick={toggleFilter}>
             <FilterIcon />
           </Button>
         </div>

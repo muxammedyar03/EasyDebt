@@ -173,7 +173,7 @@ export function PaymentReminderDialog({
                 size="sm"
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                className="h-12 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/20 hover:text-green-700"
+                className="h-9 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/20 hover:text-green-700"
               >
                 <CheckCircle2 className="mr-1 h-4 w-4" />
                 {t("reminderComplete")}
@@ -184,7 +184,7 @@ export function PaymentReminderDialog({
                 size="sm"
                 onClick={handleCancel}
                 disabled={isSubmitting}
-                className="h-12 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/20 hover:text-yellow-700"
+                className="h-9 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/20 hover:text-yellow-700"
               >
                 <BellOff className="mr-1 h-4 w-4" />
                 {tCommon("cancel")}
@@ -195,7 +195,7 @@ export function PaymentReminderDialog({
                 size="sm"
                 onClick={handleDelete}
                 disabled={isSubmitting}
-                className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/20"
+                className="text-destructive hover:text-destructive h-9 border border-red-600/30 bg-red-600/10 hover:bg-red-600/20"
               >
                 <Trash2 className="mr-1 h-4 w-4" />
                 {tCommon("delete")}
@@ -207,7 +207,7 @@ export function PaymentReminderDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="mt-4 h-12 w-full"
+              className="mt-4 h-9 w-full"
             >
               {tCommon("close")}
             </Button>
@@ -243,7 +243,7 @@ export function PaymentReminderDialog({
                       type="button"
                       variant="outline"
                       className={cn(
-                        "h-12 justify-start text-left font-normal",
+                        "h-9 justify-start text-left font-normal",
                         !formState.date && "text-muted-foreground",
                       )}
                       disabled={isSubmitting}
@@ -278,7 +278,7 @@ export function PaymentReminderDialog({
                   value={formState.time}
                   onChange={(e) => setFormTime(e.target.value)}
                   disabled={isSubmitting}
-                  className="border-border h-12 border"
+                  className="border-border h-9 border"
                 />
               </div>
 
@@ -291,7 +291,7 @@ export function PaymentReminderDialog({
                   onChange={(e) => setFormNote(e.target.value)}
                   disabled={isSubmitting}
                   rows={3}
-                  className="border-border h-12 border"
+                  className="border-border h-9 border"
                 />
               </div>
 
@@ -308,7 +308,7 @@ export function PaymentReminderDialog({
                       size="sm"
                       onClick={handleComplete}
                       disabled={isSubmitting}
-                      className="h-12 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/10 hover:text-green-700 dark:border-green-500/15 dark:bg-green-500/10 dark:hover:bg-green-600/20"
+                      className="h-9 border border-green-600/30 bg-green-600/10 text-green-600 hover:bg-green-600/10 hover:text-green-700 dark:border-green-500/15 dark:bg-green-500/10 dark:hover:bg-green-600/20"
                     >
                       <CheckCircle2 className="mr-1 h-4 w-4" />
                       {t("reminderComplete")}
@@ -319,7 +319,7 @@ export function PaymentReminderDialog({
                       size="sm"
                       onClick={handleCancel}
                       disabled={isSubmitting}
-                      className="h-12 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/10 hover:text-yellow-700 dark:border-yellow-500/15 dark:bg-yellow-500/10 dark:hover:bg-yellow-600/20"
+                      className="h-9 border border-yellow-600/30 bg-yellow-600/10 text-yellow-600 hover:bg-yellow-600/10 hover:text-yellow-700 dark:border-yellow-500/15 dark:bg-yellow-500/10 dark:hover:bg-yellow-600/20"
                     >
                       <BellOff className="mr-1 h-4 w-4" />
                       {tCommon("cancel")}
@@ -330,7 +330,7 @@ export function PaymentReminderDialog({
                       size="sm"
                       onClick={handleDelete}
                       disabled={isSubmitting}
-                      className="text-destructive hover:text-destructive h-12 border border-red-600/30 bg-red-600/10 hover:bg-red-600/10 dark:border-red-500/15 dark:bg-red-500/10 dark:hover:bg-red-600/20"
+                      className="text-destructive hover:text-destructive h-9 border border-red-600/30 bg-red-600/10 hover:bg-red-600/10 dark:border-red-500/15 dark:bg-red-500/10 dark:hover:bg-red-600/20"
                     >
                       <Trash2 className="mr-1 h-4 w-4" />
                       {tCommon("delete")}
@@ -344,11 +344,11 @@ export function PaymentReminderDialog({
                     variant="outline"
                     onClick={() => onOpenChange(false)}
                     disabled={isSubmitting}
-                    className="h-12"
+                    className="h-9"
                   >
                     {tCommon("close")}
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || !formState.date} className="h-12">
+                  <Button type="submit" disabled={isSubmitting || !formState.date} className="h-9">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {activeReminder ? tCommon("update") : tCommon("save")}
                   </Button>

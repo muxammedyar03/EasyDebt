@@ -35,7 +35,7 @@ export default async function ReportsPage({
       <p className="text-muted-foreground pb-4">{t("debtsPaymentsList")}</p>
       <CashClient report={report} debtLimit={debtLimit} />
       {/* <Tabs defaultValue="payments"> */}
-      {/* <TabsList className="h-12">
+      {/* <TabsList className="h-9">
           <TabsTrigger value="payments">
             <div className="w-full md:w-44">
               <h1 className="text-xl font-bold tracking-tight">{t("debtsAndPayments")}</h1>

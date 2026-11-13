@@ -86,7 +86,7 @@ export function CompanyDebtsOverviewChart() {
               })}
             </CardDescription>
           </div>
-          <Button asChild variant="outline" className="h-8 shrink-0 text-xs sm:h-11 sm:text-sm">
+          <Button asChild variant="outline" className="h-8 shrink-0 text-xs sm:h-9 sm:text-sm">
             <Link href="/dashboard/my-debts/report">
               {t("chartDetails")}
               <ArrowRight className="ml-2 h-3 w-3 sm:h-4 sm:w-4" />

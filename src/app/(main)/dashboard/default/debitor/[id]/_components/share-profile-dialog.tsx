@@ -127,20 +127,20 @@ export function ShareProfileDialog({ open, onOpenChange, externalId, debtorName 
             <Input
               readOnly
               value={shareUrl}
-              className="h-12 border-slate-200 bg-slate-50 font-mono text-xs dark:border-slate-800 dark:bg-slate-900/60"
+              className="h-9 border-slate-200 bg-slate-50 font-mono text-xs dark:border-slate-800 dark:bg-slate-900/60"
             />
             <Button
               size="icon"
               variant="outline"
               onClick={handleCopy}
-              className="h-12 w-12 shrink-0 border-slate-200 dark:border-slate-800"
+              className="h-9 w-9 shrink-0 border-slate-200 dark:border-slate-800"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
 
           {isShareSupported && (
-            <Button onClick={handleNativeShare} className="h-12 w-full gap-2 font-semibold">
+            <Button onClick={handleNativeShare} className="h-9 w-full gap-2 font-semibold">
               <Share2 className="h-4 w-4" />
               {t("shareNative")}
             </Button>

@@ -54,7 +54,7 @@ export function LayoutControls(props: LayoutControlsProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className="md:h-12 md:w-12">
+        <Button className="size-9">
           <Settings className="md:!h-6 md:!w-6" />
         </Button>
       </PopoverTrigger>

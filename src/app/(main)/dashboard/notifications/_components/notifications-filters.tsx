@@ -122,7 +122,7 @@ export function NotificationsFilters(props: NotificationsFiltersProps) {
       </div>
       <div className="hidden w-full lg:flex">
         <SortToggleGroup
-          className="bg-card border-border h-12 w-auto rounded-md border p-1"
+          className="bg-card border-border h-9 w-auto rounded-md border p-1"
           onToggle={handleFilterChange}
           sortOptions={[
             { key: "read:all", label: tCommon("all") },

@@ -64,11 +64,11 @@ export function CompanyAccordionDetail({ company, open }: CompanyAccordionDetail
     <div className="space-y-4 py-2">
       {/* Top-right actions */}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" size="lg" className="h-12" onClick={handleExcel}>
+        <Button variant="outline" className="h-9" onClick={handleExcel}>
           <FileDown className="mr-2 h-4 w-4" />
           Excel
         </Button>
-        <Button asChild variant="default" size="lg" className="h-12">
+        <Button asChild variant="default" className="h-9">
           <Link href={`/dashboard/my-debts/${company.externalId}`}>
             <Eye className="mr-2 h-4 w-4" />
             Batafsil

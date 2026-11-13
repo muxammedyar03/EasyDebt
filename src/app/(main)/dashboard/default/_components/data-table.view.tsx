@@ -44,7 +44,7 @@ function SearchInput({
     <div className="relative w-full xl:w-1/2">
       <Input
         type="text"
-        className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
+        className="border-border h-9 w-full bg-white pr-10 text-sm"
         placeholder={translate("searchPlaceholder")}
         value={local}
         onChange={(e) => setLocal(e.target.value)}
@@ -122,14 +122,14 @@ export function DataTableView({
           <div className="relative w-full xl:w-1/2">
             <Input
               type="text"
-              className="border-border h-14 w-full bg-white pr-10 text-base font-medium"
+              className="border-border h-9 w-full bg-white pr-10 text-sm"
               placeholder="Ism, telefon va manzil bo'yicha qidirish..."
               disabled
             />
           </div>
         )}
         <DataTableViewOptions table={table} />
-        <Button variant="outline" size="sm" className="h-14 w-14 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
+        <Button variant="outline" size="sm" className="h-9 w-9 lg:w-auto" onClick={() => setIsDialogOpen(true)}>
           <Plus />
           <span className="hidden lg:inline">Qarzdor qo&apos;shish</span>
         </Button>

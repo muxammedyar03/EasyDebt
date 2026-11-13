@@ -51,7 +51,7 @@ export function InsightCards() {
                           <tspan
                             x={viewBox.cx}
                             y={viewBox.cy}
-                            className="fill-foreground text-3xl font-bold tabular-nums"
+                            className="fill-foreground text-2xl font-bold tabular-nums"
                           >
                             {totalLeads.toLocaleString()}
                           </tspan>

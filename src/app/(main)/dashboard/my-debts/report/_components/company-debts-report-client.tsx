@@ -148,13 +148,13 @@ function PaginationBar({
   if (totalPages <= 1) return null;
   return (
     <div className="mt-4 flex items-center justify-between gap-3">
-      <Button variant="outline" className="h-11 px-5" disabled={page === 1} onClick={onPrev}>
+      <Button variant="outline" className="h-9 px-5" disabled={page === 1} onClick={onPrev}>
         {t("previous")}
       </Button>
       <span className="text-muted-foreground text-sm font-medium">
         {page} / {totalPages}
       </span>
-      <Button variant="outline" className="h-11 px-5" disabled={page === totalPages} onClick={onNext}>
+      <Button variant="outline" className="h-9 px-5" disabled={page === totalPages} onClick={onNext}>
         {t("next")}
       </Button>
     </div>
@@ -268,10 +268,10 @@ export function CompanyDebtsReportClient() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight uppercase sm:text-3xl">{t("reportTitle")}</h1>
+          <h1 className="text-xl font-bold tracking-tight uppercase sm:text-2xl">{t("reportTitle")}</h1>
           <p className="text-muted-foreground mt-1 text-sm">{t("reportSubtitle")}</p>
         </div>
-        <Button onClick={() => void handleExport()} className="h-11 shrink-0 px-5" disabled={!data}>
+        <Button onClick={() => void handleExport()} className="h-9 shrink-0 px-5" disabled={!data}>
           <Download className="mr-2 h-4 w-4" />
           {t("export")}
         </Button>
@@ -335,7 +335,7 @@ export function CompanyDebtsReportClient() {
               key={range}
               variant={timeRange === range ? "default" : "outline"}
               onClick={() => setTimeRange(range)}
-              className="h-11 flex-1 text-sm font-medium"
+              className="h-9 flex-1 text-sm font-medium"
             >
               {range === "daily" ? t("daily") : range === "week" ? t("weekly") : t("monthly")}
             </Button>
@@ -343,14 +343,14 @@ export function CompanyDebtsReportClient() {
         </div>
 
         <div className="bg-card border-border flex items-center gap-2 rounded-xl border p-2">
-          <Button variant="outline" size="icon" className="h-11 w-11" onClick={() => navigateDate(-1)}>
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => navigateDate(-1)}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1 text-center text-base font-medium">{periodLabel(selectedDate, timeRange)}</div>
           <Button
             variant="outline"
             size="icon"
-            className="h-11 w-11"
+            className="h-9 w-9"
             onClick={() => navigateDate(1)}
             disabled={!canNavigatePeriodForward(selectedDate, timeRange)}
           >
@@ -396,7 +396,7 @@ export function CompanyDebtsReportClient() {
               key={key}
               type="button"
               variant={sortKey === key ? "default" : "outline"}
-              className="h-12 px-5 text-sm font-medium"
+              className="h-9 px-5 text-sm font-medium"
               onClick={() => toggleSort(key)}
             >
               {label}
@@ -414,12 +414,12 @@ export function CompanyDebtsReportClient() {
                 if (e.key === "Enter") applySearch(searchLocal);
               }}
               placeholder={t("searchPlaceholder")}
-              className="h-12 pr-12 text-base"
+              className="h-9 pr-12 text-base"
             />
             <Button
               type="button"
               size="icon"
-              className="absolute top-0 right-0 h-12 w-12 rounded-l-none"
+              className="absolute top-0 right-0 h-9 w-9 rounded-l-none"
               onClick={() => applySearch(searchLocal)}
             >
               <Search className="h-5 w-5" />
@@ -429,7 +429,7 @@ export function CompanyDebtsReportClient() {
             type="button"
             variant="outline"
             size="icon"
-            className="h-12 w-12"
+            className="h-9 w-9"
             onClick={() => void refetch()}
             disabled={isFetching}
           >
@@ -439,7 +439,7 @@ export function CompanyDebtsReportClient() {
             type="button"
             variant="outline"
             size="icon"
-            className="h-12 w-12"
+            className="h-9 w-9"
             onClick={() => {
               setFilterDraft(searchLocal);
               setFilterOpen(true);
@@ -455,7 +455,7 @@ export function CompanyDebtsReportClient() {
       </p>
 
       <Tabs defaultValue="payments" className="space-y-4">
-        <TabsList className="grid h-12 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
+        <TabsList className="grid h-9 w-full grid-cols-2 md:w-1/2 lg:w-1/3">
           <TabsTrigger value="payments" className="text-sm font-medium">
             {t("paymentsTab", { count: data?.paymentsTotal ?? 0 })}
           </TabsTrigger>

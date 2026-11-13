@@ -59,7 +59,7 @@ export function CreateClientDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="h-11">
+        <Button variant="outline" className="h-9">
           <Store className="mr-2 h-4 w-4" />
           {t("createButton")}
         </Button>

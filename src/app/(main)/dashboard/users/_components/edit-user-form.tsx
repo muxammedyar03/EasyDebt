@@ -137,7 +137,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
               <FormItem>
                 <FormLabel>{t("username")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="username" {...field} className="flex h-11 items-center" />
+                  <Input placeholder="username" {...field} className="flex h-9 items-center" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -151,7 +151,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
               <FormItem>
                 <FormLabel>{t("email")}</FormLabel>
                 <FormControl>
-                  <Input type="email" className="flex h-11 items-center" placeholder="email@example.com" {...field} />
+                  <Input type="email" className="flex h-9 items-center" placeholder="email@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -165,7 +165,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
               <FormItem>
                 <FormLabel>{t("firstName")}</FormLabel>
                 <FormControl>
-                  <Input className="flex h-11 items-center" placeholder={t("firstName")} {...field} />
+                  <Input className="flex h-9 items-center" placeholder={t("firstName")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -179,7 +179,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
               <FormItem>
                 <FormLabel>{t("lastName")}</FormLabel>
                 <FormControl>
-                  <Input className="flex h-11 items-center" placeholder={t("lastName")} {...field} />
+                  <Input className="flex h-9 items-center" placeholder={t("lastName")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -194,7 +194,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
                 <FormLabel>{t("role")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className="!h-11 px-4">
+                    <SelectTrigger className="!h-9 px-4">
                       <SelectValue placeholder={t("selectRole")} />
                     </SelectTrigger>
                   </FormControl>
@@ -240,7 +240,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
                 <FormLabel>{t("newPassword")}</FormLabel>
                 <FormControl>
                   <Input
-                    className="flex h-11 items-center"
+                    className="flex h-9 items-center"
                     type="password"
                     placeholder={t("newPasswordPlaceholder")}
                     {...field}
@@ -258,7 +258,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
               <FormItem>
                 <FormLabel>{t("newPasswordConfirm")}</FormLabel>
                 <FormControl>
-                  <Input className="flex h-11 items-center" type="password" placeholder="******" {...field} />
+                  <Input className="flex h-9 items-center" type="password" placeholder="******" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -268,7 +268,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
 
         <div className="flex justify-end gap-4">
           <Button
-            className="h-11 px-4"
+            className="h-9 px-4"
             type="button"
             variant="outline"
             onClick={() => router.push("/dashboard/users")}
@@ -276,7 +276,7 @@ export function EditUserForm({ user }: EditUserFormProps) {
           >
             {tCommon("cancel")}
           </Button>
-          <Button className="h-11 px-4" type="submit" disabled={isLoading}>
+          <Button className="h-9 px-4" type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {tCommon("save")}
           </Button>

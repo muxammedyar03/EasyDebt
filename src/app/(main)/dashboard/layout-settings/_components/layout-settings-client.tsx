@@ -148,8 +148,8 @@ export function LayoutSettingsClient({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="size-8 h-12 w-12" onClick={() => router.push("/dashboard")}>
-          <HomeIcon className="size-6" />
+        <Button variant="ghost" size="icon" className="size-8" onClick={() => router.push("/dashboard")}>
+          <HomeIcon />
         </Button>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Настройки макета</h1>

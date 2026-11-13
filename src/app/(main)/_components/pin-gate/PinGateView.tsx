@@ -176,7 +176,7 @@ export function PinGateView(props: PinGateViewProps) {
             <div className="flex w-full items-center justify-center p-6">
               <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
                 <div className="space-y-2 text-center">
-                  <h1 className="text-3xl font-medium">{tCommon("loading")}</h1>
+                  <h1 className="text-2xl font-medium">{tCommon("loading")}</h1>
                   <p className="text-muted-foreground text-sm">{tCommon("pleaseWait")}</p>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export function PinGateView(props: PinGateViewProps) {
           <div className="flex w-full items-center justify-center p-6">
             <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
               <div className="space-y-2 text-center">
-                <h1 className="text-3xl font-medium">{hasPin ? t("enterPin") : t("setNewPin")}</h1>
+                <h1 className="text-2xl font-medium">{hasPin ? t("enterPin") : t("setNewPin")}</h1>
                 <p className="text-muted-foreground text-sm">
                   {hasPin ? t("enterPinHint") : t("setPinHint", { length: pinLength })}
                 </p>

@@ -96,7 +96,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
               <Skeleton className="h-3 w-48" />
             </div>
           </div>
-          <Skeleton className="h-9 w-full sm:h-12 sm:w-24" />
+          <Skeleton className="h-9 w-full sm:h-9 sm:w-24" />
         </CardContent>
       </Card>
     );
@@ -121,7 +121,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
             variant="outline"
             size="sm"
             onClick={onOpenDialog}
-            className={cn("h-12 w-full cursor-pointer px-4 hover:bg-green-500/20 sm:w-auto", colorClass)}
+            className={cn("h-9 w-full cursor-pointer px-4 hover:bg-green-500/20 sm:w-auto", colorClass)}
           >
             <Bell className="mr-2 h-4 w-4" />
             {t("reminderAdd")}
@@ -213,7 +213,7 @@ export function ReminderStatusCard({ activeReminder, isLoading, onOpenDialog }: 
           size="sm"
           onClick={onOpenDialog}
           className={cn(
-            "h-12 w-full cursor-pointer px-4 sm:w-auto",
+            "h-9 w-full cursor-pointer px-4 sm:w-auto",
             isNotified
               ? "bg-purple-600/15 text-purple-700 hover:bg-purple-600/15 hover:text-purple-700 dark:text-purple-500"
               : urgencyStyles[currentStyle],

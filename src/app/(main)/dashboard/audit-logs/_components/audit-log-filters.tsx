@@ -277,7 +277,7 @@ export function AuditLogFilters({ isMobile = false }: AuditLogFiltersProps) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="default" size="sm" className="bg-primary h-12">
+          <Button variant="default" size="sm" className="bg-primary h-9">
             <Filter className="mr-2 h-4 w-4" />
             {tCommon("filters")}
           </Button>

@@ -13,7 +13,7 @@ import { formatCurrency } from "@/lib/format";
 
 function ChipSVG() {
   return (
-    <svg enableBackground="new 0 0 132 92" viewBox="0 0 132 92" xmlns="http://www.w3.org/2000/svg" className="w-14">
+    <svg enableBackground="new 0 0 132 92" viewBox="0 0 132 92" xmlns="http://www.w3.org/2000/svg" className="w-12">
       <title>Chip</title>
       <rect x="0.5" y="0.5" width="131" height="91" rx="15" className="fill-accent stroke-accent" />
       <rect x="9.5" y="9.5" width="48" height="21" rx="10.5" className="fill-accent stroke-accent-foreground" />

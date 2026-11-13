@@ -49,22 +49,22 @@ export function ViewDebtorHeader({
       </div>
       <div className="mt-5 hidden justify-end gap-2 md:mt-0 md:flex">
         {onShareProfile && (
-          <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
+          <Button variant="outline" className="h-9 gap-2" onClick={onShareProfile}>
             <Share2 className="h-4 w-4 text-slate-500" />
             {t("shareProfile")}
           </Button>
         )}
-        <Button variant="outline" className="h-12" onClick={onAddDebt}>
+        <Button variant="outline" className="h-9" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
           {t("addDebt")}
         </Button>
-        <Button variant="outline" className="h-12" onClick={onAddPayment}>
+        <Button variant="outline" className="h-9" onClick={onAddPayment}>
           <Minus className="h-4 w-4" />
           {t("addPayment")}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default" className="h-12">
+            <Button variant="default" className="h-9">
               <Download className="h-4 w-4" />
               {t("export")}
               <ChevronDown className="ml-1 h-3 w-3" />
@@ -95,23 +95,23 @@ export function ViewDebtorHeader({
         </DropdownMenu>
       </div>
       <div className="mt-5 grid grid-cols-2 gap-2 md:hidden">
-        <Button variant="outline" className="h-12" onClick={onAddDebt}>
+        <Button variant="outline" className="h-9" onClick={onAddDebt}>
           <Plus className="h-4 w-4" />
           {t("debtShort")}
         </Button>
-        <Button variant="outline" className="h-12" onClick={onAddPayment}>
+        <Button variant="outline" className="h-9" onClick={onAddPayment}>
           <Minus className="h-4 w-4" />
           {t("paymentShort")}
         </Button>
         {onShareProfile && (
-          <Button variant="outline" className="h-12 gap-2" onClick={onShareProfile}>
+          <Button variant="outline" className="h-9 gap-2" onClick={onShareProfile}>
             <Share2 className="h-4 w-4 text-slate-500" />
             {t("share")}
           </Button>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default" className="h-12">
+            <Button variant="default" className="h-9">
               <Download className="h-4 w-4" />
               {t("export")}
             </Button>

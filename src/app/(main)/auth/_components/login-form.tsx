@@ -134,7 +134,7 @@ export function LoginForm({ locale }: { locale: AppLocale }) {
                   type="text"
                   placeholder={text.usernamePlaceholder}
                   autoComplete="username"
-                  className="h-12 rounded-xl text-base md:text-base"
+                  className="h-9 rounded-xl text-base md:text-base"
                   {...field}
                 />
               </FormControl>
@@ -155,7 +155,7 @@ export function LoginForm({ locale }: { locale: AppLocale }) {
                     type={showPassword ? "text" : "password"}
                     placeholder={text.passwordPlaceholder}
                     autoComplete="current-password"
-                    className="h-12 rounded-xl pr-11 text-base md:text-base"
+                    className="h-9 rounded-xl pr-11 text-base md:text-base"
                     {...field}
                   />
                   <Button
@@ -194,7 +194,7 @@ export function LoginForm({ locale }: { locale: AppLocale }) {
             </FormItem>
           )}
         />
-        <Button className="h-12 w-full rounded-xl text-base" type="submit" disabled={isLoading}>
+        <Button className="h-9 w-full rounded-xl text-base" type="submit" disabled={isLoading}>
           {isLoading ? text.submitting : text.submit}
         </Button>
       </form>

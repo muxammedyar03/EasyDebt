@@ -39,7 +39,7 @@ export default async function LoginV2() {
     <>
       <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-medium">{text.title}</h1>
+          <h1 className="text-2xl font-medium">{text.title}</h1>
           <p className="text-muted-foreground text-sm">{text.subtitle}</p>
         </div>
         <div className="space-y-4">
@@ -49,7 +49,7 @@ export default async function LoginV2() {
             href="https://easy-debt-8xhz.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-12 items-center justify-center gap-x-2 rounded-lg bg-blue-100 px-4 text-center text-sm font-medium text-blue-500 hover:bg-blue-100/80 hover:underline dark:bg-blue-900/10"
+            className="flex h-9 items-center justify-center gap-x-2 rounded-lg bg-blue-100 px-4 text-center text-sm font-medium text-blue-500 hover:bg-blue-100/80 hover:underline dark:bg-blue-900/10"
           >
             {text.demo}
             <ExternalLink width={16} height={16} />

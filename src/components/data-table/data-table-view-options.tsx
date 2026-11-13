@@ -33,7 +33,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-auto hidden h-12 md:flex lg:h-14">
+        <Button variant="outline" size="sm" className="ml-auto hidden h-9 md:flex">
           <Settings2 />
           {t("columns")}
         </Button>

@@ -156,7 +156,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 onChange={handleAmountChange}
                 disabled={isLoading}
                 inputMode="numeric"
-                className="border-border h-11 border"
+                className="border-border h-9 border"
               />
               {errors.amount && <p className="text-destructive text-sm">{errors.amount.message}</p>}
             </div>
@@ -169,7 +169,7 @@ export function AddPaymentDialog({ open, onOpenChange, debtorId, debtorName, onS
                 onValueChange={(v) => setValue("payment_type", v as "CASH" | "CLICK" | "CARD")}
                 className="w-full"
               >
-                <TabsList className="dark:bg-input/30 border-border grid h-11 w-full grid-cols-3 gap-1 bg-zinc-200 p-1 dark:border">
+                <TabsList className="dark:bg-input/30 border-border grid h-9 w-full grid-cols-3 gap-1 bg-zinc-200 p-1 dark:border">
                   <TabsTrigger
                     value="CASH"
                     disabled={isLoading}

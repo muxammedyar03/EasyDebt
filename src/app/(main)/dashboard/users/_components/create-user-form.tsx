@@ -156,7 +156,7 @@ export function CreateUserForm({ clients, defaultClientId, actorRole }: CreateUs
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="h-11">
+        <Button className="h-9">
           <Plus className="mr-2 h-4 w-4" />
           {t("createButton")}
         </Button>

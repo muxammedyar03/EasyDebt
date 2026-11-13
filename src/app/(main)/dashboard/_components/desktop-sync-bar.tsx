@@ -203,19 +203,19 @@ export function DesktopSyncBar() {
         : "Onlayn, sinxron";
 
   return (
-    <div className="bg-card border-border flex items-center gap-1 rounded-lg border p-1">
+    <div className="bg-card border-border flex items-center gap-1.5 rounded-lg border p-1">
       <div
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+        className="relative flex size-7 shrink-0 items-center justify-center rounded-lg"
         role="status"
         title={isOffline ? "Offlayn · Lokal" : "Onlayn · Sinxron"}
         aria-label={statusLabel}
       >
         {isSyncing ? (
-          <RefreshCw className="size-5 animate-spin text-amber-600" />
+          <RefreshCw className="size-4 animate-spin text-amber-600" />
         ) : isOffline ? (
-          <CloudOff className="size-5 text-amber-600" />
+          <CloudOff className="size-4 text-amber-600" />
         ) : (
-          <Cloud className="size-5 text-emerald-600" />
+          <Cloud className="size-4 text-emerald-600" />
         )}
         {pendingCount > 0 && (
           <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-600 px-1 font-mono text-[10px] font-semibold text-white tabular-nums">
@@ -223,11 +223,11 @@ export function DesktopSyncBar() {
           </span>
         )}
       </div>
-      <div className="bg-border h-7 w-px" />
+      <div className="bg-border h-5 w-px" />
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9 shrink-0"
+        className="size-7 shrink-0"
         disabled={isSyncing || isOffline}
         onClick={() => void handleSyncNow(false)}
         title="Server bilan hozir sinxronlash"

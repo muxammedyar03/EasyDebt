@@ -29,8 +29,8 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className={cn("h-10 gap-2 px-3 md:h-12", className)} aria-label={t("language")}>
-          <Languages className="h-4 w-4 md:!h-5 md:!w-5" />
+        <Button variant="outline" className={cn("h-10 gap-2 px-2.5", className)} aria-label={t("language")}>
+          <Languages className="h-4 w-4 lg:h-5 lg:w-5" />
           <span className="hidden text-sm font-medium sm:inline">{locale.toUpperCase()}</span>
         </Button>
       </DropdownMenuTrigger>

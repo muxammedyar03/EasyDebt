@@ -74,12 +74,12 @@ export function NotificationsDropdown({ notifications, unreadCount: initialUnrea
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       {!isMobile ? (
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="relative md:h-12 md:w-12">
-            <Bell className="md:!h-5 md:!w-5" />
+          <Button variant="outline" size="icon" className="relative size-10">
+            <Bell className="h-4 w-4 lg:h-5 lg:w-5" />
             {unreadCount > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
+                className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full p-0 text-xs"
               >
                 {badgeCount}
               </Badge>
@@ -90,14 +90,14 @@ export function NotificationsDropdown({ notifications, unreadCount: initialUnrea
         <Button
           variant="outline"
           size="icon"
-          className="relative h-10 w-10 md:h-12 md:w-12"
+          className="relative size-10"
           onClick={() => router.push("/dashboard/notifications")}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4 w-4 lg:h-5 lg:w-5" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
+              className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full p-0 text-xs"
             >
               {badgeCount}
             </Badge>
@@ -105,13 +105,13 @@ export function NotificationsDropdown({ notifications, unreadCount: initialUnrea
         </Button>
       )}
 
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel>Уведомления</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {items.length === 0 ? (
           <div className="flex flex-col gap-2 p-2">
-            <div className="text-muted-foreground p-4 text-center text-sm">Нет уведомлений</div>
-            <Button variant="outline" size="sm" onClick={goToNotifications}>
+            <div className="text-muted-foreground p-4 text-center text-xs">Нет уведомлений</div>
+            <Button variant="outline" size="sm" className="text-xs" onClick={goToNotifications}>
               Смотреть все
             </Button>
           </div>

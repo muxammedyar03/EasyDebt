@@ -119,10 +119,10 @@ const ActionButtonsCell = ({ row, context }: { row: Row<DebtorView>; context?: C
         onMouseDownCapture={(e) => e.stopPropagation()}
         onMouseUpCapture={(e) => e.stopPropagation()}
       >
-        <Button variant="outline" size="lg" onClick={() => setDebtDialogOpen(true)}>
+        <Button variant="outline" onClick={() => setDebtDialogOpen(true)}>
           <Plus className="h-4 w-4" /> {t("debt")}
         </Button>
-        <Button variant="outline" size="lg" onClick={() => setPaymentDialogOpen(true)}>
+        <Button variant="outline" onClick={() => setPaymentDialogOpen(true)}>
           <Minus className="h-4 w-4" /> {t("payment")}
         </Button>
       </div>

@@ -20,7 +20,7 @@ const updateSchema = z
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session || !(await hasPermission(session, "permissions.view"))) {
+  if (!session || session.role !== "SUPER_ADMIN" || !(await hasPermission(session, "permissions.view"))) {
     return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
   }
   const selected = Number(new URL(request.url).searchParams.get("clientId") || session.clientId);
@@ -69,11 +69,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const session = await getSession();
-  if (
-    !session ||
-    !["SUPER_ADMIN", "ADMIN"].includes(session.role) ||
-    !(await hasPermission(session, "permissions.manage"))
-  )
+  if (!session || session.role !== "SUPER_ADMIN" || !(await hasPermission(session, "permissions.manage")))
     return NextResponse.json({ error: "Ruxsat yo‘q" }, { status: 403 });
   let parsed: z.infer<typeof updateSchema>;
   try {

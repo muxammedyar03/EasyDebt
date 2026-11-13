@@ -52,7 +52,7 @@ export async function ReportsSummarySection(props: ReportsSummarySectionProps) {
           <CardHeader>
             <CardDescription>{t("totalDebt")}</CardDescription>
             <CardTitle className="flex items-end gap-1">
-              <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+              <p className="text-xl leading-none font-semibold tabular-nums sm:text-2xl">
                 {totalDebtsAmount.toLocaleString()}
               </p>
               <span className="text-md leading-5">{tCommon("som")}</span>
@@ -72,7 +72,7 @@ export async function ReportsSummarySection(props: ReportsSummarySectionProps) {
           <CardHeader>
             <CardDescription>{t("totalPayments")}</CardDescription>
             <CardTitle className="flex items-end gap-1">
-              <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+              <p className="text-xl leading-none font-semibold tabular-nums sm:text-2xl">
                 {totalPaymentsAmount.toLocaleString()}
               </p>
               <span className="text-md leading-5">{tCommon("som")}</span>

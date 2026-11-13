@@ -142,15 +142,15 @@ export function AuditLogsTable({
             {/* Search and Actions */}
             <div className="mb-6 flex flex-col gap-2 sm:flex-row">
               <div className="relative flex flex-1 gap-2">
-                <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
+                <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder={t("searchPlaceholder")}
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="h-12 pl-8"
+                  className="h-9 pl-8"
                 />
-                <Button onClick={handleSearch} variant="outline" size="sm" className="h-12 w-12 sm:w-auto">
+                <Button onClick={handleSearch} variant="outline" size="sm" className="h-9 w-9 sm:w-auto">
                   <Search className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">{tCommon("search")}</span>
                 </Button>
@@ -164,7 +164,7 @@ export function AuditLogsTable({
                   variant="outline"
                   size="sm"
                   disabled={isExporting}
-                  className="h-12 bg-blue-500 text-white hover:bg-blue-600"
+                  className="h-9 bg-blue-500 text-white hover:bg-blue-600"
                 >
                   <FileDown className="h-4 w-4 md:mr-2" />
                   <span className="hidden sm:inline">{t("export")}</span>
@@ -288,7 +288,7 @@ export function AuditLogsTable({
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange(currentPage - 1)}
-                    className="h-12 px-6"
+                    className="h-9 px-6"
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -299,7 +299,7 @@ export function AuditLogsTable({
                     size="sm"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="h-12 px-6"
+                    className="h-9 px-6"
                   >
                     {tCommon("next")}
                     <ChevronRight className="h-4 w-4" />

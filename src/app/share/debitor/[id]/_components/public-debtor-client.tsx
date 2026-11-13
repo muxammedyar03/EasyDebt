@@ -91,7 +91,7 @@ export function PublicDebtorClient({ debtor, initialViewValue }: PublicDebtorCli
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+                  <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl dark:text-white">
                     {debtor.firstName} {debtor.lastName}
                   </h2>
                   <p className="text-muted-foreground mt-1 text-sm font-medium">Mijoz sahifasi (Ochiq profil)</p>

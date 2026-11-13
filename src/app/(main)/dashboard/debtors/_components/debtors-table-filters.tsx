@@ -27,7 +27,7 @@ export function DebtorsTableFilters({ isMobile, statusValue, onStatusChange }: D
     <div className="flex flex-wrap items-center justify-between gap-2">
       {isMobile ? (
         <Select value={statusValue} onValueChange={onStatusChange}>
-          <SelectTrigger className="!h-12 w-[140px] sm:w-[180px]">
+          <SelectTrigger className="!h-9 w-[140px] sm:w-[180px]">
             <SelectValue placeholder={t("dashboard.status")} />
           </SelectTrigger>
           <SelectContent>
@@ -40,7 +40,7 @@ export function DebtorsTableFilters({ isMobile, statusValue, onStatusChange }: D
         </Select>
       ) : (
         <Tabs value={statusValue} onValueChange={onStatusChange}>
-          <TabsList className="grid h-12 w-full grid-cols-2 sm:grid-cols-5">
+          <TabsList className="grid h-9 w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="all">{labels.all}</TabsTrigger>
             <TabsTrigger value="qarzdor">{labels.debtor}</TabsTrigger>
             <TabsTrigger value="muddati_otgan">{labels.expired}</TabsTrigger>

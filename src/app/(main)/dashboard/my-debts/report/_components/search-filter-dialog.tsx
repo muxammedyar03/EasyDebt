@@ -42,17 +42,17 @@ export function SearchFilterDialog({
               placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="h-12 text-base"
+              className="h-9 text-base"
             />
           </div>
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="outline" className="h-11" onClick={onReset}>
+          <Button type="button" variant="outline" className="h-9" onClick={onReset}>
             <RotateCcw className="mr-2 h-4 w-4" />
             {t("reset")}
           </Button>
-          <Button type="button" className="h-11" onClick={onApply}>
+          <Button type="button" className="h-9" onClick={onApply}>
             <Search className="mr-2 h-4 w-4" />
             {t("applyFilter")}
           </Button>

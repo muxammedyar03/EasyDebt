@@ -50,7 +50,7 @@ export function SectionCard({
           </div>
         </CardDescription>
         <CardTitle className="flex items-end gap-1 p-0">
-          <p className="text-2xl leading-none font-semibold tabular-nums @[250px]/card:text-3xl">
+          <p className="text-xl leading-none font-semibold tabular-nums sm:text-2xl">
             {count ? count : isHide ? maskAmount : amount?.toLocaleString()}
           </p>
           {!count && <span className="text-md leading-5">so&apos;m</span>}

@@ -66,12 +66,12 @@ export function CustomersTableDumb({
         {/* Search */}
         <div className="flex flex-col gap-4 md:flex-row">
           <div className="relative flex-1">
-            <Search className="text-muted-foreground absolute top-4 left-2.5 h-4 w-4" />
+            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder={t("searchPlaceholder")}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="h-12 pl-8"
+              className="h-9 pl-8"
             />
           </div>
           <SortToggleGroup
@@ -84,14 +84,14 @@ export function CustomersTableDumb({
             currentSortField={currentSortField}
             currentSortOrder={currentSortOrder}
             onToggle={onSortToggle}
-            className="h-12 pr-3 xl:flex-1"
+            className="h-9 pr-3 xl:flex-1"
           />
         </div>
 
         {/* Tabs */}
         {!isMobile ? (
           <Tabs value={currentRating} onValueChange={onRatingChange} className="w-full xl:w-1/2">
-            <TabsList className="grid h-12 w-full grid-cols-4">
+            <TabsList className="grid h-9 w-full grid-cols-4">
               <TabsTrigger value="all">
                 {tCommon("all")}
                 <span className="ml-2 text-xs">({totalDebtorsCount})</span>
@@ -115,7 +115,7 @@ export function CustomersTableDumb({
           </Tabs>
         ) : (
           <Select value={currentRating} onValueChange={onRatingChange}>
-            <SelectTrigger className="!h-12 w-32">
+            <SelectTrigger className="!h-9 w-32">
               <SelectValue placeholder={t("selectRating")} />
             </SelectTrigger>
             <SelectContent>

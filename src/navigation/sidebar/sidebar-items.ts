@@ -128,6 +128,7 @@ export const sidebarItems: NavGroup[] = [
         title: "nav.permissions",
         url: "/dashboard/permissions",
         icon: ShieldCheck,
+        roles: ["SUPER_ADMIN"],
         permission: "permissions.view",
       },
     ],
